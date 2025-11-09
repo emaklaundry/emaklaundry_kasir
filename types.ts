@@ -1,3 +1,4 @@
+
 export enum UserRole {
   Admin = 'Admin',
   Cashier = 'Cashier',
@@ -5,7 +6,7 @@ export enum UserRole {
 
 export enum OrderStatus {
   Processing = 'Processing',
-  Ready = 'Ready for Pickup',
+  Ready = 'Ready',
   Completed = 'Completed',
 }
 
@@ -15,18 +16,28 @@ export enum PaymentStatus {
 }
 
 export enum ServiceCategory {
-  Kiloan = 'Kiloan',
-  Satuan = 'Satuan',
-  Express = 'Express',
-  DryClean = 'Dry Cleaning',
+    Kiloan = 'Kiloan',
+    Satuan = 'Satuan',
+    Sepatu = 'Sepatu',
+    Karpet = 'Karpet',
+    Lainnya = 'Lainnya',
 }
 
 export interface Customer {
   id: string;
   name: string;
   phone: string;
-  address?: string;
+  address: string;
   notes?: string;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  category: ServiceCategory;
+  price: number;
+  unit: string; // e.g., 'kg', 'pcs'
+  durationDays: number;
 }
 
 export interface TransactionItem {
@@ -55,7 +66,7 @@ export interface InventoryItem {
   name: string;
   stock: number;
   lowStockThreshold: number;
-  unit: string;
+  unit: string; // e.g., 'liter', 'kg', 'pcs'
 }
 
 export interface MaintenanceLog {
@@ -77,8 +88,8 @@ export interface Asset {
 export interface Expense {
   id: number;
   date: Date;
-  category: string;
   description: string;
+  category: string;
   amount: number;
 }
 
@@ -89,15 +100,6 @@ export interface User {
   isActive: boolean;
 }
 
-export interface Service {
-  id: string;
-  name: string;
-  category: ServiceCategory;
-  price: number;
-  unit: string; // e.g., 'kg', 'pcs'
-  durationDays: number;
-}
-
 export interface AuditLog {
   id: number;
   timestamp: Date;
@@ -105,11 +107,6 @@ export interface AuditLog {
   action: string;
 }
 
-export interface AppSettings {
-  openTime: string; // "HH:MM"
-  closeTime: string; // "HH:MM"
-  taxRate: number; // percentage
-  deliveryFeePerKm: number;
-  whatsappNumber: string;
-  receiptMessage: string;
+export interface Settings {
+    receiptMessage: string;
 }

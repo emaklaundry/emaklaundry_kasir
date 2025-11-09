@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { InventoryProvider } from './contexts/InventoryContext';
+import { TransactionProvider } from './contexts/TransactionContext';
 import { UserRole } from './types';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -55,9 +56,11 @@ const App: React.FC = () => {
   return (
     <AppProvider>
       <InventoryProvider>
-        <HashRouter>
-          <AppRoutes />
-        </HashRouter>
+        <TransactionProvider>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+        </TransactionProvider>
       </InventoryProvider>
     </AppProvider>
   );

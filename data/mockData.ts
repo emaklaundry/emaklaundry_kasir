@@ -1,98 +1,112 @@
-import { User, UserRole, Service, ServiceCategory, InventoryItem, Transaction, PaymentStatus, OrderStatus, Asset, Expense, AuditLog, AppSettings, Customer } from '../types';
 
-export const mockUsers: User[] = [
-  { id: 1, name: 'Admin Laundry', role: UserRole.Admin, isActive: true },
-  { id: 2, name: 'Kasir Satu', role: UserRole.Cashier, isActive: true },
-  { id: 3, name: 'Kasir Dua', role: UserRole.Cashier, isActive: false },
-];
+import {
+  Customer,
+  Service,
+  ServiceCategory,
+  Transaction,
+  OrderStatus,
+  PaymentStatus,
+  InventoryItem,
+  Asset,
+  Expense,
+  User,
+  UserRole,
+  AuditLog,
+  Settings
+} from '../types';
 
 export const mockCustomers: Customer[] = [
-    { id: 'CUST01', name: 'Budi Santoso', phone: '081234567890', address: 'Jl. Merdeka No. 10, Jakarta', notes: 'Pelanggan reguler, minta pewangi lavender.' },
-    { id: 'CUST02', name: 'Citra Lestari', phone: '085678901234', address: 'Jl. Sudirman Kav. 5, Bandung' },
-    { id: 'CUST03', name: 'Doni Firmansyah', phone: '087812345678', address: 'Jl. Pahlawan No. 2, Surabaya', notes: 'Hati-hati dengan kemeja sutra.' },
-    { id: 'CUST04', name: 'Eka Putri', phone: '089955554321', address: 'Jl. Gatot Subroto No. 15, Medan' },
+  { id: 'CUST1', name: 'Budi Santoso', phone: '081234567890', address: 'Jl. Merdeka No. 10, Jakarta', notes: 'Pelanggan VIP' },
+  { id: 'CUST2', name: 'Siti Aminah', phone: '087654321098', address: 'Jl. Pahlawan No. 5, Surabaya' },
+  { id: 'CUST3', name: 'Agus Wijaya', phone: '085566778899', address: 'Jl. Sudirman No. 15, Bandung' },
+  { id: 'CUST4', name: 'Dewi Lestari', phone: '082122334455', address: 'Jl. Gajah Mada No. 20, Semarang' },
 ];
 
-
 export const mockServices: Service[] = [
-  { id: 'S1', name: 'Cuci Kering Lipat', category: ServiceCategory.Kiloan, price: 7000, unit: 'kg', durationDays: 2 },
-  { id: 'S2', name: 'Cuci Kering Setrika', category: ServiceCategory.Kiloan, price: 9000, unit: 'kg', durationDays: 3 },
-  { id: 'S3', name: 'Setrika Saja', category: ServiceCategory.Kiloan, price: 5000, unit: 'kg', durationDays: 1 },
-  { id: 'S4', name: 'Express 6 Jam', category: ServiceCategory.Express, price: 15000, unit: 'kg', durationDays: 0 },
-  { id: 'S5', name: 'Kemeja', category: ServiceCategory.Satuan, price: 10000, unit: 'pcs', durationDays: 2 },
-  { id: 'S6', name: 'Jas', category: ServiceCategory.DryClean, price: 30000, unit: 'pcs', durationDays: 4 },
-  { id: 'S7', name: 'Selimut', category: ServiceCategory.Satuan, price: 20000, unit: 'pcs', durationDays: 3 },
+  { id: 'S1', name: 'Cuci Kering Lipat', category: ServiceCategory.Kiloan, price: 8000, unit: 'kg', durationDays: 2 },
+  { id: 'S2', name: 'Cuci Setrika', category: ServiceCategory.Kiloan, price: 10000, unit: 'kg', durationDays: 3 },
+  { id: 'S3', name: 'Setrika Saja', category: ServiceCategory.Kiloan, price: 6000, unit: 'kg', durationDays: 1 },
+  { id: 'S4', name: 'Kemeja', category: ServiceCategory.Satuan, price: 15000, unit: 'pcs', durationDays: 2 },
+  { id: 'S5', name: 'Jas', category: ServiceCategory.Satuan, price: 50000, unit: 'pcs', durationDays: 4 },
+  { id: 'S6', name: 'Selimut', category: ServiceCategory.Satuan, price: 25000, unit: 'pcs', durationDays: 3 },
+  { id: 'S7', name: 'Cuci Sepatu', category: ServiceCategory.Sepatu, price: 40000, unit: 'pasang', durationDays: 5 },
+  { id: 'S8', name: 'Karpet Tipis', category: ServiceCategory.Karpet, price: 15000, unit: 'm²', durationDays: 5 },
+];
+
+export let mockTransactions: Transaction[] = [
+  {
+    id: 'TRX001', customerId: 'CUST1',
+    items: [{ serviceId: 'S2', serviceName: 'Cuci Setrika', quantity: 5, price: 10000, subtotal: 50000, unit: 'kg' }],
+    total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
+    createdAt: new Date('2023-10-01T10:00:00'), estimatedCompletionDate: new Date('2023-10-04T10:00:00')
+  },
+  {
+    id: 'TRX002', customerId: 'CUST2',
+    items: [
+        { serviceId: 'S1', serviceName: 'Cuci Kering Lipat', quantity: 3, price: 8000, subtotal: 24000, unit: 'kg' },
+        { serviceId: 'S4', serviceName: 'Kemeja', quantity: 2, price: 15000, subtotal: 30000, unit: 'pcs' }
+    ],
+    total: 54000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
+    createdAt: new Date('2023-10-25T14:30:00'), estimatedCompletionDate: new Date('2023-10-28T14:30:00')
+  },
+  {
+    id: 'TRX003', customerId: 'CUST1',
+    items: [{ serviceId: 'S5', serviceName: 'Jas', quantity: 1, price: 50000, subtotal: 50000, unit: 'pcs' }],
+    total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Ready,
+    createdAt: new Date('2023-10-26T11:00:00'), estimatedCompletionDate: new Date('2023-10-30T11:00:00')
+  },
+   {
+    id: 'TRX004', customerId: 'CUST3',
+    items: [{ serviceId: 'S7', serviceName: 'Cuci Sepatu', quantity: 2, price: 40000, subtotal: 80000, unit: 'pasang' }],
+    total: 80000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
+    createdAt: new Date('2023-10-27T09:00:00'), estimatedCompletionDate: new Date('2023-11-01T09:00:00')
+  },
 ];
 
 export const mockInventory: InventoryItem[] = [
-  { id: 'INV1', name: 'Deterjen Bubuk', stock: 20, lowStockThreshold: 5, unit: 'kg' },
-  { id: 'INV2', name: 'Pewangi Pakaian', stock: 15, lowStockThreshold: 5, unit: 'liter' },
-  { id: 'INV3', name: 'Plastik Packing', stock: 250, lowStockThreshold: 100, unit: 'pcs' },
-  { id: 'INV4', name: 'Hanger', stock: 80, lowStockThreshold: 20, unit: 'pcs' },
-];
-
-export const mockTransactions: Transaction[] = [
-  {
-    id: 'TRX001', customerId: 'CUST01',
-    items: [{ serviceId: 'S2', serviceName: 'Cuci Kering Setrika', quantity: 3, price: 9000, subtotal: 27000, unit: 'kg' }],
-    total: 27000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
-    createdAt: new Date('2023-10-26T10:00:00'), estimatedCompletionDate: new Date('2023-10-29T10:00:00')
-  },
-  {
-    id: 'TRX002', customerId: 'CUST02',
-    items: [
-        { serviceId: 'S1', serviceName: 'Cuci Kering Lipat', quantity: 5, price: 7000, subtotal: 35000, unit: 'kg' }, 
-        { serviceId: 'S7', serviceName: 'Selimut', quantity: 1, price: 20000, subtotal: 20000, unit: 'pcs' }
-    ],
-    total: 55000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
-    createdAt: new Date('2023-10-27T14:30:00'), estimatedCompletionDate: new Date('2023-10-30T14:30:00')
-  },
-  {
-    id: 'TRX003', customerId: 'CUST03',
-    items: [{ serviceId: 'S6', serviceName: 'Jas', quantity: 2, price: 30000, subtotal: 60000, unit: 'pcs' }],
-    total: 60000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Ready,
-    createdAt: new Date('2023-10-28T09:00:00'), estimatedCompletionDate: new Date('2023-11-01T09:00:00')
-  },
-  {
-    id: 'TRX004', customerId: 'CUST01',
-    items: [{ serviceId: 'S5', serviceName: 'Kemeja', quantity: 5, price: 10000, subtotal: 50000, unit: 'pcs' }],
-    total: 50000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
-    createdAt: new Date('2023-10-29T11:00:00'), estimatedCompletionDate: new Date('2023-11-01T11:00:00')
-  }
+  { id: 'INV1', name: 'Deterjen Cair', stock: 50, lowStockThreshold: 10, unit: 'liter' },
+  { id: 'INV2', name: 'Pewangi Pakaian', stock: 40, lowStockThreshold: 15, unit: 'liter' },
+  { id: 'INV3', name: 'Plastik Kemasan', stock: 500, lowStockThreshold: 100, unit: 'pcs' },
+  { id: 'INV4', name: 'Hanger', stock: 200, lowStockThreshold: 50, unit: 'pcs' },
 ];
 
 export const mockAssets: Asset[] = [
-  {
-    id: 'ASSET01', name: 'Mesin Cuci Front Load LG', purchaseDate: new Date('2022-01-15'), purchaseCost: 7000000, status: 'Active',
-    maintenanceHistory: [{ id: 1, date: new Date('2023-06-20'), description: 'Pembersihan filter', cost: 50000 }]
+  { 
+    id: 'ASSET1', name: 'Mesin Cuci Front Loading LG', purchaseDate: new Date('2022-01-15'), purchaseCost: 8000000, status: 'Active',
+    maintenanceHistory: [
+      { id: 1, date: new Date('2023-05-20'), description: 'Pembersihan filter rutin', cost: 0 }
+    ]
   },
   {
-    id: 'ASSET02', name: 'Mesin Pengering Electrolux', purchaseDate: new Date('2022-01-15'), purchaseCost: 6500000, status: 'Under Maintenance',
-    maintenanceHistory: [{ id: 1, date: new Date('2023-10-25'), description: 'Ganti v-belt', cost: 250000 }]
-  },
-  {
-    id: 'ASSET03', name: 'Setrika Uap Philips', purchaseDate: new Date('2022-05-10'), purchaseCost: 1200000, status: 'Active',
+    id: 'ASSET2', name: 'Mesin Pengering Electrolux', purchaseDate: new Date('2022-01-15'), purchaseCost: 7500000, status: 'Active',
     maintenanceHistory: []
+  },
+  {
+    id: 'ASSET3', name: 'Setrika Uap Philips', purchaseDate: new Date('2021-11-10'), purchaseCost: 1200000, status: 'Under Maintenance',
+    maintenanceHistory: [
+      { id: 1, date: new Date('2023-10-20'), description: 'Ganti selang uap', cost: 150000 }
+    ]
   },
 ];
 
 export const mockExpenses: Expense[] = [
-  { id: 1, date: new Date('2023-10-25'), category: 'Operasional', description: 'Listrik', amount: 500000 },
-  { id: 2, date: new Date('2023-10-25'), category: 'Inventaris', description: 'Pembelian deterjen', amount: 200000 },
-  { id: 3, date: new Date('2023-10-26'), category: 'Gaji', description: 'Gaji Kasir 1', amount: 1500000 },
+  { id: 1, date: new Date('2023-10-25'), description: 'Pembelian Deterjen', category: 'Bahan Baku', amount: 500000 },
+  { id: 2, date: new Date('2023-10-20'), description: 'Bayar Listrik', category: 'Operasional', amount: 1200000 },
+  { id: 3, date: new Date('2023-10-15'), description: 'Gaji Karyawan', category: 'Gaji', amount: 5000000 },
+];
+
+export const mockUsers: User[] = [
+  { id: 1, name: 'Admin Utama', role: UserRole.Admin, isActive: true },
+  { id: 2, name: 'Kasir Pagi', role: UserRole.Cashier, isActive: true },
+  { id: 3, name: 'Kasir Siang', role: UserRole.Cashier, isActive: false },
 ];
 
 export const mockAuditLogs: AuditLog[] = [
-  { id: 1, timestamp: new Date(), user: 'Admin Laundry', action: 'Login' },
-  { id: 2, timestamp: new Date(), user: 'Kasir Satu', action: 'Membuat transaksi TRX003' },
-  { id: 3, timestamp: new Date(), user: 'Admin Laundry', action: 'Mengubah layanan "Jas"' },
+  { id: 1, timestamp: new Date(), user: 'Admin Utama', action: 'Login ke sistem' },
+  { id: 2, timestamp: new Date(), user: 'Kasir Pagi', action: 'Membuat transaksi TRX004' },
+  { id: 3, timestamp: new Date(), user: 'Admin Utama', action: 'Mengubah status pengguna "Kasir Siang" menjadi tidak aktif' },
 ];
 
-export const mockSettings: AppSettings = {
-    openTime: '08:00',
-    closeTime: '21:00',
-    taxRate: 0,
-    deliveryFeePerKm: 2000,
-    whatsappNumber: '081234567890',
-    receiptMessage: 'Terima kasih telah menggunakan jasa kami!'
+export const mockSettings: Settings = {
+    receiptMessage: 'Terima kasih telah menggunakan jasa kami! Silakan simpan struk ini sebagai bukti transaksi.'
 };

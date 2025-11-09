@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { mockTransactions, mockCustomers } from '../data/mockData';
+import { mockCustomers } from '../data/mockData';
 import { OrderStatus, PaymentStatus, UserRole } from '../types';
 import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
+import { useTransactions } from '../contexts/TransactionContext';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
@@ -22,14 +23,15 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
 const Dashboard: React.FC = () => {
     const { userRole } = useAppContext();
     const { inventory } = useInventory();
+    const { transactions } = useTransactions();
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     
-    const completedOrders = mockTransactions.filter(t => t.orderStatus === OrderStatus.Completed).length;
-    const pendingOrders = mockTransactions.filter(t => t.orderStatus === OrderStatus.Processing).length;
+    const completedOrders = transactions.filter(t => t.orderStatus === OrderStatus.Completed).length;
+    const pendingOrders = transactions.filter(t => t.orderStatus === OrderStatus.Processing).length;
     const lowStockItems = inventory.filter(i => i.stock <= i.lowStockThreshold).length;
-    const readyForPickup = mockTransactions.filter(t => t.orderStatus === OrderStatus.Ready).length;
+    const readyForPickup = transactions.filter(t => t.orderStatus === OrderStatus.Ready).length;
 
-    const activeOrders = mockTransactions
+    const activeOrders = transactions
         .filter(t => t.orderStatus !== OrderStatus.Completed)
         .map(t => {
             const customer = mockCustomers.find(c => c.id === t.customerId);

@@ -1,74 +1,51 @@
+
 import React, { useState } from 'react';
 import { mockSettings } from '../../data/mockData';
-import { AppSettings } from '../../types';
-
-const formatRupiah = (number: number | string): string => {
-    if (typeof number === 'string') {
-        number = parseFloat(number.replace(/[^\d]/g, ''));
-    }
-    if (isNaN(number)) return '';
-    return new Intl.NumberFormat('id-ID').format(number);
-};
-
-const parseRupiah = (formattedString: string): number => {
-    return parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
-};
+import { Settings } from '../../types';
 
 const SettingsPage: React.FC = () => {
-    const [settings, setSettings] = useState<AppSettings>(mockSettings);
+    const [settings, setSettings] = useState<Settings>(mockSettings);
+    const [isSaved, setIsSaved] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
-        if (name === 'deliveryFeePerKm') {
-             setSettings(prev => ({ ...prev, deliveryFeePerKm: parseRupiah(value) }));
-        } else if (name === 'taxRate') {
-            setSettings(prev => ({ ...prev, taxRate: parseFloat(value) }));
-        } else {
-             setSettings(prev => ({ ...prev, [name]: value }));
-        }
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setSettings(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Settings saved:", settings);
-        alert("Pengaturan berhasil disimpan!");
+        // In a real app, this would save to a backend.
+        console.log('Settings saved:', settings);
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 3000);
     };
 
     return (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md max-w-2xl mx-auto">
             <h1 className="text-2xl font-semibold mb-6 text-slate-900 dark:text-white">Pengaturan Aplikasi</h1>
-            <div className="space-y-4">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="openTime" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Jam Buka</label>
-                        <input type="time" id="openTime" name="openTime" value={settings.openTime} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                    </div>
-                    <div>
-                        <label htmlFor="closeTime" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Jam Tutup</label>
-                        <input type="time" id="closeTime" name="closeTime" value={settings.closeTime} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                    </div>
-                </div>
-                 <div>
-                    <label htmlFor="taxRate" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Tarif Pajak (%)</label>
-                    <input type="number" id="taxRate" name="taxRate" value={settings.taxRate} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                    <label htmlFor="deliveryFeePerKm" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Biaya Pengiriman per Km (Rp)</label>
-                    <input type="text" id="deliveryFeePerKm" name="deliveryFeePerKm" value={formatRupiah(settings.deliveryFeePerKm)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+                    <label htmlFor="receiptMessage" className="block mb-2 text-lg font-medium text-slate-900 dark:text-white">Pesan di Struk</label>
+                    <textarea 
+                        id="receiptMessage" 
+                        name="receiptMessage"
+                        value={settings.receiptMessage} 
+                        onChange={handleChange} 
+                        rows={4} 
+                        className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                        placeholder="Contoh: Terima kasih telah menggunakan jasa kami!"
+                    />
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Pesan ini akan ditampilkan di bagian bawah setiap struk transaksi.</p>
                 </div>
-                <div>
-                    <label htmlFor="whatsappNumber" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nomor WhatsApp</label>
-                    <input type="tel" id="whatsappNumber" name="whatsappNumber" value={settings.whatsappNumber} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+
+                <div className="flex items-center gap-4">
+                    <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-8 py-3.5">
+                        Simpan Pengaturan
+                    </button>
+                    {isSaved && <span className="text-green-600 dark:text-green-400 text-base">Pengaturan berhasil disimpan!</span>}
                 </div>
-                 <div>
-                    <label htmlFor="receiptMessage" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Pesan di Struk</label>
-                    <input type="text" id="receiptMessage" name="receiptMessage" value={settings.receiptMessage} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                </div>
-                 <div className="flex justify-end pt-4">
-                    <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-8 py-4">Simpan Pengaturan</button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     );
 };
 
