@@ -39,8 +39,8 @@ const AppRoutes: React.FC = () => (
             <Route path="/management/customers/:id" element={<AdminRoute><CustomerDetailPage /></AdminRoute>} />
             <Route path="/management/services" element={<AdminRoute><ServicesPage /></AdminRoute>} />
             <Route path="/management/inventory" element={<AdminRoute><InventoryPage /></AdminRoute>} />
-            <Route path="/management/assets" element={<AdminRoute><AssetsPage /></AdminRoute>} />
-            <Route path="/management/expenses" element={<AdminRoute><ExpensesPage /></AdminRoute>} />
+            <Route path="/management/assets" element={<AssetsPage />} />
+            <Route path="/management/expenses" element={<ExpensesPage />} />
             <Route path="/management/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
             <Route path="/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
             <Route path="/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />

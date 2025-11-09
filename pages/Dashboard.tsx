@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { mockCustomers } from '../data/mockData';
@@ -93,8 +91,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                     <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
                         <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Progres Pesanan Aktif</h2>
-                        {userRole === UserRole.Admin && (
-                            <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4">
                                  <button onClick={() => setIsStockModalOpen(true)} className="flex items-center justify-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
                                     <WrenchIcon className="h-5 w-5 mr-2" />
                                     Lapor Inventaris Habis
@@ -108,7 +105,6 @@ const Dashboard: React.FC = () => {
                                     Laporkan Kerusakan
                                 </Link>
                             </div>
-                        )}
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
