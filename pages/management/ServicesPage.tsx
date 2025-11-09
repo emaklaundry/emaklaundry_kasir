@@ -1,10 +1,21 @@
-
 import React, { useState } from 'react';
 import { mockServices } from '../../data/mockData';
 import { Service, ServiceCategory } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+
+const formatRupiah = (number: number | string): string => {
+    if (typeof number === 'string') {
+        number = parseFloat(number.replace(/[^\d]/g, ''));
+    }
+    if (isNaN(number)) return '';
+    return new Intl.NumberFormat('id-ID').format(number);
+};
+
+const parseRupiah = (formattedString: string): number => {
+    return parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
+};
 
 const ServicesPage: React.FC = () => {
     const [services, setServices] = useState<Service[]>(mockServices);
@@ -113,8 +124,12 @@ const ServiceFormModal: React.FC<{ service: Service | null, onClose: () => void,
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        const isNumber = ['price', 'durationDays'].includes(name);
-        setFormData(prev => ({ ...prev, [name]: isNumber ? parseFloat(value) : value }));
+        if (name === 'price' || name === 'durationDays') {
+            const numericValue = name === 'price' ? parseRupiah(value) : parseInt(value, 10);
+            setFormData(prev => ({ ...prev, [name]: isNaN(numericValue) ? 0 : numericValue }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -148,7 +163,7 @@ const ServiceFormModal: React.FC<{ service: Service | null, onClose: () => void,
                  <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="price" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Harga</label>
-                        <input type="number" name="price" id="price" value={formData.price} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                        <input type="text" name="price" id="price" value={formatRupiah(formData.price)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                     </div>
                      <div>
                         <label htmlFor="unit" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Satuan</label>

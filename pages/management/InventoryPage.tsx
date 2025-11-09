@@ -1,14 +1,15 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { mockInventory } from '../../data/mockData';
 import { InventoryItem } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { useInventory } from '../../contexts/InventoryContext';
 
 const InventoryPage: React.FC = () => {
-    const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
+    const { inventory, setInventory } = useInventory();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);

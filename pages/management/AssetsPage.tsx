@@ -1,10 +1,22 @@
-
 import React, { useState } from 'react';
 import { mockAssets } from '../../data/mockData';
 import { Asset, MaintenanceLog } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+
+const formatRupiah = (number: number | string): string => {
+    if (typeof number === 'string') {
+        number = parseFloat(number.replace(/[^\d]/g, ''));
+    }
+    if (isNaN(number)) return '';
+    return new Intl.NumberFormat('id-ID').format(number);
+};
+
+const parseRupiah = (formattedString: string): number => {
+    return parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
+};
+
 
 const AssetsPage: React.FC = () => {
     const [assets, setAssets] = useState<Asset[]>(mockAssets);
@@ -132,7 +144,11 @@ const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSav
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : type === 'number' ? parseFloat(value) : value }));
+         if (name === 'purchaseCost') {
+            setFormData(prev => ({ ...prev, purchaseCost: parseRupiah(value) }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -164,7 +180,7 @@ const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSav
                     </div>
                     <div>
                         <label htmlFor="purchaseCost" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Biaya Beli (Rp)</label>
-                        <input type="number" name="purchaseCost" id="purchaseCost" value={formData.purchaseCost} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                        <input type="text" name="purchaseCost" id="purchaseCost" value={formatRupiah(formData.purchaseCost)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                     </div>
                 </div>
                 <div>
@@ -189,7 +205,11 @@ const MaintenanceFormModal: React.FC<{ assetName: string, onClose: () => void, o
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : type === 'number' ? parseFloat(value) : value }));
+        if (name === 'cost') {
+            setFormData(prev => ({ ...prev, cost: parseRupiah(value) }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -215,7 +235,7 @@ const MaintenanceFormModal: React.FC<{ assetName: string, onClose: () => void, o
                 </div>
                 <div>
                     <label htmlFor="cost" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Biaya (Rp)</label>
-                    <input type="number" name="cost" id="cost" value={formData.cost} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                    <input type="text" name="cost" id="cost" value={formatRupiah(formData.cost)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                 </div>
             </form>
         </Modal>

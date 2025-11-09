@@ -1,17 +1,31 @@
-
 import React, { useState } from 'react';
 import { mockSettings } from '../../data/mockData';
 import { AppSettings } from '../../types';
+
+const formatRupiah = (number: number | string): string => {
+    if (typeof number === 'string') {
+        number = parseFloat(number.replace(/[^\d]/g, ''));
+    }
+    if (isNaN(number)) return '';
+    return new Intl.NumberFormat('id-ID').format(number);
+};
+
+const parseRupiah = (formattedString: string): number => {
+    return parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
+};
 
 const SettingsPage: React.FC = () => {
     const [settings, setSettings] = useState<AppSettings>(mockSettings);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
-        setSettings(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) : value
-        }));
+        if (name === 'deliveryFeePerKm') {
+             setSettings(prev => ({ ...prev, deliveryFeePerKm: parseRupiah(value) }));
+        } else if (name === 'taxRate') {
+            setSettings(prev => ({ ...prev, taxRate: parseFloat(value) }));
+        } else {
+             setSettings(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -40,7 +54,7 @@ const SettingsPage: React.FC = () => {
                 </div>
                 <div>
                     <label htmlFor="deliveryFeePerKm" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Biaya Pengiriman per Km (Rp)</label>
-                    <input type="number" id="deliveryFeePerKm" name="deliveryFeePerKm" value={settings.deliveryFeePerKm} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+                    <input type="text" id="deliveryFeePerKm" name="deliveryFeePerKm" value={formatRupiah(settings.deliveryFeePerKm)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
                 </div>
                 <div>
                     <label htmlFor="whatsappNumber" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nomor WhatsApp</label>
