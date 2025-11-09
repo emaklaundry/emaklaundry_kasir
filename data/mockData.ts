@@ -72,17 +72,17 @@ export const mockInventory: InventoryItem[] = [
 
 export const mockAssets: Asset[] = [
   { 
-    id: 'ASSET1', name: 'Mesin Cuci Front Loading LG', purchaseDate: new Date('2022-01-15'), purchaseCost: 8000000, status: 'Active',
+    id: 'ASSET1', name: 'Mesin Cuci Front Loading LG', serialNumber: 'LG-FL-202201A', purchaseDate: new Date('2022-01-15'), purchaseCost: 8000000, status: 'Active',
     maintenanceHistory: [
       { id: 1, date: new Date('2023-05-20'), description: 'Pembersihan filter rutin', cost: 0 }
     ]
   },
   {
-    id: 'ASSET2', name: 'Mesin Pengering Electrolux', purchaseDate: new Date('2022-01-15'), purchaseCost: 7500000, status: 'Active',
+    id: 'ASSET2', name: 'Mesin Pengering Electrolux', serialNumber: 'ELX-DR-202201B', purchaseDate: new Date('2022-01-15'), purchaseCost: 7500000, status: 'Active',
     maintenanceHistory: []
   },
   {
-    id: 'ASSET3', name: 'Setrika Uap Philips', purchaseDate: new Date('2021-11-10'), purchaseCost: 1200000, status: 'Under Maintenance',
+    id: 'ASSET3', name: 'Setrika Uap Philips', serialNumber: 'PH-SI-202111C', purchaseDate: new Date('2021-11-10'), purchaseCost: 1200000, status: 'Under Maintenance',
     maintenanceHistory: [
       { id: 1, date: new Date('2023-10-20'), description: 'Ganti selang uap', cost: 150000 }
     ]

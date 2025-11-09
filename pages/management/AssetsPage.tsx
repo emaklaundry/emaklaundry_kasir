@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { mockAssets } from '../../data/mockData';
 import { Asset, MaintenanceLog } from '../../types';
@@ -100,6 +101,7 @@ const AssetsPage: React.FC = () => {
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
                             <th className="px-4 py-3">Nama Aset</th>
+                            <th className="px-4 py-3">Nomor Serial</th>
                             <th className="px-4 py-3">Tanggal Beli</th>
                             <th className="px-4 py-3 text-right">Biaya Beli</th>
                             <th className="px-4 py-3">Status</th>
@@ -110,6 +112,7 @@ const AssetsPage: React.FC = () => {
                         {assets.map(asset => (
                             <tr key={asset.id} className="border-b dark:border-slate-700">
                                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{asset.name}</td>
+                                <td className="px-4 py-3">{asset.serialNumber || '-'}</td>
                                 <td className="px-4 py-3">{new Date(asset.purchaseDate).toLocaleDateString('id-ID')}</td>
                                 <td className="px-4 py-3 text-right">Rp {asset.purchaseCost.toLocaleString('id-ID')}</td>
                                 <td className="px-4 py-3"><span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}>{asset.status}</span></td>
@@ -137,6 +140,7 @@ const AssetsPage: React.FC = () => {
 const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSave: (asset: Asset) => void }> = ({ asset, onClose, onSave }) => {
     const [formData, setFormData] = useState<Omit<Asset, 'id' | 'maintenanceHistory'>>({
         name: asset?.name || '',
+        serialNumber: asset?.serialNumber || '',
         purchaseDate: asset?.purchaseDate || new Date(),
         purchaseCost: asset?.purchaseCost || 0,
         status: asset?.status || 'Active',
@@ -169,9 +173,15 @@ const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSav
           }
         >
             <form className="space-y-4" onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Aset</label>
-                    <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Aset</label>
+                        <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                    </div>
+                    <div>
+                        <label htmlFor="serialNumber" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nomor Serial</label>
+                        <input type="text" name="serialNumber" id="serialNumber" value={formData.serialNumber} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+                    </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>

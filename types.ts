@@ -79,6 +79,7 @@ export interface MaintenanceLog {
 export interface Asset {
   id: string;
   name: string;
+  serialNumber?: string;
   purchaseDate: Date;
   purchaseCost: number;
   status: 'Active' | 'Under Maintenance' | 'Decommissioned';
