@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '../types';
-import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon, CalendarIcon, ChevronRightIcon } from '../components/icons';
+import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon, CalendarIcon, ChevronRightIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
@@ -16,18 +16,53 @@ import WhatsAppModal from '../components/WhatsAppModal';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useToasts } from '../contexts/ToastContext';
 
-const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string, to?: string }> = ({ icon: Icon, title, value, color, to }) => {
-    const content = (
-        <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors' : ''}`}>
-            <Icon className="w-10 h-10 text-slate-500" />
-            <div>
-                <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
-                <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
+type Trend = 'up' | 'down' | 'neutral';
+
+interface TrendData {
+    trend: Trend;
+    percentage: string;
+}
+
+const StatCard: React.FC<{ 
+    icon: React.FC<{className?: string}>, 
+    title: string, 
+    value: string | number, 
+    color: string, 
+    to?: string,
+    trendData?: TrendData 
+}> = ({ icon: Icon, title, value, color, to, trendData }) => {
+    
+    const TrendIndicator = () => {
+        if (!trendData || trendData.trend === 'neutral') return null;
+
+        const isUp = trendData.trend === 'up';
+        const trendColor = isUp ? 'text-green-500' : 'text-red-500';
+        const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
+
+        return (
+             <div className={`flex items-center text-sm font-semibold mt-1 ${trendColor}`}>
+                <TrendIcon className="w-4 h-4 mr-1" />
+                <span>{trendData.percentage} vs 30 hari lalu</span>
             </div>
+        );
+    };
+    
+    const content = (
+        <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors' : ''}`}>
+            <div className="flex items-start justify-between">
+                <div>
+                    <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
+                    <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
+                </div>
+                 <div className={`p-3 rounded-full ${color.replace('border-', 'bg-').replace('-500', '-100')} dark:${color.replace('border-', 'bg-').replace('-500', '-900/50')}`}>
+                    <Icon className={`w-7 h-7 ${color.replace('border-', 'text-')}`} />
+                </div>
+            </div>
+            <TrendIndicator />
         </div>
     );
 
-    return to ? <Link to={to}>{content}</Link> : content;
+    return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
 };
 
 
@@ -40,6 +75,18 @@ const calculateNextDueDate = (currentDueDate: Date, value: number, unit: 'days' 
         case 'years': newDate.setFullYear(newDate.getFullYear() + value); break;
     }
     return newDate;
+};
+
+// Helper function to calculate stats for a given period
+const calculateStats = (transactions: Transaction[], startDate: Date, endDate: Date) => {
+    const filtered = transactions.filter(t => {
+        const createdAt = new Date(t.createdAt);
+        return createdAt >= startDate && createdAt <= endDate;
+    });
+    return {
+        completed: filtered.filter(t => t.orderStatus === OrderStatus.Completed).length,
+        processing: filtered.filter(t => t.orderStatus === OrderStatus.Processing).length,
+    };
 };
 
 const Dashboard: React.FC = () => {
@@ -60,9 +107,37 @@ const Dashboard: React.FC = () => {
     const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
 
     const isCashier = currentUser.role === UserRole.Cashier;
+    
+    const trendStats = useMemo(() => {
+        const now = new Date();
+        const currentPeriodEnd = new Date(now);
+        const currentPeriodStart = new Date(new Date(now).setDate(now.getDate() - 30));
+        
+        const prevPeriodEnd = new Date(currentPeriodStart);
+        prevPeriodEnd.setDate(prevPeriodEnd.getDate() - 1);
+        const prevPeriodStart = new Date(new Date(prevPeriodEnd).setDate(prevPeriodEnd.getDate() - 30));
 
-    const completedOrders = transactions.filter(t => t.orderStatus === OrderStatus.Completed).length;
-    const pendingOrders = transactions.filter(t => t.orderStatus === OrderStatus.Processing).length;
+        const currentStats = calculateStats(transactions, currentPeriodStart, currentPeriodEnd);
+        const prevStats = calculateStats(transactions, prevPeriodStart, prevPeriodEnd);
+
+        const getTrend = (current: number, previous: number): TrendData => {
+            if (previous === 0) {
+                return current > 0 ? { trend: 'up', percentage: '100%' } : { trend: 'neutral', percentage: '0%' };
+            }
+            const change = ((current - previous) / previous) * 100;
+            return {
+                trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
+                percentage: `${Math.abs(change).toFixed(0)}%`
+            };
+        };
+
+        return {
+            completed: getTrend(currentStats.completed, prevStats.completed),
+            processing: getTrend(currentStats.processing, prevStats.processing)
+        }
+    }, [transactions]);
+
+
     const lowStockItems = inventory.filter(i => i.stock <= i.lowStockThreshold).length;
     
     const now = new Date();
@@ -112,13 +187,13 @@ const Dashboard: React.FC = () => {
         switch (status) {
             case PaymentStatus.Paid: return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
             case PaymentStatus.Unpaid: return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+            case PaymentStatus.PartiallyPaid: return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
             default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
         }
     };
 
     const handleSaveExpense = (expense: Expense) => {
         const storeId = currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
-        // This check is now redundant due to the disabled button, but kept as a safeguard.
         if (!storeId || storeId === 'all') { 
             addToast('Silakan pilih cabang spesifik untuk mencatat pengeluaran.', 'warning');
             return;
@@ -146,7 +221,6 @@ const Dashboard: React.FC = () => {
         setTransactions(prev => prev.map(t => (t.id === transactionId ? updatedTransaction : t)));
         addAuditLog(`Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`, transaction.storeId);
 
-        // Trigger WhatsApp modal if status becomes 'Ready for Pickup'
         if (nextStatus === OrderStatus.Ready) {
             setTransactionForWhatsApp(updatedTransaction);
             setIsWhatsAppModalOpen(true);
@@ -157,7 +231,6 @@ const Dashboard: React.FC = () => {
         const asset = assets.find(a => a.id === schedule.assetId);
         if (!asset) return;
         
-        // 1. Add to maintenance history
         setAssets(prevAssets => prevAssets.map(a => {
             if (a.id === asset.id) {
                 const newLog = {
@@ -171,7 +244,6 @@ const Dashboard: React.FC = () => {
             return a;
         }));
 
-        // 2. Update schedule's next due date and last completed date
         setScheduledMaintenances(prevSchedules => prevSchedules.map(s => {
             if (s.id === schedule.id) {
                 return {
@@ -211,17 +283,19 @@ const Dashboard: React.FC = () => {
                 <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}>
                     <StatCard 
                         icon={PackageIcon} 
-                        title="Pesanan Selesai" 
-                        value={completedOrders}
+                        title="Pesanan Selesai (30 hari)" 
+                        value={transactions.filter(t => t.orderStatus === OrderStatus.Completed).length}
                         color="border-green-500"
                         to={`/transactions?status=${OrderStatus.Completed}`}
+                        trendData={trendStats.completed}
                     />
                     <StatCard 
                         icon={ShoppingCartIcon} 
                         title="Pesanan Diproses" 
-                        value={pendingOrders}
+                        value={transactions.filter(t => t.orderStatus === OrderStatus.Processing).length}
                         color="border-blue-500"
                         to={`/transactions?status=${OrderStatus.Processing}`}
+                        trendData={trendStats.processing}
                     />
                     <StatCard 
                         icon={WrenchIcon} 
@@ -239,30 +313,52 @@ const Dashboard: React.FC = () => {
                     />
                 </div>
 
+                <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}>
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Aksi Cepat</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <button
+                            onClick={() => setIsStockModalOpen(true)}
+                            disabled={isActionDisabled}
+                            className="p-4 rounded-lg border dark:border-slate-700 flex items-center gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+                        >
+                            <div className="p-3 rounded-full bg-teal-100 dark:bg-teal-900/50">
+                                <WrenchIcon className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                            </div>
+                            <span className="font-semibold text-lg text-slate-700 dark:text-slate-200">Update Stok</span>
+                        </button>
+
+                        <button
+                            onClick={() => setIsExpenseModalOpen(true)}
+                            disabled={isActionDisabled}
+                            className="p-4 rounded-lg border dark:border-slate-700 flex items-center gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+                        >
+                            <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/50">
+                                <DollarSignIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <span className="font-semibold text-lg text-slate-700 dark:text-slate-200">Catat Pengeluaran</span>
+                        </button>
+
+                        <button
+                            onClick={() => setIsMaintenanceModalOpen(true)}
+                            disabled={isActionDisabled}
+                            className="p-4 rounded-lg border dark:border-slate-700 flex items-center gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+                        >
+                            <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/50">
+                                <PlusCircleIcon className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <span className="font-semibold text-lg text-slate-700 dark:text-slate-200">Lapor Kerusakan</span>
+                        </button>
+                    </div>
+                     {isActionDisabled && (
+                        <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-3">
+                            Pilih cabang spesifik untuk melakukan aksi cepat.
+                        </p>
+                    )}
+                </div>
+
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                         <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Progres Pesanan Aktif</h2>
-                        <div className={`flex flex-col items-start sm:items-end w-full sm:w-auto ${isCashier ? 'hidden sm:flex' : 'flex'}`}>
-                            <div className="flex items-center gap-3 flex-wrap justify-start sm:justify-end">
-                                <button onClick={() => setIsStockModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-base px-4 py-2 transition-colors disabled:bg-teal-400 disabled:cursor-not-allowed">
-                                    <WrenchIcon className="h-5 w-5 mr-2" />
-                                    Update Stok
-                                </button>
-                                <button onClick={() => setIsExpenseModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-base px-4 py-2 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed">
-                                    <DollarSignIcon className="h-5 w-5 mr-2" />
-                                    Catat Pengeluaran
-                                </button>
-                                <button onClick={() => setIsMaintenanceModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-base px-4 py-2 transition-colors disabled:bg-orange-400 disabled:cursor-not-allowed">
-                                    <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                    Lapor Kerusakan
-                                </button>
-                            </div>
-                            {isActionDisabled && (
-                                <p className={`text-sm text-yellow-600 dark:text-yellow-400 mt-2 ${isCashier ? 'hidden sm:block' : 'block'}`}>
-                                    Pilih cabang spesifik untuk melakukan aksi cepat.
-                                </p>
-                            )}
-                        </div>
                     </div>
                      {/* Desktop Table View */}
                     <div className="overflow-x-auto hidden sm:block">
@@ -280,6 +376,11 @@ const Dashboard: React.FC = () => {
                             <tbody>
                                 {activeOrders.length > 0 ? activeOrders.map(t => {
                                     const isSelesaikanDisabled = t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
+                                    const nextActionText = t.orderStatus === OrderStatus.Processing ? 'Siap Diambil' : 'Selesaikan';
+                                    const nextActionColor = t.orderStatus === OrderStatus.Processing
+                                        ? 'bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300'
+                                        : 'bg-green-600 hover:bg-green-700 disabled:bg-green-400';
+                                    
                                     return (
                                     <tr key={t.id} className="border-b dark:border-slate-700">
                                         <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
@@ -298,14 +399,14 @@ const Dashboard: React.FC = () => {
                                                 <button
                                                     onClick={() => handleNextStatus(t.id)}
                                                     disabled={isSelesaikanDisabled}
-                                                    className="flex items-center justify-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline mx-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                                                    className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${nextActionColor}`}
                                                     title={
                                                         isSelesaikanDisabled
                                                         ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
                                                         : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
                                                     }
                                                 >
-                                                    {t.orderStatus === OrderStatus.Processing ? 'Siap Diambil' : 'Selesaikan'}
+                                                    {nextActionText}
                                                     <ChevronRightIcon className="w-4 h-4" />
                                                 </button>
                                             )}
@@ -325,6 +426,11 @@ const Dashboard: React.FC = () => {
                     <div className="sm:hidden space-y-3">
                         {activeOrders.length > 0 ? activeOrders.map(t => {
                              const isSelesaikanDisabled = t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
+                             const mobileNextActionText = t.orderStatus === OrderStatus.Processing ? 'Tandai Siap Diambil' : 'Selesaikan Pesanan';
+                             const mobileNextActionColor = t.orderStatus === OrderStatus.Processing
+                                ? 'bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300'
+                                : 'bg-green-600 hover:bg-green-700 disabled:bg-green-400';
+
                              return (
                                 <div key={t.id} className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg shadow-sm">
                                     <div className="flex justify-between items-start">
@@ -349,10 +455,10 @@ const Dashboard: React.FC = () => {
                                          <button
                                             onClick={() => handleNextStatus(t.id)}
                                             disabled={isSelesaikanDisabled}
-                                            className="w-full flex items-center justify-center gap-1 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md py-2 disabled:bg-blue-400"
+                                            className={`w-full flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
                                             title={isSelesaikanDisabled ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.' : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`}
                                         >
-                                            {t.orderStatus === OrderStatus.Processing ? 'Tandai Siap Diambil' : 'Selesaikan Pesanan'}
+                                            {mobileNextActionText}
                                             <ChevronRightIcon className="w-4 h-4" />
                                         </button>
                                     </div>

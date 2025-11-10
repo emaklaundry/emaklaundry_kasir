@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Modal from './Modal';
 import { Transaction, PaymentMethod, PaymentStatus } from '../types';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { useToasts } from '../contexts/ToastContext';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
   const [amountToPayStr, setAmountToPayStr] = useState('');
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
+  const { addToast } = useToasts();
 
   const remainingBalance = useMemo(() => {
     if (!transaction) return 0;
@@ -40,8 +41,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
   }, [method, tenderedAmount, amountToPay]);
   
   const handleSave = () => {
-    if (!transaction || amountToPay <= 0 || amountToPay > remainingBalance) {
-        alert("Jumlah pembayaran tidak valid.");
+    if (!transaction) return;
+
+    if (amountToPay <= 0) {
+        addToast("Jumlah pembayaran harus lebih dari nol.", 'error');
+        return;
+    }
+
+    if (amountToPay > remainingBalance) {
+        addToast("Jumlah pembayaran tidak boleh melebihi sisa tagihan.", 'error');
+        return;
+    }
+    
+    if (method === PaymentMethod.Cash && tenderedAmount < amountToPay) {
+        addToast("Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.", 'error');
         return;
     }
 
@@ -98,7 +111,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
 
             <div>
                 <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Metode Pembayaran</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                     {Object.values(PaymentMethod).map(m => (
                         <button key={m} onClick={() => setMethod(m)} className={`p-3 rounded-lg text-base border-2 ${method === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}>
                             {m}

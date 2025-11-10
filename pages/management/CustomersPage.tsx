@@ -10,6 +10,9 @@ import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { useDebounce } from '../../hooks/useDebounce';
+import { usePagination } from '../../hooks/usePagination';
+import Pagination from '../../components/Pagination';
 
 const CustomersPage: React.FC = () => {
     const { customers, setCustomers } = useCustomers();
@@ -21,6 +24,7 @@ const CustomersPage: React.FC = () => {
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
     const customerStats = useMemo(() => {
         const stats: { [key: string]: { transactionCount: number, totalSpent: number } } = {};
@@ -47,18 +51,16 @@ const CustomersPage: React.FC = () => {
         });
     }, [customers, transactions, stores]);
 
-    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type CustomerWithStats = (typeof customerStats)[0];
 
     const filteredCustomers = useMemo(() => customerStats.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.phone.includes(searchTerm)
-    ), [customerStats, searchTerm]);
+        c.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        c.phone.includes(debouncedSearchTerm)
+    ), [customerStats, debouncedSearchTerm]);
 
-    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedCustomers, requestSort, sortConfig } = useSortableData<CustomerWithStats>(filteredCustomers);
+    const { currentData: paginatedCustomers, currentPage, totalPages, onPageChange } = usePagination(sortedCustomers);
 
-    // FIX: Use the explicit type for the key to ensure type safety.
     const getSortIcon = (key: keyof CustomerWithStats) => {
         if (!sortConfig || sortConfig.key !== key) return null;
         if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
@@ -109,8 +111,8 @@ const CustomersPage: React.FC = () => {
     const NoCustomersFound = () => (
         <div className="text-center py-12">
             <UsersIcon className="mx-auto w-12 h-12 text-slate-400" />
-            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Pelanggan Tidak Ditemukan' : 'Belum Ada Pelanggan'}</h3>
-            <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain atau tambahkan pelanggan baru.' : 'Mulai dengan menambahkan pelanggan pertama Anda.'}</p>
+            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{debouncedSearchTerm ? 'Pelanggan Tidak Ditemukan' : 'Belum Ada Pelanggan'}</h3>
+            <p className="mt-1 text-base text-slate-500">{debouncedSearchTerm ? 'Coba kata kunci lain atau tambahkan pelanggan baru.' : 'Mulai dengan menambahkan pelanggan pertama Anda.'}</p>
             <div className="mt-6">
                 <button onClick={() => handleOpenFormModal()} disabled={!canAddNewCustomer} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed">
                     <PlusCircleIcon className="h-5 w-5 mr-2" />
@@ -145,7 +147,6 @@ const CustomersPage: React.FC = () => {
                 <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah pelanggan baru.</p>
             )}
             
-            {/* Desktop Table View */}
             <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
@@ -159,8 +160,8 @@ const CustomersPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedCustomers.length > 0 ? (
-                            sortedCustomers.map(customer => (
+                        {paginatedCustomers.length > 0 ? (
+                            paginatedCustomers.map(customer => (
                                 <tr key={customer.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                                         <Link to={`/management/customers/${customer.id}`} className="hover:underline text-blue-600 dark:text-blue-400">
@@ -188,10 +189,9 @@ const CustomersPage: React.FC = () => {
                 </table>
             </div>
             
-            {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
-                {sortedCustomers.length > 0 ? (
-                    sortedCustomers.map(customer => (
+                {paginatedCustomers.length > 0 ? (
+                    paginatedCustomers.map(customer => (
                         <div key={customer.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
                             <div className="flex justify-between items-start">
                                 <div>
@@ -224,6 +224,7 @@ const CustomersPage: React.FC = () => {
                     <NoCustomersFound />
                 )}
             </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
 
             {isFormModalOpen && (
                 <CustomerFormModal

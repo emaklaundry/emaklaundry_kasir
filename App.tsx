@@ -1,15 +1,6 @@
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider, useAppContext } from './contexts/AppContext';
-import { InventoryProvider } from './contexts/InventoryContext';
-import { TransactionProvider } from './contexts/TransactionContext';
-import { SettingsProvider } from './contexts/SettingsContext';
-import { CustomerProvider } from './contexts/CustomerContext';
-import { AssetProvider } from './contexts/AssetContext';
-import { ExpenseProvider } from './contexts/ExpenseContext';
-import { StoreProvider } from './contexts/StoreContext';
-import { ServiceProvider } from './contexts/ServiceContext';
-import { ScheduledMaintenanceProvider } from './contexts/ScheduledMaintenanceContext';
+import { useAppContext } from './contexts/AppContext';
 import { UserRole } from './types';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -28,8 +19,9 @@ import CustomerDetailPage from './pages/management/CustomerDetailPage';
 import ReceiptPage from './pages/transactions/ReceiptPage';
 import TransactionDetailPage from './pages/transactions/TransactionDetailPage';
 import StoresPage from './pages/management/StoresPage';
-import { AuditLogProvider } from './contexts/AuditLogContext';
-import { ToastProvider } from './contexts/ToastContext';
+import { useTheme } from './hooks/useTheme';
+import { AppProviders } from './contexts/AppProviders';
+import CommandPalette from './components/CommandPalette';
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -70,39 +62,19 @@ const AppRoutes: React.FC = () => (
 
             <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        <CommandPalette />
     </Layout>
 );
 
 
 const App: React.FC = () => {
+  useTheme(); // Initialize and apply theme
   return (
-    <ToastProvider>
-        <StoreProvider>
-            <AppProvider>
-            <SettingsProvider>
-                <ServiceProvider>
-                    <CustomerProvider>
-                        <TransactionProvider>
-                            <InventoryProvider>
-                                <AssetProvider>
-                                    <ExpenseProvider>
-                                        <ScheduledMaintenanceProvider>
-                                            <AuditLogProvider>
-                                                <HashRouter>
-                                                    <AppRoutes />
-                                                </HashRouter>
-                                            </AuditLogProvider>
-                                        </ScheduledMaintenanceProvider>
-                                    </ExpenseProvider>
-                                </AssetProvider>
-                            </InventoryProvider>
-                        </TransactionProvider>
-                    </CustomerProvider>
-                </ServiceProvider>
-            </SettingsProvider>
-            </AppProvider>
-        </StoreProvider>
-    </ToastProvider>
+    <AppProviders>
+        <HashRouter>
+            <AppRoutes />
+        </HashRouter>
+    </AppProviders>
   );
 };
 

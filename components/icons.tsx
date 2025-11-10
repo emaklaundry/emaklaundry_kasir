@@ -6,13 +6,14 @@ const Icon: React.FC<{ children: React.ReactNode; className?: string }> = ({ chi
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
-    viewBox="0 0 24"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
+    overflow="visible"
   >
     {children}
   </svg>
@@ -134,4 +135,28 @@ export const ArrowUpIcon: React.FC<{ className?: string }> = ({ className }) => 
 
 export const ArrowDownIcon: React.FC<{ className?: string }> = ({ className }) => (
     <Icon className={className}><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></Icon>
+);
+
+export const SunIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Icon className={className}><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></Icon>
+);
+
+export const MoonIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Icon className={className}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></Icon>
+);
+
+export const ArrowTrendingUpIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Icon className={className}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></Icon>
+);
+
+export const ArrowTrendingDownIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Icon className={className}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></Icon>
+);
+
+export const TagIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></Icon>
+);
+
+export const CommandIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Icon className={className}><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></Icon>
 );

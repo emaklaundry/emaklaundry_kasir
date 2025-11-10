@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction } from '../../types';
-import { Trash2Icon, MessageSquareIcon, PlusCircleIcon } from '../../components/icons';
+import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '../../types';
+import { Trash2Icon, MessageSquareIcon, PlusCircleIcon, TagIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
@@ -16,11 +16,12 @@ import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import WhatsAppModal from '../../components/WhatsAppModal';
+import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
     const { settings } = useSettings();
-    const { setTransactions } = useTransactions();
+    const { transactions, setTransactions } = useTransactions();
     const { customers, setCustomers } = useCustomers();
     const { services } = useServices();
     const { currentUser, selectedStoreId } = useAppContext();
@@ -34,19 +35,50 @@ const NewTransactionPage: React.FC = () => {
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+    const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
     const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
     const [newlyCreatedTransaction, setNewlyCreatedTransaction] = useState<Transaction | null>(null);
     
-    // Payment State
     const [isPayingNow, setIsPayingNow] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
     const [amountPaidStr, setAmountPaidStr] = useState('0');
+    const [tenderedAmountStr, setTenderedAmountStr] = useState('');
+
+
+    const canApplyDiscount = currentUser.role === UserRole.SuperAdmin || currentUser.canGiveDiscount;
 
     useEffect(() => {
-        setDiscountValue(settings.discountRate);
-        setDiscountType('percent');
-    }, [settings.discountRate]);
+        if (!canApplyDiscount) {
+            setDiscountValue(0);
+            return;
+        }
+
+        if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) {
+            setDiscountType('percent');
+            setDiscountValue(selectedCustomer.defaultDiscount);
+            addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
+        } else {
+            setDiscountType('percent');
+            setDiscountValue(settings.discountRate);
+        }
+    }, [selectedCustomer, settings.discountRate, addToast, canApplyDiscount]);
+
+
+    const favoriteServices = useMemo(() => {
+        const serviceCounts = transactions.reduce((acc, transaction) => {
+            transaction.items.forEach(item => {
+                acc[item.serviceId] = (acc[item.serviceId] || 0) + 1;
+            });
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(serviceCounts)
+            .sort(([, countA], [, countB]) => countB - countA)
+            .slice(0, 5)
+            .map(([serviceId]) => services.find(s => s.id === serviceId))
+            .filter((s): s is Service => s !== undefined);
+    }, [transactions, services]);
 
     const resetForm = () => {
         setSelectedCustomer(null);
@@ -56,34 +88,42 @@ const NewTransactionPage: React.FC = () => {
         setDiscountType('percent');
         setPaymentMethod(undefined);
         setAmountPaidStr('0');
+        setTenderedAmountStr('');
         setIsPayingNow(false);
         setNewlyCreatedTransaction(null);
     };
 
-    const handleAddService = (service: typeof services[0]) => {
-        const existingItem = items.find(i => i.serviceId === service.id);
-        if(existingItem) {
-            handleItemChange(items.indexOf(existingItem), 'quantity', existingItem.quantity + 1);
-        } else {
-            const newItem: TransactionItem = {
-                serviceId: service.id,
-                serviceName: service.name,
-                quantity: 1,
-                price: service.price,
-                subtotal: service.price,
-                unit: service.unit,
-                itemDetails: service.category === ServiceCategory.Satuan ? [{ note: '' }] : undefined,
-            };
-            setItems([...items, newItem]);
-        }
-    };
+    const handleAddService = useCallback((service: typeof services[0]) => {
+        setItems(currentItems => {
+            const existingItemIndex = currentItems.findIndex(i => i.serviceId === service.id);
+            if (existingItemIndex > -1 && service.category !== ServiceCategory.Satuan) {
+                const newItems = [...currentItems];
+                const existingItem = newItems[existingItemIndex];
+                existingItem.quantity += 1;
+                existingItem.subtotal = existingItem.price * existingItem.quantity;
+                return newItems;
+            } else {
+                 const newItem: TransactionItem = {
+                    serviceId: service.id,
+                    serviceName: service.name,
+                    quantity: 1,
+                    price: service.price,
+                    subtotal: service.price,
+                    unit: service.unit,
+                    itemDetails: service.category === ServiceCategory.Satuan ? [{ note: '' }] : undefined,
+                    taggedItems: '',
+                };
+                return [...currentItems, newItem];
+            }
+        });
+    }, []);
 
-    const handleItemChange = (index: number, field: 'quantity', value: number) => {
+    const handleItemChange = (index: number, field: 'quantity' | 'taggedItems' | 'itemDetails', value: number | string | { note: string }[]) => {
         const newItems = [...items];
         const item = newItems[index];
         const service = services.find(s => s.id === item.serviceId);
         
-        if (field === 'quantity') {
+        if (field === 'quantity' && typeof value === 'number') {
             const newQuantity = value >= 0 ? value : 0;
             item.quantity = newQuantity;
             item.subtotal = item.price * item.quantity;
@@ -93,6 +133,10 @@ const NewTransactionPage: React.FC = () => {
                 const newNotes = Array.from({ length: newQuantity }, (_, i) => currentNotes[i] || { note: '' });
                 item.itemDetails = newNotes;
             }
+        } else if (field === 'taggedItems' && typeof value === 'string') {
+            item.taggedItems = value;
+        } else if (field === 'itemDetails' && Array.isArray(value)) {
+            item.itemDetails = value as { note: string }[];
         }
         setItems(newItems);
     };
@@ -102,15 +146,27 @@ const NewTransactionPage: React.FC = () => {
         setIsNotesModalOpen(true);
     };
 
+    const handleOpenKiloanTaggingModal = (index: number) => {
+        setEditingItemIndex(index);
+        setIsKiloanTaggingModalOpen(true);
+    }
+
     const handleSaveNotes = (notes: { note: string }[]) => {
         if (editingItemIndex !== null) {
-            const newItems = [...items];
-            newItems[editingItemIndex].itemDetails = notes;
-            setItems(newItems);
+            handleItemChange(editingItemIndex, 'itemDetails', notes);
         }
         setEditingItemIndex(null);
         setIsNotesModalOpen(false);
     };
+    
+    const handleSaveKiloanTags = (tags: string) => {
+        if (editingItemIndex !== null) {
+            handleItemChange(editingItemIndex, 'taggedItems', tags);
+        }
+        setEditingItemIndex(null);
+        setIsKiloanTaggingModalOpen(false);
+    }
+
 
     const handleRemoveItem = (index: number) => {
         setItems(items.filter((_, i) => i !== index));
@@ -121,11 +177,12 @@ const NewTransactionPage: React.FC = () => {
     }, [items]);
 
     const discountAmount = useMemo(() => {
+        if (!canApplyDiscount) return 0;
         if (discountType === 'percent') {
             return subtotal * (discountValue / 100);
         }
-        return Math.min(discountValue, subtotal); // Ensure discount isn't more than subtotal
-    }, [subtotal, discountValue, discountType]);
+        return Math.min(discountValue, subtotal);
+    }, [subtotal, discountValue, discountType, canApplyDiscount]);
 
     const taxAmount = useMemo(() => {
         const taxableAmount = subtotal - discountAmount;
@@ -136,26 +193,30 @@ const NewTransactionPage: React.FC = () => {
         return subtotal - discountAmount + taxAmount;
     }, [subtotal, discountAmount, taxAmount]);
 
-    const amountPaid = useMemo(() => {
-        if (!isPayingNow) return 0;
-        return parseRupiah(amountPaidStr);
-    }, [isPayingNow, amountPaidStr]);
+    useEffect(() => {
+        if (isPayingNow) {
+            setAmountPaidStr(formatRupiah(grandTotal));
+        }
+    }, [grandTotal, isPayingNow]);
+
+    const amountToPay = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
+    const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
     const changeAmount = useMemo(() => {
-        if (!isPayingNow || paymentMethod !== PaymentMethod.Cash || amountPaid <= grandTotal) {
+        if (!isPayingNow || paymentMethod !== PaymentMethod.Cash || tenderedAmount < amountToPay) {
             return 0;
         }
-        return amountPaid - grandTotal;
-    }, [isPayingNow, amountPaid, grandTotal, paymentMethod]);
+        return tenderedAmount - amountToPay;
+    }, [isPayingNow, paymentMethod, tenderedAmount, amountToPay]);
     
     const actualAmountPaid = useMemo(() => {
         if (!isPayingNow) return 0;
-        return Math.min(amountPaid, grandTotal);
-    }, [isPayingNow, amountPaid, grandTotal]);
+        return amountToPay;
+    }, [isPayingNow, amountToPay]);
 
     const paymentStatus = useMemo(() => {
         if (!isPayingNow) return PaymentStatus.Unpaid;
-        if (grandTotal <= 0) return PaymentStatus.Paid; // For free items
+        if (grandTotal <= 0) return PaymentStatus.Paid;
         if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
         if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
         return PaymentStatus.PartiallyPaid;
@@ -164,17 +225,10 @@ const NewTransactionPage: React.FC = () => {
     const estimatedCompletionDate = useMemo(() => {
         if (items.length === 0) {
             const today = new Date();
-            today.setDate(today.getDate() + 1); // Default to tomorrow if no items
+            today.setDate(today.getDate() + 1);
             return today;
         }
-
-        const maxDuration = Math.max(
-            ...items.map(item => {
-                const service = services.find(s => s.id === item.serviceId);
-                return service ? service.durationDays : 0;
-            })
-        );
-
+        const maxDuration = Math.max(...items.map(item => services.find(s => s.id === item.serviceId)?.durationDays || 0));
         const completionDate = new Date();
         completionDate.setDate(completionDate.getDate() + maxDuration);
         return completionDate;
@@ -258,15 +312,24 @@ const NewTransactionPage: React.FC = () => {
 
     const handleDiscountTypeChange = (type: 'percent' | 'fixed') => {
         setDiscountType(type);
-        setDiscountValue(0); // Reset value when type changes to avoid confusion
+        setDiscountValue(0);
     };
     
     const handlePaymentOptionChange = (paying: boolean) => {
         setIsPayingNow(paying);
-        if (!paying) {
+        if (paying) {
+            setAmountPaidStr(formatRupiah(grandTotal));
+        } else {
             setAmountPaidStr('0');
             setPaymentMethod(undefined);
+            setTenderedAmountStr('');
         }
+    };
+
+    const handleAmountToPayChange = (valueStr: string) => {
+        const rawValue = parseRupiah(valueStr);
+        const cappedValue = rawValue > grandTotal ? grandTotal : rawValue;
+        setAmountPaidStr(formatRupiah(cappedValue));
     };
     
     const quickCashButtons = [50000, 100000];
@@ -278,7 +341,11 @@ const NewTransactionPage: React.FC = () => {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pilih Layanan</h2>
-                            <ServiceSelector services={services} onSelectService={handleAddService} />
+                            <ServiceSelector 
+                                services={services} 
+                                onSelectService={handleAddService}
+                                favoriteServices={favoriteServices}
+                            />
                         </div>
 
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -294,38 +361,52 @@ const NewTransactionPage: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {items.length > 0 ? items.map((item, index) => (
-                                            <tr key={index} className="border-b dark:border-slate-700">
-                                                <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{item.serviceName}</td>
-                                                <td className="px-4 py-2">
-                                                    <div className="flex items-center">
-                                                        <input 
-                                                            type="number" 
-                                                            min="0" 
-                                                            step={item.unit === 'kg' ? "0.1" : "1"}
-                                                            value={item.quantity} 
-                                                            onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)} 
-                                                            className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
-                                                        />
-                                                        <span className="ml-2 text-base text-slate-500 dark:text-slate-400">{item.unit}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-2 text-center">
-                                                    <div className="flex items-center justify-center">
-                                                        {services.find(s => s.id === item.serviceId)?.category === ServiceCategory.Satuan && (
-                                                            <button type="button" onClick={() => handleOpenNotesModal(index)} title="Tambah Catatan per Item" className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
-                                                                <MessageSquareIcon className="w-6 h-6"/>
-                                                                {item.itemDetails?.some(d => d.note) && (
-                                                                    <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
-                                                                )}
-                                                            </button>
-                                                        )}
-                                                        <button type="button" onClick={() => handleRemoveItem(index)} title="Hapus Item" className="p-2 text-red-600 hover:text-red-900 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-6 h-6"/></button>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-2 text-right">Rp {item.subtotal.toLocaleString('id-ID')}</td>
-                                            </tr>
-                                        )) : (
+                                        {items.length > 0 ? items.map((item, index) => {
+                                            const service = services.find(s => s.id === item.serviceId);
+                                            const isSatuan = service?.category === ServiceCategory.Satuan;
+                                            const isKiloan = service?.category === ServiceCategory.Kiloan;
+
+                                            return (
+                                                <tr key={index} className="border-b dark:border-slate-700">
+                                                    <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{item.serviceName}</td>
+                                                    <td className="px-4 py-2">
+                                                        <div className="flex items-center">
+                                                            <input 
+                                                                type="number" 
+                                                                min="0" 
+                                                                step={item.unit === 'kg' ? "0.1" : "1"}
+                                                                value={item.quantity} 
+                                                                onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)} 
+                                                                className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                                                            />
+                                                            <span className="ml-2 text-base text-slate-500 dark:text-slate-400">{item.unit}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-2 text-center">
+                                                        <div className="flex items-center justify-center">
+                                                            {isSatuan && (
+                                                                <button type="button" onClick={() => handleOpenNotesModal(index)} title="Catatan per Item" className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
+                                                                    <MessageSquareIcon className="w-6 h-6"/>
+                                                                    {item.itemDetails?.some(d => d.note) && (
+                                                                        <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
+                                                                    )}
+                                                                </button>
+                                                            )}
+                                                            {isKiloan && (
+                                                                 <button type="button" onClick={() => handleOpenKiloanTaggingModal(index)} title="Tag Item Kiloan" className="p-2 text-purple-600 hover:text-purple-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
+                                                                    <TagIcon className="w-6 h-6"/>
+                                                                    {item.taggedItems && (
+                                                                        <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
+                                                                    )}
+                                                                </button>
+                                                            )}
+                                                            <button type="button" onClick={() => handleRemoveItem(index)} title="Hapus Item" className="p-2 text-red-600 hover:text-red-900 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-6 h-6"/></button>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-2 text-right">Rp {item.subtotal.toLocaleString('id-ID')}</td>
+                                                </tr>
+                                            )
+                                        }) : (
                                             <tr><td colSpan={4} className="text-center py-4 text-slate-500 dark:text-slate-400">Belum ada layanan yang ditambahkan.</td></tr>
                                         )}
                                     </tbody>
@@ -353,12 +434,15 @@ const NewTransactionPage: React.FC = () => {
                                         <span className="text-slate-600 dark:text-slate-300">Subtotal:</span>
                                         <span className="font-medium text-slate-800 dark:text-slate-200">Rp {subtotal.toLocaleString('id-ID')}</span>
                                     </div>
-                                    <div className="flex justify-between items-center text-lg">
+                                    <div 
+                                        className={`flex justify-between items-center text-lg ${!canApplyDiscount ? 'opacity-50' : ''}`}
+                                        title={!canApplyDiscount ? 'Anda tidak memiliki izin untuk memberikan diskon.' : ''}
+                                    >
                                         <label htmlFor="discountValue" className="text-slate-600 dark:text-slate-300">Diskon:</label>
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-                                                <button type="button" onClick={() => handleDiscountTypeChange('percent')} className={`px-2 py-1 text-sm rounded-md ${discountType === 'percent' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>%</button>
-                                                <button type="button" onClick={() => handleDiscountTypeChange('fixed')} className={`px-2 py-1 text-sm rounded-md ${discountType === 'fixed' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Rp</button>
+                                                <button type="button" disabled={!canApplyDiscount} onClick={() => handleDiscountTypeChange('percent')} className={`px-2 py-1 text-sm rounded-md ${discountType === 'percent' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>%</button>
+                                                <button type="button" disabled={!canApplyDiscount} onClick={() => handleDiscountTypeChange('fixed')} className={`px-2 py-1 text-sm rounded-md ${discountType === 'fixed' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Rp</button>
                                             </div>
                                             <input 
                                                 type="number"
@@ -366,7 +450,8 @@ const NewTransactionPage: React.FC = () => {
                                                 min="0"
                                                 value={discountValue}
                                                 onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
-                                                className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                                                className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600" 
+                                                disabled={!canApplyDiscount}
                                             />
                                         </div>
                                     </div>
@@ -428,15 +513,28 @@ const NewTransactionPage: React.FC = () => {
                                             type="text" 
                                             id="amountPaid" 
                                             value={amountPaidStr}
-                                            onChange={e => setAmountPaidStr(formatRupiah(parseRupiah(e.target.value)))}
+                                            onChange={e => handleAmountToPayChange(e.target.value)}
                                             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                             placeholder="0"
                                         />
                                     </div>
+                                    {paymentMethod === PaymentMethod.Cash && (
+                                        <div>
+                                            <label htmlFor="tenderedAmount" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Uang Diterima (Rp)</label>
+                                            <input 
+                                                type="text" 
+                                                id="tenderedAmount" 
+                                                value={tenderedAmountStr}
+                                                onChange={e => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
+                                                className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    )}
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <button type="button" onClick={() => setAmountPaidStr(formatRupiah(grandTotal))} className="px-3 py-1.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800">Uang Pas</button>
-                                        {quickCashButtons.map(amount => (
-                                            <button type="button" key={amount} onClick={() => setAmountPaidStr(formatRupiah(amount))} className="px-3 py-1.5 text-sm font-medium text-slate-800 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500">
+                                        <button type="button" onClick={() => handleAmountToPayChange(formatRupiah(grandTotal))} className="px-3 py-1.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800">Uang Pas</button>
+                                        {paymentMethod === PaymentMethod.Cash && quickCashButtons.map(amount => (
+                                            <button type="button" key={amount} onClick={() => setTenderedAmountStr(formatRupiah(amount))} className="px-3 py-1.5 text-sm font-medium text-slate-800 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500">
                                                 {formatRupiah(amount)}
                                             </button>
                                         ))}
@@ -481,6 +579,12 @@ const NewTransactionPage: React.FC = () => {
                 onClose={() => setIsNotesModalOpen(false)}
                 item={editingItemIndex !== null ? items[editingItemIndex] : null!}
                 onSave={handleSaveNotes}
+            />
+             <KiloanTaggingModal
+                isOpen={isKiloanTaggingModalOpen}
+                onClose={() => setIsKiloanTaggingModalOpen(false)}
+                item={editingItemIndex !== null ? items[editingItemIndex] : null!}
+                onSave={handleSaveKiloanTags}
             />
             <WhatsAppModal
                 isOpen={isWhatsAppModalOpen}

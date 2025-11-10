@@ -9,6 +9,7 @@ import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { useDebounce } from '../../hooks/useDebounce';
 
 const InventoryPage: React.FC = () => {
     const { inventory, setInventory } = useInventory();
@@ -19,6 +20,7 @@ const InventoryPage: React.FC = () => {
     const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -78,20 +80,17 @@ const InventoryPage: React.FC = () => {
         storeName: stores.find(s => s.id === item.storeId)?.name || 'N/A'
     })), [inventory, stores]);
 
-    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type InventoryWithStore = (typeof inventoryWithStore)[0];
 
     const filteredInventory = useMemo(() => inventoryWithStore.filter(item => {
         if (filter === 'low_stock' && item.stock > item.lowStockThreshold) {
             return false;
         }
-        return item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    }), [inventoryWithStore, searchTerm, filter]);
+        return item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+    }), [inventoryWithStore, debouncedSearchTerm, filter]);
     
-    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedInventory, requestSort, sortConfig } = useSortableData<InventoryWithStore>(filteredInventory);
 
-    // FIX: Use the explicit type for the key to ensure type safety.
     const getSortIcon = (key: keyof InventoryWithStore) => {
         if (!sortConfig || sortConfig.key !== key) return null;
         if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
@@ -155,7 +154,6 @@ const InventoryPage: React.FC = () => {
                 </button>
             </div>
             
-            {/* Desktop Table View */}
             <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
@@ -196,8 +194,8 @@ const InventoryPage: React.FC = () => {
                             <tr>
                                 <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6} className="text-center py-12">
                                     <PackageIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
-                                    <p className="mt-1 text-base text-slate-500">{searchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
+                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{debouncedSearchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
+                                    <p className="mt-1 text-base text-slate-500">{debouncedSearchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
                                 </td>
                             </tr>
                         )}
@@ -205,7 +203,6 @@ const InventoryPage: React.FC = () => {
                 </table>
             </div>
 
-            {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
                 {sortedInventory.length > 0 ? (
                     sortedInventory.map(item => {
@@ -242,8 +239,8 @@ const InventoryPage: React.FC = () => {
                 ) : (
                      <div className="text-center py-12">
                         <PackageIcon className="mx-auto w-12 h-12 text-slate-400" />
-                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
-                        <p className="mt-1 text-base text-slate-500">{searchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
+                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{debouncedSearchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
+                        <p className="mt-1 text-base text-slate-500">{debouncedSearchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
                     </div>
                 )}
             </div>

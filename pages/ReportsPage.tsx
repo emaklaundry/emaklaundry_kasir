@@ -17,6 +17,94 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
     </div>
 );
 
+const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, expenses: number, profit: number }[] }> = ({ data }) => {
+    const [tooltip, setTooltip] = useState<{ visible: boolean, content: string, x: number, y: number }>({ visible: false, content: '', x: 0, y: 0 });
+
+    const maxValue = useMemo(() => {
+        const maxVal = Math.max(...data.flatMap(d => [d.revenue, d.expenses]));
+        return Math.ceil(maxVal / 100000) * 100000; // Round up to nearest 100k
+    }, [data]);
+    
+    const chartHeight = 300;
+    const chartWidth = 800;
+    const barWidth = 20;
+    const barMargin = 15;
+    const groupMargin = 40;
+    const yAxisLabels = 6;
+    const yAxisWidth = 80;
+
+    const showTooltip = (content: string, event: React.MouseEvent) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setTooltip({ visible: true, content, x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY - 10 });
+    };
+
+    const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
+
+    return (
+        <div className="relative overflow-x-auto">
+             {tooltip.visible && (
+                <div
+                    style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%) translateY(-100%)' }}
+                    className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
+                    dangerouslySetInnerHTML={{ __html: tooltip.content }}
+                >
+                </div>
+            )}
+            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px]">
+                {/* Y-Axis Grid Lines and Labels */}
+                {Array.from({ length: yAxisLabels }).map((_, i) => {
+                    const y = chartHeight - 20 - (i * (chartHeight - 30) / (yAxisLabels - 1));
+                    const value = (i * maxValue / (yAxisLabels - 1));
+                    return (
+                        <g key={i}>
+                            <line x1={yAxisWidth} y1={y} x2={chartWidth} y2={y} stroke="currentColor" className="text-slate-200 dark:text-slate-700" />
+                            <text x={yAxisWidth - 10} y={y + 5} textAnchor="end" className="text-xs fill-current text-slate-500 dark:text-slate-400">
+                                {`${(value / 1000000).toFixed(1)}jt`}
+                            </text>
+                        </g>
+                    );
+                })}
+
+                {/* Bars and X-Axis Labels */}
+                {data.map((d, i) => {
+                    const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
+                    const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
+                    const expensesHeight = (d.expenses / maxValue) * (chartHeight - 30);
+                    const tooltipContent = `<b>${d.month}</b><br/>Pendapatan: Rp ${d.revenue.toLocaleString('id-ID')}<br/>Pengeluaran: Rp ${d.expenses.toLocaleString('id-ID')}`;
+
+                    return (
+                        <g key={i}>
+                            <rect
+                                x={x - barMargin / 2}
+                                y={chartHeight - 20 - revenueHeight}
+                                width={barWidth}
+                                height={revenueHeight}
+                                className="fill-current text-green-500 hover:opacity-80"
+                                onMouseMove={(e) => showTooltip(tooltipContent, e)}
+                                onMouseLeave={hideTooltip}
+                            />
+                            <rect
+                                x={x + barWidth - barMargin / 2}
+                                y={chartHeight - 20 - expensesHeight}
+                                width={barWidth}
+                                height={expensesHeight}
+                                className="fill-current text-red-500 hover:opacity-80"
+                                onMouseMove={(e) => showTooltip(tooltipContent, e)}
+                                onMouseLeave={hideTooltip}
+                            />
+                            <text x={x} y={chartHeight - 5} textAnchor="middle" className="text-xs fill-current text-slate-500 dark:text-slate-400">{d.month}</text>
+                        </g>
+                    );
+                })}
+
+                {/* Axis Lines */}
+                <line x1={yAxisWidth} y1={10} x2={yAxisWidth} y2={chartHeight - 20} stroke="currentColor" className="text-slate-300 dark:text-slate-600" />
+                <line x1={yAxisWidth} y1={chartHeight - 20} x2={chartWidth} y2={chartHeight - 20} stroke="currentColor" className="text-slate-300 dark:text-slate-600" />
+            </svg>
+        </div>
+    );
+};
+
 const ReportsPage: React.FC = () => {
     const { transactions: allStoreTransactions } = useTransactions();
     const { customers } = useCustomers();
@@ -114,6 +202,9 @@ const ReportsPage: React.FC = () => {
             .sort((a, b) => b.revenue - a.revenue);
     }, [filteredData.transactions, serviceMap]);
 
+    const maxRevenueByCategory = useMemo(() => Math.max(...revenueByCategory.map(item => item.revenue), 0), [revenueByCategory]);
+
+
     const detailedExpenses = useMemo(() => {
         return filteredData.expenses.map(expense => ({
             ...expense,
@@ -132,8 +223,6 @@ const ReportsPage: React.FC = () => {
         summary.forEach(m => { m.profit = m.revenue - m.expenses; });
         return summary;
     }, [allStoreTransactions, allStoreExpenses]);
-
-    const maxMonthlyValue = useMemo(() => reportType === 'yearlySummary' ? Math.max(...monthlySummary.flatMap(m => [m.revenue, m.expenses])) : 0, [reportType, monthlySummary]);
 
     const getStoreName = () => {
         if (currentUser.role === UserRole.SuperAdmin) {
@@ -184,7 +273,31 @@ const ReportsPage: React.FC = () => {
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Layanan Terlaris</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Layanan</th><th className="px-4 py-2 text-right">Pendapatan</th></tr></thead><tbody>{topServices.map(s => (<tr key={s.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{s.name}</td><td className="px-4 py-2 text-right">Rp {s.revenue.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pelanggan Teratas</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Pelanggan</th><th className="px-4 py-2 text-right">Total Belanja</th></tr></thead><tbody>{topCustomers.map(c => (<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-right">Rp {c.total.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><BarChartIcon className="w-6 h-6 mr-3 text-slate-500" />Pendapatan per Kategori Layanan</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Kategori Layanan</th><th className="px-4 py-2 text-right">Total Pendapatan</th></tr></thead><tbody>{revenueByCategory.length>0?revenueByCategory.map(c=>(<tr key={c.category} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.category}</td><td className="px-4 py-2 text-right">Rp {c.revenue.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={2} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data pendapatan.</td></tr>)}</tbody></table></div></div>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                        <BarChartIcon className="w-6 h-6 mr-3 text-slate-500" />
+                        Pendapatan per Kategori Layanan
+                    </h2>
+                    <div className="space-y-3">
+                        {revenueByCategory.length > 0 ? revenueByCategory.map(c => (
+                            <div key={c.category}>
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-base font-medium text-slate-700 dark:text-slate-300">{c.category}</span>
+                                    <span className="text-base font-medium text-slate-700 dark:text-slate-300">Rp {c.revenue.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="w-full bg-slate-200 rounded-full h-4 dark:bg-slate-700">
+                                    <div 
+                                        className="bg-blue-600 h-4 rounded-full" 
+                                        style={{ width: `${maxRevenueByCategory > 0 ? (c.revenue / maxRevenueByCategory) * 100 : 0}%` }}
+                                        title={`Rp ${c.revenue.toLocaleString('id-ID')}`}
+                                    ></div>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data pendapatan.</p>
+                        )}
+                    </div>
+                </div>
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><UsersIcon className="w-6 h-6 mr-3 text-slate-500" />Performa Kasir</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Kasir</th><th className="px-4 py-2 text-center">Total Transaksi</th><th className="px-4 py-2 text-right">Total Pendapatan</th><th className="px-4 py-2 text-right">Total Diskon</th></tr></thead><tbody>{cashierPerformance.length>0?cashierPerformance.map(c=>(<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-center">{c.transactionCount}</td><td className="px-4 py-2 text-right">Rp {c.totalRevenue.toLocaleString('id-ID')}</td><td className="px-4 py-2 text-right">Rp {c.totalDiscount.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={4} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data performa.</td></tr>)}</tbody></table></div></div>
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
@@ -238,48 +351,7 @@ const ReportsPage: React.FC = () => {
             ) : (
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-                                <tr>
-                                    <th className="px-4 py-2">Bulan</th>
-                                    <th className="px-4 py-2 text-right">Pendapatan</th>
-                                    <th className="px-4 py-2 text-right">Pengeluaran</th>
-                                    <th className="px-4 py-2 text-right">Laba Bersih</th>
-                                    <th className="px-4 py-2 w-1/4">Visualisasi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {monthlySummary.map(monthData => (
-                                    <tr key={monthData.month} className="border-b dark:border-slate-700">
-                                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{monthData.month}</td>
-                                        <td className="px-4 py-2 text-right text-green-600 dark:text-green-400">Rp {monthData.revenue.toLocaleString('id-ID')}</td>
-                                        <td className="px-4 py-2 text-right text-red-600 dark:text-red-400">Rp {monthData.expenses.toLocaleString('id-ID')}</td>
-                                        <td className={`px-4 py-2 text-right font-semibold ${monthData.profit >= 0 ? 'text-slate-800 dark:text-slate-200' : 'text-red-600 dark:text-red-400'}`}>
-                                            Rp {monthData.profit.toLocaleString('id-ID')}
-                                        </td>
-                                        <td className="px-4 py-2">
-                                            <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2.5 my-1" title={`Pendapatan: Rp ${monthData.revenue.toLocaleString('id-ID')}`}>
-                                                <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${maxMonthlyValue > 0 ? (monthData.revenue / maxMonthlyValue) * 100 : 0}%` }}></div>
-                                            </div>
-                                            <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2.5 my-1" title={`Pengeluaran: Rp ${monthData.expenses.toLocaleString('id-ID')}`}>
-                                                <div className="bg-red-500 h-2.5 rounded-full" style={{ width: `${maxMonthlyValue > 0 ? (monthData.expenses / maxMonthlyValue) * 100 : 0}%` }}></div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                             <tfoot className="text-sm font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-700">
-                                <tr>
-                                    <td className="px-4 py-2">Total</td>
-                                    <td className="px-4 py-2 text-right">Rp {monthlySummary.reduce((a, b) => a + b.revenue, 0).toLocaleString('id-ID')}</td>
-                                    <td className="px-4 py-2 text-right">Rp {monthlySummary.reduce((a, b) => a + b.expenses, 0).toLocaleString('id-ID')}</td>
-                                    <td className="px-4 py-2 text-right">Rp {monthlySummary.reduce((a, b) => a + b.profit, 0).toLocaleString('id-ID')}</td>
-                                    <td className="px-4 py-2"></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
+                    <YearlySummaryChart data={monthlySummary} />
                 </div>
             )}
         </div>

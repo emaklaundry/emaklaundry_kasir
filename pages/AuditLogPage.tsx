@@ -5,6 +5,8 @@ import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
 import { useAppContext } from '../contexts/AppContext';
 import { HistoryIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 import { useSortableData } from '../hooks/useSortableData';
+import { usePagination } from '../hooks/usePagination';
+import Pagination from '../components/Pagination';
 
 const AuditLogPage: React.FC = () => {
     const { logs: allLogs } = useAuditLogs();
@@ -48,6 +50,8 @@ const AuditLogPage: React.FC = () => {
 
     // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedLogs, requestSort, sortConfig } = useSortableData<LogWithStore>(logsWithStore, { key: 'timestamp', direction: 'descending' });
+    const { currentData: paginatedLogs, currentPage, totalPages, onPageChange } = usePagination(sortedLogs);
+
 
     // FIX: Use the explicit type for the key to ensure type safety.
     const getSortIcon = (key: keyof LogWithStore) => {
@@ -122,8 +126,8 @@ const AuditLogPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedLogs.length > 0 ? (
-                            sortedLogs.map(log => (
+                        {paginatedLogs.length > 0 ? (
+                            paginatedLogs.map(log => (
                                 <tr key={log.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3">{log.timestamp.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' })}</td>
                                     <td className="px-4 py-3">{log.user}</td>
@@ -145,6 +149,7 @@ const AuditLogPage: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
         </div>
     );
 };
