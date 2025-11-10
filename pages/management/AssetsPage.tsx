@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { mockAssets } from '../../data/mockData';
 import { Asset, MaintenanceLog } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { useAssets } from '../../contexts/AssetContext';
 
 const formatRupiah = (number: number | string): string => {
     if (typeof number === 'string') {
@@ -20,7 +20,7 @@ const parseRupiah = (formattedString: string): number => {
 
 
 const AssetsPage: React.FC = () => {
-    const [assets, setAssets] = useState<Asset[]>(mockAssets);
+    const { assets, setAssets } = useAssets();
     const [isAssetFormModalOpen, setIsAssetFormModalOpen] = useState(false);
     const [isMaintenanceFormModalOpen, setIsMaintenanceFormModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -45,9 +45,9 @@ const AssetsPage: React.FC = () => {
 
     const handleSaveAsset = (asset: Asset) => {
         if (currentAsset && currentAsset.id) {
-            setAssets(assets.map(a => a.id === asset.id ? asset : a));
+            setAssets(prev => prev.map(a => a.id === asset.id ? asset : a));
         } else {
-            setAssets([...assets, { ...asset, id: `ASSET${Date.now()}` }]);
+            setAssets(prev => [...prev, { ...asset, id: `ASSET${Date.now()}` }]);
         }
         setIsAssetFormModalOpen(false);
         setCurrentAsset(null);
@@ -56,11 +56,11 @@ const AssetsPage: React.FC = () => {
     const handleAddMaintenance = (log: Omit<MaintenanceLog, 'id'>) => {
         if(currentAsset) {
             const newLog = { ...log, id: Date.now() };
-            const updatedAsset = { 
-                ...currentAsset, 
-                maintenanceHistory: [...currentAsset.maintenanceHistory, newLog] 
-            };
-            setAssets(assets.map(a => a.id === currentAsset.id ? updatedAsset : a));
+            setAssets(prev => prev.map(a => 
+                a.id === currentAsset.id 
+                ? { ...a, maintenanceHistory: [...a.maintenanceHistory, newLog] } 
+                : a
+            ));
         }
         setIsMaintenanceFormModalOpen(false);
         setCurrentAsset(null);
@@ -72,7 +72,7 @@ const AssetsPage: React.FC = () => {
 
     const confirmDelete = () => {
         if (assetToDelete) {
-            setAssets(assets.filter(a => a.id !== assetToDelete.id));
+            setAssets(prev => prev.filter(a => a.id !== assetToDelete.id));
             setAssetToDelete(null);
         }
     };

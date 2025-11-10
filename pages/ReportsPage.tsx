@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { mockServices, mockExpenses, mockUsers } from '../data/mockData';
+import { mockServices, mockUsers } from '../data/mockData';
 import { Transaction } from '../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
+import { useExpenses } from '../contexts/ExpenseContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -19,6 +20,7 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
 const ReportsPage: React.FC = () => {
     const { transactions: allTransactions } = useTransactions();
     const { customers } = useCustomers();
+    const { expenses: allExpenses } = useExpenses();
     const [view, setView] = useState<'custom' | 'weekly' | 'monthly'>('custom');
     const today = new Date();
     const [startDate, setStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -47,12 +49,12 @@ const ReportsPage: React.FC = () => {
             const time = new Date(t.createdAt).getTime();
             return time >= start && time <= end;
         });
-        const expenses = mockExpenses.filter(e => {
+        const expenses = allExpenses.filter(e => {
             const time = new Date(e.date).getTime();
             return time >= start && time <= end;
         });
         return { transactions, expenses };
-    }, [startDate, endDate, allTransactions]);
+    }, [startDate, endDate, allTransactions, allExpenses]);
 
     const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + t.amountPaid, 0);
     const totalExpenses = filteredData.expenses.reduce((acc, e) => acc + e.amount, 0);

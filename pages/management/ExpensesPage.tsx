@@ -1,39 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { mockExpenses } from '../../data/mockData';
+import React, { useState } from 'react';
 import { Expense } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon } from '../../components/icons';
-import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
-
-const formatRupiah = (number: number | string): string => {
-    if (typeof number === 'string') {
-        number = parseFloat(number.replace(/[^\d]/g, ''));
-    }
-    if (isNaN(number)) return '';
-    return new Intl.NumberFormat('id-ID').format(number);
-};
-
-const parseRupiah = (formattedString: string): number => {
-    return parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
-};
+import { useExpenses } from '../../contexts/ExpenseContext';
+import ExpenseFormModal from '../../components/ExpenseFormModal';
 
 const ExpensesPage: React.FC = () => {
-    const [expenses, setExpenses] = useState<Expense[]>(mockExpenses);
+    const { expenses, setExpenses } = useExpenses();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
     const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
-    const location = useLocation();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        if (location.state?.openModal) {
-            handleOpenFormModal();
-            // Clear the state to prevent modal from re-opening on refresh
-            navigate(location.pathname, { replace: true });
-        }
-    }, [location.state, navigate]);
-
+   
     const handleOpenFormModal = (expense: Expense | null = null) => {
         setCurrentExpense(expense);
         setIsFormModalOpen(true);
@@ -46,9 +23,9 @@ const ExpensesPage: React.FC = () => {
 
     const handleSaveExpense = (expense: Expense) => {
         if (currentExpense && currentExpense.id) {
-            setExpenses(expenses.map(e => e.id === expense.id ? expense : e));
+            setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
         } else {
-            setExpenses([...expenses, { ...expense, id: Date.now() }]);
+            setExpenses(prev => [...prev, { ...expense, id: Date.now() }]);
         }
         handleCloseFormModal();
     };
@@ -59,7 +36,7 @@ const ExpensesPage: React.FC = () => {
 
     const confirmDelete = () => {
         if (expenseToDelete) {
-            setExpenses(expenses.filter(e => e.id !== expenseToDelete.id));
+            setExpenses(prev => prev.filter(e => e.id !== expenseToDelete.id));
             setExpenseToDelete(null);
         }
     };
@@ -102,13 +79,12 @@ const ExpensesPage: React.FC = () => {
                 </table>
             </div>
 
-            {isFormModalOpen && (
-                <ExpenseFormModal 
-                    expense={currentExpense} 
-                    onClose={handleCloseFormModal}
-                    onSave={handleSaveExpense}
-                />
-            )}
+            <ExpenseFormModal 
+                isOpen={isFormModalOpen}
+                expense={currentExpense} 
+                onClose={handleCloseFormModal}
+                onSave={handleSaveExpense}
+            />
 
             {expenseToDelete && (
                 <ConfirmationModal
@@ -120,64 +96,6 @@ const ExpensesPage: React.FC = () => {
                 />
             )}
         </div>
-    );
-};
-
-const ExpenseFormModal: React.FC<{ expense: Expense | null, onClose: () => void, onSave: (expense: Expense) => void }> = ({ expense, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<Expense, 'id'>>({
-        date: expense?.date || new Date(),
-        description: expense?.description || '',
-        category: expense?.category || 'Operasional',
-        amount: expense?.amount || 0,
-    });
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type } = e.target;
-        if (name === 'amount') {
-            setFormData(prev => ({ ...prev, amount: parseRupiah(value) }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave({ ...formData, id: expense?.id || 0 });
-    };
-
-    return (
-        <Modal
-            isOpen={true}
-            onClose={onClose}
-            title={expense ? 'Edit Pengeluaran' : 'Tambah Pengeluaran Baru'}
-            footer={
-                <>
-                    <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                    <button onClick={handleSubmit} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan</button>
-                </>
-            }
-        >
-            <form className="space-y-4" onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="description" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Deskripsi</label>
-                    <input type="text" name="description" id="description" value={formData.description} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="category" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Kategori</label>
-                        <input type="text" name="category" id="category" value={formData.category} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                    </div>
-                    <div>
-                        <label htmlFor="amount" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Jumlah (Rp)</label>
-                        <input type="text" name="amount" id="amount" value={formatRupiah(formData.amount)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="date" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Tanggal</label>
-                    <input type="date" name="date" id="date" value={formData.date.toISOString().split('T')[0]} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-            </form>
-        </Modal>
     );
 };
 

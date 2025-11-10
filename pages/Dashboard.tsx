@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus, UserRole } from '../types';
+import { OrderStatus, PaymentStatus, Expense } from '../types';
 import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
+import { useExpenses } from '../contexts/ExpenseContext';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
+import ExpenseFormModal from '../components/ExpenseFormModal';
+import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -23,7 +26,11 @@ const Dashboard: React.FC = () => {
     const { inventory } = useInventory();
     const { transactions } = useTransactions();
     const { customers } = useCustomers();
+    const { setExpenses } = useExpenses();
+    
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
     
     const completedOrders = transactions.filter(t => t.orderStatus === OrderStatus.Completed).length;
     const pendingOrders = transactions.filter(t => t.orderStatus === OrderStatus.Processing).length;
@@ -58,6 +65,10 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    const handleSaveExpense = (expense: Expense) => {
+        setExpenses(prev => [...prev, { ...expense, id: Date.now() }]);
+        setIsExpenseModalOpen(false);
+    };
 
     return (
         <>
@@ -97,14 +108,14 @@ const Dashboard: React.FC = () => {
                                     <WrenchIcon className="h-5 w-5 mr-2" />
                                     Lapor Inventaris Habis
                                 </button>
-                                <Link to="/management/expenses" state={{ openModal: true }} className="flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
+                                <button onClick={() => setIsExpenseModalOpen(true)} className="flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
                                     <DollarSignIcon className="h-5 w-5 mr-2" />
                                     Catat Pengeluaran
-                                </Link>
-                                <Link to="/management/assets" className="flex items-center justify-center text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
+                                </button>
+                                <button onClick={() => setIsMaintenanceModalOpen(true)} className="flex items-center justify-center text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
                                     <PlusCircleIcon className="h-5 w-5 mr-2" />
                                     Laporkan Kerusakan
-                                </Link>
+                                </button>
                             </div>
                     </div>
                     <div className="overflow-x-auto">
@@ -146,6 +157,16 @@ const Dashboard: React.FC = () => {
             <QuickStockUpdateModal 
                 isOpen={isStockModalOpen}
                 onClose={() => setIsStockModalOpen(false)}
+            />
+            <ExpenseFormModal
+                isOpen={isExpenseModalOpen}
+                onClose={() => setIsExpenseModalOpen(false)}
+                onSave={handleSaveExpense}
+                expense={null}
+            />
+            <QuickMaintenanceModal
+                isOpen={isMaintenanceModalOpen}
+                onClose={() => setIsMaintenanceModalOpen(false)}
             />
         </>
     );

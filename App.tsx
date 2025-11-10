@@ -5,6 +5,8 @@ import { InventoryProvider } from './contexts/InventoryContext';
 import { TransactionProvider } from './contexts/TransactionContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { CustomerProvider } from './contexts/CustomerContext';
+import { AssetProvider } from './contexts/AssetContext';
+import { ExpenseProvider } from './contexts/ExpenseContext';
 import { UserRole } from './types';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -63,9 +65,13 @@ const App: React.FC = () => {
         <InventoryProvider>
           <CustomerProvider>
             <TransactionProvider>
-              <HashRouter>
-                <AppRoutes />
-              </HashRouter>
+              <AssetProvider>
+                <ExpenseProvider>
+                  <HashRouter>
+                    <AppRoutes />
+                  </HashRouter>
+                </ExpenseProvider>
+              </AssetProvider>
             </TransactionProvider>
           </CustomerProvider>
         </InventoryProvider>
