@@ -91,6 +91,20 @@ const CustomersPage: React.FC = () => {
     };
     
     const canAddNewCustomer = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+    
+    const NoCustomersFound = () => (
+        <div className="text-center py-12">
+            <UsersIcon className="mx-auto w-12 h-12 text-slate-400" />
+            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Pelanggan Tidak Ditemukan' : 'Belum Ada Pelanggan'}</h3>
+            <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain atau tambahkan pelanggan baru.' : 'Mulai dengan menambahkan pelanggan pertama Anda.'}</p>
+            <div className="mt-6">
+                <button onClick={() => handleOpenFormModal()} disabled={!canAddNewCustomer} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed">
+                    <PlusCircleIcon className="h-5 w-5 mr-2" />
+                    Tambah Pelanggan
+                </button>
+            </div>
+        </div>
+    );
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -117,7 +131,8 @@ const CustomersPage: React.FC = () => {
                 <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah pelanggan baru.</p>
             )}
             
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
@@ -150,21 +165,50 @@ const CustomersPage: React.FC = () => {
                             ))
                         ) : (
                              <tr>
-                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5} className="text-center py-12">
-                                    <UsersIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Pelanggan</h3>
-                                    <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan pelanggan pertama Anda.</p>
-                                    <div className="mt-6">
-                                        <button onClick={() => handleOpenFormModal()} disabled={!canAddNewCustomer} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed">
-                                            <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                            Tambah Pelanggan
-                                        </button>
-                                    </div>
+                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5}>
+                                    <NoCustomersFound />
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
+            </div>
+            
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map(customer => (
+                        <div key={customer.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <Link to={`/management/customers/${customer.id}`} className="font-bold text-lg text-blue-600 dark:text-blue-400 hover:underline">
+                                        {customer.name}
+                                    </Link>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{customer.phone}</p>
+                                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{customer.storeName}</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center space-x-1 flex-shrink-0">
+                                    <button onClick={() => handleOpenFormModal(customer)} className="p-2 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
+                                    <button onClick={() => handleDelete(customer)} className="p-2 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                                </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-2 gap-4 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
+                                <div>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Total Transaksi</p>
+                                    <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">{customer.transactionCount}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Total Belanja</p>
+                                    <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">Rp {customer.totalSpent.toLocaleString('id-ID')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <NoCustomersFound />
+                )}
             </div>
 
             {isFormModalOpen && (

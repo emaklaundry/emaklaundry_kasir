@@ -120,7 +120,22 @@ const TransactionPage: React.FC = () => {
         if (!transactionForWhatsApp) return null;
         return customers.find(c => c.id === transactionForWhatsApp.customerId);
     }, [transactionForWhatsApp, customers]);
-
+    
+    const NoTransactionsFound = () => (
+        <div className="text-center py-12">
+            <ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />
+            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Tidak Ada Transaksi</h3>
+            <p className="mt-1 text-base text-slate-500">
+                {searchTerm || selectedDate ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
+            </p>
+            <div className="mt-6">
+                <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
+                    <PlusCircleIcon className="h-5 w-5 mr-2" />
+                    Buat Transaksi Baru
+                </Link>
+            </div>
+        </div>
+    );
 
     return (
         <>
@@ -164,7 +179,8 @@ const TransactionPage: React.FC = () => {
                     )}
                 </div>
                 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                         <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                             <tr>
@@ -229,23 +245,81 @@ const TransactionPage: React.FC = () => {
                             ))
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-12">
-                                        <ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Tidak Ada Transaksi</h3>
-                                        <p className="mt-1 text-base text-slate-500">
-                                            {searchTerm || selectedDate ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
-                                        </p>
-                                        <div className="mt-6">
-                                            <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
-                                                <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                                Buat Transaksi Baru
-                                            </Link>
-                                        </div>
+                                    <td colSpan={7}>
+                                       <NoTransactionsFound />
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                     {filteredTransactions.length > 0 ? (
+                        filteredTransactions.map(t => (
+                            <div key={t.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-bold text-slate-900 dark:text-white">{t.customerName}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{t.id}</p>
+                                    </div>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 flex-shrink-0 ml-2">{new Date(t.createdAt).toLocaleDateString('id-ID')}</p>
+                                </div>
+                                
+                                <div className="mt-4 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-slate-600 dark:text-slate-300">Total:</span>
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200">Rp {t.total.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <label htmlFor={`status-select-${t.id}`} className="text-slate-600 dark:text-slate-300">Status Pesanan:</label>
+                                        <select
+                                            id={`status-select-${t.id}`}
+                                            value={t.orderStatus}
+                                            onChange={(e) => handleOrderStatusChange(t.id, e.target.value as OrderStatus)}
+                                            className={`-mr-2 px-2 py-1 text-xs font-medium rounded-full border-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer ${getStatusBadge(t.orderStatus)}`}
+                                            title={t.paymentStatus !== PaymentStatus.Paid ? "Pelunasan diperlukan untuk menyelesaikan pesanan" : ""}
+                                        >
+                                            {Object.values(OrderStatus).map(status => (
+                                                <option
+                                                    key={status}
+                                                    value={status}
+                                                    className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                                    disabled={status === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid}
+                                                >
+                                                    {status}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-slate-600 dark:text-slate-300">Status Bayar:</span>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-600 flex items-center justify-end -space-x-1">
+                                    {t.paymentStatus !== PaymentStatus.Paid && (
+                                        <button onClick={() => handleOpenPaymentModal(t)} title="Proses Pembayaran" className="p-2 rounded-md text-green-600 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                            <DollarSignIcon className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                    <Link to={`/transactions/${t.id}/details`} title="Lihat Detail" className="p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <EyeIcon className="w-5 h-5" />
+                                    </Link>
+                                    <Link to={`/transactions/${t.id}/receipt`} title="Cetak Struk" className="p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <PrinterIcon className="w-5 h-5" />
+                                    </Link>
+                                    <button onClick={() => handleSendGenericWhatsApp(t)} title="Kirim Struk via WhatsApp" className="p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <SendIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <NoTransactionsFound />
+                    )}
                 </div>
             </div>
             <PaymentModal
