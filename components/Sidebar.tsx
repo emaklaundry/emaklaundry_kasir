@@ -12,6 +12,7 @@ import {
   HistoryIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  TruckIcon,
 } from './icons';
 import { useAppContext } from '../contexts/AppContext';
 import { UserRole } from '../types';
@@ -21,6 +22,7 @@ interface NavItem {
   label: string;
   icon: React.FC<{ className?: string }>;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
   children?: NavItem[];
 }
 
@@ -33,6 +35,7 @@ const navItems: NavItem[] = [
     icon: PackageIcon,
     adminOnly: true,
     children: [
+      { path: '/management/stores', label: 'Cabang', icon: TruckIcon, superAdminOnly: true },
       { path: '/management/customers', label: 'Pelanggan', icon: UsersIcon },
       { path: '/management/services', label: 'Layanan', icon: PackageIcon },
       { path: '/management/inventory', label: 'Inventaris', icon: WrenchIcon },
@@ -58,15 +61,20 @@ const Sidebar: React.FC = () => {
   };
   
   const hasAdminAccess = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.BranchAdmin;
+  const isSuperAdmin = currentUser.role === UserRole.SuperAdmin;
 
   const renderNavLinks = (items: NavItem[]) => {
     return items
       .filter(item => {
-        if (item.adminOnly && !hasAdminAccess) {
-            return false;
-        }
+        if (item.superAdminOnly && !isSuperAdmin) return false;
+        if (item.adminOnly && !hasAdminAccess) return false;
+        
         if (item.children) {
-            return item.children.some(child => !child.adminOnly || hasAdminAccess);
+            return item.children.some(child => {
+                if(child.superAdminOnly && !isSuperAdmin) return false;
+                if(child.adminOnly && !hasAdminAccess) return false;
+                return true;
+            });
         }
         return true;
       })

@@ -7,6 +7,7 @@ import { SettingsProvider } from './contexts/SettingsContext';
 import { CustomerProvider } from './contexts/CustomerContext';
 import { AssetProvider } from './contexts/AssetContext';
 import { ExpenseProvider } from './contexts/ExpenseContext';
+import { StoreProvider } from './contexts/StoreContext';
 import { UserRole } from './types';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -24,6 +25,7 @@ import CustomersPage from './pages/management/CustomersPage';
 import CustomerDetailPage from './pages/management/CustomerDetailPage';
 import ReceiptPage from './pages/transactions/ReceiptPage';
 import TransactionDetailPage from './pages/transactions/TransactionDetailPage';
+import StoresPage from './pages/management/StoresPage';
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -31,6 +33,12 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAdmin = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.BranchAdmin;
   return isAdmin ? <>{children}</> : <Navigate to="/" />;
 };
+
+const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser } = useAppContext();
+  return currentUser.role === UserRole.SuperAdmin ? <>{children}</> : <Navigate to="/" />;
+};
+
 
 const AppRoutes: React.FC = () => (
     <Layout>
@@ -53,6 +61,9 @@ const AppRoutes: React.FC = () => (
             <Route path="/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
             <Route path="/settings" element={<AdminRoute><SettingsPage/></AdminRoute>} />
 
+            {/* Super Admin Routes */}
+            <Route path="/management/stores" element={<SuperAdminRoute><StoresPage /></SuperAdminRoute>} />
+
             <Route path="*" element={<Navigate to="/" />} />
         </Routes>
     </Layout>
@@ -61,23 +72,25 @@ const AppRoutes: React.FC = () => (
 
 const App: React.FC = () => {
   return (
-    <AppProvider>
-      <SettingsProvider>
-        <CustomerProvider>
-            <TransactionProvider>
-                <InventoryProvider>
-                    <AssetProvider>
-                        <ExpenseProvider>
-                            <HashRouter>
-                                <AppRoutes />
-                            </HashRouter>
-                        </ExpenseProvider>
-                    </AssetProvider>
-                </InventoryProvider>
-            </TransactionProvider>
-        </CustomerProvider>
-      </SettingsProvider>
-    </AppProvider>
+    <StoreProvider>
+        <AppProvider>
+        <SettingsProvider>
+            <CustomerProvider>
+                <TransactionProvider>
+                    <InventoryProvider>
+                        <AssetProvider>
+                            <ExpenseProvider>
+                                <HashRouter>
+                                    <AppRoutes />
+                                </HashRouter>
+                            </ExpenseProvider>
+                        </AssetProvider>
+                    </InventoryProvider>
+                </TransactionProvider>
+            </CustomerProvider>
+        </SettingsProvider>
+        </AppProvider>
+    </StoreProvider>
   );
 };
 

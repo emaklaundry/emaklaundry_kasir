@@ -18,8 +18,8 @@ import {
 } from '../types';
 
 export const mockStores: Store[] = [
-    { id: 'STORE1', name: 'Jakarta Pusat', address: 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan' },
-    { id: 'STORE2', name: 'Bandung', address: 'Jl. Asia Afrika No.1, Bandung' },
+    { id: 'STORE1', name: 'Jakarta Pusat', address: 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan', isActive: true },
+    { id: 'STORE2', name: 'Bandung', address: 'Jl. Asia Afrika No.1, Bandung', isActive: true },
 ];
 
 export const mockCustomers: Customer[] = [

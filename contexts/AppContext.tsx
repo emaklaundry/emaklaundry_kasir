@@ -1,8 +1,8 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { User, UserRole } from '../types';
-import { mockUsers, mockStores } from '../data/mockData';
-import { Store } from '../types';
+import { User, UserRole, Store } from '../types';
+import { mockUsers } from '../data/mockData';
+import { useStores } from './StoreContext';
 
 interface AppContextType {
   currentUser: User;
@@ -18,7 +18,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [currentUser, setCurrentUser] = useState<User>(users.find(u => u.role === UserRole.SuperAdmin)!);
-  const [stores] = useState<Store[]>(mockStores);
+  const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
 
   const contextValue = {

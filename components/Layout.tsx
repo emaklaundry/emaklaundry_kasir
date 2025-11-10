@@ -9,6 +9,7 @@ const getPageTitle = (pathname: string, params: any): string => {
         '/': 'Dashboard',
         '/transactions': 'Transaksi',
         '/transactions/new': 'Buat Transaksi Baru',
+        '/management/stores': 'Manajemen Cabang',
         '/management/customers': 'Manajemen Pelanggan',
         '/management/services': 'Manajemen Layanan',
         '/management/inventory': 'Manajemen Inventaris',

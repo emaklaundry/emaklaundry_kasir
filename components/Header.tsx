@@ -28,6 +28,7 @@ const Header: React.FC<HeaderProps> = ({ pageTitle }) => {
   };
 
   const currentStore = stores.find(s => s.id === currentUser.storeId);
+  const activeStores = stores.filter(s => s.isActive);
 
   return (
     <header className="bg-white dark:bg-slate-800 shadow-sm p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
@@ -44,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({ pageTitle }) => {
                 className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               >
                 <option value="all">Semua Cabang</option>
-                {stores.map(store => (
+                {activeStores.map(store => (
                   <option key={store.id} value={store.id}>{store.name}</option>
                 ))}
               </select>
