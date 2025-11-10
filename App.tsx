@@ -29,6 +29,7 @@ import ReceiptPage from './pages/transactions/ReceiptPage';
 import TransactionDetailPage from './pages/transactions/TransactionDetailPage';
 import StoresPage from './pages/management/StoresPage';
 import { AuditLogProvider } from './contexts/AuditLogContext';
+import { ToastProvider } from './contexts/ToastContext';
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -75,31 +76,33 @@ const AppRoutes: React.FC = () => (
 
 const App: React.FC = () => {
   return (
-    <StoreProvider>
-        <AppProvider>
-        <SettingsProvider>
-            <ServiceProvider>
-                <CustomerProvider>
-                    <TransactionProvider>
-                        <InventoryProvider>
-                            <AssetProvider>
-                                <ExpenseProvider>
-                                    <ScheduledMaintenanceProvider>
-                                        <AuditLogProvider>
-                                            <HashRouter>
-                                                <AppRoutes />
-                                            </HashRouter>
-                                        </AuditLogProvider>
-                                    </ScheduledMaintenanceProvider>
-                                </ExpenseProvider>
-                            </AssetProvider>
-                        </InventoryProvider>
-                    </TransactionProvider>
-                </CustomerProvider>
-            </ServiceProvider>
-        </SettingsProvider>
-        </AppProvider>
-    </StoreProvider>
+    <ToastProvider>
+        <StoreProvider>
+            <AppProvider>
+            <SettingsProvider>
+                <ServiceProvider>
+                    <CustomerProvider>
+                        <TransactionProvider>
+                            <InventoryProvider>
+                                <AssetProvider>
+                                    <ExpenseProvider>
+                                        <ScheduledMaintenanceProvider>
+                                            <AuditLogProvider>
+                                                <HashRouter>
+                                                    <AppRoutes />
+                                                </HashRouter>
+                                            </AuditLogProvider>
+                                        </ScheduledMaintenanceProvider>
+                                    </ExpenseProvider>
+                                </AssetProvider>
+                            </InventoryProvider>
+                        </TransactionProvider>
+                    </CustomerProvider>
+                </ServiceProvider>
+            </SettingsProvider>
+            </AppProvider>
+        </StoreProvider>
+    </ToastProvider>
   );
 };
 

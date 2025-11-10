@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { useCustomers } from '../contexts/CustomerContext';
 import { Customer } from '../types';
+import ToastContainer from './ToastContainer';
 
 const getPageTitle = (pathname: string, params: any, customers: Customer[]): string => {
     const staticTitles: { [key: string]: string } = {
@@ -54,6 +55,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     {children}
                 </main>
             </div>
+            <ToastContainer />
         </div>
     );
 };

@@ -7,11 +7,13 @@ import { useInventory } from '../../contexts/InventoryContext';
 import { useAppContext } from '../../contexts/AppContext';
 import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
 
 const InventoryPage: React.FC = () => {
     const { inventory, setInventory } = useInventory();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
@@ -39,7 +41,7 @@ const InventoryPage: React.FC = () => {
     const handleSaveItem = (item: Omit<InventoryItem, 'id' | 'storeId'>) => {
         const storeId = currentItem?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
         if (!storeId || storeId === 'all') {
-            alert('Silakan pilih cabang spesifik untuk menambah atau mengedit item.');
+            addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit item.', 'warning');
             return;
         }
 

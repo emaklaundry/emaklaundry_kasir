@@ -6,11 +6,13 @@ import { useExpenses } from '../../contexts/ExpenseContext';
 import ExpenseFormModal from '../../components/ExpenseFormModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
 
 const ExpensesPage: React.FC = () => {
     const { expenses, setExpenses } = useExpenses();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
     const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
@@ -29,7 +31,7 @@ const ExpensesPage: React.FC = () => {
     const handleSaveExpense = (expense: Omit<Expense, 'id' | 'storeId'>) => {
         const storeId = currentExpense?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
         if (!storeId || storeId === 'all') {
-            alert('Silakan pilih cabang spesifik untuk menambah atau mengedit pengeluaran.');
+            addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pengeluaran.', 'warning');
             return;
         }
 

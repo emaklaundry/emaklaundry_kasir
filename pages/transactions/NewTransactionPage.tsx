@@ -15,6 +15,7 @@ import ServiceSelector from '../../components/ServiceSelector';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
@@ -24,6 +25,7 @@ const NewTransactionPage: React.FC = () => {
     const { services, setServices } = useServices();
     const { currentUser, selectedStoreId } = useAppContext();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
@@ -177,7 +179,7 @@ const NewTransactionPage: React.FC = () => {
 
     const handleSaveCustomer = (customer: Omit<Customer, 'id' | 'storeId'>) => {
         if (!currentStoreId || currentStoreId === 'all') {
-            alert('Silakan pilih cabang spesifik untuk menambah pelanggan.');
+            addToast('Silakan pilih cabang spesifik untuk menambah pelanggan.', 'warning');
             return;
         }
         const newCustomer = { ...customer, id: `CUST${Date.now()}`, storeId: currentStoreId };
@@ -195,15 +197,19 @@ const NewTransactionPage: React.FC = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentStoreId || currentStoreId === 'all') {
-            alert('Super Admin harus memilih cabang spesifik untuk membuat transaksi.');
+            addToast('Super Admin harus memilih cabang spesifik untuk membuat transaksi.', 'warning');
             return;
         }
-        if(!selectedCustomer || items.length === 0) {
-            alert('Pelanggan dan minimal satu layanan harus dipilih.');
+        if(!selectedCustomer) {
+            addToast('Pelanggan harus dipilih.', 'warning');
+            return;
+        }
+        if (items.length === 0) {
+             addToast('Minimal satu layanan harus ditambahkan.', 'warning');
             return;
         }
         if (actualAmountPaid > 0 && !paymentMethod) {
-            alert('Silakan pilih metode pembayaran.');
+            addToast('Silakan pilih metode pembayaran.', 'warning');
             return;
         }
         

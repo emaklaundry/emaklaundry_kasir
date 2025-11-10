@@ -1,12 +1,12 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
 
 const SettingsPage: React.FC = () => {
     const { settings, setSettings } = useSettings();
     const { addAuditLog } = useAuditLogs();
-    const [isSaved, setIsSaved] = useState(false);
+    const { addToast } = useToasts();
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -18,9 +18,8 @@ const SettingsPage: React.FC = () => {
         e.preventDefault();
         // Context state is already updated. In a real app, this would save to a backend.
         addAuditLog('Menyimpan perubahan pada Pengaturan Aplikasi.');
+        addToast('Pengaturan berhasil disimpan!', 'success');
         console.log('Settings saved:', settings);
-        setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 3000);
     };
 
     return (
@@ -77,7 +76,6 @@ const SettingsPage: React.FC = () => {
                     <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-8 py-3.5">
                         Simpan Pengaturan
                     </button>
-                    {isSaved && <span className="text-green-600 dark:text-green-400 text-base">Pengaturan berhasil disimpan!</span>}
                 </div>
             </form>
         </div>

@@ -14,6 +14,7 @@ import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
 import { useAuditLogs } from '../contexts/AuditLogContext';
+import { useToasts } from '../contexts/ToastContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -34,6 +35,7 @@ const Dashboard: React.FC = () => {
     const { scheduledMaintenances } = useScheduledMaintenances();
     const { assets } = useAssets();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
     
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -98,7 +100,7 @@ const Dashboard: React.FC = () => {
         const storeId = currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
         // This check is now redundant due to the disabled button, but kept as a safeguard.
         if (!storeId || storeId === 'all') { 
-            alert('Silakan pilih cabang spesifik untuk mencatat pengeluaran.');
+            addToast('Silakan pilih cabang spesifik untuk mencatat pengeluaran.', 'warning');
             return;
         }
         const newExpense = { ...expense, id: Date.now(), storeId };

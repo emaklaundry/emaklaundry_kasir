@@ -11,6 +11,7 @@ import { useAssets } from '../../contexts/AssetContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import StoreFormModal from '../../components/StoreFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
 
 const StoresPage: React.FC = () => {
     const { stores, setStores } = useStores();
@@ -21,6 +22,7 @@ const StoresPage: React.FC = () => {
     const { assets } = useAssets();
     const { expenses } = useExpenses();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentStore, setCurrentStore] = useState<Store | null>(null);
@@ -61,7 +63,7 @@ const StoresPage: React.FC = () => {
     
     const handleDelete = (store: Store) => {
         if (selectedStoreId !== 'all') {
-            alert('Untuk memastikan integritas data, silakan pilih "Semua Cabang" pada filter di header sebelum menghapus cabang.');
+            addToast('Pilih "Semua Cabang" pada filter di header sebelum menghapus.', 'warning');
             return;
         }
 
@@ -73,7 +75,7 @@ const StoresPage: React.FC = () => {
                              expenses.some(e => e.storeId === store.id);
 
         if (isStoreInUse) {
-            alert(`Cabang "${store.name}" tidak dapat dihapus karena masih digunakan oleh data lain (pengguna, pelanggan, transaksi, dll.).`);
+            addToast(`Cabang "${store.name}" tidak dapat dihapus karena masih digunakan.`, 'error');
             return;
         }
 

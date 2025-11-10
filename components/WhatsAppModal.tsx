@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { Transaction, Customer, OrderStatus } from '../types';
 import { SendIcon } from './icons';
+import { useToasts } from '../contexts/ToastContext';
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface WhatsAppModalProps {
 
 const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transaction, customer }) => {
     const [message, setMessage] = useState('');
+    const { addToast } = useToasts();
 
     useEffect(() => {
         if (transaction && customer) {
@@ -27,7 +29,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
 
     const handleSend = () => {
         if (!customer?.phone) {
-            alert('Nomor telepon pelanggan tidak ditemukan.');
+            addToast('Nomor telepon pelanggan tidak ditemukan.', 'error');
             return;
         }
         const whatsappUrl = `https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;

@@ -9,11 +9,13 @@ import MaintenanceFormModal from '../../components/MaintenanceFormModal';
 import MaintenanceHistoryModal from '../../components/MaintenanceHistoryModal';
 import ScheduledMaintenanceModal from '../../components/ScheduledMaintenanceModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
 
 const AssetsPage: React.FC = () => {
     const { assets, setAssets } = useAssets();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
     const [isAssetFormModalOpen, setIsAssetFormModalOpen] = useState(false);
     const [isMaintenanceFormModalOpen, setIsMaintenanceFormModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -47,7 +49,7 @@ const AssetsPage: React.FC = () => {
     const handleSaveAsset = (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => {
         const storeId = currentAsset?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
         if (!storeId || storeId === 'all') {
-            alert('Silakan pilih cabang spesifik untuk menambah atau mengedit aset.');
+            addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit aset.', 'warning');
             return;
         }
 

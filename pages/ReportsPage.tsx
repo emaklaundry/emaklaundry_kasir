@@ -114,6 +114,13 @@ const ReportsPage: React.FC = () => {
             .sort((a, b) => b.revenue - a.revenue);
     }, [filteredData.transactions, serviceMap]);
 
+    const detailedExpenses = useMemo(() => {
+        return filteredData.expenses.map(expense => ({
+            ...expense,
+            storeName: stores.find(s => s.id === expense.storeId)?.name || 'N/A'
+        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [filteredData.expenses, stores]);
+
     const monthlySummary = useMemo(() => {
         const currentYear = new Date().getFullYear();
         const yearTransactions = allStoreTransactions.filter(t => new Date(t.createdAt).getFullYear() === currentYear);
@@ -179,6 +186,54 @@ const ReportsPage: React.FC = () => {
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><BarChartIcon className="w-6 h-6 mr-3 text-slate-500" />Pendapatan per Kategori Layanan</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Kategori Layanan</th><th className="px-4 py-2 text-right">Total Pendapatan</th></tr></thead><tbody>{revenueByCategory.length>0?revenueByCategory.map(c=>(<tr key={c.category} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.category}</td><td className="px-4 py-2 text-right">Rp {c.revenue.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={2} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data pendapatan.</td></tr>)}</tbody></table></div></div>
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><UsersIcon className="w-6 h-6 mr-3 text-slate-500" />Performa Kasir</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Kasir</th><th className="px-4 py-2 text-center">Total Transaksi</th><th className="px-4 py-2 text-right">Total Pendapatan</th><th className="px-4 py-2 text-right">Total Diskon</th></tr></thead><tbody>{cashierPerformance.length>0?cashierPerformance.map(c=>(<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-center">{c.transactionCount}</td><td className="px-4 py-2 text-right">Rp {c.totalRevenue.toLocaleString('id-ID')}</td><td className="px-4 py-2 text-right">Rp {c.totalDiscount.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={4} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data performa.</td></tr>)}</tbody></table></div></div>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                        <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500" />
+                        Rincian Pengeluaran
+                    </h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                                <tr>
+                                    <th className="px-4 py-2">Tanggal</th>
+                                    <th className="px-4 py-2">Deskripsi</th>
+                                    <th className="px-4 py-2">Kategori</th>
+                                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                        <th className="px-4 py-2">Toko</th>
+                                    )}
+                                    <th className="px-4 py-2 text-right">Jumlah</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {detailedExpenses.length > 0 ? (
+                                    detailedExpenses.map(e => (
+                                        <tr key={e.id} className="border-b dark:border-slate-700">
+                                            <td className="px-4 py-2">{new Date(e.date).toLocaleDateString('id-ID')}</td>
+                                            <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{e.description}</td>
+                                            <td className="px-4 py-2">{e.category}</td>
+                                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                                <td className="px-4 py-2">{e.storeName}</td>
+                                            )}
+                                            <td className="px-4 py-2 text-right">Rp {e.amount.toLocaleString('id-ID')}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 5 : 4} className="text-center py-6 text-slate-500 dark:text-slate-400">
+                                            Tidak ada data pengeluaran.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                             <tfoot className="text-sm font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-700">
+                                <tr>
+                                    <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 4 : 3} className="px-4 py-2 text-right">Total Pengeluaran</td>
+                                    <td className="px-4 py-2 text-right">Rp {totalExpenses.toLocaleString('id-ID')}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
                 </>
             ) : (
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">

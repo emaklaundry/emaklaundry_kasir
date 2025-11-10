@@ -8,12 +8,14 @@ import { useTransactions } from '../../contexts/TransactionContext';
 import { useAppContext } from '../../contexts/AppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
 
 const CustomersPage: React.FC = () => {
     const { customers, setCustomers } = useCustomers();
     const { transactions } = useTransactions();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
@@ -62,7 +64,7 @@ const CustomersPage: React.FC = () => {
     const handleSaveCustomer = (customer: Omit<Customer, 'id' | 'storeId'>) => {
         const storeId = currentCustomer?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
          if (!storeId || storeId === 'all') {
-            alert('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.');
+            addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
             return;
         }
 

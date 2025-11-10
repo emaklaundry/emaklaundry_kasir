@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { User, UserRole, Store } from '../types';
+import { useToasts } from '../contexts/ToastContext';
 
 interface UserFormModalProps {
     user: User | null;
@@ -16,6 +17,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
         isActive: user?.role === UserRole.SuperAdmin ? true : (user?.isActive ?? true),
         storeId: user?.storeId || '',
     });
+    const { addToast } = useToasts();
     
     const isEditingSuperAdmin = user?.role === UserRole.SuperAdmin;
 
@@ -36,7 +38,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
             finalData.storeId = undefined;
             finalData.isActive = true; // Enforce active status for super admin on save
         } else if (!finalData.storeId) {
-            alert('Silakan pilih cabang untuk peran ini.');
+            addToast('Silakan pilih cabang untuk peran ini.', 'warning');
             return;
         }
         onSave(finalData);
