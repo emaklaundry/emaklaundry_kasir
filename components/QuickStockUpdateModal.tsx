@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useInventory } from '../contexts/InventoryContext';
 import { InventoryItem } from '../types';
+import { useAuditLogs } from '../contexts/AuditLogContext';
+import { useAppContext } from '../contexts/AppContext';
 
 interface QuickStockUpdateModalProps {
   isOpen: boolean;
@@ -11,6 +13,8 @@ interface QuickStockUpdateModalProps {
 const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, onClose }) => {
   const { inventory, setInventory } = useInventory();
   const [stockUpdates, setStockUpdates] = useState<{ [key: string]: number }>({});
+  const { addAuditLog } = useAuditLogs();
+  const { currentUser, selectedStoreId } = useAppContext();
 
   useEffect(() => {
     if (isOpen) {
@@ -31,11 +35,13 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
   };
 
   const handleSave = () => {
+    const storeId = currentUser.storeId || selectedStoreId;
     // We need to update the global state (allInventory) not the filtered one
     // setInventory function from context points to setAllInventory
     setInventory(prevInventory => 
       prevInventory.map(item => {
         if (stockUpdates[item.id] !== undefined && stockUpdates[item.id] !== item.stock) {
+          addAuditLog(`Memperbarui stok cepat untuk "${item.name}" dari ${item.stock} menjadi ${stockUpdates[item.id]}.`, storeId);
           return { ...item, stock: stockUpdates[item.id] };
         }
         return item;

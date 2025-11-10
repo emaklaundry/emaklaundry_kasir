@@ -1,7 +1,8 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
-import { Expense, UserRole } from '../types';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { Expense } from '../types';
 import { mockExpenses } from '../data/mockData';
-import { useAppContext } from './AppContext';
+import { usePersistentState } from '../hooks/usePersistentState';
+import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
 
 interface ExpenseContextType {
   expenses: Expense[];
@@ -20,38 +21,8 @@ const reviveDates = (key: string, value: any) => {
 };
 
 export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allExpenses, setAllExpenses] = useState<Expense[]>(() => {
-    try {
-      const storedExpenses = localStorage.getItem(EXPENSES_STORAGE_KEY);
-      if (storedExpenses) {
-        return JSON.parse(storedExpenses, reviveDates);
-      }
-      return mockExpenses;
-    } catch (error) {
-      console.error("Error reading expenses from localStorage", error);
-      return mockExpenses;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(allExpenses));
-    } catch (error) {
-      console.error("Error saving expenses to localStorage", error);
-    }
-  }, [allExpenses]);
-
-  const { currentUser, selectedStoreId } = useAppContext();
-
-  const expenses = useMemo(() => {
-    if (currentUser.role === UserRole.SuperAdmin) {
-      if (selectedStoreId === 'all') {
-        return allExpenses;
-      }
-      return allExpenses.filter(e => e.storeId === selectedStoreId);
-    }
-    return allExpenses.filter(e => e.storeId === currentUser.storeId);
-  }, [allExpenses, currentUser, selectedStoreId]);
+  const [allExpenses, setAllExpenses] = usePersistentState<Expense[]>(EXPENSES_STORAGE_KEY, mockExpenses, reviveDates);
+  const expenses = useStoreFilteredData(allExpenses);
 
   return (
     <ExpenseContext.Provider value={{ expenses, setExpenses: setAllExpenses }}>

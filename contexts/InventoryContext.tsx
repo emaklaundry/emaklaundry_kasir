@@ -1,7 +1,8 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
-import { InventoryItem, UserRole } from '../types';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { InventoryItem } from '../types';
 import { mockInventory } from '../data/mockData';
-import { useAppContext } from './AppContext';
+import { usePersistentState } from '../hooks/usePersistentState';
+import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
 
 interface InventoryContextType {
   inventory: InventoryItem[];
@@ -13,36 +14,8 @@ const InventoryContext = createContext<InventoryContextType | undefined>(undefin
 const INVENTORY_STORAGE_KEY = 'laundry_inventory_multistore';
 
 export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allInventory, setAllInventory] = useState<InventoryItem[]>(() => {
-    try {
-      const storedInventory = localStorage.getItem(INVENTORY_STORAGE_KEY);
-      return storedInventory ? JSON.parse(storedInventory) : mockInventory;
-    } catch (error) {
-      console.error("Error reading inventory from localStorage", error);
-      return mockInventory;
-    }
-  });
-
-  useEffect(() => {
-    try {
-        localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(allInventory));
-    } catch (error) {
-        console.error("Error saving inventory to localStorage", error);
-    }
-  }, [allInventory]);
-
-  const { currentUser, selectedStoreId } = useAppContext();
-
-  const inventory = useMemo(() => {
-    if (currentUser.role === UserRole.SuperAdmin) {
-      if (selectedStoreId === 'all') {
-        return allInventory;
-      }
-      return allInventory.filter(i => i.storeId === selectedStoreId);
-    }
-    return allInventory.filter(i => i.storeId === currentUser.storeId);
-  }, [allInventory, currentUser, selectedStoreId]);
-
+  const [allInventory, setAllInventory] = usePersistentState<InventoryItem[]>(INVENTORY_STORAGE_KEY, mockInventory);
+  const inventory = useStoreFilteredData(allInventory);
 
   return (
     <InventoryContext.Provider value={{ inventory, setInventory: setAllInventory }}>

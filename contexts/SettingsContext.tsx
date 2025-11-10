@@ -1,6 +1,7 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { Settings } from '../types';
 import { mockSettings } from '../data/mockData';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 interface SettingsContextType {
   settings: Settings;
@@ -12,24 +13,10 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 const SETTINGS_STORAGE_KEY = 'laundry_settings';
 
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<Settings>(() => {
-    try {
-        const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-        const loadedSettings = storedSettings ? JSON.parse(storedSettings) : {};
-        return { ...mockSettings, ...loadedSettings };
-    } catch (error) {
-        console.error("Error reading settings from localStorage", error);
-        return mockSettings;
-    }
-  });
-
-  useEffect(() => {
-    try {
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-    } catch (error) {
-        console.error("Error saving settings to localStorage", error);
-    }
-  }, [settings]);
+  const [settings, setSettings] = usePersistentState<Settings>(
+      SETTINGS_STORAGE_KEY, 
+      mockSettings
+  );
 
   return (
     <SettingsContext.Provider value={{ settings, setSettings }}>

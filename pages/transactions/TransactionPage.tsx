@@ -7,17 +7,18 @@ import { useCustomers } from '../../contexts/CustomerContext';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import Modal from '../../components/Modal';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const TransactionPage: React.FC = () => {
     const { transactions, setTransactions } = useTransactions();
     const { customers } = useCustomers();
+    const { addAuditLog } = useAuditLogs();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDate, setSelectedDate] = useState('');
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
     const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
-    const [warningModalMessage, setWarningModalMessage] = useState<string | null>(null);
 
     const transactionsWithCustomer = useMemo(() => {
         return transactions.map(t => {
@@ -76,15 +77,11 @@ const TransactionPage: React.FC = () => {
         const targetTransaction = transactions.find(t => t.id === id);
         if (!targetTransaction) return;
 
-        if (newStatus === OrderStatus.Completed && targetTransaction.paymentStatus !== PaymentStatus.Paid) {
-            setWarningModalMessage('Pesanan tidak dapat diselesaikan sebelum lunas. Silakan proses pembayaran terlebih dahulu.');
-            return;
-        }
-
         const updatedTransaction = { ...targetTransaction, orderStatus: newStatus };
         const shouldShowWhatsAppModal = newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
         
         setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
+        addAuditLog(`Mengubah status transaksi ${id} menjadi "${newStatus}".`, targetTransaction.storeId);
         
         if (shouldShowWhatsAppModal) {
             handleOpenWhatsAppModal(updatedTransaction);
@@ -100,6 +97,7 @@ const TransactionPage: React.FC = () => {
         const shouldShowModal = updatedTransaction.paymentStatus === PaymentStatus.Paid && updatedTransaction.orderStatus === OrderStatus.Completed;
 
         setTransactions(prev => prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t));
+        addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
         setIsPaymentModalOpen(false);
         setSelectedTransaction(null);
         
@@ -192,9 +190,17 @@ const TransactionPage: React.FC = () => {
                                             value={t.orderStatus}
                                             onChange={(e) => handleOrderStatusChange(t.id, e.target.value as OrderStatus)}
                                             className={`px-2 py-1 text-sm font-medium rounded-full border-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer ${getStatusBadge(t.orderStatus)}`}
+                                            title={t.paymentStatus !== PaymentStatus.Paid ? "Pelunasan diperlukan untuk menyelesaikan pesanan" : ""}
                                         >
                                             {Object.values(OrderStatus).map(status => (
-                                                <option key={status} value={status} className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white">{status}</option>
+                                                <option
+                                                    key={status}
+                                                    value={status}
+                                                    className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                                    disabled={status === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid}
+                                                >
+                                                    {status}
+                                                </option>
                                             ))}
                                         </select>
                                     </td>
@@ -254,25 +260,6 @@ const TransactionPage: React.FC = () => {
                 transaction={transactionForWhatsApp}
                 customer={customerForWhatsApp}
             />
-             {warningModalMessage && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setWarningModalMessage(null)}
-                    title="Peringatan"
-                    footer={
-                        <button 
-                            onClick={() => setWarningModalMessage(null)} 
-                            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-                        >
-                            Mengerti
-                        </button>
-                    }
-                >
-                    <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-300">
-                        {warningModalMessage}
-                    </p>
-                </Modal>
-            )}
         </>
     );
 };

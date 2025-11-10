@@ -7,11 +7,13 @@ import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useAppContext } from '../../contexts/AppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const CustomersPage: React.FC = () => {
     const { customers, setCustomers } = useCustomers();
     const { transactions } = useTransactions();
     const { currentUser, selectedStoreId, stores } = useAppContext();
+    const { addAuditLog } = useAuditLogs();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
@@ -66,8 +68,10 @@ const CustomersPage: React.FC = () => {
 
         if (currentCustomer && currentCustomer.id) {
             setCustomers(prev => prev.map(c => c.id === currentCustomer.id ? { ...c, ...customer, storeId } : c));
+            addAuditLog(`Memperbarui data pelanggan: "${customer.name}".`, storeId);
         } else {
             setCustomers(prev => [...prev, { ...customer, id: `CUST${Date.now()}`, storeId }]);
+            addAuditLog(`Menambahkan pelanggan baru: "${customer.name}".`, storeId);
         }
         handleCloseFormModal();
     };
@@ -79,6 +83,7 @@ const CustomersPage: React.FC = () => {
     const confirmDelete = () => {
         if (customerToDelete) {
             setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
+            addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId);
             setCustomerToDelete(null);
         }
     };

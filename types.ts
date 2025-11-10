@@ -1,4 +1,3 @@
-
 export enum ServiceCategory {
   Kiloan = 'Kiloan',
   Satuan = 'Satuan',
@@ -140,6 +139,7 @@ export interface AuditLog {
   timestamp: Date;
   user: string;
   action: string;
+  storeId?: string;
 }
 
 export interface Settings {

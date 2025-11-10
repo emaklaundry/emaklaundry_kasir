@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { User, UserRole, Store } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, UsersIcon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, UsersIcon, SearchIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
 import UserFormModal from '../../components/UserFormModal';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const UsersPage: React.FC = () => {
     const { currentUser, users, allUsers, setAllUsers, setCurrentUser, selectedStoreId } = useAppContext();
     const { stores } = useStores();
+    const { addAuditLog } = useAuditLogs();
     
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleOpenFormModal = (user: User | null = null) => {
         setCurrentUserToEdit(user);
@@ -30,8 +33,10 @@ const UsersPage: React.FC = () => {
         
         if (currentUserToEdit) {
             setAllUsers(prev => prev.map(u => u.id === currentUserToEdit.id ? updatedUser : u));
+            addAuditLog(`Memperbarui data pengguna: "${user.name}".`);
         } else {
             setAllUsers(prev => [...prev, updatedUser]);
+            addAuditLog(`Menambahkan pengguna baru: "${user.name}".`);
         }
 
         // If the user being edited is the currently logged-in user, update their session
@@ -63,6 +68,7 @@ const UsersPage: React.FC = () => {
                 }
             }
             setAllUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+            addAuditLog(`Menghapus pengguna: "${userToDelete.name}".`);
             setUserToDelete(null);
         }
     };
@@ -74,24 +80,42 @@ const UsersPage: React.FC = () => {
 
     const confirmToggleStatus = () => {
         if (userToToggleStatus) {
-            setAllUsers(prev => prev.map(u => u.id === userToToggleStatus.id ? { ...u, isActive: !u.isActive } : u));
+            const newStatus = !userToToggleStatus.isActive;
+            setAllUsers(prev => prev.map(u => u.id === userToToggleStatus.id ? { ...u, isActive: newStatus } : u));
+            addAuditLog(`Mengubah status pengguna "${userToToggleStatus.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
             setUserToToggleStatus(null);
         }
     };
     
-    const usersWithStore = users.map(user => ({
+    const usersWithStore = useMemo(() => users.map(user => ({
         ...user,
         storeName: stores.find(s => s.id === user.storeId)?.name || 'N/A'
-    }));
+    })), [users, stores]);
+
+    const filteredUsers = useMemo(() => usersWithStore.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [usersWithStore, searchTerm]);
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Pengguna</h1>
-                <button onClick={() => handleOpenFormModal()} className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">
-                    <PlusCircleIcon className="h-5 w-5 mr-2" />
-                    Tambah Pengguna
-                </button>
+                <div className="w-full md:w-auto flex items-center gap-4">
+                    <div className="relative w-full md:w-64">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input 
+                            type="text" 
+                            placeholder="Cari pengguna..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                        />
+                    </div>
+                    <button onClick={() => handleOpenFormModal()} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">
+                        <PlusCircleIcon className="h-5 w-5 mr-2" />
+                        Tambah Pengguna
+                    </button>
+                </div>
             </div>
             
             <div className="overflow-x-auto">
@@ -108,8 +132,8 @@ const UsersPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {usersWithStore.length > 0 ? (
-                            usersWithStore.map(user => {
+                        {filteredUsers.length > 0 ? (
+                            filteredUsers.map(user => {
                                 const isSuperAdmin = user.role === UserRole.SuperAdmin;
                                 return (
                                     <tr key={user.id} className="border-b dark:border-slate-700">
@@ -149,8 +173,8 @@ const UsersPage: React.FC = () => {
                              <tr>
                                 <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 5 : 4} className="text-center py-12">
                                     <UsersIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Pengguna</h3>
-                                    <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan pengguna pertama Anda.</p>
+                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}</h3>
+                                    <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain atau tambahkan pengguna baru.' : 'Mulai dengan menambahkan pengguna pertama Anda.'}</p>
                                     <div className="mt-6">
                                         <button onClick={() => handleOpenFormModal()} className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto">
                                             <PlusCircleIcon className="h-5 w-5 mr-2" />

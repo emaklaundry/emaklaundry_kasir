@@ -14,6 +14,7 @@ import CustomerSelector from '../../components/CustomerSelector';
 import ServiceSelector from '../../components/ServiceSelector';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import ServiceFormModal from '../../components/ServiceFormModal';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ const NewTransactionPage: React.FC = () => {
     const { customers, setCustomers } = useCustomers();
     const { services, setServices } = useServices();
     const { currentUser, selectedStoreId } = useAppContext();
+    const { addAuditLog } = useAuditLogs();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
@@ -226,6 +228,7 @@ const NewTransactionPage: React.FC = () => {
         };
         
         setTransactions(prev => [...prev, newTransaction]);
+        addAuditLog(`Membuat transaksi baru ${newTransaction.id} untuk pelanggan ${selectedCustomer.name}.`, newTransaction.storeId);
         setIsSuccessModalOpen(true);
     };
     

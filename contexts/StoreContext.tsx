@@ -1,6 +1,7 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { Store } from '../types';
 import { mockStores } from '../data/mockData';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 interface StoreContextType {
   stores: Store[];
@@ -12,23 +13,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 const STORES_STORAGE_KEY = 'laundry_stores';
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [stores, setStores] = useState<Store[]>(() => {
-    try {
-      const storedStores = localStorage.getItem(STORES_STORAGE_KEY);
-      return storedStores ? JSON.parse(storedStores) : mockStores;
-    } catch (error) {
-      console.error("Error reading stores from localStorage", error);
-      return mockStores;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORES_STORAGE_KEY, JSON.stringify(stores));
-    } catch (error) {
-      console.error("Error saving stores to localStorage", error);
-    }
-  }, [stores]);
+  const [stores, setStores] = usePersistentState<Store[]>(STORES_STORAGE_KEY, mockStores);
 
   return (
     <StoreContext.Provider value={{ stores, setStores }}>

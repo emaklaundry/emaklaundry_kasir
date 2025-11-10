@@ -4,6 +4,7 @@ import Modal from './Modal';
 import { useAssets } from '../contexts/AssetContext';
 import { MaintenanceLog } from '../types';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 interface QuickMaintenanceModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface QuickMaintenanceModalProps {
 
 const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, onClose }) => {
     const { assets, setAssets } = useAssets();
+    const { addAuditLog } = useAuditLogs();
     const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id || '');
     const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>({
         date: new Date(),
@@ -39,9 +41,13 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
         }
         
         const newLog: MaintenanceLog = { ...formData, id: Date.now() };
+        let assetName = '';
+        let storeId = '';
 
         setAssets(prevAssets => prevAssets.map(asset => {
             if (asset.id === selectedAssetId) {
+                assetName = asset.name;
+                storeId = asset.storeId;
                 return {
                     ...asset,
                     maintenanceHistory: [...asset.maintenanceHistory, newLog]
@@ -50,6 +56,8 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             return asset;
         }));
         
+        addAuditLog(`Melaporkan kerusakan cepat untuk aset "${assetName}": ${formData.description}.`, storeId);
+
         // Reset form
         setFormData({ date: new Date(), description: '', cost: 0 });
         setSelectedAssetId(assets[0]?.id || '');

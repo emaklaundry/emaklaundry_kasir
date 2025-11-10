@@ -1,7 +1,8 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { ScheduledMaintenance } from '../types';
 import { mockScheduledMaintenance } from '../data/mockData';
 import { useAssets } from './AssetContext';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 interface ScheduledMaintenanceContextType {
   scheduledMaintenances: ScheduledMaintenance[];
@@ -21,28 +22,12 @@ const reviveDates = (key: string, value: any) => {
 };
 
 export const ScheduledMaintenanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allScheduledMaintenances, setAllScheduledMaintenances] = useState<ScheduledMaintenance[]>(() => {
-    try {
-      const storedData = localStorage.getItem(SCHEDULED_MAINTENANCE_STORAGE_KEY);
-      if (storedData) {
-        return JSON.parse(storedData, reviveDates);
-      }
-      return mockScheduledMaintenance;
-    } catch (error) {
-      console.error("Error reading scheduled maintenance from localStorage", error);
-      return mockScheduledMaintenance;
-    }
-  });
+  const [allScheduledMaintenances, setAllScheduledMaintenances] = usePersistentState<ScheduledMaintenance[]>(
+    SCHEDULED_MAINTENANCE_STORAGE_KEY,
+    mockScheduledMaintenance,
+    reviveDates
+  );
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(SCHEDULED_MAINTENANCE_STORAGE_KEY, JSON.stringify(allScheduledMaintenances));
-    } catch (error) {
-      console.error("Error saving scheduled maintenance to localStorage", error);
-    }
-  }, [allScheduledMaintenances]);
-
-  // Consume the AssetContext to get assets currently in scope for the user
   const { assets } = useAssets();
   
   const assetIdsInScope = useMemo(() => new Set(assets.map((a) => a.id)), [assets]);

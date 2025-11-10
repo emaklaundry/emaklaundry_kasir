@@ -13,6 +13,7 @@ import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -32,6 +33,7 @@ const Dashboard: React.FC = () => {
     const { setExpenses } = useExpenses();
     const { scheduledMaintenances } = useScheduledMaintenances();
     const { assets } = useAssets();
+    const { addAuditLog } = useAuditLogs();
     
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -99,7 +101,9 @@ const Dashboard: React.FC = () => {
             alert('Silakan pilih cabang spesifik untuk mencatat pengeluaran.');
             return;
         }
-        setExpenses(prev => [...prev, { ...expense, id: Date.now(), storeId }]);
+        const newExpense = { ...expense, id: Date.now(), storeId };
+        setExpenses(prev => [...prev, newExpense]);
+        addAuditLog(`Mencatat pengeluaran cepat: "${newExpense.description}".`, storeId);
         setIsExpenseModalOpen(false);
     };
     
@@ -118,6 +122,7 @@ const Dashboard: React.FC = () => {
 
         const updatedTransaction = { ...transaction, orderStatus: nextStatus };
         setTransactions(prev => prev.map(t => (t.id === transactionId ? updatedTransaction : t)));
+        addAuditLog(`Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`, transaction.storeId);
 
         // Trigger WhatsApp modal if status becomes 'Ready for Pickup'
         if (nextStatus === OrderStatus.Ready) {
@@ -176,28 +181,30 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-                    <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                         <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Progres Pesanan Aktif</h2>
-                        <div className="flex items-center gap-4 flex-wrap">
-                                 <button onClick={() => setIsStockModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors disabled:bg-teal-400 disabled:cursor-not-allowed">
+                        <div className="flex flex-col items-start sm:items-end w-full sm:w-auto">
+                            <div className="flex items-center gap-3 flex-wrap justify-start sm:justify-end">
+                                <button onClick={() => setIsStockModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-base px-4 py-2 transition-colors disabled:bg-teal-400 disabled:cursor-not-allowed">
                                     <WrenchIcon className="h-5 w-5 mr-2" />
-                                    Update Stok Cepat
+                                    Update Stok
                                 </button>
-                                <button onClick={() => setIsExpenseModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed">
+                                <button onClick={() => setIsExpenseModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-base px-4 py-2 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed">
                                     <DollarSignIcon className="h-5 w-5 mr-2" />
                                     Catat Pengeluaran
                                 </button>
-                                <button onClick={() => setIsMaintenanceModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors disabled:bg-orange-400 disabled:cursor-not-allowed">
+                                <button onClick={() => setIsMaintenanceModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-base px-4 py-2 transition-colors disabled:bg-orange-400 disabled:cursor-not-allowed">
                                     <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                    Laporkan Kerusakan
+                                    Lapor Kerusakan
                                 </button>
                             </div>
+                            {isActionDisabled && (
+                                <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+                                    Pilih cabang spesifik untuk melakukan aksi cepat.
+                                </p>
+                            )}
+                        </div>
                     </div>
-                     {isActionDisabled && (
-                        <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 text-right -mt-2">
-                            Pilih cabang spesifik di header untuk melakukan aksi cepat.
-                        </p>
-                    )}
                     <div className="overflow-x-auto">
                         <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                             <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">

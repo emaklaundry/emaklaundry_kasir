@@ -1,8 +1,8 @@
-
-import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useMemo } from 'react';
 import { User, UserRole, Store } from '../types';
 import { mockUsers } from '../data/mockData';
 import { useStores } from './StoreContext';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 interface AppContextType {
   currentUser: User;
@@ -18,37 +18,27 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const USERS_STORAGE_KEY = 'laundry_users';
+const CURRENT_USER_ID_KEY = 'laundry_current_user_id';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allUsers, setAllUsers] = useState<User[]>(() => {
-    try {
-        const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-        return storedUsers ? JSON.parse(storedUsers) : mockUsers;
-    } catch (error) {
-        console.error("Error reading users from localStorage", error);
-        return mockUsers;
-    }
-  });
+  const [allUsers, setAllUsers] = usePersistentState<User[]>(USERS_STORAGE_KEY, mockUsers);
 
-  useEffect(() => {
-    try {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(allUsers));
-    } catch (error) {
-        console.error("Error saving users to localStorage", error);
-    }
-  }, [allUsers]);
-
-  const [currentUser, setCurrentUser] = useState<User>(() => {
-      // Ensure currentUser is always valid, even after refresh
-      const superAdmin = allUsers.find(u => u.role === UserRole.SuperAdmin);
-      return superAdmin || allUsers[0];
-  });
+  const [currentUserId, setCurrentUserId] = usePersistentState<number>(
+      CURRENT_USER_ID_KEY,
+      allUsers.find(u => u.role === UserRole.SuperAdmin)?.id || allUsers[0].id
+  );
+  
+  const currentUser = useMemo(() => allUsers.find(u => u.id === currentUserId) || allUsers[0], [allUsers, currentUserId]);
+  
+  const setCurrentUser = (user: User) => {
+      setCurrentUserId(user.id);
+  };
   
   const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
 
   const users = useMemo(() => {
-    // SuperAdmin can see users based on the store filter
+    // This logic is specific to users (showing all Super Admins), so it's not using the generic hook.
     if (currentUser.role === UserRole.SuperAdmin) {
       if (selectedStoreId === 'all') {
         return allUsers;

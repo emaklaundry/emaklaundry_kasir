@@ -6,6 +6,7 @@ import { useAssets } from '../contexts/AssetContext';
 import ConfirmationModal from './ConfirmationModal';
 import ScheduledMaintenanceFormModal from './ScheduledMaintenanceFormModal';
 import { PlusCircleIcon, EditIcon, Trash2Icon } from './icons';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 interface ScheduledMaintenanceModalProps {
     asset: Asset;
@@ -28,6 +29,7 @@ const calculateNextDueDate = (currentDueDate: Date, value: number, unit: 'days' 
 const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ asset, isOpen, onClose }) => {
     const { scheduledMaintenances, setScheduledMaintenances } = useScheduledMaintenances();
     const { setAssets } = useAssets();
+    const { addAuditLog } = useAuditLogs();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingSchedule, setEditingSchedule] = useState<ScheduledMaintenance | null>(null);
@@ -52,6 +54,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ a
     const handleSaveSchedule = (data: Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate'>) => {
         if(editingSchedule) { // Editing existing
             setScheduledMaintenances(prev => prev.map(s => s.id === editingSchedule.id ? {...s, ...data} : s));
+            addAuditLog(`Memperbarui jadwal perawatan "${data.description}" untuk aset "${asset.name}".`, asset.storeId);
         } else { // Adding new
             const newSchedule: ScheduledMaintenance = {
                 ...data,
@@ -60,6 +63,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ a
                 lastCompletedDate: null
             };
             setScheduledMaintenances(prev => [...prev, newSchedule]);
+            addAuditLog(`Menambahkan jadwal perawatan "${data.description}" untuk aset "${asset.name}".`, asset.storeId);
         }
         handleCloseForm();
     };
@@ -71,6 +75,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ a
     const confirmDelete = () => {
         if (deletingSchedule) {
             setScheduledMaintenances(prev => prev.filter(s => s.id !== deletingSchedule.id));
+            addAuditLog(`Menghapus jadwal perawatan "${deletingSchedule.description}" dari aset "${asset.name}".`, asset.storeId);
             setDeletingSchedule(null);
         }
     };
@@ -101,6 +106,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ a
             }
             return s;
         }));
+        addAuditLog(`Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}".`, asset.storeId);
     };
 
 

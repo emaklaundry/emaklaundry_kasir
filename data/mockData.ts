@@ -11,7 +11,6 @@ import {
   Expense,
   User,
   UserRole,
-  AuditLog,
   Settings,
   Store,
   ScheduledMaintenance
@@ -129,12 +128,6 @@ export const mockUsers: User[] = [
   { id: 4, name: 'Admin Bandung', role: UserRole.BranchAdmin, isActive: true, storeId: 'STORE2' },
   { id: 5, name: 'Kasir Bandung', role: UserRole.Cashier, isActive: true, storeId: 'STORE2' },
   { id: 6, name: 'Kasir Nonaktif', role: UserRole.Cashier, isActive: false, storeId: 'STORE1' },
-];
-
-export const mockAuditLogs: AuditLog[] = [
-  { id: 1, timestamp: new Date(), user: 'Super Admin', action: 'Login ke sistem' },
-  { id: 2, timestamp: new Date(), user: 'Kasir Jakarta', action: 'Membuat transaksi TRX002' },
-  { id: 3, timestamp: new Date(), user: 'Admin Bandung', action: 'Menambahkan Aset "Setrika Uap C3"' },
 ];
 
 export const mockSettings: Settings = {

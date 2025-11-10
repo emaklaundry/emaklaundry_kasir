@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const SettingsPage: React.FC = () => {
     const { settings, setSettings } = useSettings();
+    const { addAuditLog } = useAuditLogs();
     const [isSaved, setIsSaved] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -15,6 +17,7 @@ const SettingsPage: React.FC = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // Context state is already updated. In a real app, this would save to a backend.
+        addAuditLog('Menyimpan perubahan pada Pengaturan Aplikasi.');
         console.log('Settings saved:', settings);
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 3000);

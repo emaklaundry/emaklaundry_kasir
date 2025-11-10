@@ -10,6 +10,7 @@ import { useInventory } from '../../contexts/InventoryContext';
 import { useAssets } from '../../contexts/AssetContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import StoreFormModal from '../../components/StoreFormModal';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const StoresPage: React.FC = () => {
     const { stores, setStores } = useStores();
@@ -19,6 +20,7 @@ const StoresPage: React.FC = () => {
     const { inventory } = useInventory();
     const { assets } = useAssets();
     const { expenses } = useExpenses();
+    const { addAuditLog } = useAuditLogs();
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentStore, setCurrentStore] = useState<Store | null>(null);
@@ -39,6 +41,7 @@ const StoresPage: React.FC = () => {
         if (currentStore) {
             // Edit existing store
             setStores(prev => prev.map(s => s.id === currentStore.id ? { ...s, ...storeData } : s));
+            addAuditLog(`Memperbarui data cabang: "${storeData.name}".`);
         } else {
             // Add new store
             const newStore: Store = {
@@ -47,6 +50,7 @@ const StoresPage: React.FC = () => {
                 isActive: true,
             };
             setStores(prev => [...prev, newStore]);
+            addAuditLog(`Menambahkan cabang baru: "${newStore.name}".`);
         }
         handleCloseFormModal();
     };
@@ -78,7 +82,9 @@ const StoresPage: React.FC = () => {
 
     const confirmToggleStatus = () => {
         if (storeToToggle) {
-            setStores(prev => prev.map(s => s.id === storeToToggle.id ? { ...s, isActive: !s.isActive } : s));
+            const newStatus = !storeToToggle.isActive;
+            setStores(prev => prev.map(s => s.id === storeToToggle.id ? { ...s, isActive: newStatus } : s));
+            addAuditLog(`Mengubah status cabang "${storeToToggle.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
             setStoreToToggle(null);
         }
     };
@@ -86,6 +92,7 @@ const StoresPage: React.FC = () => {
     const confirmDelete = () => {
         if (storeToDelete) {
             setStores(prev => prev.filter(s => s.id !== storeToDelete.id));
+            addAuditLog(`Menghapus cabang: "${storeToDelete.name}".`);
             setStoreToDelete(null);
         }
     };

@@ -28,6 +28,7 @@ import CustomerDetailPage from './pages/management/CustomerDetailPage';
 import ReceiptPage from './pages/transactions/ReceiptPage';
 import TransactionDetailPage from './pages/transactions/TransactionDetailPage';
 import StoresPage from './pages/management/StoresPage';
+import { AuditLogProvider } from './contexts/AuditLogContext';
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -84,9 +85,11 @@ const App: React.FC = () => {
                             <AssetProvider>
                                 <ExpenseProvider>
                                     <ScheduledMaintenanceProvider>
-                                        <HashRouter>
-                                            <AppRoutes />
-                                        </HashRouter>
+                                        <AuditLogProvider>
+                                            <HashRouter>
+                                                <AppRoutes />
+                                            </HashRouter>
+                                        </AuditLogProvider>
                                     </ScheduledMaintenanceProvider>
                                 </ExpenseProvider>
                             </AssetProvider>
