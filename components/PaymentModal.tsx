@@ -1,6 +1,8 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Modal from './Modal';
 import { Transaction, PaymentMethod } from '../types';
+import { formatRupiah, parseRupiah } from '../utils/formatting';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -8,9 +10,6 @@ interface PaymentModalProps {
   transaction: Transaction | null;
   onSave: (updatedTransaction: Transaction) => void;
 }
-
-const formatRupiah = (number: number): string => new Intl.NumberFormat('id-ID').format(number);
-const parseRupiah = (formattedString: string): number => parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transaction, onSave }) => {
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);

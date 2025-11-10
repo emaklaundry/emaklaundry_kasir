@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockServices } from '../../data/mockData';
@@ -10,10 +11,7 @@ import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import { useAppContext } from '../../contexts/AppContext';
-
-const formatRupiah = (number: number): string => new Intl.NumberFormat('id-ID').format(number);
-const parseRupiah = (formattedString: string): number => parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
-
+import { formatRupiah, parseRupiah } from '../../utils/formatting';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();

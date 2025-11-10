@@ -1,19 +1,9 @@
+
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { useAssets } from '../contexts/AssetContext';
 import { MaintenanceLog } from '../types';
-
-const formatRupiah = (number: number | string): string => {
-    if (typeof number === 'string') {
-        number = parseFloat(number.replace(/[^\d]/g, ''));
-    }
-    if (isNaN(number)) return '';
-    return new Intl.NumberFormat('id-ID').format(number);
-};
-
-const parseRupiah = (formattedString: string): number => {
-    return parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
-};
+import { formatRupiah, parseRupiah } from '../utils/formatting';
 
 interface QuickMaintenanceModalProps {
   isOpen: boolean;

@@ -5,9 +5,22 @@ import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon } from '../../component
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
+import { useAppContext } from '../../contexts/AppContext';
+import { useCustomers } from '../../contexts/CustomerContext';
+import { useTransactions } from '../../contexts/TransactionContext';
+import { useInventory } from '../../contexts/InventoryContext';
+import { useAssets } from '../../contexts/AssetContext';
+import { useExpenses } from '../../contexts/ExpenseContext';
 
 const StoresPage: React.FC = () => {
     const { stores, setStores } = useStores();
+    const { allUsers, selectedStoreId } = useAppContext();
+    const { customers } = useCustomers();
+    const { transactions } = useTransactions();
+    const { inventory } = useInventory();
+    const { assets } = useAssets();
+    const { expenses } = useExpenses();
+
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentStore, setCurrentStore] = useState<Store | null>(null);
     const [storeToToggle, setStoreToToggle] = useState<Store | null>(null);
@@ -44,6 +57,23 @@ const StoresPage: React.FC = () => {
     };
     
     const handleDelete = (store: Store) => {
+        if (selectedStoreId !== 'all') {
+            alert('Untuk memastikan integritas data, silakan pilih "Semua Cabang" pada filter di header sebelum menghapus cabang.');
+            return;
+        }
+
+        const isStoreInUse = allUsers.some(u => u.storeId === store.id) ||
+                             customers.some(c => c.storeId === store.id) ||
+                             transactions.some(t => t.storeId === store.id) ||
+                             inventory.some(i => i.storeId === store.id) ||
+                             assets.some(a => a.storeId === store.id) ||
+                             expenses.some(e => e.storeId === store.id);
+
+        if (isStoreInUse) {
+            alert(`Cabang "${store.name}" tidak dapat dihapus karena masih digunakan oleh data lain (pengguna, pelanggan, transaksi, dll.).`);
+            return;
+        }
+
         setStoreToDelete(store);
     };
 

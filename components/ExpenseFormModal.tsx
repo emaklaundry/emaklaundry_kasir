@@ -1,18 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { Expense } from '../types';
-
-const formatRupiah = (number: number | string): string => {
-    if (typeof number === 'string') {
-        number = parseFloat(number.replace(/[^\d]/g, ''));
-    }
-    if (isNaN(number)) return '';
-    return new Intl.NumberFormat('id-ID').format(number);
-};
-
-const parseRupiah = (formattedString: string): number => {
-    return parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
-};
+import { formatRupiah, parseRupiah } from '../utils/formatting';
 
 interface ExpenseFormModalProps {
     expense: Expense | null;

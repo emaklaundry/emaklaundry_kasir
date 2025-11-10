@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { UserRole } from '../types';
@@ -10,14 +11,14 @@ const Header: React.FC<HeaderProps> = ({ pageTitle }) => {
   const { 
     currentUser, 
     setCurrentUser, 
-    users, 
+    allUsers, 
     stores, 
     selectedStoreId, 
     setSelectedStoreId 
   } = useAppContext();
 
   const handleUserChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedUser = users.find(u => u.id === parseInt(event.target.value, 10));
+    const selectedUser = allUsers.find(u => u.id === parseInt(event.target.value, 10));
     if (selectedUser) {
       setCurrentUser(selectedUser);
       // Reset store selection if the new user is not a super admin
@@ -58,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ pageTitle }) => {
               onChange={handleUserChange} 
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             >
-              {users.map(user => (
+              {allUsers.map(user => (
                 <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
               ))}
             </select>

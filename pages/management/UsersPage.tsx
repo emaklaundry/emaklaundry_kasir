@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { mockUsers } from '../../data/mockData';
 import { User, UserRole, Store } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
@@ -9,8 +8,7 @@ import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
 
 const UsersPage: React.FC = () => {
-    const { users: allUsers, selectedStoreId } = useAppContext(); // Using app context for users
-    const [users, setUsers] = useState<User[]>(mockUsers); // Keep local state for updates until full context integration
+    const { currentUser, users, setAllUsers, setCurrentUser, selectedStoreId } = useAppContext();
     const { stores } = useStores();
     
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -29,11 +27,19 @@ const UsersPage: React.FC = () => {
     };
 
     const handleSaveUser = (user: Omit<User, 'id'>) => {
-        if (currentUserToEdit && currentUserToEdit.id) {
-            setUsers(prev => prev.map(u => u.id === currentUserToEdit.id ? { ...currentUserToEdit, ...user } : u));
+        const updatedUser = { ...(currentUserToEdit || {}), ...user, id: currentUserToEdit?.id || Date.now() } as User;
+        
+        if (currentUserToEdit) {
+            setAllUsers(prev => prev.map(u => u.id === currentUserToEdit.id ? updatedUser : u));
         } else {
-            setUsers(prev => [...prev, { ...user, id: Date.now() }]);
+            setAllUsers(prev => [...prev, updatedUser]);
         }
+
+        // If the user being edited is the currently logged-in user, update their session
+        if(currentUser.id === updatedUser.id) {
+            setCurrentUser(updatedUser);
+        }
+
         handleCloseFormModal();
     };
 
@@ -43,7 +49,7 @@ const UsersPage: React.FC = () => {
 
     const confirmDelete = () => {
         if (userToDelete) {
-            setUsers(users.filter(u => u.id !== userToDelete.id));
+            setAllUsers(prev => prev.filter(u => u.id !== userToDelete.id));
             setUserToDelete(null);
         }
     };
@@ -54,7 +60,7 @@ const UsersPage: React.FC = () => {
 
     const confirmToggleStatus = () => {
         if (userToToggleStatus) {
-            setUsers(prev => prev.map(u => u.id === userToToggleStatus.id ? { ...u, isActive: !u.isActive } : u));
+            setAllUsers(prev => prev.map(u => u.id === userToToggleStatus.id ? { ...u, isActive: !u.isActive } : u));
             setUserToToggleStatus(null);
         }
     };
@@ -80,7 +86,7 @@ const UsersPage: React.FC = () => {
                         <tr>
                             <th className="px-4 py-3">Nama</th>
                             <th className="px-4 py-3">Peran</th>
-                             {allUsers[0].role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                             {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                                 <th className="px-4 py-3">Cabang</th>
                              )}
                             <th className="px-4 py-3">Status</th>
@@ -92,7 +98,7 @@ const UsersPage: React.FC = () => {
                             <tr key={user.id} className="border-b dark:border-slate-700">
                                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{user.name}</td>
                                 <td className="px-4 py-3">{user.role}</td>
-                                {allUsers[0].role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                                     <td className="px-4 py-3">{user.role !== UserRole.SuperAdmin ? user.storeName : '-'}</td>
                                 )}
                                 <td className="px-4 py-3">
