@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { InventoryProvider } from './contexts/InventoryContext';
 import { TransactionProvider } from './contexts/TransactionContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { UserRole } from './types';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -55,13 +57,15 @@ const AppRoutes: React.FC = () => (
 const App: React.FC = () => {
   return (
     <AppProvider>
-      <InventoryProvider>
-        <TransactionProvider>
-          <HashRouter>
-            <AppRoutes />
-          </HashRouter>
-        </TransactionProvider>
-      </InventoryProvider>
+      <SettingsProvider>
+        <InventoryProvider>
+          <TransactionProvider>
+            <HashRouter>
+              <AppRoutes />
+            </HashRouter>
+          </TransactionProvider>
+        </InventoryProvider>
+      </SettingsProvider>
     </AppProvider>
   );
 };

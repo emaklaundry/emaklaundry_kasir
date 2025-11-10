@@ -1,12 +1,17 @@
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { mockTransactions, mockCustomers, mockSettings } from '../../data/mockData';
 import { PrinterIcon, ChevronLeftIcon } from '../../components/icons';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const ReceiptPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const { settings } = useSettings();
+    // In a real app, you would fetch from a single source. Here we combine transaction context and mock data.
     const transaction = mockTransactions.find(t => t.id === id);
     const customer = transaction ? mockCustomers.find(c => c.id === transaction.customerId) : null;
+    
 
     if (!transaction || !customer) {
         return (
@@ -55,8 +60,24 @@ const ReceiptPage: React.FC = () => {
                 ))}
             </div>
 
-            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4">
-                <div className="flex justify-between font-bold text-xl text-slate-900 dark:text-white">
+            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2">
+                <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+                    <span>Subtotal</span>
+                    <span>Rp {transaction.subtotal.toLocaleString('id-ID')}</span>
+                </div>
+                {transaction.discount > 0 && (
+                    <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+                        <span>Diskon</span>
+                        <span>- Rp {transaction.discount.toLocaleString('id-ID')}</span>
+                    </div>
+                )}
+                {transaction.tax > 0 && (
+                    <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+                        <span>Pajak</span>
+                        <span>+ Rp {transaction.tax.toLocaleString('id-ID')}</span>
+                    </div>
+                )}
+                <div className="flex justify-between font-bold text-xl text-slate-900 dark:text-white pt-2 border-t border-slate-300 dark:border-slate-600">
                     <span>Total</span>
                     <span>Rp {transaction.total.toLocaleString('id-ID')}</span>
                 </div>
@@ -64,7 +85,7 @@ const ReceiptPage: React.FC = () => {
             
             <div className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
                 <p>Estimasi Selesai: {new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}</p>
-                <p className="mt-2">{mockSettings.receiptMessage}</p>
+                <p className="mt-2">{settings.receiptMessage}</p>
             </div>
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4 print-hide">

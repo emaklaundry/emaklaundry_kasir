@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { mockCustomers } from '../../data/mockData';
@@ -10,6 +8,7 @@ import { useTransactions } from '../../contexts/TransactionContext';
 const TransactionPage: React.FC = () => {
     const { transactions, setTransactions } = useTransactions();
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDate, setSelectedDate] = useState('');
 
     const transactionsWithCustomer = useMemo(() => {
         return transactions.map(t => {
@@ -22,11 +21,37 @@ const TransactionPage: React.FC = () => {
         }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }, [transactions]);
     
-    const filteredTransactions = transactionsWithCustomer.filter(t => 
-        t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.customerPhone.includes(searchTerm)
-    );
+    const filteredTransactions = useMemo(() => {
+        return transactionsWithCustomer.filter(t => {
+            const transactionDate = new Date(t.createdAt);
+
+            // Date filtering for a single day
+            if (selectedDate) {
+                // The date from the input is "YYYY-MM-DD". new Date() might parse this as UTC midnight.
+                // To compare against local transaction dates reliably, we treat the selected date as local.
+                const parts = selectedDate.split('-').map(p => parseInt(p, 10));
+                const startOfDay = new Date(parts[0], parts[1] - 1, parts[2]);
+                startOfDay.setHours(0, 0, 0, 0);
+                
+                const endOfDay = new Date(startOfDay);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                if (transactionDate < startOfDay || transactionDate > endOfDay) {
+                    return false;
+                }
+            }
+
+            // Search term filtering
+            if (!searchTerm) {
+                return true; // No search term, so it passes this filter
+            }
+            
+            const term = searchTerm.toLowerCase();
+            return t.id.toLowerCase().includes(term) ||
+                   t.customerName.toLowerCase().includes(term) ||
+                   t.customerPhone.includes(term);
+        });
+    }, [transactionsWithCustomer, searchTerm, selectedDate]);
     
     const getStatusBadge = (status: OrderStatus) => {
         switch (status) {
@@ -73,22 +98,41 @@ const TransactionPage: React.FC = () => {
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Daftar Transaksi</h1>
-                 <div className="w-full md:w-auto flex items-center gap-4">
-                    <div className="relative w-full md:w-64">
-                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Cari ID, nama, atau no. HP..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                        />
-                    </div>
-                    <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">
-                        <PlusCircleIcon className="h-5 w-5 mr-2" />
-                        Transaksi Baru
-                    </Link>
+                <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">
+                    <PlusCircleIcon className="h-5 w-5 mr-2" />
+                    Transaksi Baru
+                </Link>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700 flex-wrap">
+                <div className="relative w-full md:w-64">
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input 
+                        type="text" 
+                        placeholder="Cari ID, nama, atau no. HP..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    />
                 </div>
+                <div className="flex items-center gap-2">
+                    <label htmlFor="selectedDate" className="text-base text-slate-600 dark:text-slate-300 flex-shrink-0">Tanggal:</label>
+                    <input 
+                        id="selectedDate"
+                        type="date"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                        className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    />
+                </div>
+                {selectedDate && (
+                    <button 
+                        onClick={() => setSelectedDate('')}
+                        className="text-base text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                        Reset
+                    </button>
+                )}
             </div>
             
             <div className="overflow-x-auto">

@@ -53,7 +53,10 @@ export interface Transaction {
   id: string;
   customerId: string;
   items: TransactionItem[];
-  total: number;
+  subtotal: number;
+  discount: number; // Discount amount
+  tax: number; // Tax amount
+  total: number; // Grand total (subtotal - discount + tax)
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   createdAt: Date;
@@ -110,4 +113,6 @@ export interface AuditLog {
 
 export interface Settings {
     receiptMessage: string;
+    taxRate: number; // in percent
+    discountRate: number; // in percent
 }

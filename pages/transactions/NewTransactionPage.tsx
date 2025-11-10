@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockServices, mockCustomers } from '../../data/mockData';
@@ -5,21 +6,30 @@ import { Service, TransactionItem, PaymentStatus, OrderStatus, Customer, Service
 import { Trash2Icon, PlusCircleIcon, SearchIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import SuccessModal from '../../components/SuccessModal';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useTransactions } from '../../contexts/TransactionContext';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
+    const { settings } = useSettings();
+    const { setTransactions } = useTransactions();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
+    const [discountRate, setDiscountRate] = useState(0);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+
+    useEffect(() => {
+        setDiscountRate(settings.discountRate);
+    }, [settings.discountRate]);
 
     const resetForm = () => {
         setSelectedCustomer(null);
         setItems([]);
         setNotes('');
-        // This is a workaround to clear the customer selector input
+        setDiscountRate(settings.discountRate);
         const customerInput = document.getElementById('customerName') as HTMLInputElement;
         if (customerInput) customerInput.value = '';
     };
@@ -55,9 +65,22 @@ const NewTransactionPage: React.FC = () => {
         setItems(items.filter((_, i) => i !== index));
     };
 
-    const total = useMemo(() => {
+    const subtotal = useMemo(() => {
         return items.reduce((sum, item) => sum + item.subtotal, 0);
     }, [items]);
+
+    const discountAmount = useMemo(() => {
+        return subtotal * (discountRate / 100);
+    }, [subtotal, discountRate]);
+
+    const taxAmount = useMemo(() => {
+        const taxableAmount = subtotal - discountAmount;
+        return taxableAmount * (settings.taxRate / 100);
+    }, [subtotal, discountAmount, settings.taxRate]);
+    
+    const grandTotal = useMemo(() => {
+        return subtotal - discountAmount + taxAmount;
+    }, [subtotal, discountAmount, taxAmount]);
 
     const handleSaveCustomer = (customer: Customer) => {
         const newCustomer = { ...customer, id: `CUST${Date.now()}`};
@@ -77,15 +100,18 @@ const NewTransactionPage: React.FC = () => {
             id: `TRX${Date.now()}`,
             customerId: selectedCustomer.id,
             items,
-            total,
+            subtotal,
+            discount: discountAmount,
+            tax: taxAmount,
+            total: grandTotal,
             paymentStatus: PaymentStatus.Unpaid,
             orderStatus: OrderStatus.Processing,
             createdAt: new Date(),
             estimatedCompletionDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Dummy 3 days
             notes,
         };
-        console.log('New Transaction:', newTransaction);
-        // mockTransactions.push(newTransaction); // This would add to the mock data
+        
+        setTransactions(prev => [...prev, newTransaction]);
         setIsSuccessModalOpen(true);
     };
     
@@ -166,10 +192,35 @@ const NewTransactionPage: React.FC = () => {
                                     <label htmlFor="notes" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Catatan (Opsional)</label>
                                     <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
                                 </div>
-                                <div className="pt-4 border-t dark:border-slate-700">
-                                    <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white">
-                                        <span>Total Biaya:</span>
-                                        <span>Rp {total.toLocaleString('id-ID')}</span>
+                                <div className="space-y-3 pt-4 border-t dark:border-slate-700">
+                                    <div className="flex justify-between items-center text-lg">
+                                        <span className="text-slate-600 dark:text-slate-300">Subtotal:</span>
+                                        <span className="font-medium text-slate-800 dark:text-slate-200">Rp {subtotal.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-lg">
+                                        <label htmlFor="discountRate" className="text-slate-600 dark:text-slate-300">Diskon:</label>
+                                        <div className="flex items-center gap-2">
+                                            <input 
+                                                type="number"
+                                                id="discountRate"
+                                                value={discountRate}
+                                                onChange={(e) => setDiscountRate(parseFloat(e.target.value) || 0)}
+                                                className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                                            />
+                                            <span className="text-slate-600 dark:text-slate-300">%</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-lg">
+                                        <span/>
+                                        <span className="font-medium text-red-600 dark:text-red-400">- Rp {discountAmount.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-lg">
+                                        <span className="text-slate-600 dark:text-slate-300">Pajak ({settings.taxRate}%):</span>
+                                        <span className="font-medium text-slate-800 dark:text-slate-200">+ Rp {taxAmount.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
+                                        <span>Grand Total:</span>
+                                        <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
                                     </div>
                                 </div>
                                 <button type="submit" className="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors">

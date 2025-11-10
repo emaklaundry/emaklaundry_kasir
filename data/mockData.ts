@@ -37,6 +37,9 @@ export let mockTransactions: Transaction[] = [
   {
     id: 'TRX001', customerId: 'CUST1',
     items: [{ serviceId: 'S2', serviceName: 'Cuci Setrika', quantity: 5, price: 10000, subtotal: 50000, unit: 'kg' }],
+    subtotal: 50000,
+    discount: 0,
+    tax: 0,
     total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
     createdAt: new Date('2023-10-01T10:00:00'), estimatedCompletionDate: new Date('2023-10-04T10:00:00')
   },
@@ -46,18 +49,27 @@ export let mockTransactions: Transaction[] = [
         { serviceId: 'S1', serviceName: 'Cuci Kering Lipat', quantity: 3, price: 8000, subtotal: 24000, unit: 'kg' },
         { serviceId: 'S4', serviceName: 'Kemeja', quantity: 2, price: 15000, subtotal: 30000, unit: 'pcs' }
     ],
+    subtotal: 54000,
+    discount: 0,
+    tax: 0,
     total: 54000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
     createdAt: new Date('2023-10-25T14:30:00'), estimatedCompletionDate: new Date('2023-10-28T14:30:00')
   },
   {
     id: 'TRX003', customerId: 'CUST1',
     items: [{ serviceId: 'S5', serviceName: 'Jas', quantity: 1, price: 50000, subtotal: 50000, unit: 'pcs' }],
+    subtotal: 50000,
+    discount: 0,
+    tax: 0,
     total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Ready,
     createdAt: new Date('2023-10-26T11:00:00'), estimatedCompletionDate: new Date('2023-10-30T11:00:00')
   },
    {
     id: 'TRX004', customerId: 'CUST3',
     items: [{ serviceId: 'S7', serviceName: 'Cuci Sepatu', quantity: 2, price: 40000, subtotal: 80000, unit: 'pasang' }],
+    subtotal: 80000,
+    discount: 0,
+    tax: 0,
     total: 80000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
     createdAt: new Date('2023-10-27T09:00:00'), estimatedCompletionDate: new Date('2023-11-01T09:00:00')
   },
@@ -108,5 +120,7 @@ export const mockAuditLogs: AuditLog[] = [
 ];
 
 export const mockSettings: Settings = {
-    receiptMessage: 'Terima kasih telah menggunakan jasa kami! Silakan simpan struk ini sebagai bukti transaksi.'
+    receiptMessage: 'Terima kasih telah menggunakan jasa kami! Silakan simpan struk ini sebagai bukti transaksi.',
+    taxRate: 0,
+    discountRate: 0,
 };

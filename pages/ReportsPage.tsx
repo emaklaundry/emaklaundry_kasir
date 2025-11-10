@@ -51,15 +51,16 @@ const ReportsPage: React.FC = () => {
         return { transactions, expenses };
     }, [startDate, endDate]);
 
-    const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + t.total, 0);
+    const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + (t.subtotal - t.discount), 0);
     const totalExpenses = filteredData.expenses.reduce((acc, e) => acc + e.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
-    const avgTransaction = filteredData.transactions.length > 0 ? totalRevenue / filteredData.transactions.length : 0;
-
+    
     const topServices = useMemo(() => {
          const serviceStats = mockServices.map(service => {
             const revenue = filteredData.transactions.reduce((total, transaction) => {
                 const serviceItem = transaction.items.find(item => item.serviceId === service.id);
+                // Note: This doesn't account for transaction-level discounts. 
+                // A more complex distribution logic would be needed for perfect accuracy.
                 return total + (serviceItem ? serviceItem.subtotal : 0);
             }, 0);
             return { name: service.name, revenue };
@@ -70,6 +71,7 @@ const ReportsPage: React.FC = () => {
     const topCustomers = useMemo(() => {
         const customerSpending: {[key: string]: number} = {};
         filteredData.transactions.forEach(t => {
+            // Top customers based on their total bill (grand total)
             customerSpending[t.customerId] = (customerSpending[t.customerId] || 0) + t.total;
         });
         return Object.entries(customerSpending)
