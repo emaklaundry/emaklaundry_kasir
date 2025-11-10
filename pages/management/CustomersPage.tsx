@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Customer, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon } from '../../components/icons';
-import Modal from '../../components/Modal';
+import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon, UsersIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useAppContext } from '../../contexts/AppContext';
+import CustomerFormModal from '../../components/CustomerFormModal';
 
 const CustomersPage: React.FC = () => {
     const { customers, setCustomers } = useCustomers();
@@ -54,7 +54,7 @@ const CustomersPage: React.FC = () => {
         }
 
         if (currentCustomer && currentCustomer.id) {
-            setCustomers(prev => prev.map(c => c.id === currentCustomer.id ? { ...c, ...customer } : c));
+            setCustomers(prev => prev.map(c => c.id === currentCustomer.id ? { ...c, ...customer, storeId } : c));
         } else {
             setCustomers(prev => [...prev, { ...customer, id: `CUST${Date.now()}`, storeId }]);
         }
@@ -71,6 +71,8 @@ const CustomersPage: React.FC = () => {
             setCustomerToDelete(null);
         }
     };
+    
+    const canAddNewCustomer = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -87,13 +89,13 @@ const CustomersPage: React.FC = () => {
                             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                         />
                     </div>
-                    <button onClick={() => handleOpenFormModal()} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 disabled:bg-blue-400 disabled:cursor-not-allowed" disabled={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'}>
+                    <button onClick={() => handleOpenFormModal()} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 disabled:bg-blue-400 disabled:cursor-not-allowed" disabled={!canAddNewCustomer}>
                         <PlusCircleIcon className="h-5 w-5 mr-2" />
                         Tambah Pelanggan
                     </button>
                 </div>
             </div>
-            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+            {!canAddNewCustomer && (
                 <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah pelanggan baru.</p>
             )}
             
@@ -110,23 +112,39 @@ const CustomersPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredCustomers.map(customer => (
-                            <tr key={customer.id} className="border-b dark:border-slate-700">
-                                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                                     <Link to={`/management/customers/${customer.id}`} className="hover:underline text-blue-600 dark:text-blue-400">
-                                        {customer.name}
-                                    </Link>
-                                </td>
-                                <td className="px-4 py-3">{customer.phone}</td>
-                                 {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{customer.storeName}</td>}
-                                <td className="px-4 py-3 text-center">{customer.transactionCount}</td>
-                                <td className="px-4 py-3 text-right">Rp {customer.totalSpent.toLocaleString('id-ID')}</td>
-                                <td className="px-4 py-3 flex items-center space-x-2">
-                                    <button onClick={() => handleOpenFormModal(customer)} className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleDelete(customer)} className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                        {filteredCustomers.length > 0 ? (
+                            filteredCustomers.map(customer => (
+                                <tr key={customer.id} className="border-b dark:border-slate-700">
+                                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                                        <Link to={`/management/customers/${customer.id}`} className="hover:underline text-blue-600 dark:text-blue-400">
+                                            {customer.name}
+                                        </Link>
+                                    </td>
+                                    <td className="px-4 py-3">{customer.phone}</td>
+                                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{customer.storeName}</td>}
+                                    <td className="px-4 py-3 text-center">{customer.transactionCount}</td>
+                                    <td className="px-4 py-3 text-right">Rp {customer.totalSpent.toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-3 flex items-center space-x-2">
+                                        <button onClick={() => handleOpenFormModal(customer)} className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleDelete(customer)} className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                             <tr>
+                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5} className="text-center py-12">
+                                    <UsersIcon className="mx-auto w-12 h-12 text-slate-400" />
+                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Pelanggan</h3>
+                                    <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan pelanggan pertama Anda.</p>
+                                    <div className="mt-6">
+                                        <button onClick={() => handleOpenFormModal()} disabled={!canAddNewCustomer} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed">
+                                            <PlusCircleIcon className="h-5 w-5 mr-2" />
+                                            Tambah Pelanggan
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -149,59 +167,6 @@ const CustomersPage: React.FC = () => {
                 />
             )}
         </div>
-    );
-};
-
-
-const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => void, onSave: (customer: Omit<Customer, 'id' | 'storeId'>) => void }> = ({ customer, onClose, onSave }) => {
-    const [formData, setFormData] = useState({
-        name: customer?.name || '',
-        phone: customer?.phone || '',
-        address: customer?.address || '',
-        notes: customer?.notes || '',
-    });
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
-    return (
-        <Modal
-            isOpen={true}
-            onClose={onClose}
-            title={customer ? 'Edit Pelanggan' : 'Tambah Pelanggan Baru'}
-            footer={
-                <>
-                    <button type="button" onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                    <button type="submit" onClick={handleSubmit} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan</button>
-                </>
-            }
-        >
-            <form className="space-y-4" onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Pelanggan</label>
-                    <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-                <div>
-                    <label htmlFor="phone" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nomor Telepon</label>
-                    <input type="tel" name="phone" id="phone" value={formData.phone} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-                <div>
-                    <label htmlFor="address" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Alamat (Opsional)</label>
-                    <input type="text" name="address" id="address" value={formData.address} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                </div>
-                <div>
-                    <label htmlFor="notes" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Catatan (Opsional)</label>
-                    <textarea name="notes" id="notes" value={formData.notes} onChange={handleChange} rows={3} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
-                </div>
-            </form>
-        </Modal>
     );
 };
 

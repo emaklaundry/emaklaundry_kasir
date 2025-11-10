@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Expense, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, DollarSignIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import ExpenseFormModal from '../../components/ExpenseFormModal';
@@ -54,6 +54,8 @@ const ExpensesPage: React.FC = () => {
         storeName: stores.find(s => s.id === expense.storeId)?.name || 'N/A'
     }));
 
+    const canAddNewExpense = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
@@ -61,13 +63,13 @@ const ExpensesPage: React.FC = () => {
                 <button 
                     onClick={() => handleOpenFormModal()} 
                     className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
-                    disabled={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'}
+                    disabled={!canAddNewExpense}
                 >
                     <PlusCircleIcon className="h-5 w-5 mr-2" />
                     Tambah Pengeluaran
                 </button>
             </div>
-             {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+             {!canAddNewExpense && (
                 <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah pengeluaran baru.</p>
             )}
             
@@ -84,19 +86,39 @@ const ExpensesPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {expensesWithStore.map(expense => (
-                            <tr key={expense.id} className="border-b dark:border-slate-700">
-                                <td className="px-4 py-3">{new Date(expense.date).toLocaleDateString('id-ID')}</td>
-                                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{expense.description}</td>
-                                {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{expense.storeName}</td>}
-                                <td className="px-4 py-3">{expense.category}</td>
-                                <td className="px-4 py-3 text-right">Rp {expense.amount.toLocaleString('id-ID')}</td>
-                                <td className="px-4 py-3 flex items-center space-x-2">
-                                    <button onClick={() => handleOpenFormModal(expense)} className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleDelete(expense)} className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                        {expensesWithStore.length > 0 ? (
+                            expensesWithStore.map(expense => (
+                                <tr key={expense.id} className="border-b dark:border-slate-700">
+                                    <td className="px-4 py-3">{new Date(expense.date).toLocaleDateString('id-ID')}</td>
+                                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{expense.description}</td>
+                                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{expense.storeName}</td>}
+                                    <td className="px-4 py-3">{expense.category}</td>
+                                    <td className="px-4 py-3 text-right">Rp {expense.amount.toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-3 flex items-center space-x-2">
+                                        <button onClick={() => handleOpenFormModal(expense)} className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleDelete(expense)} className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                             <tr>
+                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5} className="text-center py-12">
+                                    <DollarSignIcon className="mx-auto w-12 h-12 text-slate-400" />
+                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Pengeluaran</h3>
+                                    <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan data pengeluaran pertama Anda.</p>
+                                    <div className="mt-6">
+                                        <button 
+                                            onClick={() => handleOpenFormModal()} 
+                                            disabled={!canAddNewExpense}
+                                            className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed"
+                                        >
+                                            <PlusCircleIcon className="h-5 w-5 mr-2" />
+                                            Tambah Pengeluaran
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>

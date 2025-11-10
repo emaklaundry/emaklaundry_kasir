@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Transaction, OrderStatus, PaymentStatus } from '../../types';
-import { PlusCircleIcon, SearchIcon, PrinterIcon, SendIcon, EyeIcon, DollarSignIcon } from '../../components/icons';
+import { PlusCircleIcon, SearchIcon, PrinterIcon, SendIcon, EyeIcon, DollarSignIcon, ShoppingCartIcon } from '../../components/icons';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import PaymentModal from '../../components/PaymentModal';
@@ -172,7 +172,8 @@ const TransactionPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTransactions.map(t => (
+                            {filteredTransactions.length > 0 ? (
+                                filteredTransactions.map(t => (
                                 <tr key={t.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.id}</td>
                                     <td className="px-4 py-3">{t.customerName}</td>
@@ -211,7 +212,24 @@ const TransactionPage: React.FC = () => {
                                         </button>
                                     </td>
                                 </tr>
-                            ))}
+                            ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-12">
+                                        <ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />
+                                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Tidak Ada Transaksi</h3>
+                                        <p className="mt-1 text-base text-slate-500">
+                                            {searchTerm || selectedDate ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
+                                        </p>
+                                        <div className="mt-6">
+                                            <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
+                                                <PlusCircleIcon className="h-5 w-5 mr-2" />
+                                                Buat Transaksi Baru
+                                            </Link>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

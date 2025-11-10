@@ -1,23 +1,25 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockServices } from '../../data/mockData';
-import { Service, TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod } from '../../types';
-import { Trash2Icon, PlusCircleIcon, SearchIcon, MessageSquareIcon } from '../../components/icons';
-import Modal from '../../components/Modal';
+import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod } from '../../types';
+import { Trash2Icon, MessageSquareIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
+import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import CustomerSelector from '../../components/CustomerSelector';
+import ServiceSelector from '../../components/ServiceSelector';
+import CustomerFormModal from '../../components/CustomerFormModal';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
     const { settings } = useSettings();
     const { setTransactions } = useTransactions();
     const { customers, setCustomers } = useCustomers();
+    const { services } = useServices();
     const { currentUser, selectedStoreId } = useAppContext();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
@@ -51,7 +53,7 @@ const NewTransactionPage: React.FC = () => {
         if (customerInput) customerInput.value = '';
     };
 
-    const handleAddService = (service: Service) => {
+    const handleAddService = (service: typeof services[0]) => {
         const existingItem = items.find(i => i.serviceId === service.id);
         if(existingItem) {
             handleItemChange(items.indexOf(existingItem), 'quantity', existingItem.quantity + 1);
@@ -72,7 +74,7 @@ const NewTransactionPage: React.FC = () => {
     const handleItemChange = (index: number, field: 'quantity', value: number) => {
         const newItems = [...items];
         const item = newItems[index];
-        const service = mockServices.find(s => s.id === item.serviceId);
+        const service = services.find(s => s.id === item.serviceId);
         
         if (field === 'quantity') {
             const newQuantity = value >= 0 ? value : 0;
@@ -156,7 +158,7 @@ const NewTransactionPage: React.FC = () => {
 
         const maxDuration = Math.max(
             ...items.map(item => {
-                const service = mockServices.find(s => s.id === item.serviceId);
+                const service = services.find(s => s.id === item.serviceId);
                 return service ? service.durationDays : 0;
             })
         );
@@ -164,7 +166,7 @@ const NewTransactionPage: React.FC = () => {
         const completionDate = new Date();
         completionDate.setDate(completionDate.getDate() + maxDuration);
         return completionDate;
-    }, [items]);
+    }, [items, services]);
 
     const currentStoreId = useMemo(() => {
         return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
@@ -242,7 +244,7 @@ const NewTransactionPage: React.FC = () => {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                             <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Pilih Layanan</h2>
-                            <ServiceSelector services={mockServices} onSelectService={handleAddService} />
+                            <ServiceSelector services={services} onSelectService={handleAddService} />
                         </div>
 
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -276,7 +278,7 @@ const NewTransactionPage: React.FC = () => {
                                                 </td>
                                                 <td className="px-4 py-2 text-center">
                                                     <div className="flex items-center justify-center">
-                                                        {mockServices.find(s => s.id === item.serviceId)?.category === ServiceCategory.Satuan && (
+                                                        {services.find(s => s.id === item.serviceId)?.category === ServiceCategory.Satuan && (
                                                             <button type="button" onClick={() => handleOpenNotesModal(index)} title="Tambah Catatan per Item" className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
                                                                 <MessageSquareIcon className="w-6 h-6"/>
                                                                 {item.itemDetails?.some(d => d.note) && (
@@ -418,205 +420,5 @@ const NewTransactionPage: React.FC = () => {
         </>
     );
 };
-
-
-const CustomerSelector: React.FC<{
-    customers: Customer[];
-    selectedCustomer: Customer | null;
-    onSelectCustomer: (customer: Customer | null) => void;
-    onAddNewCustomer: () => void;
-}> = ({ customers, selectedCustomer, onSelectCustomer, onAddNewCustomer }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    
-    const filteredCustomers = customers.filter(c => 
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.phone.includes(searchTerm)
-    );
-
-    useEffect(() => {
-      if (selectedCustomer) {
-        setSearchTerm(selectedCustomer.name);
-        setIsDropdownOpen(false);
-      } else {
-        const customerInput = document.getElementById('customerName') as HTMLInputElement;
-        if(customerInput && customerInput.value !== searchTerm) {
-            setSearchTerm('');
-        }
-      }
-    }, [selectedCustomer]);
-
-
-    return (
-        <div className="relative">
-            <label htmlFor="customerName" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Pelanggan</label>
-            <div className="flex gap-2">
-                 <div className="relative flex-grow">
-                     <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
-                    <input 
-                        type="text" 
-                        id="customerName" 
-                        value={searchTerm} 
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            onSelectCustomer(null);
-                            setIsDropdownOpen(true);
-                        }}
-                        onFocus={() => setIsDropdownOpen(true)}
-                        onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
-                        className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
-                        placeholder="Cari nama atau no. HP"
-                        required
-                        autoComplete="off"
-                    />
-                    {isDropdownOpen && filteredCustomers.length > 0 && (
-                        <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg dark:bg-slate-700 border dark:border-slate-600 max-h-60 overflow-auto">
-                            <ul>
-                                {filteredCustomers.map(customer => (
-                                    <li 
-                                        key={customer.id} 
-                                        className="px-4 py-2 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
-                                        onMouseDown={() => onSelectCustomer(customer)}
-                                    >
-                                        <p className="font-semibold">{customer.name}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{customer.phone}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                </div>
-                <button type="button" onClick={onAddNewCustomer} className="flex-shrink-0 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3">
-                    <PlusCircleIcon className="w-5 h-5" />
-                </button>
-            </div>
-             {selectedCustomer && (
-                <div className="mt-2 text-sm p-2 bg-blue-50 dark:bg-blue-900/50 rounded-md text-blue-800 dark:text-blue-300">
-                    <p>Terpilih: <strong>{selectedCustomer.name}</strong> ({selectedCustomer.phone})</p>
-                </div>
-            )}
-        </div>
-    );
-}
-
-const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => void, onSave: (customer: Omit<Customer, 'id' | 'storeId'>) => void }> = ({ customer, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId'>>({
-        name: customer?.name || '',
-        phone: customer?.phone || '',
-        address: customer?.address || '',
-        notes: customer?.notes || '',
-    });
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-    
-    return (
-        <Modal
-            isOpen={true}
-            onClose={onClose}
-            title={customer ? 'Edit Pelanggan' : 'Tambah Pelanggan Baru'}
-            footer={
-                <>
-                    <button type="button" onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                    <button type="submit" onClick={handleSubmit} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan</button>
-                </>
-            }
-        >
-            <form className="space-y-4" onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Pelanggan</label>
-                    <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-                <div>
-                    <label htmlFor="phone" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nomor Telepon</label>
-                    <input type="tel" name="phone" id="phone" value={formData.phone} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-                <div>
-                    <label htmlFor="address" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Alamat (Opsional)</label>
-                    <input type="text" name="address" id="address" value={formData.address} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                </div>
-                <div>
-                    <label htmlFor="notes" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Catatan (Opsional)</label>
-                    <textarea name="notes" id="notes" value={formData.notes} onChange={handleChange} rows={3} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
-                </div>
-            </form>
-        </Modal>
-    );
-};
-
-const ServiceSelector: React.FC<{
-    services: Service[];
-    onSelectService: (service: Service) => void;
-}> = ({ services, onSelectService }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-
-    const filteredServices = services.filter(s => 
-        s.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const groupedServices = useMemo(() => {
-        return filteredServices.reduce((acc, service) => {
-            (acc[service.category] = acc[service.category] || []).push(service);
-            return acc;
-        }, {} as Record<string, Service[]>);
-    }, [filteredServices]);
-
-    const categoryOrder = Object.values(ServiceCategory);
-
-    const sortedCategories = Object.keys(groupedServices).sort((a, b) => {
-        return categoryOrder.indexOf(a as ServiceCategory) - categoryOrder.indexOf(b as ServiceCategory);
-    });
-
-    return (
-        <div className="space-y-4">
-            <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10"/>
-                <input 
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Cari layanan berdasarkan nama..."
-                    className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                    autoComplete="off"
-                />
-            </div>
-
-            <div className="max-h-[45vh] overflow-y-auto space-y-4 pr-2 -mr-2">
-                {sortedCategories.length > 0 ? (
-                    sortedCategories.map(category => (
-                        <div key={category}>
-                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2 sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-1 z-10">{category}</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                {groupedServices[category].map(service => (
-                                    <button 
-                                        type="button" 
-                                        key={service.id} 
-                                        onClick={() => onSelectService(service)}
-                                        className="text-left p-3 border rounded-lg bg-white dark:bg-slate-700/50 hover:bg-brand-blue-50 dark:hover:bg-brand-blue-900/50 hover:border-brand-blue-300 dark:hover:border-brand-blue-600 border-slate-300 dark:border-slate-600 transition-all duration-200 h-full flex flex-col justify-between"
-                                    >
-                                        <p className="font-semibold text-base text-slate-800 dark:text-slate-200">{service.name}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Rp {service.price.toLocaleString('id-ID')}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center text-slate-500 dark:text-slate-400 py-10">
-                        <p className="font-semibold text-lg">Layanan tidak ditemukan</p>
-                        <p>Coba kata kunci lain.</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
 
 export default NewTransactionPage;

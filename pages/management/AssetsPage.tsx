@@ -1,13 +1,12 @@
-
-
 import React, { useState } from 'react';
 import { Asset, MaintenanceLog, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon } from '../../components/icons';
-import Modal from '../../components/Modal';
+import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon, WrenchIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
 import { useAppContext } from '../../contexts/AppContext';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import AssetFormModal from '../../components/AssetFormModal';
+import MaintenanceFormModal from '../../components/MaintenanceFormModal';
+import MaintenanceHistoryModal from '../../components/MaintenanceHistoryModal';
 
 const AssetsPage: React.FC = () => {
     const { assets, setAssets } = useAssets();
@@ -88,6 +87,8 @@ const AssetsPage: React.FC = () => {
         storeName: stores.find(s => s.id === asset.storeId)?.name || 'N/A'
     }));
 
+    const canAddNewAsset = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
@@ -95,13 +96,13 @@ const AssetsPage: React.FC = () => {
                 <button 
                     onClick={() => handleOpenAssetForm()} 
                     className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
-                    disabled={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'}
+                    disabled={!canAddNewAsset}
                 >
                     <PlusCircleIcon className="h-5 w-5 mr-2" />
                     Tambah Aset
                 </button>
             </div>
-            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+            {!canAddNewAsset && (
                 <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah aset baru.</p>
             )}
             
@@ -118,21 +119,41 @@ const AssetsPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {assetsWithStore.map(asset => (
-                            <tr key={asset.id} className="border-b dark:border-slate-700">
-                                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{asset.name}</td>
-                                {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{asset.storeName}</td>}
-                                <td className="px-4 py-3">{new Date(asset.purchaseDate).toLocaleDateString('id-ID')}</td>
-                                <td className="px-4 py-3 text-right">Rp {asset.purchaseCost.toLocaleString('id-ID')}</td>
-                                <td className="px-4 py-3"><span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}>{asset.status}</span></td>
-                                <td className="px-4 py-3 flex items-center space-x-2">
-                                    <button onClick={() => handleOpenAssetForm(asset)} title="Edit Aset" className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleDelete(asset)} title="Hapus Aset" className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleOpenMaintenanceForm(asset)} title="Tambah Log Pemeliharaan" className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"><PlusCircleIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleOpenHistory(asset)} title="Lihat Riwayat Pemeliharaan" className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><HistoryIcon className="w-5 h-5" /></button>
+                        {assetsWithStore.length > 0 ? (
+                            assetsWithStore.map(asset => (
+                                <tr key={asset.id} className="border-b dark:border-slate-700">
+                                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{asset.name}</td>
+                                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{asset.storeName}</td>}
+                                    <td className="px-4 py-3">{new Date(asset.purchaseDate).toLocaleDateString('id-ID')}</td>
+                                    <td className="px-4 py-3 text-right">Rp {asset.purchaseCost.toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-3"><span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}>{asset.status}</span></td>
+                                    <td className="px-4 py-3 flex items-center space-x-2">
+                                        <button onClick={() => handleOpenAssetForm(asset)} title="Edit Aset" className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleDelete(asset)} title="Hapus Aset" className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleOpenMaintenanceForm(asset)} title="Tambah Log Pemeliharaan" className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"><PlusCircleIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleOpenHistory(asset)} title="Lihat Riwayat Pemeliharaan" className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><HistoryIcon className="w-5 h-5" /></button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5} className="text-center py-12">
+                                    <WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />
+                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Aset</h3>
+                                    <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan aset pertama Anda.</p>
+                                    <div className="mt-6">
+                                        <button 
+                                            onClick={() => handleOpenAssetForm()} 
+                                            disabled={!canAddNewAsset}
+                                            className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed"
+                                        >
+                                            <PlusCircleIcon className="h-5 w-5 mr-2" />
+                                            Tambah Aset
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -142,140 +163,6 @@ const AssetsPage: React.FC = () => {
             {isHistoryModalOpen && currentAsset && <MaintenanceHistoryModal asset={currentAsset} onClose={() => setIsHistoryModalOpen(false)} />}
             {assetToDelete && <ConfirmationModal isOpen={true} onClose={() => setAssetToDelete(null)} onConfirm={confirmDelete} title="Hapus Aset" message={`Anda yakin ingin menghapus aset "${assetToDelete.name}"?`} />}
         </div>
-    );
-};
-
-
-const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSave: (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => void }> = ({ asset, onClose, onSave }) => {
-    const [formData, setFormData] = useState({
-        name: asset?.name || '',
-        serialNumber: asset?.serialNumber || '',
-        purchaseDate: asset?.purchaseDate || new Date(),
-        purchaseCost: asset?.purchaseCost || 0,
-        status: asset?.status || 'Active',
-    });
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
-         if (name === 'purchaseCost') {
-            setFormData(prev => ({ ...prev, purchaseCost: parseRupiah(value) }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
-    return (
-        <Modal 
-          isOpen={true} 
-          onClose={onClose} 
-          title={asset ? 'Edit Aset' : 'Tambah Aset Baru'} 
-          footer={
-            <>
-                <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                <button onClick={handleSubmit} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan</button>
-            </>
-          }
-        >
-            <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Aset</label>
-                        <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                    </div>
-                    <div>
-                        <label htmlFor="serialNumber" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nomor Serial</label>
-                        <input type="text" name="serialNumber" id="serialNumber" value={formData.serialNumber} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="purchaseDate" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Tanggal Beli</label>
-                        <input type="date" name="purchaseDate" id="purchaseDate" value={formData.purchaseDate.toISOString().split('T')[0]} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                    </div>
-                    <div>
-                        <label htmlFor="purchaseCost" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Biaya Beli (Rp)</label>
-                        <input type="text" name="purchaseCost" id="purchaseCost" value={formatRupiah(formData.purchaseCost)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="status" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Status</label>
-                    <select name="status" id="status" value={formData.status} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                        <option value="Active">Aktif</option>
-                        <option value="Under Maintenance">Dalam Perbaikan</option>
-                        <option value="Decommissioned">Diberhentikan</option>
-                    </select>
-                </div>
-            </form>
-        </Modal>
-    );
-};
-
-const MaintenanceFormModal: React.FC<{ assetName: string, onClose: () => void, onSave: (log: Omit<MaintenanceLog, 'id'>) => void }> = ({ assetName, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>({
-        date: new Date(),
-        description: '',
-        cost: 0
-    });
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type } = e.target;
-        if (name === 'cost') {
-            setFormData(prev => ({ ...prev, cost: parseRupiah(value) }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title={`Tambah Log untuk ${assetName}`} footer={
-          <>
-            <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-            <button onClick={handleSubmit} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan</button>
-          </>
-        }>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="date" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Tanggal</label>
-                    <input type="date" name="date" id="date" value={formData.date.toISOString().split('T')[0]} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-                <div>
-                    <label htmlFor="description" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Deskripsi</label>
-                    <input type="text" name="description" id="description" value={formData.description} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-                <div>
-                    <label htmlFor="cost" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Biaya (Rp)</label>
-                    <input type="text" name="cost" id="cost" value={formatRupiah(formData.cost)} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
-                </div>
-            </form>
-        </Modal>
-    );
-};
-
-const MaintenanceHistoryModal: React.FC<{ asset: Asset, onClose: () => void }> = ({ asset, onClose }) => {
-    return (
-        <Modal isOpen={true} onClose={onClose} title={`Riwayat Pemeliharaan: ${asset.name}`} footer={<><button onClick={onClose} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Tutup</button></>}>
-            {asset.maintenanceHistory.length > 0 ? (
-                <div className="max-h-80 overflow-y-auto space-y-3">
-                    {asset.maintenanceHistory.sort((a,b) => b.date.getTime() - a.date.getTime()).map(log => (
-                        <div key={log.id} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-700/50 dark:border-slate-700">
-                            <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">Tanggal: {new Date(log.date).toLocaleDateString('id-ID')}</p>
-                            <p className="text-base text-slate-600 dark:text-slate-300">{log.description}</p>
-                            <p className="text-base font-medium text-slate-700 dark:text-slate-200 mt-1">Biaya: Rp {log.cost.toLocaleString('id-ID')}</p>
-                        </div>
-                    ))}
-                </div>
-            ) : (<p className="text-base text-slate-500 dark:text-slate-400">Tidak ada riwayat pemeliharaan.</p>)}
-        </Modal>
     );
 };
 

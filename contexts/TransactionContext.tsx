@@ -13,7 +13,7 @@ const TransactionContext = createContext<TransactionContextType | undefined>(und
 const TRANSACTIONS_STORAGE_KEY = 'laundry_transactions_multistore';
 
 const reviveDates = (key: string, value: any) => {
-  const isDate = ['createdAt', 'estimatedCompletionDate', 'purchaseDate', 'date'].includes(key);
+  const isDate = ['createdAt', 'estimatedCompletionDate'].includes(key);
   if (isDate && typeof value === 'string') {
     return new Date(value);
   }

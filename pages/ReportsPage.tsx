@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { mockServices, mockUsers } from '../data/mockData';
+import { mockUsers } from '../data/mockData';
 import { Transaction, UserRole } from '../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAppContext } from '../contexts/AppContext';
+import { useServices } from '../contexts/ServiceContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -21,6 +22,7 @@ const ReportsPage: React.FC = () => {
     const { transactions: storeFilteredTransactions } = useTransactions();
     const { customers } = useCustomers();
     const { expenses: storeFilteredExpenses } = useExpenses();
+    const { services } = useServices();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const [view, setView] = useState<'custom' | 'weekly' | 'monthly'>('custom');
     const today = new Date();
@@ -62,7 +64,7 @@ const ReportsPage: React.FC = () => {
     const netProfit = totalRevenue - totalExpenses;
     
     const topServices = useMemo(() => {
-         const serviceStats = mockServices.map(service => {
+         const serviceStats = services.map(service => {
             const revenue = filteredData.transactions.reduce((total, transaction) => {
                 const serviceItem = transaction.items.find(item => item.serviceId === service.id);
                 return total + (serviceItem ? serviceItem.subtotal : 0);
@@ -70,7 +72,7 @@ const ReportsPage: React.FC = () => {
             return { name: service.name, revenue };
         });
         return serviceStats.filter(s => s.revenue > 0).sort((a,b) => b.revenue - a.revenue).slice(0, 5);
-    }, [filteredData.transactions]);
+    }, [filteredData.transactions, services]);
 
     const topCustomers = useMemo(() => {
         const customerSpending: {[key: string]: number} = {};
