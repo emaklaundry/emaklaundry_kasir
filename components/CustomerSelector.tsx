@@ -19,16 +19,40 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selected
     );
 
     useEffect(() => {
-      if (selectedCustomer) {
-        setSearchTerm(selectedCustomer.name);
-        setIsDropdownOpen(false);
-      } else {
-        const customerInput = document.getElementById('customerName') as HTMLInputElement;
-        if(customerInput && customerInput.value !== searchTerm) {
-            setSearchTerm('');
+        if (selectedCustomer) {
+            setSearchTerm(selectedCustomer.name);
+            setIsDropdownOpen(false);
+        } else {
+            const customerInput = document.getElementById('customerName');
+            // Only clear the search term if the input isn't focused (i.e., user isn't typing)
+            // This handles external resets, like from the main form's "reset" button.
+            if(document.activeElement !== customerInput) {
+                setSearchTerm('');
+            }
         }
-      }
     }, [selectedCustomer]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+
+        // Deselect customer only if the input text is no longer a plausible part of their name
+        if (selectedCustomer && !selectedCustomer.name.toLowerCase().startsWith(value.toLowerCase())) {
+            onSelectCustomer(null);
+        }
+
+        if (!value) {
+            onSelectCustomer(null);
+        }
+        
+        setIsDropdownOpen(true);
+    };
+
+    const handleSelectCustomer = (customer: Customer) => {
+        onSelectCustomer(customer);
+        setSearchTerm(customer.name);
+        setIsDropdownOpen(false);
+    };
 
 
     return (
@@ -41,11 +65,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selected
                         type="text" 
                         id="customerName" 
                         value={searchTerm} 
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            onSelectCustomer(null);
-                            setIsDropdownOpen(true);
-                        }}
+                        onChange={handleInputChange}
                         onFocus={() => setIsDropdownOpen(true)}
                         onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
@@ -60,7 +80,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selected
                                     <li 
                                         key={customer.id} 
                                         className="px-4 py-2 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
-                                        onMouseDown={() => onSelectCustomer(customer)}
+                                        onMouseDown={() => handleSelectCustomer(customer)}
                                     >
                                         <p className="font-semibold">{customer.name}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">{customer.phone}</p>

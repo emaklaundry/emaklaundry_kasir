@@ -49,8 +49,6 @@ const NewTransactionPage: React.FC = () => {
         setDiscountType('percent');
         setPaymentMethod(undefined);
         setAmountPaidStr('0');
-        const customerInput = document.getElementById('customerName') as HTMLInputElement;
-        if (customerInput) customerInput.value = '';
     };
 
     const handleAddService = (service: typeof services[0]) => {

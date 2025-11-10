@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { mockUsers } from '../data/mockData';
-import { Transaction, UserRole } from '../types';
+import { Transaction, UserRole, Service } from '../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
@@ -23,7 +22,7 @@ const ReportsPage: React.FC = () => {
     const { customers } = useCustomers();
     const { expenses: storeFilteredExpenses } = useExpenses();
     const { services } = useServices();
-    const { currentUser, selectedStoreId, stores } = useAppContext();
+    const { currentUser, selectedStoreId, stores, allUsers } = useAppContext();
     const [view, setView] = useState<'custom' | 'weekly' | 'monthly'>('custom');
     const today = new Date();
     const [startDate, setStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -62,17 +61,31 @@ const ReportsPage: React.FC = () => {
     const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + t.amountPaid, 0);
     const totalExpenses = filteredData.expenses.reduce((acc, e) => acc + e.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
+
+    const serviceMap = useMemo(() => {
+        return services.reduce((map, service) => {
+            map[service.id] = service;
+            return map;
+        }, {} as Record<string, Service>);
+    }, [services]);
     
     const topServices = useMemo(() => {
-         const serviceStats = services.map(service => {
-            const revenue = filteredData.transactions.reduce((total, transaction) => {
-                const serviceItem = transaction.items.find(item => item.serviceId === service.id);
-                return total + (serviceItem ? serviceItem.subtotal : 0);
-            }, 0);
-            return { name: service.name, revenue };
+        const serviceRevenue: { [key: string]: number } = {};
+        filteredData.transactions.forEach(transaction => {
+            transaction.items.forEach(item => {
+                serviceRevenue[item.serviceId] = (serviceRevenue[item.serviceId] || 0) + item.subtotal;
+            });
         });
-        return serviceStats.filter(s => s.revenue > 0).sort((a,b) => b.revenue - a.revenue).slice(0, 5);
-    }, [filteredData.transactions, services]);
+
+        return Object.entries(serviceRevenue)
+            .map(([serviceId, revenue]) => ({
+                name: serviceMap[serviceId]?.name || 'Layanan Dihapus',
+                revenue
+            }))
+            .filter(s => s.revenue > 0)
+            .sort((a,b) => b.revenue - a.revenue)
+            .slice(0, 5);
+    }, [filteredData.transactions, serviceMap]);
 
     const topCustomers = useMemo(() => {
         const customerSpending: {[key: string]: number} = {};
@@ -94,7 +107,7 @@ const ReportsPage: React.FC = () => {
         filteredData.transactions.forEach(t => {
             const userId = t.createdByUserId;
             if (!userId) return;
-            const user = mockUsers.find(u => u.id === userId);
+            const user = allUsers.find(u => u.id === userId);
             if (!user) return;
 
             if (!stats[userId]) {
@@ -112,7 +125,7 @@ const ReportsPage: React.FC = () => {
         });
 
         return Object.values(stats).sort((a, b) => b.totalRevenue - a.totalRevenue);
-    }, [filteredData.transactions]);
+    }, [filteredData.transactions, allUsers]);
 
     const getStoreName = () => {
         if (currentUser.role === UserRole.SuperAdmin) {

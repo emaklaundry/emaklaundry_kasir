@@ -1,4 +1,3 @@
-
 import {
   Customer,
   Service,
@@ -76,7 +75,7 @@ export let mockTransactions: Transaction[] = [
   },
   {
     id: 'TRX003', customerId: 'CUST3',
-    items: [{ serviceId: 'S5', serviceName: 'Jas', quantity: 1, price: 50000, subtotal: 50000, unit: 'pcs' }],
+    items: [{ serviceId: 'S5', serviceName: 'Jas', quantity: 1, price: 50000, subtotal: 50000, unit: 'pcs', itemDetails: [{note: ''}] }],
     subtotal: 50000,
     discount: 5000,
     tax: 0,

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Modal from './Modal';
-import { Transaction, PaymentMethod } from '../types';
+import { Transaction, PaymentMethod, PaymentStatus } from '../types';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 
 interface PaymentModalProps {
@@ -46,14 +46,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
     }
 
     const newAmountPaid = transaction.amountPaid + amountToPay;
-    const newStatus = newAmountPaid >= transaction.total ? 'Paid' : 'Partially Paid';
+    const isNowPaidInFull = newAmountPaid >= transaction.total;
+    const newStatus = isNowPaidInFull ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
+    const finalChange = isNowPaidInFull ? change : 0;
 
     onSave({
       ...transaction,
       amountPaid: newAmountPaid,
       paymentStatus: newStatus,
       paymentMethod: method,
-      change: change,
+      change: finalChange,
     });
     onClose();
   };
