@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Store } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, TruckIcon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, TruckIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -12,6 +12,7 @@ import { useExpenses } from '../../contexts/ExpenseContext';
 import StoreFormModal from '../../components/StoreFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
+import { useSortableData } from '../../hooks/useSortableData';
 
 const StoresPage: React.FC = () => {
     const { stores, setStores } = useStores();
@@ -28,6 +29,14 @@ const StoresPage: React.FC = () => {
     const [currentStore, setCurrentStore] = useState<Store | null>(null);
     const [storeToToggle, setStoreToToggle] = useState<Store | null>(null);
     const [storeToDelete, setStoreToDelete] = useState<Store | null>(null);
+    
+    const { items: sortedStores, requestSort, sortConfig } = useSortableData(stores);
+    
+    const getSortIcon = (key: keyof Store) => {
+        if (!sortConfig || sortConfig.key !== key) return null;
+        if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
+        return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
+    };
 
     const handleOpenFormModal = (store: Store | null = null) => {
         setCurrentStore(store);
@@ -99,6 +108,14 @@ const StoresPage: React.FC = () => {
         }
     };
 
+    const NoStoresFound = () => (
+        <div className="text-center py-12">
+            <TruckIcon className="mx-auto w-12 h-12 text-slate-400" />
+            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Cabang</h3>
+            <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan cabang pertama Anda.</p>
+        </div>
+    );
+
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
@@ -109,19 +126,20 @@ const StoresPage: React.FC = () => {
                 </button>
             </div>
             
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
-                            <th className="px-4 py-3">Nama Cabang</th>
-                            <th className="px-4 py-3">Alamat</th>
-                            <th className="px-4 py-3">Status</th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('name')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Nama Cabang {getSortIcon('name')}</button></th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('address')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Alamat {getSortIcon('address')}</button></th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('isActive')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Status {getSortIcon('isActive')}</button></th>
                             <th className="px-4 py-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {stores.length > 0 ? (
-                            stores.map(store => (
+                        {sortedStores.length > 0 ? (
+                            sortedStores.map(store => (
                                 <tr key={store.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{store.name}</td>
                                     <td className="px-4 py-3">{store.address}</td>
@@ -145,21 +163,39 @@ const StoresPage: React.FC = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={4} className="text-center py-12">
-                                    <TruckIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Cabang</h3>
-                                    <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan cabang pertama Anda.</p>
-                                    <div className="mt-6">
-                                        <button onClick={() => handleOpenFormModal()} className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto">
-                                            <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                            Tambah Cabang
-                                        </button>
-                                    </div>
+                                <td colSpan={4}>
+                                    <NoStoresFound />
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                 {stores.length > 0 ? (
+                    stores.map(store => (
+                        <div key={store.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-bold text-lg text-slate-800 dark:text-slate-200">{store.name}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{store.address}</p>
+                                </div>
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${store.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>
+                                    {store.isActive ? 'Aktif' : 'Tidak Aktif'}
+                                </span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-end gap-2 border-t dark:border-slate-600 pt-2">
+                                <button onClick={() => handleOpenFormModal(store)} title="Edit" className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"><EditIcon className="w-5 h-5" /></button>
+                                <button onClick={() => handleToggleStatus(store)} title={store.isActive ? "Nonaktifkan" : "Aktifkan"} className={`p-2 rounded-md ${store.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-200 dark:hover:bg-slate-600`}><PowerIcon className="w-5 h-5" /></button>
+                                <button onClick={() => handleDelete(store)} title="Hapus" className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600"><Trash2Icon className="w-5 h-5" /></button>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <NoStoresFound />
+                )}
             </div>
 
             {isFormModalOpen && (

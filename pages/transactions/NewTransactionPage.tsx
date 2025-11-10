@@ -268,6 +268,8 @@ const NewTransactionPage: React.FC = () => {
             setPaymentMethod(undefined);
         }
     };
+    
+    const quickCashButtons = [50000, 100000];
 
     return (
         <>
@@ -361,8 +363,9 @@ const NewTransactionPage: React.FC = () => {
                                             <input 
                                                 type="number"
                                                 id="discountValue"
+                                                min="0"
                                                 value={discountValue}
-                                                onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
                                                 className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
                                             />
                                         </div>
@@ -429,6 +432,14 @@ const NewTransactionPage: React.FC = () => {
                                             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                             placeholder="0"
                                         />
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button type="button" onClick={() => setAmountPaidStr(formatRupiah(grandTotal))} className="px-3 py-1.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800">Uang Pas</button>
+                                        {quickCashButtons.map(amount => (
+                                            <button type="button" key={amount} onClick={() => setAmountPaidStr(formatRupiah(amount))} className="px-3 py-1.5 text-sm font-medium text-slate-800 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500">
+                                                {formatRupiah(amount)}
+                                            </button>
+                                        ))}
                                     </div>
                                     {changeAmount > 0 && (
                                         <div className="flex justify-between items-center text-lg">

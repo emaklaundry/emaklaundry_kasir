@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { InventoryItem, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useAppContext } from '../../contexts/AppContext';
 import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
+import { useSortableData } from '../../hooks/useSortableData';
 
 const InventoryPage: React.FC = () => {
     const { inventory, setInventory } = useInventory();
@@ -20,13 +21,18 @@ const InventoryPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const location = useLocation();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [filter, setFilter] = useState<'all' | 'low_stock'>(() => searchParams.get('filter') === 'low_stock' ? 'low_stock' : 'all');
+
 
     useEffect(() => {
         if (location.state?.openModal) {
             handleOpenFormModal();
-            navigate(location.pathname, { replace: true });
+            navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state, navigate]);
+        const filterParam = searchParams.get('filter');
+        setFilter(filterParam === 'low_stock' ? 'low_stock' : 'all');
+    }, [location.state, navigate, searchParams]);
 
     const handleOpenFormModal = (item: InventoryItem | null = null) => {
         setCurrentItem(item);
@@ -72,11 +78,38 @@ const InventoryPage: React.FC = () => {
         storeName: stores.find(s => s.id === item.storeId)?.name || 'N/A'
     })), [inventory, stores]);
 
-    const filteredInventory = useMemo(() => inventoryWithStore.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [inventoryWithStore, searchTerm]);
+    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
+    type InventoryWithStore = (typeof inventoryWithStore)[0];
+
+    const filteredInventory = useMemo(() => inventoryWithStore.filter(item => {
+        if (filter === 'low_stock' && item.stock > item.lowStockThreshold) {
+            return false;
+        }
+        return item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    }), [inventoryWithStore, searchTerm, filter]);
     
+    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
+    const { items: sortedInventory, requestSort, sortConfig } = useSortableData<InventoryWithStore>(filteredInventory);
+
+    // FIX: Use the explicit type for the key to ensure type safety.
+    const getSortIcon = (key: keyof InventoryWithStore) => {
+        if (!sortConfig || sortConfig.key !== key) return null;
+        if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
+        return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
+    };
+
     const canAddNewItem = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+    
+    const handleFilterChange = (newFilter: 'all' | 'low_stock') => {
+        setFilter(newFilter);
+        if (newFilter === 'low_stock') {
+            searchParams.set('filter', 'low_stock');
+        } else {
+            searchParams.delete('filter');
+        }
+        setSearchParams(searchParams);
+    };
+
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -106,14 +139,30 @@ const InventoryPage: React.FC = () => {
              {!canAddNewItem && (
                 <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah item baru.</p>
             )}
+
+            <div className="flex items-center gap-2 flex-wrap mb-4">
+                <button
+                    onClick={() => handleFilterChange('all')}
+                    className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                >
+                    Semua Item
+                </button>
+                <button
+                    onClick={() => handleFilterChange('low_stock')}
+                    className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${filter === 'low_stock' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                >
+                    Stok Rendah
+                </button>
+            </div>
             
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
-                            <th className="px-4 py-3">Nama Item</th>
-                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <th className="px-4 py-3">Toko</th>}
-                            <th className="px-4 py-3">Stok</th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('name')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Nama Item {getSortIcon('name')}</button></th>
+                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <th className="px-4 py-3"><button onClick={() => requestSort('storeName')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Toko {getSortIcon('storeName')}</button></th>}
+                            <th className="px-4 py-3"><button onClick={() => requestSort('stock')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Stok {getSortIcon('stock')}</button></th>
                             <th className="px-4 py-3">Ambang Batas</th>
                             <th className="px-4 py-3">Satuan</th>
                             <th className="px-4 py-3">Status</th>
@@ -121,8 +170,8 @@ const InventoryPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredInventory.length > 0 ? (
-                            filteredInventory.map(item => {
+                        {sortedInventory.length > 0 ? (
+                            sortedInventory.map(item => {
                                 const isLowStock = item.stock <= item.lowStockThreshold;
                                 return (
                                     <tr key={item.id} className="border-b dark:border-slate-700">
@@ -147,23 +196,56 @@ const InventoryPage: React.FC = () => {
                             <tr>
                                 <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6} className="text-center py-12">
                                     <PackageIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
-                                    <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain atau tambahkan item baru.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
-                                    <div className="mt-6">
-                                        <button 
-                                            onClick={() => handleOpenFormModal()} 
-                                            disabled={!canAddNewItem}
-                                            className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed"
-                                        >
-                                            <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                            Tambah Item
-                                        </button>
-                                    </div>
+                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
+                                    <p className="mt-1 text-base text-slate-500">{searchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {sortedInventory.length > 0 ? (
+                    sortedInventory.map(item => {
+                        const isLowStock = item.stock <= item.lowStockThreshold;
+                        return (
+                            <div key={item.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-bold text-lg text-slate-800 dark:text-slate-200">{item.name}</p>
+                                        {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{item.storeName}</p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center space-x-1 flex-shrink-0">
+                                        <button onClick={() => handleOpenFormModal(item)} className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"><EditIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleDelete(item)} className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600"><Trash2Icon className="w-5 h-5" /></button>
+                                    </div>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-4 text-sm border-t dark:border-slate-600 pt-2">
+                                    <div>
+                                        <p className="text-slate-500 dark:text-slate-400">Stok Saat Ini</p>
+                                        <p className={`font-semibold text-lg ${isLowStock ? 'text-red-500' : 'text-slate-800 dark:text-slate-200'}`}>{item.stock} {item.unit}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-500 dark:text-slate-400">Status Stok</p>
+                                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${isLowStock ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'}`}>
+                                            {isLowStock ? 'Stok Rendah' : 'Aman'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })
+                ) : (
+                     <div className="text-center py-12">
+                        <PackageIcon className="mx-auto w-12 h-12 text-slate-400" />
+                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
+                        <p className="mt-1 text-base text-slate-500">{searchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
+                    </div>
+                )}
             </div>
 
             {isFormModalOpen && (

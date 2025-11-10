@@ -19,7 +19,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         const isNumber = ['stock', 'lowStockThreshold'].includes(name);
-        setFormData(prev => ({ ...prev, [name]: isNumber ? parseFloat(value) || 0 : value }));
+        setFormData(prev => ({ ...prev, [name]: isNumber ? Math.max(0, parseFloat(value) || 0) : value }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -47,7 +47,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="stock" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Stok</label>
-                        <input type="number" name="stock" id="stock" value={formData.stock} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                        <input type="number" min="0" name="stock" id="stock" value={formData.stock} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                     </div>
                      <div>
                         <label htmlFor="unit" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Satuan</label>
@@ -56,7 +56,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
                  </div>
                 <div>
                     <label htmlFor="lowStockThreshold" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Ambang Batas Stok Rendah</label>
-                    <input type="number" name="lowStockThreshold" id="lowStockThreshold" value={formData.lowStockThreshold} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                    <input type="number" min="0" name="lowStockThreshold" id="lowStockThreshold" value={formData.lowStockThreshold} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                 </div>
             </form>
         </Modal>

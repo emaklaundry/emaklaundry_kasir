@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Customer, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon, UsersIcon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon, UsersIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
@@ -9,6 +9,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
+import { useSortableData } from '../../hooks/useSortableData';
 
 const CustomersPage: React.FC = () => {
     const { customers, setCustomers } = useCustomers();
@@ -46,10 +47,23 @@ const CustomersPage: React.FC = () => {
         });
     }, [customers, transactions, stores]);
 
-    const filteredCustomers = customerStats.filter(c =>
+    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
+    type CustomerWithStats = (typeof customerStats)[0];
+
+    const filteredCustomers = useMemo(() => customerStats.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone.includes(searchTerm)
-    );
+    ), [customerStats, searchTerm]);
+
+    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
+    const { items: sortedCustomers, requestSort, sortConfig } = useSortableData<CustomerWithStats>(filteredCustomers);
+
+    // FIX: Use the explicit type for the key to ensure type safety.
+    const getSortIcon = (key: keyof CustomerWithStats) => {
+        if (!sortConfig || sortConfig.key !== key) return null;
+        if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
+        return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
+    };
 
     const handleOpenFormModal = (customer: Customer | null = null) => {
         setCurrentCustomer(customer);
@@ -136,17 +150,17 @@ const CustomersPage: React.FC = () => {
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
-                            <th className="px-4 py-3">Nama</th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('name')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Nama {getSortIcon('name')}</button></th>
                             <th className="px-4 py-3">No. Telepon</th>
-                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <th className="px-4 py-3">Toko</th>}
-                            <th className="px-4 py-3 text-center">Total Transaksi</th>
-                            <th className="px-4 py-3 text-right">Total Belanja</th>
+                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <th className="px-4 py-3"><button onClick={() => requestSort('storeName')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Toko {getSortIcon('storeName')}</button></th>}
+                            <th className="px-4 py-3 text-center"><button onClick={() => requestSort('transactionCount')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 mx-auto">Total Transaksi {getSortIcon('transactionCount')}</button></th>
+                            <th className="px-4 py-3 text-right"><button onClick={() => requestSort('totalSpent')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto">Total Belanja {getSortIcon('totalSpent')}</button></th>
                             <th className="px-4 py-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredCustomers.length > 0 ? (
-                            filteredCustomers.map(customer => (
+                        {sortedCustomers.length > 0 ? (
+                            sortedCustomers.map(customer => (
                                 <tr key={customer.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                                         <Link to={`/management/customers/${customer.id}`} className="hover:underline text-blue-600 dark:text-blue-400">
@@ -176,8 +190,8 @@ const CustomersPage: React.FC = () => {
             
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
-                {filteredCustomers.length > 0 ? (
-                    filteredCustomers.map(customer => (
+                {sortedCustomers.length > 0 ? (
+                    sortedCustomers.map(customer => (
                         <div key={customer.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
                             <div className="flex justify-between items-start">
                                 <div>

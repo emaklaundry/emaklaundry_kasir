@@ -3,7 +3,8 @@ import { useAuditLogs } from '../contexts/AuditLogContext';
 import { UserRole } from '../types';
 import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
 import { useAppContext } from '../contexts/AppContext';
-import { HistoryIcon, SearchIcon } from '../components/icons';
+import { HistoryIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
+import { useSortableData } from '../hooks/useSortableData';
 
 const AuditLogPage: React.FC = () => {
     const { logs: allLogs } = useAuditLogs();
@@ -39,9 +40,22 @@ const AuditLogPage: React.FC = () => {
         return filteredLogs.map(log => ({
             ...log,
             storeName: stores.find(s => s.id === log.storeId)?.name || '-'
-        })).sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime());
+        }));
     }, [filteredLogs, stores]);
     
+    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
+    type LogWithStore = (typeof logsWithStore)[0];
+
+    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
+    const { items: sortedLogs, requestSort, sortConfig } = useSortableData<LogWithStore>(logsWithStore, { key: 'timestamp', direction: 'descending' });
+
+    // FIX: Use the explicit type for the key to ensure type safety.
+    const getSortIcon = (key: keyof LogWithStore) => {
+        if (!sortConfig || sortConfig.key !== key) return null;
+        if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
+        return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
+    };
+
     const handleResetFilters = () => {
         setSearchTerm('');
         setStartDate('');
@@ -99,17 +113,17 @@ const AuditLogPage: React.FC = () => {
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
-                            <th className="px-4 py-3">Waktu</th>
-                            <th className="px-4 py-3">Pengguna</th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('timestamp')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Waktu {getSortIcon('timestamp')}</button></th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('user')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Pengguna {getSortIcon('user')}</button></th>
                             {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                                <th className="px-4 py-3">Cabang</th>
+                                <th className="px-4 py-3"><button onClick={() => requestSort('storeName')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Cabang {getSortIcon('storeName')}</button></th>
                             )}
                             <th className="px-4 py-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {logsWithStore.length > 0 ? (
-                            logsWithStore.map(log => (
+                        {sortedLogs.length > 0 ? (
+                            sortedLogs.map(log => (
                                 <tr key={log.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3">{log.timestamp.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' })}</td>
                                     <td className="px-4 py-3">{log.user}</td>

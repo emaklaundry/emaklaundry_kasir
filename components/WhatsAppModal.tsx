@@ -37,7 +37,15 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
             addToast('Nomor telepon pelanggan tidak ditemukan.', 'error');
             return;
         }
-        const whatsappUrl = `https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const phone = customer.phone.replace(/\D/g, '');
+        const encodedMessage = encodeURIComponent(message);
+        
+        const whatsappUrl = isMobile 
+            ? `https://wa.me/${phone}?text=${encodedMessage}`
+            : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+
         window.open(whatsappUrl, '_blank');
         onClose();
     };

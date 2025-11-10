@@ -22,7 +22,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
         const { name, value } = e.target;
         if (name === 'price' || name === 'durationDays') {
             const numericValue = name === 'price' ? parseRupiah(value) : parseInt(value, 10);
-            setFormData(prev => ({ ...prev, [name]: isNaN(numericValue) ? 0 : numericValue }));
+            setFormData(prev => ({ ...prev, [name]: Math.max(0, isNaN(numericValue) ? 0 : numericValue) }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -68,7 +68,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
                  </div>
                 <div>
                     <label htmlFor="durationDays" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Durasi (hari)</label>
-                    <input type="number" name="durationDays" id="durationDays" value={formData.durationDays} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                    <input type="number" min="0" name="durationDays" id="durationDays" value={formData.durationDays} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                 </div>
             </form>
         </Modal>

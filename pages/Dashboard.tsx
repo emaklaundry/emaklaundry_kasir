@@ -16,15 +16,20 @@ import WhatsAppModal from '../components/WhatsAppModal';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useToasts } from '../contexts/ToastContext';
 
-const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
-    <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
-        <Icon className="w-10 h-10 text-slate-500" />
-        <div>
-            <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
-            <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
+const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string, to?: string }> = ({ icon: Icon, title, value, color, to }) => {
+    const content = (
+        <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors' : ''}`}>
+            <Icon className="w-10 h-10 text-slate-500" />
+            <div>
+                <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
+                <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
+            </div>
         </div>
-    </div>
-);
+    );
+
+    return to ? <Link to={to}>{content}</Link> : content;
+};
+
 
 const calculateNextDueDate = (currentDueDate: Date, value: number, unit: 'days' | 'weeks' | 'months' | 'years'): Date => {
     const newDate = new Date(currentDueDate);
@@ -209,24 +214,28 @@ const Dashboard: React.FC = () => {
                         title="Pesanan Selesai" 
                         value={completedOrders}
                         color="border-green-500"
+                        to={`/transactions?status=${OrderStatus.Completed}`}
                     />
                     <StatCard 
                         icon={ShoppingCartIcon} 
                         title="Pesanan Diproses" 
                         value={pendingOrders}
                         color="border-blue-500"
+                        to={`/transactions?status=${OrderStatus.Processing}`}
                     />
                     <StatCard 
                         icon={WrenchIcon} 
                         title="Stok Menipis" 
                         value={lowStockItems}
                         color="border-orange-500"
+                        to="/management/inventory?filter=low_stock"
                     />
                      <StatCard 
                         icon={CalendarIcon} 
                         title="Perawatan Terjadwal" 
                         value={maintenanceDueCount}
                         color="border-red-500"
+                        to="/management/assets?filter=maintenance_due"
                     />
                 </div>
 

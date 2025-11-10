@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Service, ServiceCategory } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useSortableData } from '../../hooks/useSortableData';
 
 const ServicesPage: React.FC = () => {
     const { services, setServices } = useServices();
@@ -18,6 +19,15 @@ const ServicesPage: React.FC = () => {
         service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         service.category.toLowerCase().includes(searchTerm.toLowerCase())
     ), [services, searchTerm]);
+
+    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
+    const { items: sortedServices, requestSort, sortConfig } = useSortableData<Service>(filteredServices);
+    
+    const getSortIcon = (key: keyof Service) => {
+        if (!sortConfig || sortConfig.key !== key) return null;
+        if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
+        return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
+    };
 
     const handleOpenFormModal = (service: Service | null = null) => {
         setCurrentService(service);
@@ -78,16 +88,16 @@ const ServicesPage: React.FC = () => {
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
-                            <th className="px-4 py-3">Nama Layanan</th>
-                            <th className="px-4 py-3">Kategori</th>
-                            <th className="px-4 py-3">Harga</th>
-                            <th className="px-4 py-3">Durasi</th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('name')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Nama Layanan {getSortIcon('name')}</button></th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('category')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Kategori {getSortIcon('category')}</button></th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('price')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Harga {getSortIcon('price')}</button></th>
+                            <th className="px-4 py-3"><button onClick={() => requestSort('durationDays')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200">Durasi {getSortIcon('durationDays')}</button></th>
                             <th className="px-4 py-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredServices.length > 0 ? (
-                            filteredServices.map(service => (
+                        {sortedServices.length > 0 ? (
+                            sortedServices.map(service => (
                                 <tr key={service.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{service.name}</td>
                                     <td className="px-4 py-3">{service.category}</td>

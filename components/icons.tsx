@@ -1,10 +1,9 @@
-
 import React from 'react';
 
 // A generic icon wrapper
 const Icon: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
   <svg
-    xmlns="http://www.w.org/2000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
     viewBox="0 0 24"
@@ -127,4 +126,12 @@ export const PowerIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const CalendarIcon: React.FC<{ className?: string }> = ({ className }) => (
     <Icon className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></Icon>
+);
+
+export const ArrowUpIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Icon className={className}><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></Icon>
+);
+
+export const ArrowDownIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Icon className={className}><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></Icon>
 );
