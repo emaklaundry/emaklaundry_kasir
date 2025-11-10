@@ -14,7 +14,9 @@ import {
   UserRole,
   AuditLog,
   Settings,
-  Store
+  Store,
+  // Fix: Added missing type import
+  ScheduledMaintenance
 } from '../types';
 
 export const mockStores: Store[] = [
@@ -142,3 +144,25 @@ export const mockSettings: Settings = {
     taxRate: 0,
     discountRate: 0,
 };
+
+// Fix: Moved this data from types.ts to consolidate mock data.
+export const mockScheduledMaintenance: ScheduledMaintenance[] = [
+    {
+        id: 'SCHED1',
+        assetId: 'ASSET1',
+        description: 'Pembersihan filter bulanan',
+        frequencyValue: 1,
+        frequencyUnit: 'months',
+        nextDueDate: new Date(new Date().setDate(new Date().getDate() - 5)), // 5 days ago to show on dashboard
+        lastCompletedDate: null
+    },
+    {
+        id: 'SCHED2',
+        assetId: 'ASSET3',
+        description: 'Pengecekan selang uap',
+        frequencyValue: 6,
+        frequencyUnit: 'months',
+        nextDueDate: new Date(new Date().setMonth(new Date().getMonth() + 2)), // 2 months from now
+        lastCompletedDate: new Date(new Date().setMonth(new Date().getMonth() - 4))
+    }
+];

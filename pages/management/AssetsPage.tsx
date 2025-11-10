@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Asset, MaintenanceLog, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon, WrenchIcon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon, WrenchIcon, CalendarIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
 import { useAppContext } from '../../contexts/AppContext';
 import AssetFormModal from '../../components/AssetFormModal';
 import MaintenanceFormModal from '../../components/MaintenanceFormModal';
 import MaintenanceHistoryModal from '../../components/MaintenanceHistoryModal';
+import ScheduledMaintenanceModal from '../../components/ScheduledMaintenanceModal';
 
 const AssetsPage: React.FC = () => {
     const { assets, setAssets } = useAssets();
@@ -14,6 +15,7 @@ const AssetsPage: React.FC = () => {
     const [isAssetFormModalOpen, setIsAssetFormModalOpen] = useState(false);
     const [isMaintenanceFormModalOpen, setIsMaintenanceFormModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     
     const [currentAsset, setCurrentAsset] = useState<Asset | null>(null);
     const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
@@ -32,6 +34,12 @@ const AssetsPage: React.FC = () => {
         setCurrentAsset(asset);
         setIsHistoryModalOpen(true);
     };
+    
+    const handleOpenSchedule = (asset: Asset) => {
+        setCurrentAsset(asset);
+        setIsScheduleModalOpen(true);
+    };
+
 
     const handleSaveAsset = (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => {
         const storeId = currentAsset?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
@@ -127,11 +135,12 @@ const AssetsPage: React.FC = () => {
                                     <td className="px-4 py-3">{new Date(asset.purchaseDate).toLocaleDateString('id-ID')}</td>
                                     <td className="px-4 py-3 text-right">Rp {asset.purchaseCost.toLocaleString('id-ID')}</td>
                                     <td className="px-4 py-3"><span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}>{asset.status}</span></td>
-                                    <td className="px-4 py-3 flex items-center space-x-2">
-                                        <button onClick={() => handleOpenAssetForm(asset)} title="Edit Aset" className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
-                                        <button onClick={() => handleDelete(asset)} title="Hapus Aset" className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
-                                        <button onClick={() => handleOpenMaintenanceForm(asset)} title="Tambah Log Pemeliharaan" className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"><PlusCircleIcon className="w-5 h-5" /></button>
-                                        <button onClick={() => handleOpenHistory(asset)} title="Lihat Riwayat Pemeliharaan" className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><HistoryIcon className="w-5 h-5" /></button>
+                                    <td className="px-4 py-3 flex items-center space-x-1">
+                                        <button onClick={() => handleOpenAssetForm(asset)} title="Edit Aset" className="p-2 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleDelete(asset)} title="Hapus Aset" className="p-2 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleOpenMaintenanceForm(asset)} title="Tambah Log Pemeliharaan" className="p-2 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"><PlusCircleIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleOpenSchedule(asset)} title="Jadwal Perawatan" className="p-2 rounded-md text-purple-600 hover:text-purple-900 dark:text-purple-500 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700"><CalendarIcon className="w-5 h-5" /></button>
+                                        <button onClick={() => handleOpenHistory(asset)} title="Lihat Riwayat Pemeliharaan" className="p-2 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><HistoryIcon className="w-5 h-5" /></button>
                                     </td>
                                 </tr>
                             ))
@@ -161,6 +170,7 @@ const AssetsPage: React.FC = () => {
             {isAssetFormModalOpen && <AssetFormModal asset={currentAsset} onClose={() => setIsAssetFormModalOpen(false)} onSave={handleSaveAsset} />}
             {isMaintenanceFormModalOpen && currentAsset && <MaintenanceFormModal assetName={currentAsset.name} onClose={() => setIsMaintenanceFormModalOpen(false)} onSave={handleAddMaintenance} />}
             {isHistoryModalOpen && currentAsset && <MaintenanceHistoryModal asset={currentAsset} onClose={() => setIsHistoryModalOpen(false)} />}
+            {isScheduleModalOpen && currentAsset && <ScheduledMaintenanceModal asset={currentAsset} isOpen={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)} />}
             {assetToDelete && <ConfirmationModal isOpen={true} onClose={() => setAssetToDelete(null)} onConfirm={confirmDelete} title="Hapus Aset" message={`Anda yakin ingin menghapus aset "${assetToDelete.name}"?`} />}
         </div>
     );

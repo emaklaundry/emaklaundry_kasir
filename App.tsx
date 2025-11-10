@@ -9,6 +9,7 @@ import { AssetProvider } from './contexts/AssetContext';
 import { ExpenseProvider } from './contexts/ExpenseContext';
 import { StoreProvider } from './contexts/StoreContext';
 import { ServiceProvider } from './contexts/ServiceContext';
+import { ScheduledMaintenanceProvider } from './contexts/ScheduledMaintenanceContext';
 import { UserRole } from './types';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -82,9 +83,11 @@ const App: React.FC = () => {
                         <InventoryProvider>
                             <AssetProvider>
                                 <ExpenseProvider>
-                                    <HashRouter>
-                                        <AppRoutes />
-                                    </HashRouter>
+                                    <ScheduledMaintenanceProvider>
+                                        <HashRouter>
+                                            <AppRoutes />
+                                        </HashRouter>
+                                    </ScheduledMaintenanceProvider>
                                 </ExpenseProvider>
                             </AssetProvider>
                         </InventoryProvider>

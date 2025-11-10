@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { OrderStatus, PaymentStatus, Expense, UserRole } from '../types';
-import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon } from '../components/icons';
+import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon, CalendarIcon } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
+import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
+import { useAssets } from '../contexts/AssetContext';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
@@ -27,6 +29,8 @@ const Dashboard: React.FC = () => {
     const { transactions } = useTransactions();
     const { customers } = useCustomers();
     const { setExpenses } = useExpenses();
+    const { scheduledMaintenances } = useScheduledMaintenances();
+    const { assets } = useAssets();
     
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -35,7 +39,20 @@ const Dashboard: React.FC = () => {
     const completedOrders = transactions.filter(t => t.orderStatus === OrderStatus.Completed).length;
     const pendingOrders = transactions.filter(t => t.orderStatus === OrderStatus.Processing).length;
     const lowStockItems = inventory.filter(i => i.stock <= i.lowStockThreshold).length;
-    const readyForPickup = transactions.filter(t => t.orderStatus === OrderStatus.Ready).length;
+    
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // End of today
+    const maintenanceDueCount = scheduledMaintenances.filter(sm => new Date(sm.nextDueDate) <= now).length;
+
+    const maintenanceDue = useMemo(() => {
+        return scheduledMaintenances
+            .filter(sm => new Date(sm.nextDueDate) <= now)
+            .map(sm => {
+                const asset = assets.find(a => a.id === sm.assetId);
+                return { ...sm, assetName: asset?.name || 'N/A' };
+            })
+            .sort((a,b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
+    }, [scheduledMaintenances, assets, now]);
 
     const activeOrders = transactions
         .filter(t => t.orderStatus !== OrderStatus.Completed)
@@ -109,10 +126,10 @@ const Dashboard: React.FC = () => {
                         color="border-orange-500"
                     />
                      <StatCard 
-                        icon={TruckIcon} 
-                        title="Siap Diambil" 
-                        value={readyForPickup}
-                        color="border-yellow-500"
+                        icon={CalendarIcon} 
+                        title="Perawatan Terjadwal" 
+                        value={maintenanceDueCount}
+                        color="border-red-500"
                     />
                 </div>
 
@@ -162,6 +179,36 @@ const Dashboard: React.FC = () => {
                                     <tr>
                                         <td colSpan={5} className="text-center py-4 text-slate-500 dark:text-slate-400">
                                             Tidak ada pesanan aktif.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Jadwal Perawatan Jatuh Tempo</h2>
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                                <tr>
+                                    <th className="px-4 py-3">Aset</th>
+                                    <th className="px-4 py-3">Deskripsi Perawatan</th>
+                                    <th className="px-4 py-3">Jatuh Tempo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {maintenanceDue.length > 0 ? maintenanceDue.map(m => (
+                                    <tr key={m.id} className="border-b dark:border-slate-700">
+                                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{m.assetName}</td>
+                                        <td className="px-4 py-3">{m.description}</td>
+                                        <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold">{new Date(m.nextDueDate).toLocaleDateString('id-ID')}</td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={3} className="text-center py-4 text-slate-500 dark:text-slate-400">
+                                            Tidak ada jadwal perawatan yang jatuh tempo.
                                         </td>
                                     </tr>
                                 )}

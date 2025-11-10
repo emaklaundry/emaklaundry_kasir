@@ -1,48 +1,49 @@
-export enum UserRole {
-    SuperAdmin = 'Super Admin',
-    BranchAdmin = 'Branch Admin',
-    Cashier = 'Cashier',
-}
 
-export enum OrderStatus {
-  Processing = 'Processing',
-  Ready = 'Ready',
-  Completed = 'Completed',
+export enum ServiceCategory {
+  Kiloan = 'Kiloan',
+  Satuan = 'Satuan',
+  Sepatu = 'Sepatu',
+  Karpet = 'Karpet',
 }
 
 export enum PaymentStatus {
-  Paid = 'Paid',
-  Unpaid = 'Unpaid',
-  PartiallyPaid = 'Partially Paid',
+  Paid = 'Lunas',
+  Unpaid = 'Belum Lunas',
+  PartiallyPaid = 'Bayar Sebagian',
+}
+
+export enum OrderStatus {
+  Processing = 'Diproses',
+  Ready = 'Siap Diambil',
+  Completed = 'Selesai',
 }
 
 export enum PaymentMethod {
-    Cash = 'Tunai',
-    QRIS = 'QRIS',
-    Transfer = 'Transfer',
-    DebitCard = 'Kartu Debit',
+  Cash = 'Tunai',
+  QRIS = 'QRIS',
+  Transfer = 'Transfer Bank',
 }
 
-export enum ServiceCategory {
-    Kiloan = 'Kiloan',
-    Satuan = 'Satuan',
-    Sepatu = 'Sepatu',
-    Karpet = 'Karpet',
-    Lainnya = 'Lainnya',
+export enum UserRole {
+  SuperAdmin = 'Super Admin',
+  BranchAdmin = 'Admin Cabang',
+  Cashier = 'Kasir',
 }
+
+export type AssetStatus = 'Active' | 'Under Maintenance' | 'Decommissioned';
 
 export interface Store {
-    id: string;
-    name: string;
-    address: string;
-    isActive: boolean;
+  id: string;
+  name: string;
+  address: string;
+  isActive: boolean;
 }
 
 export interface Customer {
   id: string;
   name: string;
   phone: string;
-  address: string;
+  address?: string;
   notes?: string;
   storeId: string;
 }
@@ -52,8 +53,12 @@ export interface Service {
   name: string;
   category: ServiceCategory;
   price: number;
-  unit: string; // e.g., 'kg', 'pcs'
+  unit: string;
   durationDays: number;
+}
+
+export interface TransactionItemDetail {
+    note: string;
 }
 
 export interface TransactionItem {
@@ -63,7 +68,7 @@ export interface TransactionItem {
   price: number;
   subtotal: number;
   unit: string;
-  itemDetails?: { note: string }[];
+  itemDetails?: TransactionItemDetail[];
 }
 
 export interface Transaction {
@@ -71,20 +76,19 @@ export interface Transaction {
   customerId: string;
   items: TransactionItem[];
   subtotal: number;
-  discount: number; // Discount amount
-  tax: number; // Tax amount
-  total: number; // Grand total (subtotal - discount + tax)
+  discount: number;
+  tax: number;
+  total: number;
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   createdAt: Date;
   estimatedCompletionDate: Date;
-  notes?: string;
-  // Payment details
-  paymentMethod?: PaymentMethod;
   amountPaid: number;
   change: number;
-  createdByUserId: number; 
+  paymentMethod?: PaymentMethod;
+  createdByUserId: number;
   storeId: string;
+  notes?: string;
 }
 
 export interface InventoryItem {
@@ -92,7 +96,7 @@ export interface InventoryItem {
   name: string;
   stock: number;
   lowStockThreshold: number;
-  unit: string; // e.g., 'liter', 'kg', 'pcs'
+  unit: string;
   storeId: string;
 }
 
@@ -109,9 +113,9 @@ export interface Asset {
   serialNumber?: string;
   purchaseDate: Date;
   purchaseCost: number;
-  status: 'Active' | 'Under Maintenance' | 'Decommissioned';
-  maintenanceHistory: MaintenanceLog[];
+  status: AssetStatus;
   storeId: string;
+  maintenanceHistory: MaintenanceLog[];
 }
 
 export interface Expense {
@@ -128,7 +132,7 @@ export interface User {
   name: string;
   role: UserRole;
   isActive: boolean;
-  storeId?: string; // Optional: SuperAdmin doesn't have a storeId
+  storeId?: string;
 }
 
 export interface AuditLog {
@@ -139,7 +143,17 @@ export interface AuditLog {
 }
 
 export interface Settings {
-    receiptMessage: string;
-    taxRate: number; // in percent
-    discountRate: number; // in percent
+  receiptMessage: string;
+  taxRate: number;
+  discountRate: number;
+}
+
+export interface ScheduledMaintenance {
+    id: string;
+    assetId: string;
+    description: string;
+    frequencyValue: number;
+    frequencyUnit: 'days' | 'weeks' | 'months' | 'years';
+    nextDueDate: Date;
+    lastCompletedDate: Date | null;
 }
