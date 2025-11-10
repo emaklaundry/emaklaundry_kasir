@@ -43,6 +43,8 @@ const Dashboard: React.FC = () => {
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
     const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
 
+    const isCashier = currentUser.role === UserRole.Cashier;
+
     const completedOrders = transactions.filter(t => t.orderStatus === OrderStatus.Completed).length;
     const pendingOrders = transactions.filter(t => t.orderStatus === OrderStatus.Processing).length;
     const lowStockItems = inventory.filter(i => i.stock <= i.lowStockThreshold).length;
@@ -155,7 +157,7 @@ const Dashboard: React.FC = () => {
                  <div className="mb-4">
                     <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400">Tampilan Data: <span className="font-semibold text-slate-800 dark:text-slate-200">{getStoreName()}</span></h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}>
                     <StatCard 
                         icon={PackageIcon} 
                         title="Pesanan Selesai" 
@@ -185,7 +187,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                         <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Progres Pesanan Aktif</h2>
-                        <div className="flex flex-col items-start sm:items-end w-full sm:w-auto">
+                        <div className={`flex flex-col items-start sm:items-end w-full sm:w-auto ${isCashier ? 'hidden sm:flex' : 'flex'}`}>
                             <div className="flex items-center gap-3 flex-wrap justify-start sm:justify-end">
                                 <button onClick={() => setIsStockModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-base px-4 py-2 transition-colors disabled:bg-teal-400 disabled:cursor-not-allowed">
                                     <WrenchIcon className="h-5 w-5 mr-2" />
@@ -201,13 +203,14 @@ const Dashboard: React.FC = () => {
                                 </button>
                             </div>
                             {isActionDisabled && (
-                                <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+                                <p className={`text-sm text-yellow-600 dark:text-yellow-400 mt-2 ${isCashier ? 'hidden sm:block' : 'block'}`}>
                                     Pilih cabang spesifik untuk melakukan aksi cepat.
                                 </p>
                             )}
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
+                     {/* Desktop Table View */}
+                    <div className="overflow-x-auto hidden sm:block">
                         <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                             <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                                 <tr>
@@ -263,37 +266,83 @@ const Dashboard: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
-                </div>
-
-                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Jadwal Perawatan Jatuh Tempo</h2>
-                     <div className="overflow-x-auto">
-                        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-                                <tr>
-                                    <th className="px-4 py-3">Aset</th>
-                                    <th className="px-4 py-3">Deskripsi Perawatan</th>
-                                    <th className="px-4 py-3">Jatuh Tempo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {maintenanceDue.length > 0 ? maintenanceDue.map(m => (
-                                    <tr key={m.id} className="border-b dark:border-slate-700">
-                                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{m.assetName}</td>
-                                        <td className="px-4 py-3">{m.description}</td>
-                                        <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold">{new Date(m.nextDueDate).toLocaleDateString('id-ID')}</td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={3} className="text-center py-4 text-slate-500 dark:text-slate-400">
-                                            Tidak ada jadwal perawatan yang jatuh tempo.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                    {/* Mobile Card View */}
+                    <div className="sm:hidden space-y-3">
+                        {activeOrders.length > 0 ? activeOrders.map(t => {
+                             const isSelesaikanDisabled = t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
+                             return (
+                                <div key={t.id} className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg shadow-sm">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-bold text-slate-900 dark:text-white">{t.customerName}</p>
+                                            <Link to={`/transactions/${t.id}/details`} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">{t.id}</Link>
+                                        </div>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
+                                    </div>
+                                    <div className="mt-3 space-y-1 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 dark:text-slate-400">Status:</span>
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(t.orderStatus)}`}>{t.orderStatus}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500 dark:text-slate-400">Estimasi Selesai:</span>
+                                            <span className="font-medium text-slate-700 dark:text-slate-300">{new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}</span>
+                                        </div>
+                                    </div>
+                                    {t.orderStatus !== OrderStatus.Completed && (
+                                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
+                                         <button
+                                            onClick={() => handleNextStatus(t.id)}
+                                            disabled={isSelesaikanDisabled}
+                                            className="w-full flex items-center justify-center gap-1 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md py-2 disabled:bg-blue-400"
+                                            title={isSelesaikanDisabled ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.' : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`}
+                                        >
+                                            {t.orderStatus === OrderStatus.Processing ? 'Tandai Siap Diambil' : 'Selesaikan Pesanan'}
+                                            <ChevronRightIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    )}
+                                </div>
+                             )
+                        }) : (
+                            <div className="text-center py-4 text-slate-500 dark:text-slate-400">
+                                Tidak ada pesanan aktif.
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                 {!isCashier && (
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Jadwal Perawatan Jatuh Tempo</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                                    <tr>
+                                        <th className="px-4 py-3">Aset</th>
+                                        <th className="px-4 py-3">Deskripsi Perawatan</th>
+                                        <th className="px-4 py-3">Jatuh Tempo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {maintenanceDue.length > 0 ? maintenanceDue.map(m => (
+                                        <tr key={m.id} className="border-b dark:border-slate-700">
+                                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{m.assetName}</td>
+                                            <td className="px-4 py-3">{m.description}</td>
+                                            <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold">{new Date(m.nextDueDate).toLocaleDateString('id-ID')}</td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={3} className="text-center py-4 text-slate-500 dark:text-slate-400">
+                                                Tidak ada jadwal perawatan yang jatuh tempo.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                 )}
             </div>
             <QuickStockUpdateModal 
                 isOpen={isStockModalOpen}

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Service } from '../../types';
+import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod } from '../../types';
 import { Trash2Icon, MessageSquareIcon, PlusCircleIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -13,7 +13,6 @@ import { formatRupiah, parseRupiah } from '../../utils/formatting';
 import CustomerSelector from '../../components/CustomerSelector';
 import ServiceSelector from '../../components/ServiceSelector';
 import CustomerFormModal from '../../components/CustomerFormModal';
-import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 
@@ -22,7 +21,7 @@ const NewTransactionPage: React.FC = () => {
     const { settings } = useSettings();
     const { setTransactions } = useTransactions();
     const { customers, setCustomers } = useCustomers();
-    const { services, setServices } = useServices();
+    const { services } = useServices();
     const { currentUser, selectedStoreId } = useAppContext();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -32,7 +31,6 @@ const NewTransactionPage: React.FC = () => {
     const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
     const [discountValue, setDiscountValue] = useState(0);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-    const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
     const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
@@ -40,8 +38,6 @@ const NewTransactionPage: React.FC = () => {
     // Payment State
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
     const [amountPaidStr, setAmountPaidStr] = useState('0');
-
-    const hasAdminAccess = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.BranchAdmin;
 
     useEffect(() => {
         setDiscountValue(settings.discountRate);
@@ -187,12 +183,6 @@ const NewTransactionPage: React.FC = () => {
         setSelectedCustomer(newCustomer);
         setIsCustomerModalOpen(false);
     };
-
-    const handleSaveService = (serviceData: Omit<Service, 'id'>) => {
-        const newService = { ...serviceData, id: `S${Date.now()}` };
-        setServices(prev => [...prev, newService]);
-        setIsServiceModalOpen(false);
-    };
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -259,19 +249,7 @@ const NewTransactionPage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Pilih Layanan</h2>
-                                {hasAdminAccess &&
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsServiceModalOpen(true)}
-                                        className="flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-4 py-2"
-                                    >
-                                        <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                        Layanan Baru
-                                    </button>
-                                }
-                            </div>
+                            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pilih Layanan</h2>
                             <ServiceSelector services={services} onSelectService={handleAddService} />
                         </div>
 
@@ -444,12 +422,6 @@ const NewTransactionPage: React.FC = () => {
                 onClose={() => setIsNotesModalOpen(false)}
                 item={editingItemIndex !== null ? items[editingItemIndex] : null!}
                 onSave={handleSaveNotes}
-            />
-             <ServiceFormModal
-                isOpen={isServiceModalOpen}
-                onClose={() => setIsServiceModalOpen(false)}
-                onSave={handleSaveService}
-                service={null}
             />
         </>
     );

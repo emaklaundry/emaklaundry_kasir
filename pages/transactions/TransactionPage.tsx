@@ -52,19 +52,19 @@ const TransactionPage: React.FC = () => {
     
     const getStatusBadge = (status: OrderStatus) => {
         switch (status) {
-            case OrderStatus.Processing: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-            case OrderStatus.Ready: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-            case OrderStatus.Completed: return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-            default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
+            case OrderStatus.Processing: return 'bg-blue-600 text-white';
+            case OrderStatus.Ready: return 'bg-yellow-500 text-white';
+            case OrderStatus.Completed: return 'bg-green-600 text-white';
+            default: return 'bg-slate-500 text-white';
         }
     };
     
     const getPaymentStatusBadge = (status: PaymentStatus) => {
         switch (status) {
-            case PaymentStatus.Paid: return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-            case PaymentStatus.Unpaid: return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-            case PaymentStatus.PartiallyPaid: return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
-            default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
+            case PaymentStatus.Paid: return 'bg-green-600 text-white';
+            case PaymentStatus.Unpaid: return 'bg-red-600 text-white';
+            case PaymentStatus.PartiallyPaid: return 'bg-orange-500 text-white';
+            default: return 'bg-slate-500 text-white';
         }
     };
     
@@ -258,60 +258,43 @@ const TransactionPage: React.FC = () => {
                 <div className="md:hidden space-y-4">
                      {filteredTransactions.length > 0 ? (
                         filteredTransactions.map(t => (
-                            <div key={t.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
+                            <div key={t.id} className="bg-slate-800 p-4 rounded-xl shadow-md">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="font-bold text-slate-900 dark:text-white">{t.customerName}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{t.id}</p>
+                                        <p className="font-bold text-lg text-white">{t.customerName}</p>
+                                        <p className="text-sm text-slate-400">{t.id}</p>
                                     </div>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 flex-shrink-0 ml-2">{new Date(t.createdAt).toLocaleDateString('id-ID')}</p>
+                                    <p className="text-sm text-slate-400">{new Date(t.createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'})}</p>
                                 </div>
                                 
-                                <div className="mt-4 space-y-2">
+                                <div className="mt-4 space-y-2 text-sm">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-600 dark:text-slate-300">Total:</span>
-                                        <span className="font-semibold text-slate-800 dark:text-slate-200">Rp {t.total.toLocaleString('id-ID')}</span>
+                                        <span className="text-slate-400">Total:</span>
+                                        <span className="font-bold text-lg text-white">Rp {t.total.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <label htmlFor={`status-select-${t.id}`} className="text-slate-600 dark:text-slate-300">Status Pesanan:</label>
-                                        <select
-                                            id={`status-select-${t.id}`}
-                                            value={t.orderStatus}
-                                            onChange={(e) => handleOrderStatusChange(t.id, e.target.value as OrderStatus)}
-                                            className={`-mr-2 px-2 py-1 text-xs font-medium rounded-full border-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer ${getStatusBadge(t.orderStatus)}`}
-                                            title={t.paymentStatus !== PaymentStatus.Paid ? "Pelunasan diperlukan untuk menyelesaikan pesanan" : ""}
-                                        >
-                                            {Object.values(OrderStatus).map(status => (
-                                                <option
-                                                    key={status}
-                                                    value={status}
-                                                    className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                                    disabled={status === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid}
-                                                >
-                                                    {status}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <span className="text-slate-400">Status Pesanan:</span>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-md ${getStatusBadge(t.orderStatus)}`}>{t.orderStatus}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-600 dark:text-slate-300">Status Bayar:</span>
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
+                                        <span className="text-slate-400">Status Bayar:</span>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-md ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-600 flex items-center justify-end -space-x-1">
+                                <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-start space-x-4">
                                     {t.paymentStatus !== PaymentStatus.Paid && (
-                                        <button onClick={() => handleOpenPaymentModal(t)} title="Proses Pembayaran" className="p-2 rounded-md text-green-600 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <button onClick={() => handleOpenPaymentModal(t)} title="Proses Pembayaran" className="p-2 rounded-md text-green-400 hover:text-green-300">
                                             <DollarSignIcon className="w-5 h-5" />
                                         </button>
                                     )}
-                                    <Link to={`/transactions/${t.id}/details`} title="Lihat Detail" className="p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                    <Link to={`/transactions/${t.id}/details`} title="Lihat Detail" className="p-2 rounded-md text-green-400 hover:text-green-300">
                                         <EyeIcon className="w-5 h-5" />
                                     </Link>
-                                    <Link to={`/transactions/${t.id}/receipt`} title="Cetak Struk" className="p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                    <Link to={`/transactions/${t.id}/receipt`} title="Cetak Struk" className="p-2 rounded-md text-green-400 hover:text-green-300">
                                         <PrinterIcon className="w-5 h-5" />
                                     </Link>
-                                    <button onClick={() => handleSendGenericWhatsApp(t)} title="Kirim Struk via WhatsApp" className="p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                    <button onClick={() => handleSendGenericWhatsApp(t)} title="Kirim Struk via WhatsApp" className="p-2 rounded-md text-green-400 hover:text-green-300">
                                         <SendIcon className="w-5 h-5" />
                                     </button>
                                 </div>

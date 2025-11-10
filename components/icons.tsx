@@ -4,7 +4,7 @@ import React from 'react';
 // A generic icon wrapper
 const Icon: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
+    xmlns="http://www.w.org/2000/svg"
     width="24"
     height="24"
     viewBox="0 0 24"
@@ -65,6 +65,13 @@ export const SearchIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const PlusCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Icon className={className}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></Icon>
+);
+
+export const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+  </Icon>
 );
 
 export const EditIcon: React.FC<{ className?: string }> = ({ className }) => (

@@ -3,8 +3,10 @@ import { useLocation, useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useCustomers } from '../contexts/CustomerContext';
-import { Customer } from '../types';
+import { Customer, UserRole } from '../types';
 import ToastContainer from './ToastContainer';
+import { useAppContext } from '../contexts/AppContext';
+import BottomNavBar from './BottomNavBar';
 
 const getPageTitle = (pathname: string, params: any, customers: Customer[]): string => {
     const staticTitles: { [key: string]: string } = {
@@ -44,17 +46,20 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
     const params = useParams();
     const { customers } = useCustomers();
+    const { currentUser } = useAppContext();
     const pageTitle = getPageTitle(location.pathname, params, customers);
+    const isCashier = currentUser.role === UserRole.Cashier;
 
     return (
         <div className="bg-slate-100 dark:bg-slate-900 min-h-screen">
             <Sidebar />
             <div className="sm:ml-64">
                 <Header pageTitle={pageTitle} />
-                <main className="p-4 md:p-6">
+                <main className={`p-4 md:p-6 ${isCashier ? 'pb-24 sm:pb-6' : ''}`}>
                     {children}
                 </main>
             </div>
+            {isCashier && <BottomNavBar />}
             <ToastContainer />
         </div>
     );
