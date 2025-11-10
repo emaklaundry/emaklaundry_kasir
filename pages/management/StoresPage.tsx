@@ -30,7 +30,7 @@ const StoresPage: React.FC = () => {
     const [storeToToggle, setStoreToToggle] = useState<Store | null>(null);
     const [storeToDelete, setStoreToDelete] = useState<Store | null>(null);
     
-    const { items: sortedStores, requestSort, sortConfig } = useSortableData(stores);
+    const { items: sortedStores, requestSort, sortConfig } = useSortableData<Store>(stores);
     
     const getSortIcon = (key: keyof Store) => {
         if (!sortConfig || sortConfig.key !== key) return null;
