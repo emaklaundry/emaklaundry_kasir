@@ -1,16 +1,18 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { mockTransactions, mockCustomers, mockSettings } from '../../data/mockData';
 import { PrinterIcon, ChevronLeftIcon } from '../../components/icons';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useTransactions } from '../../contexts/TransactionContext';
+import { useCustomers } from '../../contexts/CustomerContext';
 
 const ReceiptPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { settings } = useSettings();
-    // In a real app, you would fetch from a single source. Here we combine transaction context and mock data.
-    const transaction = mockTransactions.find(t => t.id === id);
-    const customer = transaction ? mockCustomers.find(c => c.id === transaction.customerId) : null;
+    const { transactions } = useTransactions();
+    const { customers } = useCustomers();
+    
+    const transaction = transactions.find(t => t.id === id);
+    const customer = transaction ? customers.find(c => c.id === transaction.customerId) : null;
     
 
     if (!transaction || !customer) {
@@ -21,6 +23,8 @@ const ReceiptPage: React.FC = () => {
             </div>
         );
     }
+
+    const remainingBalance = transaction.total - transaction.amountPaid;
 
     return (
         <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg">
@@ -50,12 +54,23 @@ const ReceiptPage: React.FC = () => {
 
             <div className="space-y-2 mb-4">
                 {transaction.items.map((item, index) => (
-                    <div key={index} className="flex text-base">
-                        <div className="flex-grow">
-                            <p className="font-semibold text-slate-800 dark:text-slate-200">{item.serviceName}</p>
-                            <p className="text-slate-500 dark:text-slate-400">{item.quantity} {item.unit} @ Rp {item.price.toLocaleString('id-ID')}</p>
+                    <div key={index} className="flex flex-col text-base py-1">
+                        <div className="flex justify-between">
+                            <div>
+                                <p className="font-semibold text-slate-800 dark:text-slate-200">{item.serviceName}</p>
+                                <p className="text-slate-500 dark:text-slate-400">{item.quantity} {item.unit} @ Rp {item.price.toLocaleString('id-ID')}</p>
+                            </div>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200">Rp {item.subtotal.toLocaleString('id-ID')}</p>
                         </div>
-                        <p className="font-semibold text-slate-800 dark:text-slate-200">Rp {item.subtotal.toLocaleString('id-ID')}</p>
+                        {item.itemDetails && item.itemDetails.some(d => d.note) && (
+                            <div className="pl-4 mt-1 space-y-0.5">
+                                {item.itemDetails.map((detail, detailIndex) => detail.note && (
+                                    <p key={detailIndex} className="text-sm text-slate-500 dark:text-slate-400">
+                                        - Item #{detailIndex + 1}: {detail.note}
+                                    </p>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -80,6 +95,27 @@ const ReceiptPage: React.FC = () => {
                 <div className="flex justify-between font-bold text-xl text-slate-900 dark:text-white pt-2 border-t border-slate-300 dark:border-slate-600">
                     <span>Total</span>
                     <span>Rp {transaction.total.toLocaleString('id-ID')}</span>
+                </div>
+            </div>
+
+            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2">
+                 <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+                    <span>Metode Bayar</span>
+                    <span>{transaction.paymentMethod || '-'}</span>
+                </div>
+                <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+                    <span>Dibayar</span>
+                    <span>Rp {transaction.amountPaid.toLocaleString('id-ID')}</span>
+                </div>
+                 {transaction.change > 0 && (
+                    <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+                        <span>Kembalian</span>
+                        <span>Rp {transaction.change.toLocaleString('id-ID')}</span>
+                    </div>
+                )}
+                <div className="flex justify-between font-semibold text-lg text-slate-900 dark:text-white">
+                    <span>Sisa Tagihan</span>
+                    <span>Rp {remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}</span>
                 </div>
             </div>
             

@@ -23,6 +23,10 @@ const getPageTitle = (pathname: string, params: any): string => {
     if (staticTitles[pathname]) {
         return staticTitles[pathname];
     }
+    
+    if (pathname.startsWith('/transactions/') && pathname.endsWith('/details')) {
+        return `Detail Transaksi: ${params.id}`;
+    }
 
     if (pathname.startsWith('/management/customers/')) {
         const customer = mockCustomers.find(c => c.id === params.id);

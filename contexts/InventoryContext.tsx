@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { InventoryItem } from '../types';
 import { mockInventory } from '../data/mockData';
 
@@ -9,8 +9,26 @@ interface InventoryContextType {
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
+const INVENTORY_STORAGE_KEY = 'laundry_inventory';
+
 export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    try {
+      const storedInventory = localStorage.getItem(INVENTORY_STORAGE_KEY);
+      return storedInventory ? JSON.parse(storedInventory) : mockInventory;
+    } catch (error) {
+      console.error("Error reading inventory from localStorage", error);
+      return mockInventory;
+    }
+  });
+
+  useEffect(() => {
+    try {
+        localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventory));
+    } catch (error) {
+        console.error("Error saving inventory to localStorage", error);
+    }
+  }, [inventory]);
 
   return (
     <InventoryContext.Provider value={{ inventory, setInventory }}>

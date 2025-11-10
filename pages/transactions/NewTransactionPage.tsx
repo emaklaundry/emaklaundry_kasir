@@ -1,25 +1,28 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockServices, mockCustomers } from '../../data/mockData';
+import { mockServices } from '../../data/mockData';
 import { Service, TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory } from '../../types';
-import { Trash2Icon, PlusCircleIcon, SearchIcon } from '../../components/icons';
+import { Trash2Icon, PlusCircleIcon, SearchIcon, MessageSquareIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import { useCustomers } from '../../contexts/CustomerContext';
+import ItemNotesModal from '../../components/ItemNotesModal';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
     const { settings } = useSettings();
     const { setTransactions } = useTransactions();
+    const { customers, setCustomers } = useCustomers();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
     const [discountRate, setDiscountRate] = useState(0);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-    const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+    const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+    const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
 
     useEffect(() => {
         setDiscountRate(settings.discountRate);
@@ -46,6 +49,7 @@ const NewTransactionPage: React.FC = () => {
                 price: service.price,
                 subtotal: service.price,
                 unit: service.unit,
+                itemDetails: service.category === ServiceCategory.Satuan ? [{ note: '' }] : undefined,
             };
             setItems([...items, newItem]);
         }
@@ -54,11 +58,35 @@ const NewTransactionPage: React.FC = () => {
     const handleItemChange = (index: number, field: 'quantity', value: number) => {
         const newItems = [...items];
         const item = newItems[index];
+        const service = mockServices.find(s => s.id === item.serviceId);
+        
         if (field === 'quantity') {
-            item.quantity = value >= 0 ? value : 0;
+            const newQuantity = value >= 0 ? value : 0;
+            item.quantity = newQuantity;
             item.subtotal = item.price * item.quantity;
+
+            if (service && service.category === ServiceCategory.Satuan) {
+                const currentNotes = item.itemDetails || [];
+                const newNotes = Array.from({ length: newQuantity }, (_, i) => currentNotes[i] || { note: '' });
+                item.itemDetails = newNotes;
+            }
         }
         setItems(newItems);
+    };
+
+    const handleOpenNotesModal = (index: number) => {
+        setEditingItemIndex(index);
+        setIsNotesModalOpen(true);
+    };
+
+    const handleSaveNotes = (notes: { note: string }[]) => {
+        if (editingItemIndex !== null) {
+            const newItems = [...items];
+            newItems[editingItemIndex].itemDetails = notes;
+            setItems(newItems);
+        }
+        setEditingItemIndex(null);
+        setIsNotesModalOpen(false);
     };
 
     const handleRemoveItem = (index: number) => {
@@ -81,10 +109,29 @@ const NewTransactionPage: React.FC = () => {
     const grandTotal = useMemo(() => {
         return subtotal - discountAmount + taxAmount;
     }, [subtotal, discountAmount, taxAmount]);
+    
+    const estimatedCompletionDate = useMemo(() => {
+        if (items.length === 0) {
+            const today = new Date();
+            today.setDate(today.getDate() + 1); // Default to tomorrow if no items
+            return today;
+        }
+
+        const maxDuration = Math.max(
+            ...items.map(item => {
+                const service = mockServices.find(s => s.id === item.serviceId);
+                return service ? service.durationDays : 0;
+            })
+        );
+
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + maxDuration);
+        return completionDate;
+    }, [items]);
 
     const handleSaveCustomer = (customer: Customer) => {
         const newCustomer = { ...customer, id: `CUST${Date.now()}`};
-        setCustomers([...customers, newCustomer]);
+        setCustomers(prev => [...prev, newCustomer]);
         setSelectedCustomer(newCustomer);
         setIsCustomerModalOpen(false);
     };
@@ -107,8 +154,10 @@ const NewTransactionPage: React.FC = () => {
             paymentStatus: PaymentStatus.Unpaid,
             orderStatus: OrderStatus.Processing,
             createdAt: new Date(),
-            estimatedCompletionDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Dummy 3 days
+            estimatedCompletionDate: estimatedCompletionDate,
             notes,
+            amountPaid: 0,
+            change: 0,
         };
         
         setTransactions(prev => [...prev, newTransaction]);
@@ -143,8 +192,8 @@ const NewTransactionPage: React.FC = () => {
                                         <tr>
                                             <th className="px-4 py-3">Layanan</th>
                                             <th className="px-4 py-3">Jumlah</th>
+                                            <th className="px-4 py-3 text-center">Aksi</th>
                                             <th className="px-4 py-3 text-right">Subtotal</th>
-                                            <th className="px-4 py-3"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -156,7 +205,7 @@ const NewTransactionPage: React.FC = () => {
                                                         <input 
                                                             type="number" 
                                                             min="0" 
-                                                            step="any"
+                                                            step={item.unit === 'kg' ? "0.1" : "1"}
                                                             value={item.quantity} 
                                                             onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)} 
                                                             className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
@@ -164,10 +213,20 @@ const NewTransactionPage: React.FC = () => {
                                                         <span className="ml-2 text-base text-slate-500 dark:text-slate-400">{item.unit}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-2 text-right">Rp {item.subtotal.toLocaleString('id-ID')}</td>
                                                 <td className="px-4 py-2 text-center">
-                                                    <button type="button" onClick={() => handleRemoveItem(index)} className="text-red-600 hover:text-red-900 p-2"><Trash2Icon className="w-6 h-6"/></button>
+                                                    <div className="flex items-center justify-center">
+                                                        {mockServices.find(s => s.id === item.serviceId)?.category === ServiceCategory.Satuan && (
+                                                            <button type="button" onClick={() => handleOpenNotesModal(index)} title="Tambah Catatan per Item" className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
+                                                                <MessageSquareIcon className="w-6 h-6"/>
+                                                                {item.itemDetails?.some(d => d.note) && (
+                                                                    <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                        <button type="button" onClick={() => handleRemoveItem(index)} title="Hapus Item" className="p-2 text-red-600 hover:text-red-900 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-6 h-6"/></button>
+                                                    </div>
                                                 </td>
+                                                <td className="px-4 py-2 text-right">Rp {item.subtotal.toLocaleString('id-ID')}</td>
                                             </tr>
                                         )) : (
                                             <tr><td colSpan={4} className="text-center py-4 text-slate-500 dark:text-slate-400">Belum ada layanan yang ditambahkan.</td></tr>
@@ -241,6 +300,12 @@ const NewTransactionPage: React.FC = () => {
                     { text: 'Buat Transaksi Baru Lagi', onClick: handleNewTransaction, type: 'primary' },
                     { text: 'Lihat Daftar Transaksi', onClick: handleViewTransactions, type: 'secondary' }
                 ]}
+            />
+            <ItemNotesModal
+                isOpen={isNotesModalOpen}
+                onClose={() => setIsNotesModalOpen(false)}
+                item={editingItemIndex !== null ? items[editingItemIndex] : null!}
+                onSave={handleSaveNotes}
             />
         </>
     );

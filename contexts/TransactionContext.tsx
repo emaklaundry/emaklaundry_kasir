@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Transaction } from '../types';
 import { mockTransactions } from '../data/mockData';
 
@@ -9,8 +9,40 @@ interface TransactionContextType {
 
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
 
+const TRANSACTIONS_STORAGE_KEY = 'laundry_transactions';
+
+// Function to revive date objects from JSON
+const reviveDates = (key: string, value: any) => {
+  const isDate = ['createdAt', 'estimatedCompletionDate', 'purchaseDate', 'date'].includes(key);
+  if (isDate && typeof value === 'string') {
+    return new Date(value);
+  }
+  return value;
+};
+
+
 export const TransactionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    try {
+      const storedTransactions = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
+      if (storedTransactions) {
+        return JSON.parse(storedTransactions, reviveDates);
+      }
+      return mockTransactions;
+    } catch (error) {
+      console.error("Error reading transactions from localStorage", error);
+      return mockTransactions;
+    }
+  });
+
+  useEffect(() => {
+    try {
+        localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactions));
+    } catch (error) {
+        console.error("Error saving transactions to localStorage", error);
+    }
+  }, [transactions]);
+
 
   return (
     <TransactionContext.Provider value={{ transactions, setTransactions }}>

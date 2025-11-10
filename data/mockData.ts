@@ -6,6 +6,7 @@ import {
   Transaction,
   OrderStatus,
   PaymentStatus,
+  PaymentMethod,
   InventoryItem,
   Asset,
   Expense,
@@ -41,19 +42,32 @@ export let mockTransactions: Transaction[] = [
     discount: 0,
     tax: 0,
     total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
-    createdAt: new Date('2023-10-01T10:00:00'), estimatedCompletionDate: new Date('2023-10-04T10:00:00')
+    createdAt: new Date('2023-10-01T10:00:00'), estimatedCompletionDate: new Date('2023-10-04T10:00:00'),
+    amountPaid: 50000, change: 0, paymentMethod: PaymentMethod.QRIS
   },
   {
     id: 'TRX002', customerId: 'CUST2',
     items: [
         { serviceId: 'S1', serviceName: 'Cuci Kering Lipat', quantity: 3, price: 8000, subtotal: 24000, unit: 'kg' },
-        { serviceId: 'S4', serviceName: 'Kemeja', quantity: 2, price: 15000, subtotal: 30000, unit: 'pcs' }
+        { 
+            serviceId: 'S4', 
+            serviceName: 'Kemeja', 
+            quantity: 2, 
+            price: 15000, 
+            subtotal: 30000, 
+            unit: 'pcs',
+            itemDetails: [
+                { note: 'Noda tinta di saku.' },
+                { note: '' }
+            ]
+        }
     ],
     subtotal: 54000,
     discount: 0,
     tax: 0,
     total: 54000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
-    createdAt: new Date('2023-10-25T14:30:00'), estimatedCompletionDate: new Date('2023-10-28T14:30:00')
+    createdAt: new Date('2023-10-25T14:30:00'), estimatedCompletionDate: new Date('2023-10-28T14:30:00'),
+    amountPaid: 0, change: 0
   },
   {
     id: 'TRX003', customerId: 'CUST1',
@@ -61,8 +75,9 @@ export let mockTransactions: Transaction[] = [
     subtotal: 50000,
     discount: 0,
     tax: 0,
-    total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Ready,
-    createdAt: new Date('2023-10-26T11:00:00'), estimatedCompletionDate: new Date('2023-10-30T11:00:00')
+    total: 50000, paymentStatus: PaymentStatus.PartiallyPaid, orderStatus: OrderStatus.Ready,
+    createdAt: new Date('2023-10-26T11:00:00'), estimatedCompletionDate: new Date('2023-10-30T11:00:00'),
+    amountPaid: 20000, change: 0, paymentMethod: PaymentMethod.Cash
   },
    {
     id: 'TRX004', customerId: 'CUST3',
@@ -71,7 +86,8 @@ export let mockTransactions: Transaction[] = [
     discount: 0,
     tax: 0,
     total: 80000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
-    createdAt: new Date('2023-10-27T09:00:00'), estimatedCompletionDate: new Date('2023-11-01T09:00:00')
+    createdAt: new Date('2023-10-27T09:00:00'), estimatedCompletionDate: new Date('2023-11-01T09:00:00'),
+    amountPaid: 0, change: 0
   },
 ];
 

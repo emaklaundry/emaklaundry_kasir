@@ -1,14 +1,15 @@
-
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { mockCustomers, mockTransactions } from '../../data/mockData';
 import { Customer } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { useCustomers } from '../../contexts/CustomerContext';
+import { useTransactions } from '../../contexts/TransactionContext';
 
 const CustomersPage: React.FC = () => {
-    const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+    const { customers, setCustomers } = useCustomers();
+    const { transactions } = useTransactions();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
@@ -16,15 +17,15 @@ const CustomersPage: React.FC = () => {
 
     const customerStats = useMemo(() => {
         return customers.map(customer => {
-            const transactions = mockTransactions.filter(t => t.customerId === customer.id);
-            const totalSpent = transactions.reduce((sum, t) => sum + t.total, 0);
+            const customerTransactions = transactions.filter(t => t.customerId === customer.id);
+            const totalSpent = customerTransactions.reduce((sum, t) => sum + t.total, 0);
             return {
                 ...customer,
-                transactionCount: transactions.length,
+                transactionCount: customerTransactions.length,
                 totalSpent,
             };
         });
-    }, [customers]);
+    }, [customers, transactions]);
 
     const filteredCustomers = customerStats.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

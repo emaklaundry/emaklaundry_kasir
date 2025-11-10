@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { InventoryProvider } from './contexts/InventoryContext';
 import { TransactionProvider } from './contexts/TransactionContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { CustomerProvider } from './contexts/CustomerContext';
 import { UserRole } from './types';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -21,6 +21,7 @@ import SettingsPage from './pages/management/SettingsPage';
 import CustomersPage from './pages/management/CustomersPage';
 import CustomerDetailPage from './pages/management/CustomerDetailPage';
 import ReceiptPage from './pages/transactions/ReceiptPage';
+import TransactionDetailPage from './pages/transactions/TransactionDetailPage';
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -35,6 +36,7 @@ const AppRoutes: React.FC = () => (
             <Route path="/transactions" element={<TransactionPage />} />
             <Route path="/transactions/new" element={<NewTransactionPage />} />
             <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
+            <Route path="/transactions/:id/details" element={<TransactionDetailPage />} />
             
             {/* Admin Routes */}
             <Route path="/management/customers" element={<AdminRoute><CustomersPage /></AdminRoute>} />
@@ -59,11 +61,13 @@ const App: React.FC = () => {
     <AppProvider>
       <SettingsProvider>
         <InventoryProvider>
-          <TransactionProvider>
-            <HashRouter>
-              <AppRoutes />
-            </HashRouter>
-          </TransactionProvider>
+          <CustomerProvider>
+            <TransactionProvider>
+              <HashRouter>
+                <AppRoutes />
+              </HashRouter>
+            </TransactionProvider>
+          </CustomerProvider>
         </InventoryProvider>
       </SettingsProvider>
     </AppProvider>

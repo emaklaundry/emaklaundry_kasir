@@ -1,4 +1,3 @@
-
 export enum UserRole {
   Admin = 'Admin',
   Cashier = 'Cashier',
@@ -13,6 +12,14 @@ export enum OrderStatus {
 export enum PaymentStatus {
   Paid = 'Paid',
   Unpaid = 'Unpaid',
+  PartiallyPaid = 'Partially Paid',
+}
+
+export enum PaymentMethod {
+    Cash = 'Tunai',
+    QRIS = 'QRIS',
+    Transfer = 'Transfer',
+    DebitCard = 'Kartu Debit',
 }
 
 export enum ServiceCategory {
@@ -47,6 +54,7 @@ export interface TransactionItem {
   price: number;
   subtotal: number;
   unit: string;
+  itemDetails?: { note: string }[];
 }
 
 export interface Transaction {
@@ -62,6 +70,10 @@ export interface Transaction {
   createdAt: Date;
   estimatedCompletionDate: Date;
   notes?: string;
+  // Payment details
+  paymentMethod?: PaymentMethod;
+  amountPaid: number;
+  change: number;
 }
 
 export interface InventoryItem {

@@ -1,13 +1,16 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { mockCustomers, mockTransactions } from '../../data/mockData';
 import { OrderStatus, PaymentStatus } from '../../types';
-import { UsersIcon, ShoppingCartIcon, DollarSignIcon, ChevronLeftIcon } from '../../components/icons';
+import { UsersIcon, ShoppingCartIcon, DollarSignIcon, ChevronLeftIcon, HistoryIcon } from '../../components/icons';
+import { useCustomers } from '../../contexts/CustomerContext';
+import { useTransactions } from '../../contexts/TransactionContext';
 
 const CustomerDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const customer = mockCustomers.find(c => c.id === id);
-    const customerTransactions = mockTransactions.filter(t => t.customerId === id);
+    const { customers } = useCustomers();
+    const { transactions } = useTransactions();
+    const customer = customers.find(c => c.id === id);
+    const customerTransactions = transactions.filter(t => t.customerId === id);
 
     if (!customer) {
         return (
@@ -20,6 +23,9 @@ const CustomerDetailPage: React.FC = () => {
 
     const totalSpent = customerTransactions.reduce((sum, t) => sum + t.total, 0);
     const avgTransactionValue = customerTransactions.length > 0 ? totalSpent / customerTransactions.length : 0;
+
+    const sortedTransactions = [...customerTransactions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const mostRecentTransaction = sortedTransactions.length > 0 ? sortedTransactions[0] : null;
 
     const getStatusBadge = (status: OrderStatus) => {
         switch (status) {
@@ -89,6 +95,31 @@ const CustomerDetailPage: React.FC = () => {
                 </div>
             </div>
 
+            {mostRecentTransaction && (
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                        <HistoryIcon className="w-6 h-6 mr-3 text-slate-500" />
+                        Transaksi Terakhir
+                    </h2>
+                    <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg space-y-2 border border-blue-200 dark:border-blue-800">
+                        <div className="flex justify-between items-center">
+                            <span className="text-base text-slate-600 dark:text-slate-400">ID Transaksi:</span>
+                            <Link to={`/transactions/${mostRecentTransaction.id}/receipt`} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                                {mostRecentTransaction.id}
+                            </Link>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-base text-slate-600 dark:text-slate-400">Tanggal:</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(mostRecentTransaction.createdAt).toLocaleDateString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-base text-slate-600 dark:text-slate-400">Total:</span>
+                            <span className="font-bold text-lg text-slate-900 dark:text-white">Rp {mostRecentTransaction.total.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                 <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Riwayat Transaksi</h2>
                  <div className="overflow-x-auto">
@@ -103,7 +134,7 @@ const CustomerDetailPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {customerTransactions.map(t => (
+                            {customerTransactions.length > 0 ? sortedTransactions.map(t => (
                                 <tr key={t.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.id}</td>
                                     <td className="px-4 py-3">{new Date(t.createdAt).toLocaleDateString('id-ID')}</td>
@@ -115,7 +146,13 @@ const CustomerDetailPage: React.FC = () => {
                                         <span className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan={5} className="text-center py-6 text-slate-500 dark:text-slate-400">
+                                        Belum ada riwayat transaksi.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

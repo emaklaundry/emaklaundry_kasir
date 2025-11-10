@@ -1,8 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon } from '../components/icons';
-import { mockTransactions, mockServices, mockExpenses, mockCustomers } from '../data/mockData';
+import { mockServices, mockExpenses } from '../data/mockData';
 import { Transaction } from '../types';
+import { useTransactions } from '../contexts/TransactionContext';
+import { useCustomers } from '../contexts/CustomerContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -16,6 +17,8 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
 
 
 const ReportsPage: React.FC = () => {
+    const { transactions: allTransactions } = useTransactions();
+    const { customers } = useCustomers();
     const [view, setView] = useState<'custom' | 'weekly' | 'monthly'>('custom');
     const today = new Date();
     const [startDate, setStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -40,7 +43,7 @@ const ReportsPage: React.FC = () => {
     const filteredData = useMemo(() => {
         const start = startDate.getTime();
         const end = endDate.getTime();
-        const transactions = mockTransactions.filter(t => {
+        const transactions = allTransactions.filter(t => {
             const time = new Date(t.createdAt).getTime();
             return time >= start && time <= end;
         });
@@ -49,9 +52,9 @@ const ReportsPage: React.FC = () => {
             return time >= start && time <= end;
         });
         return { transactions, expenses };
-    }, [startDate, endDate]);
+    }, [startDate, endDate, allTransactions]);
 
-    const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + (t.subtotal - t.discount), 0);
+    const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + t.amountPaid, 0);
     const totalExpenses = filteredData.expenses.reduce((acc, e) => acc + e.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
     
@@ -76,12 +79,12 @@ const ReportsPage: React.FC = () => {
         });
         return Object.entries(customerSpending)
             .map(([customerId, total]) => ({
-                name: mockCustomers.find(c => c.id === customerId)?.name || 'N/A',
+                name: customers.find(c => c.id === customerId)?.name || 'N/A',
                 total
             }))
             .sort((a,b) => b.total - a.total)
             .slice(0, 5);
-    }, [filteredData.transactions]);
+    }, [filteredData.transactions, customers]);
 
     return (
         <div className="space-y-6">
