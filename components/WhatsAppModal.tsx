@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { Transaction, Customer } from '../types';
+import { Transaction, Customer, OrderStatus } from '../types';
 import { SendIcon } from './icons';
 
 interface WhatsAppModalProps {
@@ -15,7 +15,12 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
 
     useEffect(() => {
         if (transaction && customer) {
-            const defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SELESAI dan LUNAS.\n\nPesanan sudah bisa diambil di toko kami. Mohon tunjukkan struk ini saat pengambilan.\n\nTerima kasih!`;
+            let defaultMessage = '';
+            if (transaction.orderStatus === OrderStatus.Ready) {
+                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SIAP DIAMBIL.\n\nSilakan datang ke toko kami untuk mengambilnya.\n\nTerima kasih!`;
+            } else { // Assumes the only other case is Completed
+                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SELESAI dan LUNAS.\n\nPesanan sudah bisa diambil di toko kami. Mohon tunjukkan struk ini saat pengambilan.\n\nTerima kasih!`;
+            }
             setMessage(defaultMessage);
         }
     }, [transaction, customer]);

@@ -119,8 +119,13 @@ const Dashboard: React.FC = () => {
         const updatedTransaction = { ...transaction, orderStatus: nextStatus };
         setTransactions(prev => prev.map(t => (t.id === transactionId ? updatedTransaction : t)));
 
-        // Trigger WhatsApp modal if the order is now completed and paid
-        if (nextStatus === OrderStatus.Completed && transaction.paymentStatus === PaymentStatus.Paid) {
+        // Trigger WhatsApp modal if status becomes 'Ready for Pickup'
+        if (nextStatus === OrderStatus.Ready) {
+            setTransactionForWhatsApp(updatedTransaction);
+            setIsWhatsAppModalOpen(true);
+        } 
+        // Or trigger if the order is now completed and paid
+        else if (nextStatus === OrderStatus.Completed && transaction.paymentStatus === PaymentStatus.Paid) {
             setTransactionForWhatsApp(updatedTransaction);
             setIsWhatsAppModalOpen(true);
         }
