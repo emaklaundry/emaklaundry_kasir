@@ -14,7 +14,6 @@ import {
   AuditLog,
   Settings,
   Store,
-  // Fix: Added missing type import
   ScheduledMaintenance
 } from '../types';
 
@@ -144,7 +143,6 @@ export const mockSettings: Settings = {
     discountRate: 0,
 };
 
-// Fix: Moved this data from types.ts to consolidate mock data.
 export const mockScheduledMaintenance: ScheduledMaintenance[] = [
     {
         id: 'SCHED1',

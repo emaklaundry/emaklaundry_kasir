@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { Transaction, UserRole, Service } from '../types';
+import { Transaction, UserRole, Service, User } from '../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
@@ -100,6 +100,13 @@ const ReportsPage: React.FC = () => {
             .sort((a,b) => b.total - a.total)
             .slice(0, 5);
     }, [filteredData.transactions, customers]);
+    
+    const userMap = useMemo(() => {
+        return allUsers.reduce((map, user) => {
+            map[user.id] = user;
+            return map;
+        }, {} as Record<number, User>);
+    }, [allUsers]);
 
     const cashierPerformance = useMemo(() => {
         const stats: { [key: number]: { name: string, transactionCount: number, totalRevenue: number, totalDiscount: number } } = {};
@@ -107,7 +114,7 @@ const ReportsPage: React.FC = () => {
         filteredData.transactions.forEach(t => {
             const userId = t.createdByUserId;
             if (!userId) return;
-            const user = allUsers.find(u => u.id === userId);
+            const user = userMap[userId];
             if (!user) return;
 
             if (!stats[userId]) {
@@ -125,7 +132,7 @@ const ReportsPage: React.FC = () => {
         });
 
         return Object.values(stats).sort((a, b) => b.totalRevenue - a.totalRevenue);
-    }, [filteredData.transactions, allUsers]);
+    }, [filteredData.transactions, userMap]);
 
     const getStoreName = () => {
         if (currentUser.role === UserRole.SuperAdmin) {

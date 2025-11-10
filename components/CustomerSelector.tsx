@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Customer } from '../types';
 import { SearchIcon, PlusCircleIcon } from './icons';
 
@@ -12,21 +12,21 @@ interface CustomerSelectorProps {
 const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selectedCustomer, onSelectCustomer, onAddNewCustomer }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
     
-    const filteredCustomers = customers.filter(c => 
+    const filteredCustomers = useMemo(() => customers.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone.includes(searchTerm)
-    );
+    ), [customers, searchTerm]);
 
     useEffect(() => {
         if (selectedCustomer) {
             setSearchTerm(selectedCustomer.name);
             setIsDropdownOpen(false);
         } else {
-            const customerInput = document.getElementById('customerName');
             // Only clear the search term if the input isn't focused (i.e., user isn't typing)
             // This handles external resets, like from the main form's "reset" button.
-            if(document.activeElement !== customerInput) {
+            if(document.activeElement !== inputRef.current) {
                 setSearchTerm('');
             }
         }
@@ -62,6 +62,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selected
                  <div className="relative flex-grow">
                      <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"/>
                     <input 
+                        ref={inputRef}
                         type="text" 
                         id="customerName" 
                         value={searchTerm} 

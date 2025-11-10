@@ -7,7 +7,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import UserFormModal from '../../components/UserFormModal';
 
 const UsersPage: React.FC = () => {
-    const { currentUser, users, setAllUsers, setCurrentUser, selectedStoreId } = useAppContext();
+    const { currentUser, users, allUsers, setAllUsers, setCurrentUser, selectedStoreId } = useAppContext();
     const { stores } = useStores();
     
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -49,6 +49,19 @@ const UsersPage: React.FC = () => {
 
     const confirmDelete = () => {
         if (userToDelete) {
+            // If deleting the current user, log them out or switch to a default user.
+            if (currentUser.id === userToDelete.id) {
+                const superAdmin = allUsers.find(u => u.role === UserRole.SuperAdmin && u.id !== userToDelete.id);
+                const nextUser = superAdmin || allUsers.find(u => u.id !== userToDelete.id);
+                if (nextUser) {
+                    setCurrentUser(nextUser);
+                } else {
+                    // This would only happen if the last user is deleted.
+                    alert("Tidak bisa menghapus pengguna terakhir.");
+                    setUserToDelete(null);
+                    return;
+                }
+            }
             setAllUsers(prev => prev.filter(u => u.id !== userToDelete.id));
             setUserToDelete(null);
         }

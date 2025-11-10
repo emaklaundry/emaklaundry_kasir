@@ -2,9 +2,10 @@ import React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { mockCustomers } from '../data/mockData';
+import { useCustomers } from '../contexts/CustomerContext';
+import { Customer } from '../types';
 
-const getPageTitle = (pathname: string, params: any): string => {
+const getPageTitle = (pathname: string, params: any, customers: Customer[]): string => {
     const staticTitles: { [key: string]: string } = {
         '/': 'Dashboard',
         '/transactions': 'Transaksi',
@@ -30,7 +31,7 @@ const getPageTitle = (pathname: string, params: any): string => {
     }
 
     if (pathname.startsWith('/management/customers/')) {
-        const customer = mockCustomers.find(c => c.id === params.id);
+        const customer = customers.find(c => c.id === params.id);
         return customer ? `Detail Pelanggan: ${customer.name}` : 'Detail Pelanggan';
     }
     
@@ -41,7 +42,8 @@ const getPageTitle = (pathname: string, params: any): string => {
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
     const params = useParams();
-    const pageTitle = getPageTitle(location.pathname, params);
+    const { customers } = useCustomers();
+    const pageTitle = getPageTitle(location.pathname, params, customers);
 
     return (
         <div className="bg-slate-100 dark:bg-slate-900 min-h-screen">

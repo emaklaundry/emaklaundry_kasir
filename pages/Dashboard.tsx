@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus, Expense, UserRole } from '../types';
-import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon, CalendarIcon } from '../components/icons';
+import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction } from '../types';
+import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon, CalendarIcon, ChevronRightIcon } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
@@ -12,6 +12,7 @@ import { useAssets } from '../contexts/AssetContext';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
+import WhatsAppModal from '../components/WhatsAppModal';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -26,7 +27,7 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
 const Dashboard: React.FC = () => {
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { inventory } = useInventory();
-    const { transactions } = useTransactions();
+    const { transactions, setTransactions } = useTransactions();
     const { customers } = useCustomers();
     const { setExpenses } = useExpenses();
     const { scheduledMaintenances } = useScheduledMaintenances();
@@ -35,7 +36,9 @@ const Dashboard: React.FC = () => {
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
-    
+    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+    const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
+
     const completedOrders = transactions.filter(t => t.orderStatus === OrderStatus.Completed).length;
     const pendingOrders = transactions.filter(t => t.orderStatus === OrderStatus.Processing).length;
     const lowStockItems = inventory.filter(i => i.stock <= i.lowStockThreshold).length;
@@ -54,10 +57,17 @@ const Dashboard: React.FC = () => {
             .sort((a,b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
     }, [scheduledMaintenances, assets, now]);
 
+    const customerMap = useMemo(() => {
+        return customers.reduce((map, customer) => {
+            map[customer.id] = customer;
+            return map;
+        }, {} as Record<string, Customer>);
+    }, [customers]);
+
     const activeOrders = transactions
         .filter(t => t.orderStatus !== OrderStatus.Completed)
         .map(t => {
-            const customer = customers.find(c => c.id === t.customerId);
+            const customer = customerMap[t.customerId];
             return {
                 ...t,
                 customerName: customer ? customer.name : 'N/A',
@@ -92,6 +102,35 @@ const Dashboard: React.FC = () => {
         setExpenses(prev => [...prev, { ...expense, id: Date.now(), storeId }]);
         setIsExpenseModalOpen(false);
     };
+    
+    const handleNextStatus = (transactionId: string) => {
+        const transaction = transactions.find(t => t.id === transactionId);
+        if (!transaction) return;
+
+        let nextStatus: OrderStatus;
+        if (transaction.orderStatus === OrderStatus.Processing) {
+            nextStatus = OrderStatus.Ready;
+        } else if (transaction.orderStatus === OrderStatus.Ready) {
+            nextStatus = OrderStatus.Completed;
+        } else {
+            return; // No next status from 'Completed'
+        }
+
+        const updatedTransaction = { ...transaction, orderStatus: nextStatus };
+        setTransactions(prev => prev.map(t => (t.id === transactionId ? updatedTransaction : t)));
+
+        // Trigger WhatsApp modal if the order is now completed and paid
+        if (nextStatus === OrderStatus.Completed && transaction.paymentStatus === PaymentStatus.Paid) {
+            setTransactionForWhatsApp(updatedTransaction);
+            setIsWhatsAppModalOpen(true);
+        }
+    };
+
+    const customerForWhatsApp = useMemo(() => {
+        if (!transactionForWhatsApp) return null;
+        return customerMap[transactionForWhatsApp.customerId];
+    }, [transactionForWhatsApp, customerMap]);
+
 
     const getStoreName = () => {
         if (currentUser.role === UserRole.SuperAdmin) {
@@ -168,12 +207,17 @@ const Dashboard: React.FC = () => {
                                     <th className="px-4 py-3">Estimasi Selesai</th>
                                     <th className="px-4 py-3">Status Pesanan</th>
                                     <th className="px-4 py-3">Status Bayar</th>
+                                    <th className="px-4 py-3 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {activeOrders.length > 0 ? activeOrders.map(t => (
+                                {activeOrders.length > 0 ? activeOrders.map(t => {
+                                    const isSelesaikanDisabled = t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
+                                    return (
                                     <tr key={t.id} className="border-b dark:border-slate-700">
-                                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.id}</td>
+                                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                                            <Link to={`/transactions/${t.id}/details`} className="hover:underline">{t.id}</Link>
+                                        </td>
                                         <td className="px-4 py-3">{t.customerName}</td>
                                         <td className="px-4 py-3">{new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}</td>
                                         <td className="px-4 py-3">
@@ -182,10 +226,27 @@ const Dashboard: React.FC = () => {
                                         <td className="px-4 py-3">
                                             <span className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
                                         </td>
+                                        <td className="px-4 py-3 text-center">
+                                            {t.orderStatus !== OrderStatus.Completed && (
+                                                <button
+                                                    onClick={() => handleNextStatus(t.id)}
+                                                    disabled={isSelesaikanDisabled}
+                                                    className="flex items-center justify-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline mx-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                                                    title={
+                                                        isSelesaikanDisabled
+                                                        ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                                        : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                                                    }
+                                                >
+                                                    {t.orderStatus === OrderStatus.Processing ? 'Siap Diambil' : 'Selesaikan'}
+                                                    <ChevronRightIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </td>
                                     </tr>
-                                )) : (
+                                )}) : (
                                     <tr>
-                                        <td colSpan={5} className="text-center py-4 text-slate-500 dark:text-slate-400">
+                                        <td colSpan={6} className="text-center py-4 text-slate-500 dark:text-slate-400">
                                             Tidak ada pesanan aktif.
                                         </td>
                                     </tr>
@@ -238,6 +299,12 @@ const Dashboard: React.FC = () => {
             <QuickMaintenanceModal
                 isOpen={isMaintenanceModalOpen}
                 onClose={() => setIsMaintenanceModalOpen(false)}
+            />
+            <WhatsAppModal
+                isOpen={isWhatsAppModalOpen}
+                onClose={() => setIsWhatsAppModalOpen(false)}
+                transaction={transactionForWhatsApp}
+                customer={customerForWhatsApp}
             />
         </>
     );

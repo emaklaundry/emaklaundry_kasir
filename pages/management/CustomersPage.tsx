@@ -18,14 +18,25 @@ const CustomersPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const customerStats = useMemo(() => {
+        const stats: { [key: string]: { transactionCount: number, totalSpent: number } } = {};
+
+        customers.forEach(customer => {
+            stats[customer.id] = { transactionCount: 0, totalSpent: 0 };
+        });
+
+        transactions.forEach(transaction => {
+            if (stats[transaction.customerId]) {
+                stats[transaction.customerId].transactionCount += 1;
+                stats[transaction.customerId].totalSpent += transaction.total;
+            }
+        });
+
         return customers.map(customer => {
-            const customerTransactions = transactions.filter(t => t.customerId === customer.id);
-            const totalSpent = customerTransactions.reduce((sum, t) => sum + t.total, 0);
             const store = stores.find(s => s.id === customer.storeId);
             return {
                 ...customer,
-                transactionCount: customerTransactions.length,
-                totalSpent,
+                transactionCount: stats[customer.id].transactionCount,
+                totalSpent: stats[customer.id].totalSpent,
                 storeName: store ? store.name : 'N/A'
             };
         });
