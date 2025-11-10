@@ -6,6 +6,7 @@ import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
+import Modal from '../../components/Modal';
 
 const TransactionPage: React.FC = () => {
     const { transactions, setTransactions } = useTransactions();
@@ -16,6 +17,7 @@ const TransactionPage: React.FC = () => {
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
     const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
+    const [warningModalMessage, setWarningModalMessage] = useState<string | null>(null);
 
     const transactionsWithCustomer = useMemo(() => {
         return transactions.map(t => {
@@ -74,12 +76,18 @@ const TransactionPage: React.FC = () => {
         const targetTransaction = transactions.find(t => t.id === id);
         if (!targetTransaction) return;
 
-        const shouldShowModal = newStatus === OrderStatus.Completed && targetTransaction.paymentStatus === PaymentStatus.Paid;
+        if (newStatus === OrderStatus.Completed && targetTransaction.paymentStatus !== PaymentStatus.Paid) {
+            setWarningModalMessage('Pesanan tidak dapat diselesaikan sebelum lunas. Silakan proses pembayaran terlebih dahulu.');
+            return;
+        }
+
+        const updatedTransaction = { ...targetTransaction, orderStatus: newStatus };
+        const shouldShowWhatsAppModal = newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
         
-        setTransactions(prev => prev.map(t => t.id === id ? { ...t, orderStatus: newStatus } : t));
+        setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
         
-        if (shouldShowModal) {
-            handleOpenWhatsAppModal({ ...targetTransaction, orderStatus: newStatus });
+        if (shouldShowWhatsAppModal) {
+            handleOpenWhatsAppModal(updatedTransaction);
         }
     };
 
@@ -246,6 +254,25 @@ const TransactionPage: React.FC = () => {
                 transaction={transactionForWhatsApp}
                 customer={customerForWhatsApp}
             />
+             {warningModalMessage && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setWarningModalMessage(null)}
+                    title="Peringatan"
+                    footer={
+                        <button 
+                            onClick={() => setWarningModalMessage(null)} 
+                            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
+                        >
+                            Mengerti
+                        </button>
+                    }
+                >
+                    <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-300">
+                        {warningModalMessage}
+                    </p>
+                </Modal>
+            )}
         </>
     );
 };
