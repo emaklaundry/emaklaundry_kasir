@@ -20,7 +20,7 @@ const NewTransactionPage: React.FC = () => {
     const { settings } = useSettings();
     const { setTransactions } = useTransactions();
     const { customers, setCustomers } = useCustomers();
-    const { userRole } = useAppContext();
+    const { currentUser, selectedStoreId } = useAppContext();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
@@ -168,8 +168,16 @@ const NewTransactionPage: React.FC = () => {
         return completionDate;
     }, [items]);
 
-    const handleSaveCustomer = (customer: Customer) => {
-        const newCustomer = { ...customer, id: `CUST${Date.now()}`};
+    const currentStoreId = useMemo(() => {
+        return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
+    }, [currentUser, selectedStoreId]);
+
+    const handleSaveCustomer = (customer: Omit<Customer, 'id' | 'storeId'>) => {
+        if (!currentStoreId || currentStoreId === 'all') {
+            alert('Silakan pilih cabang spesifik untuk menambah pelanggan.');
+            return;
+        }
+        const newCustomer = { ...customer, id: `CUST${Date.now()}`, storeId: currentStoreId };
         setCustomers(prev => [...prev, newCustomer]);
         setSelectedCustomer(newCustomer);
         setIsCustomerModalOpen(false);
@@ -177,6 +185,10 @@ const NewTransactionPage: React.FC = () => {
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!currentStoreId || currentStoreId === 'all') {
+            alert('Super Admin harus memilih cabang spesifik untuk membuat transaksi.');
+            return;
+        }
         if(!selectedCustomer || items.length === 0) {
             alert('Pelanggan dan minimal satu layanan harus dipilih.');
             return;
@@ -185,9 +197,6 @@ const NewTransactionPage: React.FC = () => {
             alert('Silakan pilih metode pembayaran.');
             return;
         }
-
-        // Simplified user ID assignment based on role for demo purposes
-        const userId = userRole === UserRole.Admin ? 1 : 2;
         
         const newTransaction = {
             id: `TRX${Date.now()}`,
@@ -205,7 +214,8 @@ const NewTransactionPage: React.FC = () => {
             amountPaid: actualAmountPaid,
             change: changeAmount,
             paymentMethod: actualAmountPaid > 0 ? paymentMethod : undefined,
-            createdByUserId: userId,
+            createdByUserId: currentUser.id,
+            storeId: currentStoreId,
         };
         
         setTransactions(prev => [...prev, newTransaction]);
@@ -375,9 +385,16 @@ const NewTransactionPage: React.FC = () => {
                                     )}
                                 </div>
 
-                                <button type="submit" className="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors">
+                                <button 
+                                    type="submit" 
+                                    disabled={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'}
+                                    className="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                                >
                                     Simpan Transaksi
                                 </button>
+                                 {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                    <p className="text-center text-sm text-yellow-600 dark:text-yellow-400">Pilih cabang spesifik di header untuk membuat transaksi.</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -424,7 +441,6 @@ const CustomerSelector: React.FC<{
         setSearchTerm(selectedCustomer.name);
         setIsDropdownOpen(false);
       } else {
-        // Clear search term if customer is deselected from outside
         const customerInput = document.getElementById('customerName') as HTMLInputElement;
         if(customerInput && customerInput.value !== searchTerm) {
             setSearchTerm('');
@@ -485,8 +501,8 @@ const CustomerSelector: React.FC<{
     );
 }
 
-const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => void, onSave: (customer: Customer) => void }> = ({ customer, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<Customer, 'id'>>({
+const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => void, onSave: (customer: Omit<Customer, 'id' | 'storeId'>) => void }> = ({ customer, onClose, onSave }) => {
+    const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId'>>({
         name: customer?.name || '',
         phone: customer?.phone || '',
         address: customer?.address || '',
@@ -500,7 +516,7 @@ const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => vo
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: customer?.id || '' });
+        onSave(formData);
     };
     
     return (

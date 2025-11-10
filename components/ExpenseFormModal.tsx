@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { Expense } from '../types';
 
@@ -18,16 +18,26 @@ interface ExpenseFormModalProps {
     expense: Expense | null;
     isOpen: boolean;
     onClose: () => void;
-    onSave: (expense: Expense) => void;
+    onSave: (expense: Omit<Expense, 'id' | 'storeId'>) => void;
 }
 
 const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<Expense, 'id'>>({
-        date: expense?.date || new Date(),
-        description: expense?.description || '',
-        category: expense?.category || 'Operasional',
-        amount: expense?.amount || 0,
+    const [formData, setFormData] = useState({
+        date: new Date(),
+        description: '',
+        category: 'Operasional',
+        amount: 0,
     });
+
+    useEffect(() => {
+        setFormData({
+            date: expense?.date || new Date(),
+            description: expense?.description || '',
+            category: expense?.category || 'Operasional',
+            amount: expense?.amount || 0,
+        });
+    }, [expense, isOpen]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
@@ -40,7 +50,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, on
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: expense?.id || 0 });
+        onSave(formData);
     };
 
     return (

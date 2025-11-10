@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { InventoryItem } from '../../types';
+import { InventoryItem, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useInventory } from '../../contexts/InventoryContext';
+import { useAppContext } from '../../contexts/AppContext';
 
 const InventoryPage: React.FC = () => {
     const { inventory, setInventory } = useInventory();
+    const { currentUser, selectedStoreId, stores } = useAppContext();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
@@ -33,11 +35,17 @@ const InventoryPage: React.FC = () => {
         setCurrentItem(null);
     };
 
-    const handleSaveItem = (item: InventoryItem) => {
+    const handleSaveItem = (item: Omit<InventoryItem, 'id' | 'storeId'>) => {
+        const storeId = currentItem?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+        if (!storeId || storeId === 'all') {
+            alert('Silakan pilih cabang spesifik untuk menambah atau mengedit item.');
+            return;
+        }
+
         if (currentItem && currentItem.id) {
-            setInventory(inventory.map(i => i.id === item.id ? item : i));
+            setInventory(prev => prev.map(i => i.id === currentItem.id ? { ...i, ...item } : i));
         } else {
-            setInventory([...inventory, { ...item, id: `INV${Date.now()}` }]);
+            setInventory(prev => [...prev, { ...item, id: `INV${Date.now()}`, storeId }]);
         }
         handleCloseFormModal();
     };
@@ -48,26 +56,39 @@ const InventoryPage: React.FC = () => {
 
     const confirmDelete = () => {
         if (itemToDelete) {
-            setInventory(inventory.filter(i => i.id !== itemToDelete.id));
+            setInventory(prev => prev.filter(i => i.id !== itemToDelete.id));
             setItemToDelete(null);
         }
     };
+    
+    const inventoryWithStore = inventory.map(item => ({
+        ...item,
+        storeName: stores.find(s => s.id === item.storeId)?.name || 'N/A'
+    }));
     
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Inventaris</h1>
-                <button onClick={() => handleOpenFormModal()} className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">
+                <button 
+                    onClick={() => handleOpenFormModal()} 
+                    className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    disabled={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'}
+                >
                     <PlusCircleIcon className="h-5 w-5 mr-2" />
                     Tambah Item
                 </button>
             </div>
+             {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah item baru.</p>
+            )}
             
             <div className="overflow-x-auto">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
                             <th className="px-4 py-3">Nama Item</th>
+                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <th className="px-4 py-3">Toko</th>}
                             <th className="px-4 py-3">Stok</th>
                             <th className="px-4 py-3">Ambang Batas</th>
                             <th className="px-4 py-3">Satuan</th>
@@ -76,11 +97,12 @@ const InventoryPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {inventory.map(item => {
+                        {inventoryWithStore.map(item => {
                             const isLowStock = item.stock <= item.lowStockThreshold;
                             return (
                                 <tr key={item.id} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{item.name}</td>
+                                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{item.storeName}</td>}
                                     <td className={`px-4 py-3 ${isLowStock ? 'text-red-500 font-bold' : 'text-slate-900 dark:text-white'}`}>{item.stock}</td>
                                     <td className="px-4 py-3">{item.lowStockThreshold}</td>
                                     <td className="px-4 py-3">{item.unit}</td>
@@ -122,8 +144,8 @@ const InventoryPage: React.FC = () => {
 };
 
 // Form modal sub-component
-const InventoryFormModal: React.FC<{ item: InventoryItem | null, onClose: () => void, onSave: (item: InventoryItem) => void }> = ({ item, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<InventoryItem, 'id'>>({
+const InventoryFormModal: React.FC<{ item: InventoryItem | null, onClose: () => void, onSave: (item: Omit<InventoryItem, 'id'| 'storeId'>) => void }> = ({ item, onClose, onSave }) => {
+    const [formData, setFormData] = useState({
         name: item?.name || '',
         stock: item?.stock || 0,
         lowStockThreshold: item?.lowStockThreshold || 0,
@@ -138,7 +160,7 @@ const InventoryFormModal: React.FC<{ item: InventoryItem | null, onClose: () => 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: item?.id || '' });
+        onSave(formData);
     };
 
     return (

@@ -1,19 +1,37 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { UserRole } from '../types';
+import { User, UserRole } from '../types';
+import { mockUsers, mockStores } from '../data/mockData';
+import { Store } from '../types';
 
 interface AppContextType {
-  userRole: UserRole;
-  setUserRole: (role: UserRole) => void;
+  currentUser: User;
+  setCurrentUser: (user: User) => void;
+  users: User[];
+  stores: Store[];
+  selectedStoreId: string; // 'all' or a specific store ID
+  setSelectedStoreId: (storeId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [userRole, setUserRole] = useState<UserRole>(UserRole.Admin);
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [currentUser, setCurrentUser] = useState<User>(users.find(u => u.role === UserRole.SuperAdmin)!);
+  const [stores] = useState<Store[]>(mockStores);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
+
+  const contextValue = {
+    currentUser,
+    setCurrentUser,
+    users,
+    stores,
+    selectedStoreId,
+    setSelectedStoreId,
+  };
 
   return (
-    <AppContext.Provider value={{ userRole, setUserRole }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );
@@ -26,4 +44,3 @@ export const useAppContext = (): AppContextType => {
   }
   return context;
 };
-   

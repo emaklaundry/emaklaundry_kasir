@@ -1,15 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Customer } from '../../types';
+import { Customer, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import { useAppContext } from '../../contexts/AppContext';
 
 const CustomersPage: React.FC = () => {
     const { customers, setCustomers } = useCustomers();
     const { transactions } = useTransactions();
+    const { currentUser, selectedStoreId, stores } = useAppContext();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
@@ -19,13 +21,15 @@ const CustomersPage: React.FC = () => {
         return customers.map(customer => {
             const customerTransactions = transactions.filter(t => t.customerId === customer.id);
             const totalSpent = customerTransactions.reduce((sum, t) => sum + t.total, 0);
+            const store = stores.find(s => s.id === customer.storeId);
             return {
                 ...customer,
                 transactionCount: customerTransactions.length,
                 totalSpent,
+                storeName: store ? store.name : 'N/A'
             };
         });
-    }, [customers, transactions]);
+    }, [customers, transactions, stores]);
 
     const filteredCustomers = customerStats.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -42,11 +46,17 @@ const CustomersPage: React.FC = () => {
         setCurrentCustomer(null);
     };
 
-    const handleSaveCustomer = (customer: Customer) => {
+    const handleSaveCustomer = (customer: Omit<Customer, 'id' | 'storeId'>) => {
+        const storeId = currentCustomer?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+         if (!storeId || storeId === 'all') {
+            alert('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.');
+            return;
+        }
+
         if (currentCustomer && currentCustomer.id) {
-            setCustomers(customers.map(c => c.id === customer.id ? customer : c));
+            setCustomers(prev => prev.map(c => c.id === currentCustomer.id ? { ...c, ...customer } : c));
         } else {
-            setCustomers([...customers, { ...customer, id: `CUST${Date.now()}` }]);
+            setCustomers(prev => [...prev, { ...customer, id: `CUST${Date.now()}`, storeId }]);
         }
         handleCloseFormModal();
     };
@@ -57,7 +67,7 @@ const CustomersPage: React.FC = () => {
 
     const confirmDelete = () => {
         if (customerToDelete) {
-            setCustomers(customers.filter(c => c.id !== customerToDelete.id));
+            setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
             setCustomerToDelete(null);
         }
     };
@@ -77,12 +87,15 @@ const CustomersPage: React.FC = () => {
                             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                         />
                     </div>
-                    <button onClick={() => handleOpenFormModal()} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">
+                    <button onClick={() => handleOpenFormModal()} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 disabled:bg-blue-400 disabled:cursor-not-allowed" disabled={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'}>
                         <PlusCircleIcon className="h-5 w-5 mr-2" />
                         Tambah Pelanggan
                     </button>
                 </div>
             </div>
+            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah pelanggan baru.</p>
+            )}
             
             <div className="overflow-x-auto">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
@@ -90,6 +103,7 @@ const CustomersPage: React.FC = () => {
                         <tr>
                             <th className="px-4 py-3">Nama</th>
                             <th className="px-4 py-3">No. Telepon</th>
+                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <th className="px-4 py-3">Toko</th>}
                             <th className="px-4 py-3 text-center">Total Transaksi</th>
                             <th className="px-4 py-3 text-right">Total Belanja</th>
                             <th className="px-4 py-3">Aksi</th>
@@ -104,6 +118,7 @@ const CustomersPage: React.FC = () => {
                                     </Link>
                                 </td>
                                 <td className="px-4 py-3">{customer.phone}</td>
+                                 {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{customer.storeName}</td>}
                                 <td className="px-4 py-3 text-center">{customer.transactionCount}</td>
                                 <td className="px-4 py-3 text-right">Rp {customer.totalSpent.toLocaleString('id-ID')}</td>
                                 <td className="px-4 py-3 flex items-center space-x-2">
@@ -138,8 +153,8 @@ const CustomersPage: React.FC = () => {
 };
 
 
-const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => void, onSave: (customer: Customer) => void }> = ({ customer, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<Customer, 'id'>>({
+const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => void, onSave: (customer: Omit<Customer, 'id' | 'storeId'>) => void }> = ({ customer, onClose, onSave }) => {
+    const [formData, setFormData] = useState({
         name: customer?.name || '',
         phone: customer?.phone || '',
         address: customer?.address || '',
@@ -153,7 +168,7 @@ const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => vo
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: customer?.id || '' });
+        onSave(formData);
     };
 
     return (

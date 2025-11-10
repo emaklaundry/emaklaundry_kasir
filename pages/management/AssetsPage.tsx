@@ -1,10 +1,12 @@
 
+
 import React, { useState } from 'react';
-import { Asset, MaintenanceLog } from '../../types';
+import { Asset, MaintenanceLog, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
+import { useAppContext } from '../../contexts/AppContext';
 
 const formatRupiah = (number: number | string): string => {
     if (typeof number === 'string') {
@@ -21,6 +23,7 @@ const parseRupiah = (formattedString: string): number => {
 
 const AssetsPage: React.FC = () => {
     const { assets, setAssets } = useAssets();
+    const { currentUser, selectedStoreId, stores } = useAppContext();
     const [isAssetFormModalOpen, setIsAssetFormModalOpen] = useState(false);
     const [isMaintenanceFormModalOpen, setIsMaintenanceFormModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -43,11 +46,17 @@ const AssetsPage: React.FC = () => {
         setIsHistoryModalOpen(true);
     };
 
-    const handleSaveAsset = (asset: Asset) => {
+    const handleSaveAsset = (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => {
+        const storeId = currentAsset?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+        if (!storeId || storeId === 'all') {
+            alert('Silakan pilih cabang spesifik untuk menambah atau mengedit aset.');
+            return;
+        }
+
         if (currentAsset && currentAsset.id) {
-            setAssets(prev => prev.map(a => a.id === asset.id ? asset : a));
+            setAssets(prev => prev.map(a => a.id === currentAsset.id ? { ...currentAsset, ...asset } : a));
         } else {
-            setAssets(prev => [...prev, { ...asset, id: `ASSET${Date.now()}` }]);
+            setAssets(prev => [...prev, { ...asset, id: `ASSET${Date.now()}`, maintenanceHistory: [], storeId }]);
         }
         setIsAssetFormModalOpen(false);
         setCurrentAsset(null);
@@ -86,22 +95,34 @@ const AssetsPage: React.FC = () => {
         }
     };
 
+    const assetsWithStore = assets.map(asset => ({
+        ...asset,
+        storeName: stores.find(s => s.id === asset.storeId)?.name || 'N/A'
+    }));
+
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Aset & Pemeliharaan</h1>
-                <button onClick={() => handleOpenAssetForm()} className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">
+                <button 
+                    onClick={() => handleOpenAssetForm()} 
+                    className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    disabled={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'}
+                >
                     <PlusCircleIcon className="h-5 w-5 mr-2" />
                     Tambah Aset
                 </button>
             </div>
+            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">Pilih cabang spesifik di header untuk menambah aset baru.</p>
+            )}
             
             <div className="overflow-x-auto">
                 <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
                             <th className="px-4 py-3">Nama Aset</th>
-                            <th className="px-4 py-3">Nomor Serial</th>
+                            {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <th className="px-4 py-3">Toko</th>}
                             <th className="px-4 py-3">Tanggal Beli</th>
                             <th className="px-4 py-3 text-right">Biaya Beli</th>
                             <th className="px-4 py-3">Status</th>
@@ -109,10 +130,10 @@ const AssetsPage: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {assets.map(asset => (
+                        {assetsWithStore.map(asset => (
                             <tr key={asset.id} className="border-b dark:border-slate-700">
                                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{asset.name}</td>
-                                <td className="px-4 py-3">{asset.serialNumber || '-'}</td>
+                                {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && <td className="px-4 py-3">{asset.storeName}</td>}
                                 <td className="px-4 py-3">{new Date(asset.purchaseDate).toLocaleDateString('id-ID')}</td>
                                 <td className="px-4 py-3 text-right">Rp {asset.purchaseCost.toLocaleString('id-ID')}</td>
                                 <td className="px-4 py-3"><span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}>{asset.status}</span></td>
@@ -137,8 +158,8 @@ const AssetsPage: React.FC = () => {
 };
 
 
-const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSave: (asset: Asset) => void }> = ({ asset, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Omit<Asset, 'id' | 'maintenanceHistory'>>({
+const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSave: (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => void }> = ({ asset, onClose, onSave }) => {
+    const [formData, setFormData] = useState({
         name: asset?.name || '',
         serialNumber: asset?.serialNumber || '',
         purchaseDate: asset?.purchaseDate || new Date(),
@@ -157,7 +178,7 @@ const AssetFormModal: React.FC<{ asset: Asset | null, onClose: () => void, onSav
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: asset?.id || '', maintenanceHistory: asset?.maintenanceHistory || [] });
+        onSave(formData);
     };
 
     return (

@@ -1,6 +1,6 @@
-// FIX: Define UserRole enum here and remove self-import to fix circular dependency.
 export enum UserRole {
-    Admin = 'Admin',
+    SuperAdmin = 'Super Admin',
+    BranchAdmin = 'Branch Admin',
     Cashier = 'Cashier',
 }
 
@@ -31,12 +31,19 @@ export enum ServiceCategory {
     Lainnya = 'Lainnya',
 }
 
+export interface Store {
+    id: string;
+    name: string;
+    address: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
   phone: string;
   address: string;
   notes?: string;
+  storeId: string;
 }
 
 export interface Service {
@@ -75,7 +82,8 @@ export interface Transaction {
   paymentMethod?: PaymentMethod;
   amountPaid: number;
   change: number;
-  createdByUserId?: number; // Added to track which user created the transaction
+  createdByUserId: number; 
+  storeId: string;
 }
 
 export interface InventoryItem {
@@ -84,6 +92,7 @@ export interface InventoryItem {
   stock: number;
   lowStockThreshold: number;
   unit: string; // e.g., 'liter', 'kg', 'pcs'
+  storeId: string;
 }
 
 export interface MaintenanceLog {
@@ -101,6 +110,7 @@ export interface Asset {
   purchaseCost: number;
   status: 'Active' | 'Under Maintenance' | 'Decommissioned';
   maintenanceHistory: MaintenanceLog[];
+  storeId: string;
 }
 
 export interface Expense {
@@ -109,6 +119,7 @@ export interface Expense {
   description: string;
   category: string;
   amount: number;
+  storeId: string;
 }
 
 export interface User {
@@ -116,6 +127,7 @@ export interface User {
   name: string;
   role: UserRole;
   isActive: boolean;
+  storeId?: string; // Optional: SuperAdmin doesn't have a storeId
 }
 
 export interface AuditLog {

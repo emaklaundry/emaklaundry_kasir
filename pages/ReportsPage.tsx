@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
 import { mockServices, mockUsers } from '../data/mockData';
-import { Transaction } from '../types';
+import { Transaction, UserRole } from '../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
+import { useAppContext } from '../contexts/AppContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
@@ -16,11 +17,11 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
     </div>
 );
 
-
 const ReportsPage: React.FC = () => {
-    const { transactions: allTransactions } = useTransactions();
+    const { transactions: storeFilteredTransactions } = useTransactions();
     const { customers } = useCustomers();
-    const { expenses: allExpenses } = useExpenses();
+    const { expenses: storeFilteredExpenses } = useExpenses();
+    const { currentUser, selectedStoreId, stores } = useAppContext();
     const [view, setView] = useState<'custom' | 'weekly' | 'monthly'>('custom');
     const today = new Date();
     const [startDate, setStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -45,16 +46,16 @@ const ReportsPage: React.FC = () => {
     const filteredData = useMemo(() => {
         const start = startDate.getTime();
         const end = endDate.getTime();
-        const transactions = allTransactions.filter(t => {
+        const transactions = storeFilteredTransactions.filter(t => {
             const time = new Date(t.createdAt).getTime();
             return time >= start && time <= end;
         });
-        const expenses = allExpenses.filter(e => {
+        const expenses = storeFilteredExpenses.filter(e => {
             const time = new Date(e.date).getTime();
             return time >= start && time <= end;
         });
         return { transactions, expenses };
-    }, [startDate, endDate, allTransactions, allExpenses]);
+    }, [startDate, endDate, storeFilteredTransactions, storeFilteredExpenses]);
 
     const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + t.amountPaid, 0);
     const totalExpenses = filteredData.expenses.reduce((acc, e) => acc + e.amount, 0);
@@ -91,11 +92,12 @@ const ReportsPage: React.FC = () => {
         filteredData.transactions.forEach(t => {
             const userId = t.createdByUserId;
             if (!userId) return;
+            const user = mockUsers.find(u => u.id === userId);
+            if (!user) return;
 
             if (!stats[userId]) {
-                const user = mockUsers.find(u => u.id === userId);
                 stats[userId] = {
-                    name: user ? user.name : `Pengguna #${userId}`,
+                    name: user.name,
                     transactionCount: 0,
                     totalRevenue: 0,
                     totalDiscount: 0,
@@ -110,8 +112,19 @@ const ReportsPage: React.FC = () => {
         return Object.values(stats).sort((a, b) => b.totalRevenue - a.totalRevenue);
     }, [filteredData.transactions]);
 
+    const getStoreName = () => {
+        if (currentUser.role === UserRole.SuperAdmin) {
+            if (selectedStoreId === 'all') return 'Laporan Gabungan - Semua Cabang';
+            const store = stores.find(s => s.id === selectedStoreId);
+            return `Laporan - ${store?.name || 'Cabang Tidak Dikenal'}`;
+        }
+        const store = stores.find(s => s.id === currentUser.storeId);
+        return `Laporan - ${store?.name || 'Cabang Tidak Dikenal'}`;
+    };
+
     return (
         <div className="space-y-6">
+            <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400 -mb-2">{getStoreName()}</h2>
             <div className="flex justify-between items-center flex-wrap gap-4">
                  <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                     <button onClick={() => setDateRange('custom')} className={`px-4 py-2 text-base font-medium rounded-md ${view === 'custom' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Kustom</button>

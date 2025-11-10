@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
 ];
 
 const Sidebar: React.FC = () => {
-  const { userRole } = useAppContext();
+  const { currentUser } = useAppContext();
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>(['/management']);
 
@@ -56,15 +56,17 @@ const Sidebar: React.FC = () => {
       prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path]
     );
   };
+  
+  const hasAdminAccess = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.BranchAdmin;
 
   const renderNavLinks = (items: NavItem[]) => {
     return items
       .filter(item => {
-        if (item.adminOnly && userRole !== UserRole.Admin) {
+        if (item.adminOnly && !hasAdminAccess) {
             return false;
         }
         if (item.children) {
-            return item.children.some(child => !child.adminOnly || userRole === UserRole.Admin);
+            return item.children.some(child => !child.adminOnly || hasAdminAccess);
         }
         return true;
       })

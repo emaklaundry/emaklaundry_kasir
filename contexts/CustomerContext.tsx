@@ -1,6 +1,7 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { Customer } from '../types';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
+import { Customer, UserRole } from '../types';
 import { mockCustomers } from '../data/mockData';
+import { useAppContext } from './AppContext';
 
 interface CustomerContextType {
   customers: Customer[];
@@ -9,10 +10,10 @@ interface CustomerContextType {
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
 
-const CUSTOMERS_STORAGE_KEY = 'laundry_customers';
+const CUSTOMERS_STORAGE_KEY = 'laundry_customers_multistore';
 
 export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [customers, setCustomers] = useState<Customer[]>(() => {
+  const [allCustomers, setAllCustomers] = useState<Customer[]>(() => {
     try {
       const storedCustomers = localStorage.getItem(CUSTOMERS_STORAGE_KEY);
       return storedCustomers ? JSON.parse(storedCustomers) : mockCustomers;
@@ -24,14 +25,26 @@ export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   useEffect(() => {
     try {
-      localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
+      localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(allCustomers));
     } catch (error) {
       console.error("Error saving customers to localStorage", error);
     }
-  }, [customers]);
+  }, [allCustomers]);
+
+  const { currentUser, selectedStoreId } = useAppContext();
+
+  const customers = useMemo(() => {
+    if (currentUser.role === UserRole.SuperAdmin) {
+      if (selectedStoreId === 'all') {
+        return allCustomers;
+      }
+      return allCustomers.filter(c => c.storeId === selectedStoreId);
+    }
+    return allCustomers.filter(c => c.storeId === currentUser.storeId);
+  }, [allCustomers, currentUser, selectedStoreId]);
 
   return (
-    <CustomerContext.Provider value={{ customers, setCustomers }}>
+    <CustomerContext.Provider value={{ customers, setCustomers: setAllCustomers }}>
       {children}
     </CustomerContext.Provider>
   );

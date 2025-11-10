@@ -27,8 +27,9 @@ import TransactionDetailPage from './pages/transactions/TransactionDetailPage';
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userRole } = useAppContext();
-  return userRole === UserRole.Admin ? <>{children}</> : <Navigate to="/" />;
+  const { currentUser } = useAppContext();
+  const isAdmin = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.BranchAdmin;
+  return isAdmin ? <>{children}</> : <Navigate to="/" />;
 };
 
 const AppRoutes: React.FC = () => (
@@ -45,8 +46,8 @@ const AppRoutes: React.FC = () => (
             <Route path="/management/customers/:id" element={<AdminRoute><CustomerDetailPage /></AdminRoute>} />
             <Route path="/management/services" element={<AdminRoute><ServicesPage /></AdminRoute>} />
             <Route path="/management/inventory" element={<AdminRoute><InventoryPage /></AdminRoute>} />
-            <Route path="/management/assets" element={<AssetsPage />} />
-            <Route path="/management/expenses" element={<ExpensesPage />} />
+            <Route path="/management/assets" element={<AdminRoute><AssetsPage /></AdminRoute>} />
+            <Route path="/management/expenses" element={<AdminRoute><ExpensesPage /></AdminRoute>} />
             <Route path="/management/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
             <Route path="/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
             <Route path="/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
@@ -62,19 +63,19 @@ const App: React.FC = () => {
   return (
     <AppProvider>
       <SettingsProvider>
-        <InventoryProvider>
-          <CustomerProvider>
+        <CustomerProvider>
             <TransactionProvider>
-              <AssetProvider>
-                <ExpenseProvider>
-                  <HashRouter>
-                    <AppRoutes />
-                  </HashRouter>
-                </ExpenseProvider>
-              </AssetProvider>
+                <InventoryProvider>
+                    <AssetProvider>
+                        <ExpenseProvider>
+                            <HashRouter>
+                                <AppRoutes />
+                            </HashRouter>
+                        </ExpenseProvider>
+                    </AssetProvider>
+                </InventoryProvider>
             </TransactionProvider>
-          </CustomerProvider>
-        </InventoryProvider>
+        </CustomerProvider>
       </SettingsProvider>
     </AppProvider>
   );

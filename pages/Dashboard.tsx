@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus, Expense } from '../types';
+import { OrderStatus, PaymentStatus, Expense, UserRole } from '../types';
 import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
@@ -22,7 +22,7 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
 );
 
 const Dashboard: React.FC = () => {
-    const { userRole } = useAppContext();
+    const { currentUser, selectedStoreId, stores } = useAppContext();
     const { inventory } = useInventory();
     const { transactions } = useTransactions();
     const { customers } = useCustomers();
@@ -66,13 +66,29 @@ const Dashboard: React.FC = () => {
     };
 
     const handleSaveExpense = (expense: Expense) => {
-        setExpenses(prev => [...prev, { ...expense, id: Date.now() }]);
+        const storeId = currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
+        if (!storeId || storeId === 'all') {
+            alert('Silakan pilih cabang spesifik untuk mencatat pengeluaran.');
+            return;
+        }
+        setExpenses(prev => [...prev, { ...expense, id: Date.now(), storeId }]);
         setIsExpenseModalOpen(false);
+    };
+
+    const getStoreName = () => {
+        if (currentUser.role === UserRole.SuperAdmin) {
+            if (selectedStoreId === 'all') return 'Semua Cabang';
+            return stores.find(s => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal';
+        }
+        return stores.find(s => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
     };
 
     return (
         <>
             <div className="space-y-6">
+                 <div className="mb-4">
+                    <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400">Tampilan Data: <span className="font-semibold text-slate-800 dark:text-slate-200">{getStoreName()}</span></h2>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
                         icon={PackageIcon} 

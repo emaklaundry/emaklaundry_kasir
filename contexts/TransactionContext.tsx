@@ -1,6 +1,7 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { Transaction } from '../types';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
+import { Transaction, UserRole } from '../types';
 import { mockTransactions } from '../data/mockData';
+import { useAppContext } from './AppContext';
 
 interface TransactionContextType {
   transactions: Transaction[];
@@ -9,9 +10,8 @@ interface TransactionContextType {
 
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
 
-const TRANSACTIONS_STORAGE_KEY = 'laundry_transactions';
+const TRANSACTIONS_STORAGE_KEY = 'laundry_transactions_multistore';
 
-// Function to revive date objects from JSON
 const reviveDates = (key: string, value: any) => {
   const isDate = ['createdAt', 'estimatedCompletionDate', 'purchaseDate', 'date'].includes(key);
   if (isDate && typeof value === 'string') {
@@ -20,9 +20,8 @@ const reviveDates = (key: string, value: any) => {
   return value;
 };
 
-
 export const TransactionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>(() => {
     try {
       const storedTransactions = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
       if (storedTransactions) {
@@ -37,15 +36,26 @@ export const TransactionProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   useEffect(() => {
     try {
-        localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactions));
+        localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(allTransactions));
     } catch (error) {
         console.error("Error saving transactions to localStorage", error);
     }
-  }, [transactions]);
+  }, [allTransactions]);
 
+  const { currentUser, selectedStoreId } = useAppContext();
+
+  const transactions = useMemo(() => {
+    if (currentUser.role === UserRole.SuperAdmin) {
+      if (selectedStoreId === 'all') {
+        return allTransactions;
+      }
+      return allTransactions.filter(t => t.storeId === selectedStoreId);
+    }
+    return allTransactions.filter(t => t.storeId === currentUser.storeId);
+  }, [allTransactions, currentUser, selectedStoreId]);
 
   return (
-    <TransactionContext.Provider value={{ transactions, setTransactions }}>
+    <TransactionContext.Provider value={{ transactions, setTransactions: setAllTransactions }}>
       {children}
     </TransactionContext.Provider>
   );
