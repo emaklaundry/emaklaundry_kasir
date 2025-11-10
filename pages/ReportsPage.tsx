@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { BarChartIcon, DollarSignIcon, PackageIcon } from '../components/icons';
-import { mockServices, mockExpenses } from '../data/mockData';
+import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
+import { mockServices, mockExpenses, mockUsers } from '../data/mockData';
 import { Transaction } from '../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
@@ -62,8 +62,6 @@ const ReportsPage: React.FC = () => {
          const serviceStats = mockServices.map(service => {
             const revenue = filteredData.transactions.reduce((total, transaction) => {
                 const serviceItem = transaction.items.find(item => item.serviceId === service.id);
-                // Note: This doesn't account for transaction-level discounts. 
-                // A more complex distribution logic would be needed for perfect accuracy.
                 return total + (serviceItem ? serviceItem.subtotal : 0);
             }, 0);
             return { name: service.name, revenue };
@@ -74,7 +72,6 @@ const ReportsPage: React.FC = () => {
     const topCustomers = useMemo(() => {
         const customerSpending: {[key: string]: number} = {};
         filteredData.transactions.forEach(t => {
-            // Top customers based on their total bill (grand total)
             customerSpending[t.customerId] = (customerSpending[t.customerId] || 0) + t.total;
         });
         return Object.entries(customerSpending)
@@ -85,6 +82,31 @@ const ReportsPage: React.FC = () => {
             .sort((a,b) => b.total - a.total)
             .slice(0, 5);
     }, [filteredData.transactions, customers]);
+
+    const cashierPerformance = useMemo(() => {
+        const stats: { [key: number]: { name: string, transactionCount: number, totalRevenue: number, totalDiscount: number } } = {};
+        
+        filteredData.transactions.forEach(t => {
+            const userId = t.createdByUserId;
+            if (!userId) return;
+
+            if (!stats[userId]) {
+                const user = mockUsers.find(u => u.id === userId);
+                stats[userId] = {
+                    name: user ? user.name : `Pengguna #${userId}`,
+                    transactionCount: 0,
+                    totalRevenue: 0,
+                    totalDiscount: 0,
+                };
+            }
+            
+            stats[userId].transactionCount += 1;
+            stats[userId].totalRevenue += t.amountPaid;
+            stats[userId].totalDiscount += t.discount;
+        });
+
+        return Object.values(stats).sort((a, b) => b.totalRevenue - a.totalRevenue);
+    }, [filteredData.transactions]);
 
     return (
         <div className="space-y-6">
@@ -147,6 +169,41 @@ const ReportsPage: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                    <UsersIcon className="w-6 h-6 mr-3 text-slate-500" />
+                    Performa Kasir
+                </h2>
+                <div className="overflow-x-auto">
+                     <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                        <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                            <tr>
+                                <th className="px-4 py-2">Nama Kasir</th>
+                                <th className="px-4 py-2 text-center">Total Transaksi</th>
+                                <th className="px-4 py-2 text-right">Total Pendapatan</th>
+                                <th className="px-4 py-2 text-right">Total Diskon Diberikan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {cashierPerformance.length > 0 ? cashierPerformance.map(cashier => (
+                                <tr key={cashier.name} className="border-b dark:border-slate-700">
+                                    <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{cashier.name}</td>
+                                    <td className="px-4 py-2 text-center">{cashier.transactionCount}</td>
+                                    <td className="px-4 py-2 text-right">Rp {cashier.totalRevenue.toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-2 text-right">Rp {cashier.totalDiscount.toLocaleString('id-ID')}</td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={4} className="text-center py-6 text-slate-500 dark:text-slate-400">
+                                        Tidak ada data performa untuk rentang tanggal ini.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

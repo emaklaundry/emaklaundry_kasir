@@ -1,6 +1,7 @@
+// FIX: Define UserRole enum here and remove self-import to fix circular dependency.
 export enum UserRole {
-  Admin = 'Admin',
-  Cashier = 'Cashier',
+    Admin = 'Admin',
+    Cashier = 'Cashier',
 }
 
 export enum OrderStatus {
@@ -74,6 +75,7 @@ export interface Transaction {
   paymentMethod?: PaymentMethod;
   amountPaid: number;
   change: number;
+  createdByUserId?: number; // Added to track which user created the transaction
 }
 
 export interface InventoryItem {

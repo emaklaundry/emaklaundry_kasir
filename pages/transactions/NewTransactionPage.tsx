@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockServices } from '../../data/mockData';
-import { Service, TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory } from '../../types';
+import { Service, TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod } from '../../types';
 import { Trash2Icon, PlusCircleIcon, SearchIcon, MessageSquareIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import SuccessModal from '../../components/SuccessModal';
@@ -9,30 +9,46 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
+import { useAppContext } from '../../contexts/AppContext';
+
+const formatRupiah = (number: number): string => new Intl.NumberFormat('id-ID').format(number);
+const parseRupiah = (formattedString: string): number => parseInt(formattedString.replace(/[^\d]/g, ''), 10) || 0;
+
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
     const { settings } = useSettings();
     const { setTransactions } = useTransactions();
     const { customers, setCustomers } = useCustomers();
+    const { userRole } = useAppContext();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
-    const [discountRate, setDiscountRate] = useState(0);
+    const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
+    const [discountValue, setDiscountValue] = useState(0);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
     const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+    
+    // Payment State
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
+    const [amountPaidStr, setAmountPaidStr] = useState('0');
+
 
     useEffect(() => {
-        setDiscountRate(settings.discountRate);
+        setDiscountValue(settings.discountRate);
+        setDiscountType('percent');
     }, [settings.discountRate]);
 
     const resetForm = () => {
         setSelectedCustomer(null);
         setItems([]);
         setNotes('');
-        setDiscountRate(settings.discountRate);
+        setDiscountValue(settings.discountRate);
+        setDiscountType('percent');
+        setPaymentMethod(undefined);
+        setAmountPaidStr('0');
         const customerInput = document.getElementById('customerName') as HTMLInputElement;
         if (customerInput) customerInput.value = '';
     };
@@ -98,8 +114,11 @@ const NewTransactionPage: React.FC = () => {
     }, [items]);
 
     const discountAmount = useMemo(() => {
-        return subtotal * (discountRate / 100);
-    }, [subtotal, discountRate]);
+        if (discountType === 'percent') {
+            return subtotal * (discountValue / 100);
+        }
+        return Math.min(discountValue, subtotal); // Ensure discount isn't more than subtotal
+    }, [subtotal, discountValue, discountType]);
 
     const taxAmount = useMemo(() => {
         const taxableAmount = subtotal - discountAmount;
@@ -109,7 +128,27 @@ const NewTransactionPage: React.FC = () => {
     const grandTotal = useMemo(() => {
         return subtotal - discountAmount + taxAmount;
     }, [subtotal, discountAmount, taxAmount]);
-    
+
+    const amountPaid = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
+
+    const changeAmount = useMemo(() => {
+        if (paymentMethod === PaymentMethod.Cash && amountPaid > grandTotal) {
+            return amountPaid - grandTotal;
+        }
+        return 0;
+    }, [amountPaid, grandTotal, paymentMethod]);
+
+    const actualAmountPaid = useMemo(() => {
+        return Math.min(amountPaid, grandTotal);
+    }, [amountPaid, grandTotal]);
+
+    const paymentStatus = useMemo(() => {
+        if (grandTotal <= 0) return PaymentStatus.Paid; // For free items
+        if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
+        if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
+        return PaymentStatus.PartiallyPaid;
+    }, [actualAmountPaid, grandTotal]);
+
     const estimatedCompletionDate = useMemo(() => {
         if (items.length === 0) {
             const today = new Date();
@@ -142,6 +181,13 @@ const NewTransactionPage: React.FC = () => {
             alert('Pelanggan dan minimal satu layanan harus dipilih.');
             return;
         }
+        if (actualAmountPaid > 0 && !paymentMethod) {
+            alert('Silakan pilih metode pembayaran.');
+            return;
+        }
+
+        // Simplified user ID assignment based on role for demo purposes
+        const userId = userRole === UserRole.Admin ? 1 : 2;
         
         const newTransaction = {
             id: `TRX${Date.now()}`,
@@ -151,13 +197,15 @@ const NewTransactionPage: React.FC = () => {
             discount: discountAmount,
             tax: taxAmount,
             total: grandTotal,
-            paymentStatus: PaymentStatus.Unpaid,
+            paymentStatus,
             orderStatus: OrderStatus.Processing,
             createdAt: new Date(),
             estimatedCompletionDate: estimatedCompletionDate,
             notes,
-            amountPaid: 0,
-            change: 0,
+            amountPaid: actualAmountPaid,
+            change: changeAmount,
+            paymentMethod: actualAmountPaid > 0 ? paymentMethod : undefined,
+            createdByUserId: userId,
         };
         
         setTransactions(prev => [...prev, newTransaction]);
@@ -173,6 +221,11 @@ const NewTransactionPage: React.FC = () => {
         setIsSuccessModalOpen(false);
         navigate('/transactions');
     }
+
+    const handleDiscountTypeChange = (type: 'percent' | 'fixed') => {
+        setDiscountType(type);
+        setDiscountValue(0); // Reset value when type changes to avoid confusion
+    };
 
     return (
         <>
@@ -249,7 +302,7 @@ const NewTransactionPage: React.FC = () => {
                                 />
                                  <div>
                                     <label htmlFor="notes" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Catatan (Opsional)</label>
-                                    <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
+                                    <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
                                 </div>
                                 <div className="space-y-3 pt-4 border-t dark:border-slate-700">
                                     <div className="flex justify-between items-center text-lg">
@@ -257,16 +310,19 @@ const NewTransactionPage: React.FC = () => {
                                         <span className="font-medium text-slate-800 dark:text-slate-200">Rp {subtotal.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-lg">
-                                        <label htmlFor="discountRate" className="text-slate-600 dark:text-slate-300">Diskon:</label>
+                                        <label htmlFor="discountValue" className="text-slate-600 dark:text-slate-300">Diskon:</label>
                                         <div className="flex items-center gap-2">
+                                            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+                                                <button type="button" onClick={() => handleDiscountTypeChange('percent')} className={`px-2 py-1 text-sm rounded-md ${discountType === 'percent' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>%</button>
+                                                <button type="button" onClick={() => handleDiscountTypeChange('fixed')} className={`px-2 py-1 text-sm rounded-md ${discountType === 'fixed' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Rp</button>
+                                            </div>
                                             <input 
                                                 type="number"
-                                                id="discountRate"
-                                                value={discountRate}
-                                                onChange={(e) => setDiscountRate(parseFloat(e.target.value) || 0)}
-                                                className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                                                id="discountValue"
+                                                value={discountValue}
+                                                onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                                                className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
                                             />
-                                            <span className="text-slate-600 dark:text-slate-300">%</span>
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center text-lg">
@@ -282,6 +338,43 @@ const NewTransactionPage: React.FC = () => {
                                         <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
                                     </div>
                                 </div>
+                                
+                                <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-4">
+                                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Pembayaran</h3>
+                                    <div>
+                                        <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Metode Pembayaran</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {Object.values(PaymentMethod).map(m => (
+                                                <button 
+                                                    type="button" 
+                                                    key={m} 
+                                                    onClick={() => setPaymentMethod(m)} 
+                                                    className={`p-3 rounded-lg text-base border-2 ${paymentMethod === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
+                                                >
+                                                    {m}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="amountPaid" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Jumlah Bayar (Rp)</label>
+                                        <input 
+                                            type="text" 
+                                            id="amountPaid" 
+                                            value={amountPaidStr}
+                                            onChange={e => setAmountPaidStr(formatRupiah(parseRupiah(e.target.value)))}
+                                            className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    {changeAmount > 0 && (
+                                        <div className="flex justify-between items-center text-lg">
+                                            <span className="text-slate-600 dark:text-slate-300">Kembalian:</span>
+                                            <span className="font-medium text-green-600 dark:text-green-400">Rp {formatRupiah(changeAmount)}</span>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <button type="submit" className="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors">
                                     Simpan Transaksi
                                 </button>

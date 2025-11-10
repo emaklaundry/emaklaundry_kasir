@@ -43,7 +43,7 @@ export let mockTransactions: Transaction[] = [
     tax: 0,
     total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
     createdAt: new Date('2023-10-01T10:00:00'), estimatedCompletionDate: new Date('2023-10-04T10:00:00'),
-    amountPaid: 50000, change: 0, paymentMethod: PaymentMethod.QRIS
+    amountPaid: 50000, change: 0, paymentMethod: PaymentMethod.QRIS, createdByUserId: 2
   },
   {
     id: 'TRX002', customerId: 'CUST2',
@@ -67,17 +67,17 @@ export let mockTransactions: Transaction[] = [
     tax: 0,
     total: 54000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
     createdAt: new Date('2023-10-25T14:30:00'), estimatedCompletionDate: new Date('2023-10-28T14:30:00'),
-    amountPaid: 0, change: 0
+    amountPaid: 0, change: 0, createdByUserId: 3
   },
   {
     id: 'TRX003', customerId: 'CUST1',
     items: [{ serviceId: 'S5', serviceName: 'Jas', quantity: 1, price: 50000, subtotal: 50000, unit: 'pcs' }],
     subtotal: 50000,
-    discount: 0,
+    discount: 5000,
     tax: 0,
-    total: 50000, paymentStatus: PaymentStatus.PartiallyPaid, orderStatus: OrderStatus.Ready,
+    total: 45000, paymentStatus: PaymentStatus.PartiallyPaid, orderStatus: OrderStatus.Ready,
     createdAt: new Date('2023-10-26T11:00:00'), estimatedCompletionDate: new Date('2023-10-30T11:00:00'),
-    amountPaid: 20000, change: 0, paymentMethod: PaymentMethod.Cash
+    amountPaid: 20000, change: 0, paymentMethod: PaymentMethod.Cash, createdByUserId: 2
   },
    {
     id: 'TRX004', customerId: 'CUST3',
@@ -87,7 +87,7 @@ export let mockTransactions: Transaction[] = [
     tax: 0,
     total: 80000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
     createdAt: new Date('2023-10-27T09:00:00'), estimatedCompletionDate: new Date('2023-11-01T09:00:00'),
-    amountPaid: 0, change: 0
+    amountPaid: 0, change: 0, createdByUserId: 1
   },
 ];
 
