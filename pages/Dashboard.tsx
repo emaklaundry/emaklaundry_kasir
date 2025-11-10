@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '../types';
-import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon, CalendarIcon, ChevronRightIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '../components/icons';
+import { 
+    ShoppingCartIcon, PackageIcon, WrenchIcon, PlusCircleIcon, DollarSignIcon, 
+    CalendarIcon, ChevronRightIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon
+} from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
@@ -15,6 +18,7 @@ import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useToasts } from '../contexts/ToastContext';
+import PaymentModal from '../components/PaymentModal';
 
 type Trend = 'up' | 'down' | 'neutral';
 
@@ -22,6 +26,55 @@ interface TrendData {
     trend: Trend;
     percentage: string;
 }
+
+const WeeklyRevenueChart: React.FC<{ data: { day: string, revenue: number }[] }> = ({ data }) => {
+    const [tooltip, setTooltip] = useState<{ visible: boolean, content: string, x: number, y: number }>({ visible: false, content: '', x: 0, y: 0 });
+
+    const maxValue = useMemo(() => {
+        const maxVal = Math.max(...data.map(d => d.revenue));
+        return maxVal === 0 ? 100000 : Math.ceil(maxVal / 10000) * 10000;
+    }, [data]);
+    
+    const chartHeight = 200;
+
+    const showTooltip = (content: string, event: React.MouseEvent) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setTooltip({ visible: true, content, x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY - 10 });
+    };
+
+    const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
+
+    return (
+        <div className="relative">
+             {tooltip.visible && (
+                <div
+                    style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%) translateY(-100%)' }}
+                    className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
+                    dangerouslySetInnerHTML={{ __html: tooltip.content }}
+                >
+                </div>
+            )}
+            <div className="flex justify-between items-end h-full pt-4" style={{ height: `${chartHeight}px` }}>
+                {data.map((d, i) => {
+                    const barHeight = (d.revenue / maxValue) * (chartHeight - 30);
+                    const tooltipContent = `<b>${d.day}</b><br/>Rp ${d.revenue.toLocaleString('id-ID')}`;
+                    return (
+                        <div key={i} className="flex flex-col items-center w-full">
+                            <div
+                                className="w-4/5 bg-brand-blue-500 rounded-t-md hover:bg-brand-blue-400"
+                                style={{ height: `${barHeight}px`, minHeight: '2px' }}
+                                onMouseMove={(e) => showTooltip(tooltipContent, e)}
+                                onMouseLeave={hideTooltip}
+                            ></div>
+                            <span className="text-xs mt-2 text-slate-500 dark:text-slate-400">{d.day}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 
 const StatCard: React.FC<{ 
     icon: React.FC<{className?: string}>, 
@@ -94,7 +147,7 @@ const Dashboard: React.FC = () => {
     const { inventory } = useInventory();
     const { transactions, setTransactions } = useTransactions();
     const { customers } = useCustomers();
-    const { setExpenses } = useExpenses();
+    const { expenses, setExpenses } = useExpenses();
     const { scheduledMaintenances, setScheduledMaintenances } = useScheduledMaintenances();
     const { assets, setAssets } = useAssets();
     const { addAuditLog } = useAuditLogs();
@@ -105,8 +158,35 @@ const Dashboard: React.FC = () => {
     const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
     const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [transactionForPayment, setTransactionForPayment] = useState<Transaction | null>(null);
 
     const isCashier = currentUser.role === UserRole.Cashier;
+
+    const weeklyRevenueData = useMemo(() => {
+        const data = Array.from({ length: 7 }, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            return {
+                day: date.toLocaleDateString('id-ID', { weekday: 'short' }),
+                revenue: 0,
+                date,
+            };
+        }).reverse();
+
+        transactions.forEach(t => {
+            const transactionDate = new Date(t.createdAt);
+            const dayData = data.find(d => 
+                d.date.getDate() === transactionDate.getDate() &&
+                d.date.getMonth() === transactionDate.getMonth() &&
+                d.date.getFullYear() === transactionDate.getFullYear()
+            );
+            if (dayData) {
+                dayData.revenue += t.amountPaid;
+            }
+        });
+        return data;
+    }, [transactions]);
     
     const trendStats = useMemo(() => {
         const now = new Date();
@@ -203,6 +283,19 @@ const Dashboard: React.FC = () => {
         addAuditLog(`Mencatat pengeluaran cepat: "${newExpense.description}".`, storeId);
         setIsExpenseModalOpen(false);
     };
+
+    const handleOpenPaymentModal = (transaction: Transaction) => {
+        setTransactionForPayment(transaction);
+        setIsPaymentModalOpen(true);
+    };
+
+    const handleSavePayment = (updatedTransaction: Transaction) => {
+        setTransactions(prev => prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t)));
+        addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
+        setIsPaymentModalOpen(false);
+        setTransactionForPayment(null);
+        addToast('Pembayaran berhasil disimpan.', 'success');
+    };
     
     const handleNextStatus = (transactionId: string) => {
         const transaction = transactions.find(t => t.id === transactionId);
@@ -280,6 +373,8 @@ const Dashboard: React.FC = () => {
                  <div className="mb-4">
                     <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400">Tampilan Data: <span className="font-semibold text-slate-800 dark:text-slate-200">{getStoreName()}</span></h2>
                 </div>
+                
+                {/* Trend Stats - Admin View */}
                 <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}>
                     <StatCard 
                         icon={PackageIcon} 
@@ -312,6 +407,13 @@ const Dashboard: React.FC = () => {
                         to="/management/assets?filter=maintenance_due"
                     />
                 </div>
+
+                {/* Weekly Chart - Admin View */}
+                <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}>
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pendapatan 7 Hari Terakhir</h2>
+                    <WeeklyRevenueChart data={weeklyRevenueData} />
+                </div>
+
 
                 <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}>
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Aksi Cepat</h2>
@@ -395,21 +497,33 @@ const Dashboard: React.FC = () => {
                                             <span className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            {t.orderStatus !== OrderStatus.Completed && (
-                                                <button
-                                                    onClick={() => handleNextStatus(t.id)}
-                                                    disabled={isSelesaikanDisabled}
-                                                    className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${nextActionColor}`}
-                                                    title={
-                                                        isSelesaikanDisabled
-                                                        ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
-                                                        : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
-                                                    }
-                                                >
-                                                    {nextActionText}
-                                                    <ChevronRightIcon className="w-4 h-4" />
-                                                </button>
-                                            )}
+                                            <div className="flex items-center justify-center gap-2">
+                                                {t.paymentStatus !== PaymentStatus.Paid && (
+                                                    <button
+                                                        onClick={() => handleOpenPaymentModal(t)}
+                                                        className="inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 bg-green-600 hover:bg-green-700"
+                                                        title="Proses Pembayaran"
+                                                    >
+                                                        <DollarSignIcon className="w-4 h-4" />
+                                                        <span>Bayar</span>
+                                                    </button>
+                                                )}
+                                                {t.orderStatus !== OrderStatus.Completed && (
+                                                    <button
+                                                        onClick={() => handleNextStatus(t.id)}
+                                                        disabled={isSelesaikanDisabled}
+                                                        className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${nextActionColor}`}
+                                                        title={
+                                                            isSelesaikanDisabled
+                                                            ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                                            : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                                                        }
+                                                    >
+                                                        {nextActionText}
+                                                        <ChevronRightIcon className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 )}) : (
@@ -450,19 +564,31 @@ const Dashboard: React.FC = () => {
                                             <span className="font-medium text-slate-700 dark:text-slate-300">{new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}</span>
                                         </div>
                                     </div>
-                                    {t.orderStatus !== OrderStatus.Completed && (
                                     <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
-                                         <button
-                                            onClick={() => handleNextStatus(t.id)}
-                                            disabled={isSelesaikanDisabled}
-                                            className={`w-full flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
-                                            title={isSelesaikanDisabled ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.' : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`}
-                                        >
-                                            {mobileNextActionText}
-                                            <ChevronRightIcon className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center justify-center gap-2">
+                                            {t.paymentStatus !== PaymentStatus.Paid && (
+                                                <button
+                                                    onClick={() => handleOpenPaymentModal(t)}
+                                                    className="flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 bg-green-600 hover:bg-green-700"
+                                                    title="Proses Pembayaran"
+                                                >
+                                                    <DollarSignIcon className="w-4 h-4" />
+                                                    <span>Bayar</span>
+                                                </button>
+                                            )}
+                                            {t.orderStatus !== OrderStatus.Completed && (
+                                                <button
+                                                    onClick={() => handleNextStatus(t.id)}
+                                                    disabled={isSelesaikanDisabled}
+                                                    className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
+                                                    title={isSelesaikanDisabled ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.' : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`}
+                                                >
+                                                    {mobileNextActionText}
+                                                    <ChevronRightIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                    )}
                                 </div>
                              )
                         }) : (
@@ -535,6 +661,12 @@ const Dashboard: React.FC = () => {
                 onClose={() => setIsWhatsAppModalOpen(false)}
                 transaction={transactionForWhatsApp}
                 customer={customerForWhatsApp}
+            />
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                transaction={transactionForPayment}
+                onSave={handleSavePayment}
             />
         </>
     );

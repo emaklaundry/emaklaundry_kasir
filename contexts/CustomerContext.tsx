@@ -13,8 +13,15 @@ const CustomerContext = createContext<CustomerContextType | undefined>(undefined
 
 const CUSTOMERS_STORAGE_KEY = 'laundry_customers_multistore';
 
+const reviveDates = (key: string, value: any) => {
+  if (key === 'createdAt' && typeof value === 'string') {
+    return new Date(value);
+  }
+  return value;
+};
+
 export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allCustomers, setAllCustomers] = usePersistentState<Customer[]>(CUSTOMERS_STORAGE_KEY, mockCustomers);
+  const [allCustomers, setAllCustomers] = usePersistentState<Customer[]>(CUSTOMERS_STORAGE_KEY, mockCustomers, reviveDates);
   const customers = useStoreFilteredData(allCustomers);
 
   return (

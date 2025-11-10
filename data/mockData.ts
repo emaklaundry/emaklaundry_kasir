@@ -22,10 +22,10 @@ export const mockStores: Store[] = [
 ];
 
 export const mockCustomers: Customer[] = [
-  { id: 'CUST1', name: 'Budi Santoso', phone: '081234567890', address: 'Jl. Merdeka No. 10, Jakarta', notes: 'Pelanggan VIP', storeId: 'STORE1', defaultDiscount: 10 },
-  { id: 'CUST2', name: 'Siti Aminah', phone: '087654321098', address: 'Jl. Pahlawan No. 5, Surabaya', storeId: 'STORE1' },
-  { id: 'CUST3', name: 'Agus Wijaya', phone: '085566778899', address: 'Jl. Sudirman No. 15, Bandung', storeId: 'STORE2', defaultDiscount: 5 },
-  { id: 'CUST4', name: 'Dewi Lestari', phone: '082122334455', address: 'Jl. Gajah Mada No. 20, Semarang', storeId: 'STORE2' },
+  { id: 'CUST1', name: 'Budi Santoso', phone: '081234567890', address: 'Jl. Merdeka No. 10, Jakarta', notes: 'Pelanggan VIP', storeId: 'STORE1', defaultDiscount: 10, createdAt: new Date(new Date().setDate(new Date().getDate() - 30)) },
+  { id: 'CUST2', name: 'Siti Aminah', phone: '087654321098', address: 'Jl. Pahlawan No. 5, Surabaya', storeId: 'STORE1', createdAt: new Date(new Date().setDate(new Date().getDate() - 10)) },
+  { id: 'CUST3', name: 'Agus Wijaya', phone: '085566778899', address: 'Jl. Sudirman No. 15, Bandung', storeId: 'STORE2', defaultDiscount: 5, createdAt: new Date(new Date().setDate(new Date().getDate() - 5)) },
+  { id: 'CUST4', name: 'Dewi Lestari', phone: '082122334455', address: 'Jl. Gajah Mada No. 20, Semarang', storeId: 'STORE2', createdAt: new Date() },
 ];
 
 export const mockServices: Service[] = [
@@ -88,7 +88,7 @@ export let mockTransactions: Transaction[] = [
     discount: 0,
     tax: 0,
     total: 80000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
-    createdAt: new Date(new Date().setDate(new Date().getDate() - 3)), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() + 4)),
+    createdAt: new Date(), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() + 4)),
     amountPaid: 0, change: 0, createdByUserId: 2, storeId: 'STORE2'
   },
    {
@@ -98,7 +98,7 @@ export let mockTransactions: Transaction[] = [
     discount: 8000, 
     tax: 0,
     total: 72000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
-    createdAt: new Date(new Date().setDate(new Date().getDate() - 10)), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() - 7)),
+    createdAt: new Date(), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() - 7)),
     amountPaid: 72000, change: 0, paymentMethod: PaymentMethod.QRIS, createdByUserId: 3, storeId: 'STORE1'
   },
 ];
@@ -126,7 +126,7 @@ export const mockAssets: Asset[] = [
 ];
 
 export const mockExpenses: Expense[] = [
-  { id: 1, date: new Date(new Date().setDate(new Date().getDate() - 5)), description: 'Pembelian Deterjen', category: 'Bahan Baku', amount: 500000, storeId: 'STORE1' },
+  { id: 1, date: new Date(), description: 'Pembelian Deterjen', category: 'Bahan Baku', amount: 500000, storeId: 'STORE1' },
   { id: 2, date: new Date(new Date().setDate(new Date().getDate() - 10)), description: 'Bayar Listrik', category: 'Operasional', amount: 1200000, storeId: 'STORE1' },
   { id: 3, date: new Date(new Date().setDate(new Date().getDate() - 15)), description: 'Gaji Karyawan', category: 'Gaji', amount: 5000000, storeId: 'STORE2' },
 ];
