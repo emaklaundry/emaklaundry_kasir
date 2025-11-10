@@ -31,7 +31,6 @@ export const CommandPaletteProvider: React.FC<{ children: ReactNode }> = ({ chil
       toggle: () => setIsOpen(prev => !prev),
   }
 
-  // FIX: Replace JSX with React.createElement to avoid parsing errors in a .ts file.
   return React.createElement(CommandPaletteContext.Provider, { value: value }, children);
 };
 

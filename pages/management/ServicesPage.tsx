@@ -20,7 +20,6 @@ const ServicesPage: React.FC = () => {
         service.category.toLowerCase().includes(searchTerm.toLowerCase())
     ), [services, searchTerm]);
 
-    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedServices, requestSort, sortConfig } = useSortableData<Service>(filteredServices);
     
     const getSortIcon = (key: keyof Service) => {

@@ -20,6 +20,11 @@ export const useSortableData = <T extends object>(
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
 
+        // Handle nulls and undefineds to sort them to the bottom
+        if (aValue == null && bValue != null) return 1;
+        if (aValue != null && bValue == null) return -1;
+        if (aValue == null && bValue == null) return 0;
+
         // Handle different data types
         if (aValue instanceof Date && bValue instanceof Date) {
             if (aValue.getTime() < bValue.getTime()) return sortConfig.direction === 'ascending' ? -1 : 1;

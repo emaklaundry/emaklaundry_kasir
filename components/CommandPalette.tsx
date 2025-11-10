@@ -150,7 +150,6 @@ const CommandPalette: React.FC = () => {
                     />
                 </div>
                 <div ref={resultsRef} className="max-h-[60vh] overflow-y-auto p-2">
-                    {/* FIX: Explicitly type the destructured `commands` variable to ensure it's treated as an array, resolving the 'map does not exist on type unknown' error. */}
                     {query && Object.entries(groupedCommands).map(([section, commands]: [string, Command[]]) => (
                         <div key={section} className="mb-2">
                             <h3 className="px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{section}</h3>

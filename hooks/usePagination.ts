@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 const ITEMS_PER_PAGE = 15;
 
@@ -12,10 +12,12 @@ export const usePagination = <T,>(data: T[]) => {
         return data.slice(startIndex, endIndex);
     }, [data, currentPage]);
     
-    // Reset to page 1 if the current page becomes invalid (e.g., after filtering)
-    if (currentPage > totalPages && totalPages > 0) {
-        setCurrentPage(1);
-    }
+    // Reset to page 1 if the current page becomes invalid (e.g., after filtering data)
+    useEffect(() => {
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(1);
+        }
+    }, [currentPage, totalPages]);
     
     return {
         currentPage,
