@@ -84,7 +84,8 @@ const Dashboard: React.FC = () => {
 
     const handleSaveExpense = (expense: Expense) => {
         const storeId = currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
-        if (!storeId || storeId === 'all') {
+        // This check is now redundant due to the disabled button, but kept as a safeguard.
+        if (!storeId || storeId === 'all') { 
             alert('Silakan pilih cabang spesifik untuk mencatat pengeluaran.');
             return;
         }
@@ -99,6 +100,8 @@ const Dashboard: React.FC = () => {
         }
         return stores.find(s => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
     };
+
+    const isActionDisabled = currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all';
 
     return (
         <>
@@ -136,21 +139,26 @@ const Dashboard: React.FC = () => {
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                     <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
                         <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Progres Pesanan Aktif</h2>
-                        <div className="flex items-center gap-4">
-                                 <button onClick={() => setIsStockModalOpen(true)} className="flex items-center justify-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
+                        <div className="flex items-center gap-4 flex-wrap">
+                                 <button onClick={() => setIsStockModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors disabled:bg-teal-400 disabled:cursor-not-allowed">
                                     <WrenchIcon className="h-5 w-5 mr-2" />
-                                    Lapor Inventaris Habis
+                                    Update Stok Cepat
                                 </button>
-                                <button onClick={() => setIsExpenseModalOpen(true)} className="flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
+                                <button onClick={() => setIsExpenseModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed">
                                     <DollarSignIcon className="h-5 w-5 mr-2" />
                                     Catat Pengeluaran
                                 </button>
-                                <button onClick={() => setIsMaintenanceModalOpen(true)} className="flex items-center justify-center text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors">
+                                <button onClick={() => setIsMaintenanceModalOpen(true)} disabled={isActionDisabled} className="flex items-center justify-center text-white bg-orange-600 hover:bg-orange-700 font-medium rounded-lg text-lg px-6 py-3 transition-colors disabled:bg-orange-400 disabled:cursor-not-allowed">
                                     <PlusCircleIcon className="h-5 w-5 mr-2" />
                                     Laporkan Kerusakan
                                 </button>
                             </div>
                     </div>
+                     {isActionDisabled && (
+                        <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 text-right -mt-2">
+                            Pilih cabang spesifik di header untuk melakukan aksi cepat.
+                        </p>
+                    )}
                     <div className="overflow-x-auto">
                         <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
                             <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">

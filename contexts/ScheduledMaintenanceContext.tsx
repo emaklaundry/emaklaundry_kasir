@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
-import { ScheduledMaintenance, UserRole } from '../types';
+import { ScheduledMaintenance } from '../types';
 import { mockScheduledMaintenance } from '../data/mockData';
-import { useAppContext } from './AppContext';
+import { useAssets } from './AssetContext';
 
 interface ScheduledMaintenanceContextType {
   scheduledMaintenances: ScheduledMaintenance[];
@@ -42,22 +42,10 @@ export const ScheduledMaintenanceProvider: React.FC<{ children: ReactNode }> = (
     }
   }, [allScheduledMaintenances]);
 
-  const { currentUser, selectedStoreId, stores } = useAppContext();
+  // Consume the AssetContext to get assets currently in scope for the user
+  const { assets } = useAssets();
   
-  // This requires asset context to filter correctly
-  // This is a temporary solution to avoid dependency cycle.
-  // In a larger app, we might fetch assets inside this context or lift state up.
-  const assetsInScope = useMemo(() => {
-      const assetsData = localStorage.getItem('laundry_assets_multistore');
-      const allAssets = assetsData ? JSON.parse(assetsData) : [];
-      if (currentUser.role === UserRole.SuperAdmin) {
-          if(selectedStoreId === 'all') return allAssets;
-          return allAssets.filter((a: any) => a.storeId === selectedStoreId);
-      }
-      return allAssets.filter((a: any) => a.storeId === currentUser.storeId);
-  }, [currentUser, selectedStoreId]);
-
-  const assetIdsInScope = useMemo(() => new Set(assetsInScope.map((a: any) => a.id)), [assetsInScope]);
+  const assetIdsInScope = useMemo(() => new Set(assets.map((a) => a.id)), [assets]);
 
   const scheduledMaintenances = useMemo(() => {
     return allScheduledMaintenances.filter(sm => assetIdsInScope.has(sm.assetId));

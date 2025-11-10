@@ -31,13 +31,16 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
   };
 
   const handleSave = () => {
-    const updatedInventory = inventory.map(item => {
-      if (stockUpdates[item.id] !== undefined) {
-        return { ...item, stock: stockUpdates[item.id] };
-      }
-      return item;
-    });
-    setInventory(updatedInventory);
+    // We need to update the global state (allInventory) not the filtered one
+    // setInventory function from context points to setAllInventory
+    setInventory(prevInventory => 
+      prevInventory.map(item => {
+        if (stockUpdates[item.id] !== undefined && stockUpdates[item.id] !== item.stock) {
+          return { ...item, stock: stockUpdates[item.id] };
+        }
+        return item;
+      })
+    );
     onClose();
   };
 
@@ -54,26 +57,30 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
       }
     >
       <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2">
-        {inventory.map(item => {
-          const isLowStock = item.stock <= item.lowStockThreshold;
+        {inventory.length > 0 ? inventory.map(item => {
+          const isLowStock = (stockUpdates[item.id] ?? item.stock) <= item.lowStockThreshold;
           return (
-            <div key={item.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50">
+            <div key={item.id} className={`flex items-center justify-between gap-4 p-3 rounded-lg ${isLowStock ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-slate-50 dark:bg-slate-700/50'}`}>
               <div className="flex items-center gap-3">
                  {isLowStock && <span className="w-3 h-3 bg-yellow-400 rounded-full flex-shrink-0" title="Stok Rendah"></span>}
-                 <span className={`font-medium ${isLowStock ? 'text-yellow-500 dark:text-yellow-400' : 'text-slate-800 dark:text-slate-200'}`}>{item.name}</span>
+                 <span className={`font-medium ${isLowStock ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-800 dark:text-slate-200'}`}>{item.name}</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   value={stockUpdates[item.id] || 0}
                   onChange={(e) => handleStockChange(item.id, parseInt(e.target.value, 10) || 0)}
-                  className="w-28 bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right"
+                  className="w-28 bg-white border border-slate-300 text-slate-900 text-base rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right"
                 />
                 <span className="text-base text-slate-500 dark:text-slate-400 w-12 text-left">{item.unit}</span>
               </div>
             </div>
           )
-        })}
+        }) : (
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">
+            Tidak ada item inventaris di cabang ini.
+          </p>
+        )}
       </div>
     </Modal>
   );
