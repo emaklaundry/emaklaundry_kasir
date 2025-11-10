@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction } from '../types';
+import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '../types';
 import { ShoppingCartIcon, PackageIcon, WrenchIcon, TruckIcon, PlusCircleIcon, DollarSignIcon, CalendarIcon, ChevronRightIcon } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
 import { useInventory } from '../contexts/InventoryContext';
@@ -26,14 +26,25 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
     </div>
 );
 
+const calculateNextDueDate = (currentDueDate: Date, value: number, unit: 'days' | 'weeks' | 'months' | 'years'): Date => {
+    const newDate = new Date(currentDueDate);
+    switch (unit) {
+        case 'days': newDate.setDate(newDate.getDate() + value); break;
+        case 'weeks': newDate.setDate(newDate.getDate() + value * 7); break;
+        case 'months': newDate.setMonth(newDate.getMonth() + value); break;
+        case 'years': newDate.setFullYear(newDate.getFullYear() + value); break;
+    }
+    return newDate;
+};
+
 const Dashboard: React.FC = () => {
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { inventory } = useInventory();
     const { transactions, setTransactions } = useTransactions();
     const { customers } = useCustomers();
     const { setExpenses } = useExpenses();
-    const { scheduledMaintenances } = useScheduledMaintenances();
-    const { assets } = useAssets();
+    const { scheduledMaintenances, setScheduledMaintenances } = useScheduledMaintenances();
+    const { assets, setAssets } = useAssets();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
     
@@ -51,8 +62,7 @@ const Dashboard: React.FC = () => {
     
     const now = new Date();
     now.setHours(23, 59, 59, 999); // End of today
-    const maintenanceDueCount = scheduledMaintenances.filter(sm => new Date(sm.nextDueDate) <= now).length;
-
+    
     const maintenanceDue = useMemo(() => {
         return scheduledMaintenances
             .filter(sm => new Date(sm.nextDueDate) <= now)
@@ -62,6 +72,9 @@ const Dashboard: React.FC = () => {
             })
             .sort((a,b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
     }, [scheduledMaintenances, assets, now]);
+
+    const maintenanceDueCount = maintenanceDue.length;
+
 
     const customerMap = useMemo(() => {
         return customers.reduce((map, customer) => {
@@ -133,6 +146,39 @@ const Dashboard: React.FC = () => {
             setTransactionForWhatsApp(updatedTransaction);
             setIsWhatsAppModalOpen(true);
         }
+    };
+    
+    const handleMarkMaintenanceAsComplete = (schedule: ScheduledMaintenance) => {
+        const asset = assets.find(a => a.id === schedule.assetId);
+        if (!asset) return;
+        
+        // 1. Add to maintenance history
+        setAssets(prevAssets => prevAssets.map(a => {
+            if (a.id === asset.id) {
+                const newLog = {
+                    id: Date.now(),
+                    date: new Date(),
+                    description: `[Jadwal] - ${schedule.description}`,
+                    cost: 0 
+                };
+                return { ...a, maintenanceHistory: [...a.maintenanceHistory, newLog] };
+            }
+            return a;
+        }));
+
+        // 2. Update schedule's next due date and last completed date
+        setScheduledMaintenances(prevSchedules => prevSchedules.map(s => {
+            if (s.id === schedule.id) {
+                return {
+                    ...s,
+                    lastCompletedDate: new Date(),
+                    nextDueDate: calculateNextDueDate(s.nextDueDate, s.frequencyValue, s.frequencyUnit)
+                };
+            }
+            return s;
+        }));
+        addAuditLog(`Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}" dari Dashboard.`, asset.storeId);
+        addToast(`Perawatan "${schedule.description}" ditandai selesai.`, 'success');
     };
 
     const customerForWhatsApp = useMemo(() => {
@@ -322,6 +368,7 @@ const Dashboard: React.FC = () => {
                                         <th className="px-4 py-3">Aset</th>
                                         <th className="px-4 py-3">Deskripsi Perawatan</th>
                                         <th className="px-4 py-3">Jatuh Tempo</th>
+                                        <th className="px-4 py-3 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -330,10 +377,20 @@ const Dashboard: React.FC = () => {
                                             <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{m.assetName}</td>
                                             <td className="px-4 py-3">{m.description}</td>
                                             <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold">{new Date(m.nextDueDate).toLocaleDateString('id-ID')}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <button
+                                                    onClick={() => handleMarkMaintenanceAsComplete(m)}
+                                                    disabled={isActionDisabled}
+                                                    className="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2 disabled:bg-green-400 disabled:cursor-not-allowed"
+                                                    title={isActionDisabled ? 'Pilih cabang spesifik untuk melakukan aksi ini.' : 'Tandai perawatan sebagai selesai'}
+                                                >
+                                                    Tandai Selesai
+                                                </button>
+                                            </td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={3} className="text-center py-4 text-slate-500 dark:text-slate-400">
+                                            <td colSpan={4} className="text-center py-4 text-slate-500 dark:text-slate-400">
                                                 Tidak ada jadwal perawatan yang jatuh tempo.
                                             </td>
                                         </tr>

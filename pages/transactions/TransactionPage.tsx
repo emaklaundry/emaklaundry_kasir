@@ -258,43 +258,43 @@ const TransactionPage: React.FC = () => {
                 <div className="md:hidden space-y-4">
                      {filteredTransactions.length > 0 ? (
                         filteredTransactions.map(t => (
-                            <div key={t.id} className="bg-slate-800 p-4 rounded-xl shadow-md">
-                                <div className="flex justify-between items-start">
+                            <div key={t.id} className="bg-slate-800 p-4 rounded-lg shadow-md text-slate-300">
+                                <div className="flex justify-between items-center pb-3">
                                     <div>
                                         <p className="font-bold text-lg text-white">{t.customerName}</p>
                                         <p className="text-sm text-slate-400">{t.id}</p>
                                     </div>
-                                    <p className="text-sm text-slate-400">{new Date(t.createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'})}</p>
+                                    <p className="text-sm">{new Date(t.createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'})}</p>
                                 </div>
                                 
-                                <div className="mt-4 space-y-2 text-sm">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">Total:</span>
-                                        <span className="font-bold text-lg text-white">Rp {t.total.toLocaleString('id-ID')}</span>
+                                <div className="mt-2 grid grid-cols-[max-content,1fr] gap-x-4 gap-y-2 text-base">
+                                    <span className="text-slate-400">Total:</span>
+                                    <span className="font-bold text-lg text-white text-right">Rp {t.total.toLocaleString('id-ID')}</span>
+                                    
+                                    <span className="text-slate-400">Status Pesanan:</span>
+                                    <div className="text-right">
+                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(t.orderStatus)}`}>{t.orderStatus}</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">Status Pesanan:</span>
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-md ${getStatusBadge(t.orderStatus)}`}>{t.orderStatus}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">Status Bayar:</span>
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-md ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
+
+                                    <span className="text-slate-400">Status Bayar:</span>
+                                    <div className="text-right">
+                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-start space-x-4">
+                                <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-end space-x-2">
                                     {t.paymentStatus !== PaymentStatus.Paid && (
-                                        <button onClick={() => handleOpenPaymentModal(t)} title="Proses Pembayaran" className="p-2 rounded-md text-green-400 hover:text-green-300">
+                                        <button onClick={() => handleOpenPaymentModal(t)} title="Proses Pembayaran" className="p-2 rounded-md text-green-400 hover:text-green-300 hover:bg-slate-700">
                                             <DollarSignIcon className="w-5 h-5" />
                                         </button>
                                     )}
-                                    <Link to={`/transactions/${t.id}/details`} title="Lihat Detail" className="p-2 rounded-md text-green-400 hover:text-green-300">
+                                    <Link to={`/transactions/${t.id}/details`} title="Lihat Detail" className="p-2 rounded-md text-green-400 hover:text-green-300 hover:bg-slate-700">
                                         <EyeIcon className="w-5 h-5" />
                                     </Link>
-                                    <Link to={`/transactions/${t.id}/receipt`} title="Cetak Struk" className="p-2 rounded-md text-green-400 hover:text-green-300">
+                                    <Link to={`/transactions/${t.id}/receipt`} title="Cetak Struk" className="p-2 rounded-md text-green-400 hover:text-green-300 hover:bg-slate-700">
                                         <PrinterIcon className="w-5 h-5" />
                                     </Link>
-                                    <button onClick={() => handleSendGenericWhatsApp(t)} title="Kirim Struk via WhatsApp" className="p-2 rounded-md text-green-400 hover:text-green-300">
+                                    <button onClick={() => handleSendGenericWhatsApp(t)} title="Kirim Struk via WhatsApp" className="p-2 rounded-md text-green-400 hover:text-green-300 hover:bg-slate-700">
                                         <SendIcon className="w-5 h-5" />
                                     </button>
                                 </div>

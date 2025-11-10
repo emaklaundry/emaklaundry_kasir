@@ -18,8 +18,13 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
     useEffect(() => {
         if (transaction && customer) {
             let defaultMessage = '';
-            if (transaction.orderStatus === OrderStatus.Ready) {
-                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SIAP DIAMBIL.\n\nSilakan datang ke toko kami untuk mengambilnya.\n\nTerima kasih!`;
+            const itemsList = transaction.items.map(item => `- ${item.quantity} ${item.unit} ${item.serviceName}`).join('\n');
+            const remainingBalance = transaction.total - transaction.amountPaid;
+
+            if (transaction.orderStatus === OrderStatus.Processing) {
+                 defaultMessage = `Halo ${customer.name},\n\nTerima kasih telah menggunakan layanan kami. Berikut adalah rincian transaksi Anda:\n\nID Transaksi: ${transaction.id}\nTanggal: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n\nItem:\n${itemsList}\n\nTotal: Rp ${transaction.total.toLocaleString('id-ID')}\nStatus Bayar: ${transaction.paymentStatus}\nEstimasi Selesai: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n\nKami akan memberitahu Anda lagi ketika pesanan Anda sudah siap diambil.\n\nTerima kasih!`;
+            } else if (transaction.orderStatus === OrderStatus.Ready) {
+                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SIAP DIAMBIL.\n\nTotal Tagihan: Rp ${transaction.total.toLocaleString('id-ID')}\nSisa Tagihan: Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}\n\nSilakan datang ke toko kami untuk mengambilnya.\n\nTerima kasih!`;
             } else { // Assumes the only other case is Completed
                 defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SELESAI dan LUNAS.\n\nPesanan sudah bisa diambil di toko kami. Mohon tunjukkan struk ini saat pengambilan.\n\nTerima kasih!`;
             }

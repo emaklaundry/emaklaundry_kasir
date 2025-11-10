@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod } from '../../types';
+import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction } from '../../types';
 import { Trash2Icon, MessageSquareIcon, PlusCircleIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -15,6 +15,7 @@ import ServiceSelector from '../../components/ServiceSelector';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
+import WhatsAppModal from '../../components/WhatsAppModal';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
@@ -34,8 +35,11 @@ const NewTransactionPage: React.FC = () => {
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
     const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+    const [newlyCreatedTransaction, setNewlyCreatedTransaction] = useState<Transaction | null>(null);
     
     // Payment State
+    const [isPayingNow, setIsPayingNow] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
     const [amountPaidStr, setAmountPaidStr] = useState('0');
 
@@ -52,6 +56,8 @@ const NewTransactionPage: React.FC = () => {
         setDiscountType('percent');
         setPaymentMethod(undefined);
         setAmountPaidStr('0');
+        setIsPayingNow(false);
+        setNewlyCreatedTransaction(null);
     };
 
     const handleAddService = (service: typeof services[0]) => {
@@ -130,25 +136,30 @@ const NewTransactionPage: React.FC = () => {
         return subtotal - discountAmount + taxAmount;
     }, [subtotal, discountAmount, taxAmount]);
 
-    const amountPaid = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
+    const amountPaid = useMemo(() => {
+        if (!isPayingNow) return 0;
+        return parseRupiah(amountPaidStr);
+    }, [isPayingNow, amountPaidStr]);
 
     const changeAmount = useMemo(() => {
-        if (paymentMethod === PaymentMethod.Cash && amountPaid > grandTotal) {
-            return amountPaid - grandTotal;
+        if (!isPayingNow || paymentMethod !== PaymentMethod.Cash || amountPaid <= grandTotal) {
+            return 0;
         }
-        return 0;
-    }, [amountPaid, grandTotal, paymentMethod]);
-
+        return amountPaid - grandTotal;
+    }, [isPayingNow, amountPaid, grandTotal, paymentMethod]);
+    
     const actualAmountPaid = useMemo(() => {
+        if (!isPayingNow) return 0;
         return Math.min(amountPaid, grandTotal);
-    }, [amountPaid, grandTotal]);
+    }, [isPayingNow, amountPaid, grandTotal]);
 
     const paymentStatus = useMemo(() => {
+        if (!isPayingNow) return PaymentStatus.Unpaid;
         if (grandTotal <= 0) return PaymentStatus.Paid; // For free items
         if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
         if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
         return PaymentStatus.PartiallyPaid;
-    }, [actualAmountPaid, grandTotal]);
+    }, [isPayingNow, actualAmountPaid, grandTotal]);
 
     const estimatedCompletionDate = useMemo(() => {
         if (items.length === 0) {
@@ -198,12 +209,12 @@ const NewTransactionPage: React.FC = () => {
              addToast('Minimal satu layanan harus ditambahkan.', 'warning');
             return;
         }
-        if (actualAmountPaid > 0 && !paymentMethod) {
+        if (isPayingNow && actualAmountPaid > 0 && !paymentMethod) {
             addToast('Silakan pilih metode pembayaran.', 'warning');
             return;
         }
         
-        const newTransaction = {
+        const newTransaction: Transaction = {
             id: `TRX${Date.now()}`,
             customerId: selectedCustomer.id,
             items,
@@ -218,13 +229,20 @@ const NewTransactionPage: React.FC = () => {
             notes,
             amountPaid: actualAmountPaid,
             change: changeAmount,
-            paymentMethod: actualAmountPaid > 0 ? paymentMethod : undefined,
+            paymentMethod: (isPayingNow && actualAmountPaid > 0) ? paymentMethod : undefined,
             createdByUserId: currentUser.id,
             storeId: currentStoreId,
         };
         
         setTransactions(prev => [...prev, newTransaction]);
         addAuditLog(`Membuat transaksi baru ${newTransaction.id} untuk pelanggan ${selectedCustomer.name}.`, newTransaction.storeId);
+        
+        setNewlyCreatedTransaction(newTransaction);
+        setIsWhatsAppModalOpen(true);
+    };
+    
+    const handleCloseWhatsAppModal = () => {
+        setIsWhatsAppModalOpen(false);
         setIsSuccessModalOpen(true);
     };
     
@@ -241,6 +259,14 @@ const NewTransactionPage: React.FC = () => {
     const handleDiscountTypeChange = (type: 'percent' | 'fixed') => {
         setDiscountType(type);
         setDiscountValue(0); // Reset value when type changes to avoid confusion
+    };
+    
+    const handlePaymentOptionChange = (paying: boolean) => {
+        setIsPayingNow(paying);
+        if (!paying) {
+            setAmountPaidStr('0');
+            setPaymentMethod(undefined);
+        }
     };
 
     return (
@@ -355,6 +381,27 @@ const NewTransactionPage: React.FC = () => {
                                     </div>
                                 </div>
                                 
+                                <div>
+                                    <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Opsi Pembayaran</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => handlePaymentOptionChange(false)} 
+                                            className={`p-3 rounded-lg text-base border-2 ${!isPayingNow ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
+                                        >
+                                            Bayar Nanti
+                                        </button>
+                                         <button 
+                                            type="button" 
+                                            onClick={() => handlePaymentOptionChange(true)} 
+                                            className={`p-3 rounded-lg text-base border-2 ${isPayingNow ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
+                                        >
+                                            Bayar Sekarang
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {isPayingNow && (
                                 <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-4">
                                     <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Pembayaran</h3>
                                     <div>
@@ -390,6 +437,7 @@ const NewTransactionPage: React.FC = () => {
                                         </div>
                                     )}
                                 </div>
+                                )}
 
                                 <button 
                                     type="submit" 
@@ -422,6 +470,12 @@ const NewTransactionPage: React.FC = () => {
                 onClose={() => setIsNotesModalOpen(false)}
                 item={editingItemIndex !== null ? items[editingItemIndex] : null!}
                 onSave={handleSaveNotes}
+            />
+            <WhatsAppModal
+                isOpen={isWhatsAppModalOpen}
+                onClose={handleCloseWhatsAppModal}
+                transaction={newlyCreatedTransaction}
+                customer={selectedCustomer}
             />
         </>
     );
