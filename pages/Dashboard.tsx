@@ -123,11 +123,6 @@ const Dashboard: React.FC = () => {
         if (nextStatus === OrderStatus.Ready) {
             setTransactionForWhatsApp(updatedTransaction);
             setIsWhatsAppModalOpen(true);
-        } 
-        // Or trigger if the order is now completed and paid
-        else if (nextStatus === OrderStatus.Completed && transaction.paymentStatus === PaymentStatus.Paid) {
-            setTransactionForWhatsApp(updatedTransaction);
-            setIsWhatsAppModalOpen(true);
         }
     };
 
