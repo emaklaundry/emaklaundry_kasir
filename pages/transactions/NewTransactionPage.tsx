@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockServices, mockCustomers } from '../../data/mockData';
-import { Service, TransactionItem, PaymentStatus, OrderStatus, Customer } from '../../types';
+import { Service, TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory } from '../../types';
 import { Trash2Icon, PlusCircleIcon, SearchIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import SuccessModal from '../../components/SuccessModal';
@@ -106,14 +106,7 @@ const NewTransactionPage: React.FC = () => {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                             <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Pilih Layanan</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {mockServices.map(service => (
-                                    <button type="button" key={service.id} onClick={() => handleAddService(service)} className="p-6 border rounded-lg text-left hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-700 transition-colors">
-                                        <p className="font-semibold text-lg text-slate-900 dark:text-white">{service.name}</p>
-                                        <p className="text-base text-slate-600 dark:text-slate-300">Rp {service.price.toLocaleString('id-ID')} / {service.unit}</p>
-                                    </button>
-                                ))}
-                            </div>
+                            <ServiceSelector services={mockServices} onSelectService={handleAddService} />
                         </div>
 
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -335,5 +328,72 @@ const CustomerFormModal: React.FC<{ customer: Customer | null, onClose: () => vo
     );
 };
 
+const ServiceSelector: React.FC<{
+    services: Service[];
+    onSelectService: (service: Service) => void;
+}> = ({ services, onSelectService }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredServices = services.filter(s => 
+        s.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const groupedServices = useMemo(() => {
+        return filteredServices.reduce((acc, service) => {
+            (acc[service.category] = acc[service.category] || []).push(service);
+            return acc;
+        }, {} as Record<string, Service[]>);
+    }, [filteredServices]);
+
+    const categoryOrder = Object.values(ServiceCategory);
+
+    const sortedCategories = Object.keys(groupedServices).sort((a, b) => {
+        return categoryOrder.indexOf(a as ServiceCategory) - categoryOrder.indexOf(b as ServiceCategory);
+    });
+
+    return (
+        <div className="space-y-4">
+            <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10"/>
+                <input 
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Cari layanan berdasarkan nama..."
+                    className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    autoComplete="off"
+                />
+            </div>
+
+            <div className="max-h-[45vh] overflow-y-auto space-y-4 pr-2 -mr-2">
+                {sortedCategories.length > 0 ? (
+                    sortedCategories.map(category => (
+                        <div key={category}>
+                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2 sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-1 z-10">{category}</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                {groupedServices[category].map(service => (
+                                    <button 
+                                        type="button" 
+                                        key={service.id} 
+                                        onClick={() => onSelectService(service)}
+                                        className="text-left p-3 border rounded-lg bg-white dark:bg-slate-700/50 hover:bg-brand-blue-50 dark:hover:bg-brand-blue-900/50 hover:border-brand-blue-300 dark:hover:border-brand-blue-600 border-slate-300 dark:border-slate-600 transition-all duration-200 h-full flex flex-col justify-between"
+                                    >
+                                        <p className="font-semibold text-base text-slate-800 dark:text-slate-200">{service.name}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Rp {service.price.toLocaleString('id-ID')}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center text-slate-500 dark:text-slate-400 py-10">
+                        <p className="font-semibold text-lg">Layanan tidak ditemukan</p>
+                        <p>Coba kata kunci lain.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default NewTransactionPage;
