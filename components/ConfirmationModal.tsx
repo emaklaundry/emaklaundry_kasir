@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Modal from './Modal';
 
@@ -7,9 +8,19 @@ interface ConfirmationModalProps {
   onConfirm: () => void;
   title: string;
   message: string;
+  confirmText?: string;
+  confirmColor?: string;
 }
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onConfirm, 
+    title, 
+    message, 
+    confirmText = 'Hapus', 
+    confirmColor = 'bg-red-600 hover:bg-red-700' 
+}) => {
   return (
     <Modal
       isOpen={isOpen}
@@ -20,8 +31,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
           <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 focus:outline-none hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 dark:hover:text-white">
             Batal
           </button>
-          <button onClick={onConfirm} className="text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-lg px-6 py-3">
-            Hapus
+          <button onClick={onConfirm} className={`text-white ${confirmColor} font-medium rounded-lg text-lg px-6 py-3`}>
+            {confirmText}
           </button>
         </>
       }

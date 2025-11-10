@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Store } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon } from '../../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
@@ -10,6 +11,7 @@ const StoresPage: React.FC = () => {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentStore, setCurrentStore] = useState<Store | null>(null);
     const [storeToToggle, setStoreToToggle] = useState<Store | null>(null);
+    const [storeToDelete, setStoreToDelete] = useState<Store | null>(null);
 
     const handleOpenFormModal = (store: Store | null = null) => {
         setCurrentStore(store);
@@ -40,11 +42,22 @@ const StoresPage: React.FC = () => {
     const handleToggleStatus = (store: Store) => {
         setStoreToToggle(store);
     };
+    
+    const handleDelete = (store: Store) => {
+        setStoreToDelete(store);
+    };
 
     const confirmToggleStatus = () => {
         if (storeToToggle) {
             setStores(prev => prev.map(s => s.id === storeToToggle.id ? { ...s, isActive: !s.isActive } : s));
             setStoreToToggle(null);
+        }
+    };
+    
+    const confirmDelete = () => {
+        if (storeToDelete) {
+            setStores(prev => prev.filter(s => s.id !== storeToDelete.id));
+            setStoreToDelete(null);
         }
     };
 
@@ -80,9 +93,14 @@ const StoresPage: React.FC = () => {
                                 </td>
                                 <td className="px-4 py-3 flex items-center space-x-2">
                                     <button onClick={() => handleOpenFormModal(store)} title="Edit" className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleToggleStatus(store)} title={store.isActive ? "Nonaktifkan" : "Aktifkan"} className="p-2.5 rounded-md text-yellow-600 hover:text-yellow-900 dark:text-yellow-500 dark:hover:text-yellow-400 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        {store.isActive ? <Trash2Icon className="w-5 h-5"/> : <PlusCircleIcon className="w-5 h-5"/>}
+                                    <button 
+                                        onClick={() => handleToggleStatus(store)} 
+                                        title={store.isActive ? "Nonaktifkan" : "Aktifkan"} 
+                                        className={`p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${store.isActive ? 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-500 dark:hover:text-yellow-400' : 'text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400'}`}
+                                    >
+                                        <PowerIcon className="w-5 h-5" />
                                     </button>
+                                    <button onClick={() => handleDelete(store)} title="Hapus" className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
                                 </td>
                             </tr>
                         ))}
@@ -105,6 +123,18 @@ const StoresPage: React.FC = () => {
                     onConfirm={confirmToggleStatus}
                     title={`${storeToToggle.isActive ? 'Nonaktifkan' : 'Aktifkan'} Cabang`}
                     message={`Apakah Anda yakin ingin ${storeToToggle.isActive ? 'menonaktifkan' : 'mengaktifkan'} cabang "${storeToToggle.name}"?`}
+                    confirmText={storeToToggle.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                    confirmColor={storeToToggle.isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'}
+                />
+            )}
+            
+            {storeToDelete && (
+                 <ConfirmationModal
+                    isOpen={true}
+                    onClose={() => setStoreToDelete(null)}
+                    onConfirm={confirmDelete}
+                    title="Hapus Cabang"
+                    message={`Apakah Anda yakin ingin menghapus cabang "${storeToDelete.name}" secara permanen? Tindakan ini tidak dapat diurungkan.`}
                 />
             )}
         </div>

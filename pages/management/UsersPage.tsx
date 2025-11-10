@@ -1,32 +1,38 @@
 
 import React, { useState } from 'react';
 import { mockUsers } from '../../data/mockData';
-import { User, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, Trash2Icon } from '../../components/icons';
+import { User, UserRole, Store } from '../../types';
+import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon } from '../../components/icons';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { useStores } from '../../contexts/StoreContext';
+import { useAppContext } from '../../contexts/AppContext';
 
 const UsersPage: React.FC = () => {
-    const [users, setUsers] = useState<User[]>(mockUsers);
+    const { users: allUsers, selectedStoreId } = useAppContext(); // Using app context for users
+    const [users, setUsers] = useState<User[]>(mockUsers); // Keep local state for updates until full context integration
+    const { stores } = useStores();
+    
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
 
     const handleOpenFormModal = (user: User | null = null) => {
-        setCurrentUser(user);
+        setCurrentUserToEdit(user);
         setIsFormModalOpen(true);
     };
 
     const handleCloseFormModal = () => {
         setIsFormModalOpen(false);
-        setCurrentUser(null);
+        setCurrentUserToEdit(null);
     };
 
-    const handleSaveUser = (user: User) => {
-        if (currentUser && currentUser.id) {
-            setUsers(users.map(u => u.id === user.id ? user : u));
+    const handleSaveUser = (user: Omit<User, 'id'>) => {
+        if (currentUserToEdit && currentUserToEdit.id) {
+            setUsers(prev => prev.map(u => u.id === currentUserToEdit.id ? { ...currentUserToEdit, ...user } : u));
         } else {
-            setUsers([...users, { ...user, id: Date.now() }]);
+            setUsers(prev => [...prev, { ...user, id: Date.now() }]);
         }
         handleCloseFormModal();
     };
@@ -41,6 +47,22 @@ const UsersPage: React.FC = () => {
             setUserToDelete(null);
         }
     };
+
+    const handleToggleStatus = (user: User) => {
+        setUserToToggleStatus(user);
+    };
+
+    const confirmToggleStatus = () => {
+        if (userToToggleStatus) {
+            setUsers(prev => prev.map(u => u.id === userToToggleStatus.id ? { ...u, isActive: !u.isActive } : u));
+            setUserToToggleStatus(null);
+        }
+    };
+    
+    const usersWithStore = users.map(user => ({
+        ...user,
+        storeName: stores.find(s => s.id === user.storeId)?.name || 'N/A'
+    }));
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -58,23 +80,36 @@ const UsersPage: React.FC = () => {
                         <tr>
                             <th className="px-4 py-3">Nama</th>
                             <th className="px-4 py-3">Peran</th>
+                             {allUsers[0].role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                <th className="px-4 py-3">Cabang</th>
+                             )}
                             <th className="px-4 py-3">Status</th>
                             <th className="px-4 py-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(user => (
+                        {usersWithStore.map(user => (
                             <tr key={user.id} className="border-b dark:border-slate-700">
                                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{user.name}</td>
                                 <td className="px-4 py-3">{user.role}</td>
+                                {allUsers[0].role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                                    <td className="px-4 py-3">{user.role !== UserRole.SuperAdmin ? user.storeName : '-'}</td>
+                                )}
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 text-sm font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>
                                         {user.isActive ? 'Aktif' : 'Tidak Aktif'}
                                     </span>
                                 </td>
                                 <td className="px-4 py-3 flex items-center space-x-2">
-                                    <button onClick={() => handleOpenFormModal(user)} className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleDelete(user)} className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
+                                    <button onClick={() => handleOpenFormModal(user)} title="Edit" className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"><EditIcon className="w-5 h-5" /></button>
+                                    <button 
+                                        onClick={() => handleToggleStatus(user)} 
+                                        title={user.isActive ? "Nonaktifkan" : "Aktifkan"} 
+                                        className={`p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${user.isActive ? 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-500 dark:hover:text-yellow-400' : 'text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400'}`}
+                                    >
+                                        <PowerIcon className="w-5 h-5" />
+                                    </button>
+                                    <button onClick={() => handleDelete(user)} title="Hapus" className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"><Trash2Icon className="w-5 h-5" /></button>
                                 </td>
                             </tr>
                         ))}
@@ -84,9 +119,10 @@ const UsersPage: React.FC = () => {
 
             {isFormModalOpen && (
                 <UserFormModal 
-                    user={currentUser} 
+                    user={currentUserToEdit} 
                     onClose={handleCloseFormModal}
                     onSave={handleSaveUser}
+                    stores={stores.filter(s => s.isActive)}
                 />
             )}
 
@@ -99,16 +135,29 @@ const UsersPage: React.FC = () => {
                     message={`Apakah Anda yakin ingin menghapus pengguna "${userToDelete.name}"?`}
                 />
             )}
+
+            {userToToggleStatus && (
+                <ConfirmationModal
+                    isOpen={true}
+                    onClose={() => setUserToToggleStatus(null)}
+                    onConfirm={confirmToggleStatus}
+                    title={`${userToToggleStatus.isActive ? 'Nonaktifkan' : 'Aktifkan'} Pengguna`}
+                    message={`Apakah Anda yakin ingin ${userToToggleStatus.isActive ? 'menonaktifkan' : 'mengaktifkan'} pengguna "${userToToggleStatus.name}"?`}
+                    confirmText={userToToggleStatus.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                    confirmColor={userToToggleStatus.isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'}
+                />
+            )}
         </div>
     );
 };
 
 // Form modal sub-component
-const UserFormModal: React.FC<{ user: User | null, onClose: () => void, onSave: (user: User) => void }> = ({ user, onClose, onSave }) => {
+const UserFormModal: React.FC<{ user: User | null; onClose: () => void; onSave: (user: Omit<User, 'id'>) => void; stores: Store[] }> = ({ user, onClose, onSave, stores }) => {
     const [formData, setFormData] = useState<Omit<User, 'id'>>({
         name: user?.name || '',
         role: user?.role || UserRole.Cashier,
         isActive: user?.isActive ?? true,
+        storeId: user?.storeId || '',
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -123,8 +172,17 @@ const UserFormModal: React.FC<{ user: User | null, onClose: () => void, onSave: 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: user?.id || 0 });
+        const finalData = { ...formData };
+        if (finalData.role === UserRole.SuperAdmin) {
+            finalData.storeId = undefined;
+        } else if (!finalData.storeId) {
+            alert('Silakan pilih cabang untuk peran ini.');
+            return;
+        }
+        onSave(finalData);
     };
+    
+    const showStoreSelector = formData.role === UserRole.BranchAdmin || formData.role === UserRole.Cashier;
 
     return (
         <Modal
@@ -149,9 +207,18 @@ const UserFormModal: React.FC<{ user: User | null, onClose: () => void, onSave: 
                         {Object.values(UserRole).map(role => <option key={role} value={role}>{role}</option>)}
                     </select>
                 </div>
+                {showStoreSelector && (
+                    <div>
+                        <label htmlFor="storeId" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Cabang</label>
+                        <select name="storeId" id="storeId" value={formData.storeId} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required>
+                            <option value="">Pilih Cabang</option>
+                            {stores.map(store => <option key={store.id} value={store.id}>{store.name}</option>)}
+                        </select>
+                    </div>
+                )}
                 <div className="flex items-center">
                     <input id="isActive" name="isActive" type="checkbox" checked={formData.isActive} onChange={handleChange} className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600" />
-                    <label htmlFor="isActive" className="ml-2 text-base font-medium text-slate-900 dark:text-slate-300">Aktif</label>
+                    <label htmlFor="isActive" className="ml-2 text-base font-medium text-slate-900 dark:text-slate-300">Akun Aktif</label>
                 </div>
             </form>
         </Modal>
