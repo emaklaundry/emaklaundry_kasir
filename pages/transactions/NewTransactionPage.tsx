@@ -307,10 +307,14 @@ const NewTransactionPage: React.FC = () => {
                 createdByUserId: currentUser.id,
                 storeId: currentStoreId,
             };
-            await addTransaction(newTransaction);
-            addAuditLog(`Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`, currentStoreId);
-            setNewlyCreatedTransaction({ ...newTransaction, id: 'AUTO' }); // id dummy, context akan refresh
-            setIsWhatsAppModalOpen(true);
+            const savedTransaction = await addTransaction(newTransaction);
+            if (savedTransaction) {
+                addAuditLog(`Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`, currentStoreId);
+                setNewlyCreatedTransaction(savedTransaction);
+                setIsWhatsAppModalOpen(true);
+            } else {
+                addToast('Gagal menyimpan transaksi: Tidak ada data yang dikembalikan.', 'error');
+            }
         } catch (error: any) {
             addToast(`Gagal menyimpan transaksi: ${error.message}`, 'error');
         } finally {

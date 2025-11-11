@@ -271,13 +271,13 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleSaveExpense = useCallback(async (expense: Expense) => {
+    const handleSaveExpense = useCallback(async (expense: Omit<Expense, 'id' | 'storeId'>) => {
         const storeId = currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
         if (!storeId || storeId === 'all') { 
             addToast('Silakan pilih cabang spesifik untuk mencatat pengeluaran.', 'warning');
             return;
         }
-        const newExpense = { ...expense, id: Date.now(), storeId };
+        const newExpense = { ...expense, storeId };
         await addExpense(newExpense);
         addAuditLog(`Mencatat pengeluaran cepat: "${newExpense.description}".`, storeId);
         setIsExpenseModalOpen(false);
@@ -323,7 +323,7 @@ const Dashboard: React.FC = () => {
         const asset = assets.find(a => a.id === schedule.assetId);
         if (!asset) return;
         const newLog = {
-            id: `LOG${Date.now()}`,
+            id: `LOG_${crypto.randomUUID()}`,
             date: new Date(),
             description: `[Jadwal] - ${schedule.description}`,
             cost: 0

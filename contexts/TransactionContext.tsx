@@ -4,7 +4,7 @@ import { supabase } from '../utils/supabaseClient';
 
 interface TransactionContextType {
   transactions: Transaction[];
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+  addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<Transaction | null>;
   updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
 }
 
@@ -21,9 +21,13 @@ export const TransactionProvider: React.FC<{ children: ReactNode }> = ({ childre
     fetchTransactions();
   }, []);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>): Promise<Transaction | null> => {
     const { data, error } = await supabase.from('transactions').insert([transaction]).select();
-    if (!error && data) setTransactions((prev) => [...prev, ...data]);
+    if (!error && data && data.length > 0) {
+      setTransactions((prev) => [...prev, ...data]);
+      return data[0];
+    }
+    return null;
   };
 
   const updateTransaction = async (id: string, data: Partial<Transaction>) => {
