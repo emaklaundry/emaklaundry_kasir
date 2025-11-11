@@ -22,10 +22,10 @@ export const mockStores: Store[] = [
 ];
 
 export const mockCustomers: Customer[] = [
-  { id: 'CUST1', name: 'Budi Santoso', phone: '081234567890', address: 'Jl. Merdeka No. 10, Jakarta', notes: 'Pelanggan VIP', storeId: 'STORE1' },
-  { id: 'CUST2', name: 'Siti Aminah', phone: '087654321098', address: 'Jl. Pahlawan No. 5, Surabaya', storeId: 'STORE1' },
-  { id: 'CUST3', name: 'Agus Wijaya', phone: '085566778899', address: 'Jl. Sudirman No. 15, Bandung', storeId: 'STORE2' },
-  { id: 'CUST4', name: 'Dewi Lestari', phone: '082122334455', address: 'Jl. Gajah Mada No. 20, Semarang', storeId: 'STORE2' },
+  { id: 'CUST1', name: 'Budi Santoso', phone: '081234567890', address: 'Jl. Merdeka No. 10, Jakarta', notes: 'Pelanggan VIP', storeId: 'STORE1', defaultDiscount: 10, createdAt: new Date(new Date().setDate(new Date().getDate() - 30)) },
+  { id: 'CUST2', name: 'Siti Aminah', phone: '087654321098', address: 'Jl. Pahlawan No. 5, Surabaya', storeId: 'STORE1', createdAt: new Date(new Date().setDate(new Date().getDate() - 10)) },
+  { id: 'CUST3', name: 'Agus Wijaya', phone: '085566778899', address: 'Jl. Sudirman No. 15, Bandung', storeId: 'STORE2', defaultDiscount: 5, createdAt: new Date(new Date().setDate(new Date().getDate() - 5)) },
+  { id: 'CUST4', name: 'Dewi Lestari', phone: '082122334455', address: 'Jl. Gajah Mada No. 20, Semarang', storeId: 'STORE2', createdAt: new Date() },
 ];
 
 export const mockServices: Service[] = [
@@ -44,11 +44,11 @@ export let mockTransactions: Transaction[] = [
     id: 'TRX001', customerId: 'CUST1',
     items: [{ serviceId: 'S2', serviceName: 'Cuci Setrika', quantity: 5, price: 10000, subtotal: 50000, unit: 'kg' }],
     subtotal: 50000,
-    discount: 0,
+    discount: 5000, // 10% discount for VIP
     tax: 0,
-    total: 50000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
-    createdAt: new Date('2023-10-01T10:00:00'), estimatedCompletionDate: new Date('2023-10-04T10:00:00'),
-    amountPaid: 50000, change: 0, paymentMethod: PaymentMethod.QRIS, createdByUserId: 3, storeId: 'STORE1'
+    total: 45000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
+    createdAt: new Date(new Date().setDate(new Date().getDate() - 40)), estimatedCompletionDate: new Date('2023-10-04T10:00:00'),
+    amountPaid: 45000, change: 0, paymentMethod: PaymentMethod.QRIS, createdByUserId: 3, storeId: 'STORE1'
   },
   {
     id: 'TRX002', customerId: 'CUST2',
@@ -68,17 +68,17 @@ export let mockTransactions: Transaction[] = [
     discount: 0,
     tax: 0,
     total: 54000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
-    createdAt: new Date('2023-10-25T14:30:00'), estimatedCompletionDate: new Date('2023-10-28T14:30:00'),
+    createdAt: new Date(new Date().setDate(new Date().getDate() - 5)), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() + 2)),
     amountPaid: 0, change: 0, createdByUserId: 3, storeId: 'STORE1'
   },
   {
     id: 'TRX003', customerId: 'CUST3',
     items: [{ serviceId: 'S5', serviceName: 'Jas', quantity: 1, price: 50000, subtotal: 50000, unit: 'pcs', itemDetails: [{note: ''}] }],
     subtotal: 50000,
-    discount: 5000,
+    discount: 2500, // 5% discount
     tax: 0,
-    total: 45000, paymentStatus: PaymentStatus.PartiallyPaid, orderStatus: OrderStatus.Ready,
-    createdAt: new Date('2023-10-26T11:00:00'), estimatedCompletionDate: new Date('2023-10-30T11:00:00'),
+    total: 47500, paymentStatus: PaymentStatus.PartiallyPaid, orderStatus: OrderStatus.Ready,
+    createdAt: new Date(new Date().setDate(new Date().getDate() - 4)), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() + 1)),
     amountPaid: 20000, change: 0, paymentMethod: PaymentMethod.Cash, createdByUserId: 5, storeId: 'STORE2'
   },
    {
@@ -88,15 +88,25 @@ export let mockTransactions: Transaction[] = [
     discount: 0,
     tax: 0,
     total: 80000, paymentStatus: PaymentStatus.Unpaid, orderStatus: OrderStatus.Processing,
-    createdAt: new Date('2023-10-27T09:00:00'), estimatedCompletionDate: new Date('2023-11-01T09:00:00'),
+    createdAt: new Date(), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() + 4)),
     amountPaid: 0, change: 0, createdByUserId: 2, storeId: 'STORE2'
+  },
+   {
+    id: 'TRX005', customerId: 'CUST1',
+    items: [{ serviceId: 'S1', serviceName: 'Cuci Kering Lipat', quantity: 10, price: 8000, subtotal: 80000, unit: 'kg' }],
+    subtotal: 80000,
+    discount: 8000, 
+    tax: 0,
+    total: 72000, paymentStatus: PaymentStatus.Paid, orderStatus: OrderStatus.Completed,
+    createdAt: new Date(), estimatedCompletionDate: new Date(new Date().setDate(new Date().getDate() - 7)),
+    amountPaid: 72000, change: 0, paymentMethod: PaymentMethod.QRIS, createdByUserId: 3, storeId: 'STORE1'
   },
 ];
 
 export const mockInventory: InventoryItem[] = [
   { id: 'INV1', name: 'Deterjen Cair', stock: 50, lowStockThreshold: 10, unit: 'liter', storeId: 'STORE1' },
   { id: 'INV2', name: 'Pewangi Pakaian', stock: 40, lowStockThreshold: 15, unit: 'liter', storeId: 'STORE1' },
-  { id: 'INV3', name: 'Plastik Kemasan', stock: 500, lowStockThreshold: 100, unit: 'pcs', storeId: 'STORE2' },
+  { id: 'INV3', name: 'Plastik Kemasan', stock: 5, lowStockThreshold: 100, unit: 'pcs', storeId: 'STORE2' },
   { id: 'INV4', name: 'Hanger', stock: 200, lowStockThreshold: 50, unit: 'pcs', storeId: 'STORE2' },
 ];
 
@@ -116,18 +126,18 @@ export const mockAssets: Asset[] = [
 ];
 
 export const mockExpenses: Expense[] = [
-  { id: 1, date: new Date('2023-10-25'), description: 'Pembelian Deterjen', category: 'Bahan Baku', amount: 500000, storeId: 'STORE1' },
-  { id: 2, date: new Date('2023-10-20'), description: 'Bayar Listrik', category: 'Operasional', amount: 1200000, storeId: 'STORE1' },
-  { id: 3, date: new Date('2023-10-15'), description: 'Gaji Karyawan', category: 'Gaji', amount: 5000000, storeId: 'STORE2' },
+  { id: 1, date: new Date(), description: 'Pembelian Deterjen', category: 'Bahan Baku', amount: 500000, storeId: 'STORE1' },
+  { id: 2, date: new Date(new Date().setDate(new Date().getDate() - 10)), description: 'Bayar Listrik', category: 'Operasional', amount: 1200000, storeId: 'STORE1' },
+  { id: 3, date: new Date(new Date().setDate(new Date().getDate() - 15)), description: 'Gaji Karyawan', category: 'Gaji', amount: 5000000, storeId: 'STORE2' },
 ];
 
 export const mockUsers: User[] = [
-  { id: 1, name: 'Super Admin', role: UserRole.SuperAdmin, isActive: true },
-  { id: 2, name: 'Admin Jakarta', role: UserRole.BranchAdmin, isActive: true, storeId: 'STORE1' },
-  { id: 3, name: 'Kasir Jakarta', role: UserRole.Cashier, isActive: true, storeId: 'STORE1' },
-  { id: 4, name: 'Admin Bandung', role: UserRole.BranchAdmin, isActive: true, storeId: 'STORE2' },
-  { id: 5, name: 'Kasir Bandung', role: UserRole.Cashier, isActive: true, storeId: 'STORE2' },
-  { id: 6, name: 'Kasir Nonaktif', role: UserRole.Cashier, isActive: false, storeId: 'STORE1' },
+  { id: 1, name: 'Super Admin', role: UserRole.SuperAdmin, isActive: true, canGiveDiscount: true },
+  { id: 2, name: 'Admin Jakarta', role: UserRole.BranchAdmin, isActive: true, storeId: 'STORE1', canGiveDiscount: true },
+  { id: 3, name: 'Kasir Jakarta', role: UserRole.Cashier, isActive: true, storeId: 'STORE1', canGiveDiscount: false },
+  { id: 4, name: 'Admin Bandung', role: UserRole.BranchAdmin, isActive: true, storeId: 'STORE2', canGiveDiscount: true },
+  { id: 5, name: 'Kasir Bandung', role: UserRole.Cashier, isActive: true, storeId: 'STORE2', canGiveDiscount: true },
+  { id: 6, name: 'Kasir Nonaktif', role: UserRole.Cashier, isActive: false, storeId: 'STORE1', canGiveDiscount: false },
 ];
 
 export const mockSettings: Settings = {

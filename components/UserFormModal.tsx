@@ -16,6 +16,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
         role: user?.role || UserRole.Cashier,
         isActive: user?.role === UserRole.SuperAdmin ? true : (user?.isActive ?? true),
         storeId: user?.storeId || '',
+        canGiveDiscount: user?.canGiveDiscount ?? false,
     });
     const { addToast } = useToasts();
     
@@ -23,12 +24,13 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
-        if (type === 'checkbox') {
-          const checked = (e.target as HTMLInputElement).checked;
-          setFormData(prev => ({ ...prev, [name]: checked }));
-        } else {
-          setFormData(prev => ({ ...prev, [name]: value }));
-        }
+        const isCheckbox = type === 'checkbox';
+        const checked = (e.target as HTMLInputElement).checked;
+
+        setFormData(prev => ({ 
+            ...prev, 
+            [name]: isCheckbox ? checked : value 
+        }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -37,6 +39,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
         if (finalData.role === UserRole.SuperAdmin) {
             finalData.storeId = undefined;
             finalData.isActive = true; // Enforce active status for super admin on save
+            finalData.canGiveDiscount = true; // Super admin can always give discounts
         } else if (!finalData.storeId) {
             addToast('Silakan pilih cabang untuk peran ini.', 'warning');
             return;
@@ -85,17 +88,32 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
                         </select>
                     </div>
                 )}
-                <div className="flex items-center">
-                    <input 
-                        id="isActive" 
-                        name="isActive" 
-                        type="checkbox" 
-                        checked={formData.isActive} 
-                        onChange={handleChange} 
-                        className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600 disabled:cursor-not-allowed" 
-                        disabled={isEditingSuperAdmin}
-                    />
-                    <label htmlFor="isActive" className="ml-2 text-base font-medium text-slate-900 dark:text-slate-300">Akun Aktif</label>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center">
+                        <input 
+                            id="isActive" 
+                            name="isActive" 
+                            type="checkbox" 
+                            checked={formData.isActive} 
+                            onChange={handleChange} 
+                            className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600 disabled:cursor-not-allowed" 
+                            disabled={isEditingSuperAdmin}
+                        />
+                        <label htmlFor="isActive" className="ml-2 text-base font-medium text-slate-900 dark:text-slate-300">Akun Aktif</label>
+                    </div>
+                    {!isEditingSuperAdmin && (
+                        <div className="flex items-center">
+                            <input 
+                                id="canGiveDiscount" 
+                                name="canGiveDiscount" 
+                                type="checkbox" 
+                                checked={formData.canGiveDiscount} 
+                                onChange={handleChange} 
+                                className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
+                            />
+                            <label htmlFor="canGiveDiscount" className="ml-2 text-base font-medium text-slate-900 dark:text-slate-300">Boleh Memberi Diskon</label>
+                        </div>
+                    )}
                 </div>
             </form>
         </Modal>

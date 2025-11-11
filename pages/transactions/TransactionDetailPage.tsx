@@ -125,6 +125,13 @@ const TransactionDetailPage: React.FC = () => {
                                                 ))}
                                             </div>
                                         )}
+                                        {item.taggedItems && (
+                                            <div className="pl-4 mt-1">
+                                                <p className="text-sm font-normal text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                                                    Rincian: {item.taggedItems}
+                                                </p>
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-center">{item.quantity} {item.unit}</td>
                                     <td className="px-4 py-3 text-right">Rp {item.price.toLocaleString('id-ID')}</td>

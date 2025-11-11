@@ -1,8 +1,9 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Modal from './Modal';
 import { Transaction, PaymentMethod, PaymentStatus } from '../types';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { useToasts } from '../contexts/ToastContext';
+import { SpinnerIcon } from './icons';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
   const [amountToPayStr, setAmountToPayStr] = useState('');
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const { addToast } = useToasts();
 
   const remainingBalance = useMemo(() => {
     if (!transaction) return 0;
@@ -26,6 +29,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
       setMethod(transaction.paymentMethod || PaymentMethod.Cash);
       setAmountToPayStr(formatRupiah(remainingBalance));
       setTenderedAmountStr('');
+      setIsSaving(false);
     }
   }, [transaction, remainingBalance]);
 
@@ -40,24 +44,39 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
   }, [method, tenderedAmount, amountToPay]);
   
   const handleSave = () => {
-    if (!transaction || amountToPay <= 0 || amountToPay > remainingBalance) {
-        alert("Jumlah pembayaran tidak valid.");
+    if (!transaction) return;
+
+    if (amountToPay <= 0) {
+        addToast("Jumlah pembayaran harus lebih dari nol.", 'error');
         return;
     }
 
-    const newAmountPaid = transaction.amountPaid + amountToPay;
-    const isNowPaidInFull = newAmountPaid >= transaction.total;
-    const newStatus = isNowPaidInFull ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
-    const finalChange = isNowPaidInFull ? change : 0;
+    if (amountToPay > remainingBalance) {
+        addToast("Jumlah pembayaran tidak boleh melebihi sisa tagihan.", 'error');
+        return;
+    }
+    
+    if (method === PaymentMethod.Cash && tenderedAmount < amountToPay) {
+        addToast("Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.", 'error');
+        return;
+    }
+    
+    setIsSaving(true);
+    setTimeout(() => {
+        const newAmountPaid = transaction.amountPaid + amountToPay;
+        const isNowPaidInFull = newAmountPaid >= transaction.total;
+        const newStatus = isNowPaidInFull ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
+        const finalChange = isNowPaidInFull ? change : 0;
 
-    onSave({
-      ...transaction,
-      amountPaid: newAmountPaid,
-      paymentStatus: newStatus,
-      paymentMethod: method,
-      change: finalChange,
-    });
-    onClose();
+        onSave({
+          ...transaction,
+          amountPaid: newAmountPaid,
+          paymentStatus: newStatus,
+          paymentMethod: method,
+          change: finalChange,
+        });
+        onClose();
+    }, 700);
   };
 
   if (!transaction) return null;
@@ -72,10 +91,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
           <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
           <button 
             onClick={handleSave} 
-            disabled={amountToPay <= 0 || amountToPay > remainingBalance}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            disabled={isSaving || amountToPay <= 0 || amountToPay > remainingBalance}
+            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
-            Simpan Pembayaran
+            {isSaving ? <SpinnerIcon className="w-6 h-6" /> : 'Simpan Pembayaran'}
           </button>
         </>
       }
@@ -98,7 +117,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
 
             <div>
                 <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Metode Pembayaran</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                     {Object.values(PaymentMethod).map(m => (
                         <button key={m} onClick={() => setMethod(m)} className={`p-3 rounded-lg text-base border-2 ${method === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}>
                             {m}

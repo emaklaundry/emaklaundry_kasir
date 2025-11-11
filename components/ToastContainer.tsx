@@ -15,8 +15,10 @@ const ToastIcon: React.FC<{ type: ToastType }> = ({ type }) => {
 }
 
 const Toast: React.FC<{ toast: ToastMessage }> = ({ toast }) => {
+    // Use role="alert" for errors for immediate announcement, "status" for other polite announcements.
+    const role = toast.type === 'error' ? 'alert' : 'status';
     return (
-        <div id={`toast-${toast.id}`} className="flex items-center w-full max-w-xs p-4 mb-4 text-slate-500 bg-white rounded-lg shadow-lg dark:text-slate-400 dark:bg-slate-800 ring-1 ring-black ring-opacity-5" role="alert">
+        <div id={`toast-${toast.id}`} className="flex items-center w-full max-w-xs p-4 mb-4 text-slate-500 bg-white rounded-lg shadow-lg dark:text-slate-400 dark:bg-slate-800 ring-1 ring-black ring-opacity-5" role={role}>
             <ToastIcon type={toast.type} />
             <div className="ml-3 text-sm font-normal">{toast.message}</div>
         </div>
@@ -29,7 +31,7 @@ const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-5 right-5 z-[100] space-y-2">
+    <div className="fixed top-5 right-5 z-[100] space-y-2" aria-live="polite">
       {toasts.map(toast => (
         <Toast key={toast.id} toast={toast} />
       ))}

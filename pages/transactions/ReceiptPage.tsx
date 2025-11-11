@@ -71,6 +71,13 @@ const ReceiptPage: React.FC = () => {
                                 ))}
                             </div>
                         )}
+                        {item.taggedItems && (
+                             <div className="pl-4 mt-1">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                                    Rincian: {item.taggedItems}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

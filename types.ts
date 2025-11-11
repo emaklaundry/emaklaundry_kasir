@@ -45,6 +45,8 @@ export interface Customer {
   address?: string;
   notes?: string;
   storeId: string;
+  defaultDiscount?: number;
+  createdAt: Date;
 }
 
 export interface Service {
@@ -68,6 +70,7 @@ export interface TransactionItem {
   subtotal: number;
   unit: string;
   itemDetails?: TransactionItemDetail[];
+  taggedItems?: string; // For Kiloan item tagging
 }
 
 export interface Transaction {
@@ -132,6 +135,7 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   storeId?: string;
+  canGiveDiscount?: boolean;
 }
 
 export interface AuditLog {
