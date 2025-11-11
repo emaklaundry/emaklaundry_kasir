@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
 import { Transaction, UserRole, Service, User, ServiceCategory } from '../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAppContext } from '../contexts/AppContext';
+import { supabase } from '../utils/supabaseClient';
+import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
@@ -110,7 +112,31 @@ const ReportsPage: React.FC = () => {
     const { customers } = useCustomers();
     const { expenses: allStoreExpenses } = useExpenses();
     const { services } = useServices();
-    const { currentUser, selectedStoreId, stores, allUsers } = useAppContext();
+    const { currentUser, selectedStoreId, stores } = useAppContext();
+    const { addToast } = useToasts();
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+
+    const fetchProfiles = useCallback(async () => {
+        const { data, error } = await supabase.from('profiles').select('*');
+        if (error) {
+            addToast(`Gagal mengambil data pengguna: ${error.message}`, 'error');
+        } else if (data) {
+            const formattedUsers = data.map(profile => ({
+                id: profile.id,
+                name: profile.name,
+                role: profile.role,
+                storeId: profile.store_id,
+                isActive: profile.isActive,
+                canGiveDiscount: profile.canGiveDiscount,
+                createdAt: new Date(profile.created_at),
+            }));
+            setAllUsers(formattedUsers);
+        }
+    }, [addToast]);
+
+    useEffect(() => {
+        fetchProfiles();
+    }, [fetchProfiles]);
     
     const [reportType, setReportType] = useState<'range' | 'yearlySummary'>('range');
     const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
@@ -177,7 +203,7 @@ const ReportsPage: React.FC = () => {
             .sort((a,b) => b.total - a.total).slice(0, 5);
     }, [filteredData.transactions, customers]);
     
-    const userMap = useMemo(() => allUsers.reduce((map, user) => ({ ...map, [user.id]: user }), {} as Record<number, User>), [allUsers]);
+    const userMap = useMemo(() => allUsers.reduce((map, user) => ({ ...map, [user.id]: user }), {} as Record<string, User>), [allUsers]);
 
     const cashierPerformance = useMemo(() => {
         const stats: { [key: number]: { name: string, transactionCount: number, totalRevenue: number, totalDiscount: number } } = {};
