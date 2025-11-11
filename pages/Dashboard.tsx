@@ -172,13 +172,12 @@ const Dashboard: React.FC = () => {
                 revenue: 0,
                 date,
             };
-            addExpense(newExpense);
+        });
 
         transactions.forEach(t => {
             const transactionDate = new Date(t.createdAt);
             const dayData = data.find(d => 
                 d.date.getDate() === transactionDate.getDate() &&
-            updateTransaction(updatedTransaction.id, updatedTransaction);
                 d.date.getFullYear() === transactionDate.getFullYear()
             );
             if (dayData) {
@@ -199,7 +198,7 @@ const Dashboard: React.FC = () => {
 
         const currentStats = calculateStats(transactions, currentPeriodStart, currentPeriodEnd);
         const prevStats = calculateStats(transactions, prevPeriodStart, prevPeriodEnd);
-            updateTransaction(transactionId, updatedTransaction);
+
         const getTrend = (current: number, previous: number): TrendData => {
             if (previous === 0) {
                 return current > 0 ? { trend: 'up', percentage: '100%' } : { trend: 'neutral', percentage: '0%' };

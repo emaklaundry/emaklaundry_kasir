@@ -47,7 +47,15 @@ const NewTransactionPage: React.FC = () => {
     const [tenderedAmountStr, setTenderedAmountStr] = useState('');
 
 
-    const canApplyDiscount = currentUser.role === UserRole.SuperAdmin;
+    const canApplyDiscount = useMemo(() => {
+        if (currentUser.role === UserRole.SuperAdmin) return true;
+        if ((currentUser.role === UserRole.BranchAdmin || currentUser.role === UserRole.Cashier)) {
+            // Cek hak diskon dari user atau customer
+            if (currentUser.canGiveDiscount) return true;
+            if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) return true;
+        }
+        return false;
+    }, [currentUser, selectedCustomer]);
 
     useEffect(() => {
         if (!canApplyDiscount) {
@@ -245,12 +253,14 @@ const NewTransactionPage: React.FC = () => {
             return;
         }
         try {
-            await addCustomer({ ...customer, storeId: currentStoreId });
-            // Ambil customer terbaru dari context (asumsi context auto-refresh)
-            const latestCustomer = customers[customers.length - 1];
-            setSelectedCustomer(latestCustomer);
-            setIsCustomerModalOpen(false);
-            addToast('Pelanggan berhasil ditambahkan!', 'success');
+            const newCustomer = await addCustomer({ ...customer, storeId: currentStoreId });
+            if (newCustomer) {
+                setSelectedCustomer(newCustomer);
+                setIsCustomerModalOpen(false);
+                addToast('Pelanggan berhasil ditambahkan!', 'success');
+            } else {
+                addToast('Gagal menambah pelanggan: Data tidak valid.', 'error');
+            }
         } catch (error: any) {
             addToast(`Gagal menambah pelanggan: ${error.message}`, 'error');
         }

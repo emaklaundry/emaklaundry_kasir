@@ -61,10 +61,11 @@ const UsersPage: React.FC = () => {
                 if (error) throw error;
                 addAuditLog(`Memperbarui data pengguna: "${finalData.name}".`);
                 addToast('Pengguna berhasil diperbarui!', 'success');
+                await fetchProfiles();
+                handleCloseFormModal();
             } else {
                 addToast('Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication).', 'info');
             }
-            handleCloseFormModal();
         } catch (error: any) {
             addToast(`Gagal menyimpan: ${error.message}`, 'error');
         }
@@ -85,6 +86,7 @@ const UsersPage: React.FC = () => {
                 if (error) throw error;
                 addAuditLog(`Menghapus profil pengguna: "${userToDelete.name}".`);
                 addToast('Profil pengguna berhasil dihapus.', 'success');
+                await fetchProfiles();
             } catch (error: any) {
                 addToast(`Gagal menghapus: ${error.message}`, 'error');
             } finally {
@@ -108,6 +110,7 @@ const UsersPage: React.FC = () => {
                     .eq('id', userToToggleStatus.id);
                 if (error) throw error;
                 addAuditLog(`Mengubah status pengguna "${userToToggleStatus.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
+                await fetchProfiles();
             } catch (error: any) {
                 addToast(`Gagal mengubah status: ${error.message}`, 'error');
             } finally {
@@ -118,25 +121,25 @@ const UsersPage: React.FC = () => {
     
     // Ambil data users dari Supabase
     const [allUsers, setAllUsers] = useState<User[]>([]);
+    const fetchProfiles = React.useCallback(async () => {
+        const { data, error } = await supabase.from('profiles').select('*');
+        if (error) {
+            addToast(`Gagal mengambil data pengguna: ${error.message}`, 'error');
+        } else if (data) {
+            const formattedUsers = data.map(profile => ({
+                id: profile.id,
+                name: profile.name,
+                role: profile.role,
+                storeId: profile.store_id,
+                isActive: profile.isActive,
+                canGiveDiscount: profile.canGiveDiscount
+            }));
+            setAllUsers(formattedUsers);
+        }
+    }, [addToast]);
     useEffect(() => {
-        const fetchProfiles = async () => {
-            const { data, error } = await supabase.from('profiles').select('*');
-            if (error) {
-                addToast(`Gagal mengambil data pengguna: ${error.message}`, 'error');
-            } else if (data) {
-                const formattedUsers = data.map(profile => ({
-                    id: profile.id,
-                    name: profile.name,
-                    role: profile.role,
-                    storeId: profile.store_id,
-                    isActive: profile.isActive,
-                    canGiveDiscount: profile.canGiveDiscount
-                }));
-                setAllUsers(formattedUsers);
-            }
-        };
         fetchProfiles();
-    }, []);
+    }, [fetchProfiles]);
     const usersWithStore = useMemo(() => allUsers.map(user => ({
         ...user,
         storeName: stores.find(s => s.id === user.storeId)?.name || 'N/A'

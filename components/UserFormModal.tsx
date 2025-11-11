@@ -15,6 +15,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
         name: user?.name || '',
         role: user?.role || UserRole.Cashier,
         storeId: user?.storeId || '',
+        isActive: user?.isActive ?? true,
+        canGiveDiscount: user?.canGiveDiscount ?? false,
     });
     const { addToast } = useToasts();
     
@@ -87,8 +89,34 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
                     </div>
                 )}
                 <div className="flex items-center justify-between flex-wrap gap-4">
-                    {/* Status aktif/nonaktif tidak tersedia di tipe User, hanya SuperAdmin yang selalu aktif secara logic */}
-                    {/* Only SuperAdmin can give discount, no checkbox needed */}
+                    <div className="flex items-center">
+                        <input
+                            id="isActive"
+                            name="isActive"
+                            type="checkbox"
+                            checked={formData.isActive}
+                            onChange={handleChange}
+                            disabled={isEditingSuperAdmin}
+                            className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="isActive" className="ml-2 text-base font-medium text-slate-900 dark:text-white">
+                            Aktif
+                        </label>
+                    </div>
+                    <div className="flex items-center">
+                        <input
+                            id="canGiveDiscount"
+                            name="canGiveDiscount"
+                            type="checkbox"
+                            checked={formData.canGiveDiscount}
+                            onChange={handleChange}
+                            disabled={isEditingSuperAdmin}
+                            className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="canGiveDiscount" className="ml-2 text-base font-medium text-slate-900 dark:text-white">
+                            Bisa Beri Diskon
+                        </label>
+                    </div>
                 </div>
             </form>
         </Modal>

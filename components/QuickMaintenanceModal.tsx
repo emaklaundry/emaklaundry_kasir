@@ -5,6 +5,7 @@ import { useAssets } from '../contexts/AssetContext';
 import { MaintenanceLog } from '../types';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
+import { useToasts } from '../contexts/ToastContext';
 
 interface QuickMaintenanceModalProps {
   isOpen: boolean;
@@ -12,8 +13,9 @@ interface QuickMaintenanceModalProps {
 }
 
 const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, onClose }) => {
-    const { assets, setAssets } = useAssets();
+    const { assets, updateAsset } = useAssets();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
     const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id || '');
     const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>({
         date: new Date(),
@@ -34,34 +36,34 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
         setSelectedAssetId(e.target.value);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedAssetId || !formData.description) {
-            alert("Silakan pilih aset dan isi deskripsi kerusakan.");
+            addToast("Silakan pilih aset dan isi deskripsi kerusakan.", 'warning');
             return;
         }
-        
-        const newLog: MaintenanceLog = { ...formData, id: Date.now() };
-        let assetName = '';
-        let storeId = '';
 
-        setAssets(prevAssets => prevAssets.map(asset => {
-            if (asset.id === selectedAssetId) {
-                assetName = asset.name;
-                storeId = asset.storeId;
-                return {
-                    ...asset,
-                    maintenanceHistory: [...asset.maintenanceHistory, newLog]
-                };
-            }
-                const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        }));
-        
-        addAuditLog(`Melaporkan kerusakan cepat untuk aset "${assetName}": ${formData.description}.`, storeId);
+    const newLog: MaintenanceLog = { ...formData, id: Date.now().toString() };
+        const assetToUpdate = assets.find(asset => asset.id === selectedAssetId);
 
-        // Reset form
-        setFormData({ date: new Date(), description: '', cost: 0 });
-        setSelectedAssetId(assets[0]?.id || '');
-        onClose();
+        if (!assetToUpdate) {
+            addToast("Aset tidak ditemukan.", 'error');
+            return;
+        }
+
+        try {
+            await updateAsset(selectedAssetId, {
+                maintenanceHistory: [...assetToUpdate.maintenanceHistory, newLog]
+            });
+
+            addAuditLog(`Melaporkan kerusakan cepat untuk aset "${assetToUpdate.name}": ${formData.description}.`, assetToUpdate.storeId);
+
+            // Reset form
+            setFormData({ date: new Date(), description: '', cost: 0 });
+            setSelectedAssetId(assets[0]?.id || '');
+            onClose();
+        } catch (error: any) {
+            addToast(`Gagal menyimpan laporan: ${error.message}`, 'error');
+        }
     };
 
     return (
@@ -76,7 +78,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
               </>
             }
         >
-                    updateAsset(prevAssets => prevAssets.map(asset => {
+            <form className="space-y-4" onSubmit={e => e.preventDefault()}>
                 <div>
                     <label htmlFor="asset" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Pilih Aset</label>
                     <select name="asset" id="asset" value={selectedAssetId} onChange={handleAssetChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white">

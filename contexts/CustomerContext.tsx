@@ -4,7 +4,7 @@ import { supabase } from '../utils/supabaseClient';
 
 interface CustomerContextType {
   customers: Customer[];
-  addCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
+  addCustomer: (customer: Omit<Customer, 'id'>) => Promise<Customer | null>;
   updateCustomer: (id: string, data: Partial<Customer>) => Promise<void>;
   deleteCustomer: (id: string) => Promise<void>;
 }
@@ -22,9 +22,13 @@ export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }
     fetchCustomers();
   }, []);
 
-  const addCustomer = async (customer: Omit<Customer, 'id'>) => {
+  const addCustomer = async (customer: Omit<Customer, 'id'>): Promise<Customer | null> => {
     const { data, error } = await supabase.from('customers').insert([customer]).select();
-    if (!error && data) setCustomers((prev) => [...prev, ...data]);
+    if (!error && data && data[0]) {
+      setCustomers((prev) => [...prev, ...data]);
+      return data[0];
+    }
+    return null;
   };
 
   const updateCustomer = async (id: string, data: Partial<Customer>) => {

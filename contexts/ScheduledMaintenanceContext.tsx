@@ -45,10 +45,9 @@ export const ScheduledMaintenanceProvider: React.FC<{ children: ReactNode }> = (
     if (error) throw error;
     setAllScheduledMaintenances((prev) => prev.filter(sm => sm.id !== id));
   };
-  };
 
   return (
-    <ScheduledMaintenanceContext.Provider value={{ scheduledMaintenances, addScheduledMaintenance, updateScheduledMaintenance }}>
+    <ScheduledMaintenanceContext.Provider value={{ scheduledMaintenances, addScheduledMaintenance, updateScheduledMaintenance, deleteScheduledMaintenance }}>
       {children}
     </ScheduledMaintenanceContext.Provider>
   );

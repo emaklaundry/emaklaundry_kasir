@@ -3,6 +3,7 @@ import Modal from './Modal';
 import { Asset, ScheduledMaintenance } from '../types';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
+import { useToasts } from '../contexts/ToastContext';
 import ConfirmationModal from './ConfirmationModal';
 import ScheduledMaintenanceFormModal from './ScheduledMaintenanceFormModal';
 import { PlusCircleIcon, EditIcon, Trash2Icon } from './icons';
@@ -27,9 +28,10 @@ const calculateNextDueDate = (currentDueDate: Date, value: number, unit: 'days' 
 
 
 const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ asset, isOpen, onClose }) => {
-    const { scheduledMaintenances, setScheduledMaintenances } = useScheduledMaintenances();
-    const { setAssets } = useAssets();
+    const { scheduledMaintenances, addScheduledMaintenance, updateScheduledMaintenance, deleteScheduledMaintenance } = useScheduledMaintenances();
+    const { updateAsset } = useAssets();
     const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingSchedule, setEditingSchedule] = useState<ScheduledMaintenance | null>(null);
@@ -51,62 +53,64 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ a
         setIsFormOpen(false);
     };
 
-    const handleSaveSchedule = (data: Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate'>) => {
-        if(editingSchedule) { // Editing existing
-            setScheduledMaintenances(prev => prev.map(s => s.id === editingSchedule.id ? {...s, ...data} : s));
-            addAuditLog(`Memperbarui jadwal perawatan "${data.description}" untuk aset "${asset.name}".`, asset.storeId);
-        } else { // Adding new
-            const newSchedule: ScheduledMaintenance = {
-                ...data,
-                id: `SCHED${Date.now()}`,
-                assetId: asset.id,
-                lastCompletedDate: null
-            };
-            setScheduledMaintenances(prev => [...prev, newSchedule]);
-            addAuditLog(`Menambahkan jadwal perawatan "${data.description}" untuk aset "${asset.name}".`, asset.storeId);
+    const handleSaveSchedule = async (data: Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate'>) => {
+        try {
+            if(editingSchedule) { // Editing existing
+                await updateScheduledMaintenance(editingSchedule.id, data);
+                addAuditLog(`Memperbarui jadwal perawatan "${data.description}" untuk aset "${asset.name}".`, asset.storeId);
+            } else { // Adding new
+                const newScheduleData = {
+                    ...data,
+                    assetId: asset.id,
+                    lastCompletedDate: null
+                };
+                await addScheduledMaintenance(newScheduleData as Omit<ScheduledMaintenance, 'id'>);
+                addAuditLog(`Menambahkan jadwal perawatan "${data.description}" untuk aset "${asset.name}".`, asset.storeId);
+            }
+            handleCloseForm();
+        } catch (error: any) {
+            addToast(`Gagal menyimpan jadwal: ${error.message}`, 'error');
         }
-        handleCloseForm();
     };
 
     const handleDelete = (schedule: ScheduledMaintenance) => {
         setDeletingSchedule(schedule);
     };
     
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deletingSchedule) {
-            setScheduledMaintenances(prev => prev.filter(s => s.id !== deletingSchedule.id));
-            addAuditLog(`Menghapus jadwal perawatan "${deletingSchedule.description}" dari aset "${asset.name}".`, asset.storeId);
-            setDeletingSchedule(null);
+            try {
+                await deleteScheduledMaintenance(deletingSchedule.id);
+                addAuditLog(`Menghapus jadwal perawatan "${deletingSchedule.description}" dari aset "${asset.name}".`, asset.storeId);
+            } catch (error: any) {
+                addToast(`Gagal menghapus jadwal: ${error.message}`, 'error');
+            } finally {
+                setDeletingSchedule(null);
+            }
         }
     };
 
-    const handleMarkAsComplete = (schedule: ScheduledMaintenance) => {
-        // 1. Add to maintenance history
-        setAssets(prevAssets => prevAssets.map(a => {
-            if (a.id === asset.id) {
-                const newLog = {
-                    id: Date.now(),
-                    date: new Date(),
-                    description: `[Jadwal] - ${schedule.description}`,
-                    cost: 0 // Default cost, can be enhanced later
-                };
-                return { ...a, maintenanceHistory: [...a.maintenanceHistory, newLog] };
-            }
-            return a;
-        }));
-
-        // 2. Update schedule's next due date and last completed date
-        setScheduledMaintenances(prevSchedules => prevSchedules.map(s => {
-            if (s.id === schedule.id) {
-                return {
-                    ...s,
-                    lastCompletedDate: new Date(),
-                    nextDueDate: calculateNextDueDate(s.nextDueDate, s.frequencyValue, s.frequencyUnit)
-                };
-            }
-            return s;
-        }));
-        addAuditLog(`Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}".`, asset.storeId);
+    const handleMarkAsComplete = async (schedule: ScheduledMaintenance) => {
+        const newLog = {
+            id: `LOG${Date.now()}`,
+            date: new Date(),
+            description: `[Jadwal] - ${schedule.description}`,
+            cost: 0
+        };
+        const updatedHistory = [...asset.maintenanceHistory, newLog];
+        const updatedScheduleData = {
+            lastCompletedDate: new Date(),
+            nextDueDate: calculateNextDueDate(schedule.nextDueDate, schedule.frequencyValue, schedule.frequencyUnit)
+        };
+        try {
+            await Promise.all([
+                updateAsset(asset.id, { maintenanceHistory: updatedHistory }),
+                updateScheduledMaintenance(schedule.id, updatedScheduleData)
+            ]);
+            addAuditLog(`Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}".`, asset.storeId);
+        } catch (error: any) {
+            addToast(`Gagal menandai selesai: ${error.message}`, 'error');
+        }
     };
 
 
