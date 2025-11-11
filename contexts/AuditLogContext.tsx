@@ -1,41 +1,37 @@
-import React, { createContext, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { AuditLog } from '../types';
-import { usePersistentState } from '../hooks/usePersistentState';
 import { useAppContext } from './AppContext';
+import { supabase } from '../utils/supabaseClient';
 
 interface AuditLogContextType {
   logs: AuditLog[];
-  addAuditLog: (action: string, storeId?: string) => void;
+  addAuditLog: (action: string, storeId?: string) => Promise<void>;
 }
 
 const AuditLogContext = createContext<AuditLogContextType | undefined>(undefined);
 
-const AUDIT_LOG_STORAGE_KEY = 'laundry_audit_logs';
-
-const reviveDates = (key: string, value: any) => {
-  if (key === 'timestamp' && typeof value === 'string') {
-    return new Date(value);
-  }
-  return value;
-};
-
 export const AuditLogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [logs, setLogs] = usePersistentState<AuditLog[]>(AUDIT_LOG_STORAGE_KEY, [], reviveDates);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const { currentUser } = useAppContext();
 
-  const addAuditLog = useCallback((action: string, storeId?: string) => {
-    const newLog: AuditLog = {
-      id: Date.now(),
+  useEffect(() => {
+    const fetchLogs = async () => {
+      const { data, error } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false });
+      if (!error && data) setLogs(data);
+    };
+    fetchLogs();
+  }, []);
+
+  const addAuditLog = useCallback(async (action: string, storeId?: string) => {
+    const newLog: Omit<AuditLog, 'id'> = {
       timestamp: new Date(),
       user: currentUser.name,
       action: action,
+      ...(storeId && storeId !== 'all' ? { storeId } : {})
     };
-    if (storeId && storeId !== 'all') {
-      newLog.storeId = storeId;
-    }
-    setLogs(prevLogs => [newLog, ...prevLogs]);
-  }, [currentUser, setLogs]);
-
+    const { data, error } = await supabase.from('audit_logs').insert([newLog]).select();
+    if (!error && data) setLogs(prevLogs => [data[0], ...prevLogs]);
+  }, [currentUser]);
 
   return (
     <AuditLogContext.Provider value={{ logs, addAuditLog }}>

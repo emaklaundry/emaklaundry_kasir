@@ -1,32 +1,38 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Transaction } from '../types';
-import { mockTransactions } from '../data/mockData';
-import { usePersistentState } from '../hooks/usePersistentState';
-import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
+import { supabase } from '../utils/supabaseClient';
 
 interface TransactionContextType {
   transactions: Transaction[];
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+  addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+  updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
 }
 
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
 
-const TRANSACTIONS_STORAGE_KEY = 'laundry_transactions_multistore';
-
-const reviveDates = (key: string, value: any) => {
-  const isDate = ['createdAt', 'estimatedCompletionDate'].includes(key);
-  if (isDate && typeof value === 'string') {
-    return new Date(value);
-  }
-  return value;
-};
-
 export const TransactionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allTransactions, setAllTransactions] = usePersistentState<Transaction[]>(TRANSACTIONS_STORAGE_KEY, mockTransactions, reviveDates);
-  const transactions = useStoreFilteredData(allTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      const { data, error } = await supabase.from('transactions').select('*');
+      if (!error && data) setTransactions(data);
+    };
+    fetchTransactions();
+  }, []);
+
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    const { data, error } = await supabase.from('transactions').insert([transaction]).select();
+    if (!error && data) setTransactions((prev) => [...prev, ...data]);
+  };
+
+  const updateTransaction = async (id: string, data: Partial<Transaction>) => {
+    const { data: updated, error } = await supabase.from('transactions').update(data).eq('id', id).select();
+    if (!error && updated) setTransactions((prev) => prev.map(t => t.id === id ? { ...t, ...updated[0] } : t));
+  };
 
   return (
-    <TransactionContext.Provider value={{ transactions, setTransactions: setAllTransactions }}>
+    <TransactionContext.Provider value={{ transactions, addTransaction, updateTransaction }}>
       {children}
     </TransactionContext.Provider>
   );

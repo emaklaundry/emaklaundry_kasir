@@ -1,25 +1,33 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Settings } from '../types';
-import { mockSettings } from '../data/mockData';
-import { usePersistentState } from '../hooks/usePersistentState';
+import { supabase } from '../utils/supabaseClient';
 
 interface SettingsContextType {
-  settings: Settings;
-  setSettings: React.Dispatch<React.SetStateAction<Settings>>;
+  settings: Settings | null;
+  updateSettings: (data: Partial<Settings>) => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-const SETTINGS_STORAGE_KEY = 'laundry_settings';
-
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = usePersistentState<Settings>(
-      SETTINGS_STORAGE_KEY, 
-      mockSettings
-  );
+  const [settings, setSettings] = useState<Settings | null>(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data, error } = await supabase.from('settings').select('*').single();
+      if (!error && data) setSettings(data);
+    };
+    fetchSettings();
+  }, []);
+
+  const updateSettings = async (data: Partial<Settings>) => {
+    if (!settings) return;
+    const { data: updated, error } = await supabase.from('settings').update(data).eq('id', settings.id).select();
+    if (!error && updated) setSettings(updated[0]);
+  };
 
   return (
-    <SettingsContext.Provider value={{ settings, setSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSettings }}>
       {children}
     </SettingsContext.Provider>
   );

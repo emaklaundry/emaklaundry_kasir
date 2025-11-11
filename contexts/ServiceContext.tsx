@@ -1,22 +1,38 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Service } from '../types';
-import { mockServices } from '../data/mockData';
-import { usePersistentState } from '../hooks/usePersistentState';
+import { supabase } from '../utils/supabaseClient';
 
 interface ServiceContextType {
   services: Service[];
-  setServices: React.Dispatch<React.SetStateAction<Service[]>>;
+  addService: (service: Omit<Service, 'id'>) => Promise<void>;
+  updateService: (id: string, data: Partial<Service>) => Promise<void>;
 }
 
 const ServiceContext = createContext<ServiceContextType | undefined>(undefined);
 
-const SERVICES_STORAGE_KEY = 'laundry_services';
-
 export const ServiceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [services, setServices] = usePersistentState<Service[]>(SERVICES_STORAGE_KEY, mockServices);
+  const [services, setServices] = useState<Service[]>([]);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      const { data, error } = await supabase.from('services').select('*');
+      if (!error && data) setServices(data);
+    };
+    fetchServices();
+  }, []);
+
+  const addService = async (service: Omit<Service, 'id'>) => {
+    const { data, error } = await supabase.from('services').insert([service]).select();
+    if (!error && data) setServices((prev) => [...prev, ...data]);
+  };
+
+  const updateService = async (id: string, data: Partial<Service>) => {
+    const { data: updated, error } = await supabase.from('services').update(data).eq('id', id).select();
+    if (!error && updated) setServices((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
+  };
 
   return (
-    <ServiceContext.Provider value={{ services, setServices }}>
+    <ServiceContext.Provider value={{ services, addService, updateService }}>
       {children}
     </ServiceContext.Provider>
   );

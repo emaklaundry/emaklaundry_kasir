@@ -1,32 +1,38 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Asset } from '../types';
-import { mockAssets } from '../data/mockData';
-import { usePersistentState } from '../hooks/usePersistentState';
-import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
+import { supabase } from '../utils/supabaseClient';
 
 interface AssetContextType {
   assets: Asset[];
-  setAssets: React.Dispatch<React.SetStateAction<Asset[]>>;
+  addAsset: (asset: Omit<Asset, 'id'>) => Promise<void>;
+  updateAsset: (id: string, data: Partial<Asset>) => Promise<void>;
 }
 
 const AssetContext = createContext<AssetContextType | undefined>(undefined);
 
-const ASSETS_STORAGE_KEY = 'laundry_assets_multistore';
-
-const reviveDates = (key: string, value: any) => {
-  const isDate = ['purchaseDate', 'date'].includes(key);
-  if (isDate && typeof value === 'string') {
-    return new Date(value);
-  }
-  return value;
-};
-
 export const AssetProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allAssets, setAllAssets] = usePersistentState<Asset[]>(ASSETS_STORAGE_KEY, mockAssets, reviveDates);
-  const assets = useStoreFilteredData(allAssets);
+  const [assets, setAssets] = useState<Asset[]>([]);
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      const { data, error } = await supabase.from('assets').select('*');
+      if (!error && data) setAssets(data);
+    };
+    fetchAssets();
+  }, []);
+
+  const addAsset = async (asset: Omit<Asset, 'id'>) => {
+    const { data, error } = await supabase.from('assets').insert([asset]).select();
+    if (!error && data) setAssets((prev) => [...prev, ...data]);
+  };
+
+  const updateAsset = async (id: string, data: Partial<Asset>) => {
+    const { data: updated, error } = await supabase.from('assets').update(data).eq('id', id).select();
+    if (!error && updated) setAssets((prev) => prev.map(a => a.id === id ? { ...a, ...updated[0] } : a));
+  };
 
   return (
-    <AssetContext.Provider value={{ assets, setAssets: setAllAssets }}>
+    <AssetContext.Provider value={{ assets, addAsset, updateAsset }}>
       {children}
     </AssetContext.Provider>
   );

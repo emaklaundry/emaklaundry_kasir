@@ -1,22 +1,38 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Store } from '../types';
-import { mockStores } from '../data/mockData';
-import { usePersistentState } from '../hooks/usePersistentState';
+import { supabase } from '../utils/supabaseClient';
 
 interface StoreContextType {
   stores: Store[];
-  setStores: React.Dispatch<React.SetStateAction<Store[]>>;
+  addStore: (store: Omit<Store, 'id'>) => Promise<void>;
+  updateStore: (id: string, data: Partial<Store>) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-const STORES_STORAGE_KEY = 'laundry_stores';
-
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [stores, setStores] = usePersistentState<Store[]>(STORES_STORAGE_KEY, mockStores);
+  const [stores, setStores] = useState<Store[]>([]);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      const { data, error } = await supabase.from('stores').select('*');
+      if (!error && data) setStores(data);
+    };
+    fetchStores();
+  }, []);
+
+  const addStore = async (store: Omit<Store, 'id'>) => {
+    const { data, error } = await supabase.from('stores').insert([store]).select();
+    if (!error && data) setStores((prev) => [...prev, ...data]);
+  };
+
+  const updateStore = async (id: string, data: Partial<Store>) => {
+    const { data: updated, error } = await supabase.from('stores').update(data).eq('id', id).select();
+    if (!error && updated) setStores((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
+  };
 
   return (
-    <StoreContext.Provider value={{ stores, setStores }}>
+    <StoreContext.Provider value={{ stores, addStore, updateStore }}>
       {children}
     </StoreContext.Provider>
   );

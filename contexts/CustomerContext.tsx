@@ -1,31 +1,38 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Customer } from '../types';
-import { mockCustomers } from '../data/mockData';
-import { usePersistentState } from '../hooks/usePersistentState';
-import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
+import { supabase } from '../utils/supabaseClient';
 
 interface CustomerContextType {
   customers: Customer[];
-  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
+  addCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
+  updateCustomer: (id: string, data: Partial<Customer>) => Promise<void>;
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
 
-const CUSTOMERS_STORAGE_KEY = 'laundry_customers_multistore';
-
-const reviveDates = (key: string, value: any) => {
-  if (key === 'createdAt' && typeof value === 'string') {
-    return new Date(value);
-  }
-  return value;
-};
-
 export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allCustomers, setAllCustomers] = usePersistentState<Customer[]>(CUSTOMERS_STORAGE_KEY, mockCustomers, reviveDates);
-  const customers = useStoreFilteredData(allCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const { data, error } = await supabase.from('customers').select('*');
+      if (!error && data) setCustomers(data);
+    };
+    fetchCustomers();
+  }, []);
+
+  const addCustomer = async (customer: Omit<Customer, 'id'>) => {
+    const { data, error } = await supabase.from('customers').insert([customer]).select();
+    if (!error && data) setCustomers((prev) => [...prev, ...data]);
+  };
+
+  const updateCustomer = async (id: string, data: Partial<Customer>) => {
+    const { data: updated, error } = await supabase.from('customers').update(data).eq('id', id).select();
+    if (!error && updated) setCustomers((prev) => prev.map(c => c.id === id ? { ...c, ...updated[0] } : c));
+  };
 
   return (
-    <CustomerContext.Provider value={{ customers, setCustomers: setAllCustomers }}>
+    <CustomerContext.Provider value={{ customers, addCustomer, updateCustomer }}>
       {children}
     </CustomerContext.Provider>
   );

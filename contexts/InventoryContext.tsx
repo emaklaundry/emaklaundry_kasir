@@ -1,24 +1,38 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { InventoryItem } from '../types';
-import { mockInventory } from '../data/mockData';
-import { usePersistentState } from '../hooks/usePersistentState';
-import { useStoreFilteredData } from '../hooks/useStoreFilteredData';
+import { supabase } from '../utils/supabaseClient';
 
 interface InventoryContextType {
   inventory: InventoryItem[];
-  setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
+  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>;
+  updateInventoryItem: (id: string, data: Partial<InventoryItem>) => Promise<void>;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
-const INVENTORY_STORAGE_KEY = 'laundry_inventory_multistore';
-
 export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allInventory, setAllInventory] = usePersistentState<InventoryItem[]>(INVENTORY_STORAGE_KEY, mockInventory);
-  const inventory = useStoreFilteredData(allInventory);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      const { data, error } = await supabase.from('inventory_items').select('*');
+      if (!error && data) setInventory(data);
+    };
+    fetchInventory();
+  }, []);
+
+  const addInventoryItem = async (item: Omit<InventoryItem, 'id'>) => {
+    const { data, error } = await supabase.from('inventory_items').insert([item]).select();
+    if (!error && data) setInventory((prev) => [...prev, ...data]);
+  };
+
+  const updateInventoryItem = async (id: string, data: Partial<InventoryItem>) => {
+    const { data: updated, error } = await supabase.from('inventory_items').update(data).eq('id', id).select();
+    if (!error && updated) setInventory((prev) => prev.map(i => i.id === id ? { ...i, ...updated[0] } : i));
+  };
 
   return (
-    <InventoryContext.Provider value={{ inventory, setInventory: setAllInventory }}>
+    <InventoryContext.Provider value={{ inventory, addInventoryItem, updateInventoryItem }}>
       {children}
     </InventoryContext.Provider>
   );
