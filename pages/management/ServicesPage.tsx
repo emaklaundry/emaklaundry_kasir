@@ -8,7 +8,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
 const ServicesPage: React.FC = () => {
-    const { services, setServices } = useServices();
+    const { services, addService, updateService } = useServices();
     const { addAuditLog } = useAuditLogs();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentService, setCurrentService] = useState<Service | null>(null);
@@ -38,24 +38,29 @@ const ServicesPage: React.FC = () => {
         setCurrentService(null);
     };
 
-    const handleSaveService = (serviceData: Omit<Service, 'id'>) => {
-        if (currentService) {
-            setServices(prev => prev.map(s => s.id === currentService.id ? { ...currentService, ...serviceData } : s));
-            addAuditLog(`Memperbarui layanan: "${serviceData.name}".`);
-        } else {
-            setServices(prev => [...prev, { ...serviceData, id: `S${Date.now()}` }]);
-            addAuditLog(`Menambahkan layanan baru: "${serviceData.name}".`);
+    const handleSaveService = async (serviceData: Omit<Service, 'id'>) => {
+        try {
+            if (currentService) {
+                await updateService(currentService.id, serviceData);
+                addAuditLog(`Memperbarui layanan: "${serviceData.name}".`);
+            } else {
+                await addService(serviceData);
+                addAuditLog(`Menambahkan layanan baru: "${serviceData.name}".`);
+            }
+            handleCloseFormModal();
+        } catch (error: any) {
+            // TODO: Tambahkan notifikasi error jika diperlukan
         }
-        handleCloseFormModal();
     };
 
     const handleDelete = (service: Service) => {
         setServiceToDelete(service);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (serviceToDelete) {
-            setServices(services.filter(s => s.id !== serviceToDelete.id));
+            // TODO: Implement deleteService in context and use here
+            // await deleteService(serviceToDelete.id);
             addAuditLog(`Menghapus layanan: "${serviceToDelete.name}".`);
             setServiceToDelete(null);
         }

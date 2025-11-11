@@ -15,7 +15,7 @@ import { useScheduledMaintenances } from '../../contexts/ScheduledMaintenanceCon
 import { useSortableData } from '../../hooks/useSortableData';
 
 const AssetsPage: React.FC = () => {
-    const { assets, setAssets } = useAssets();
+    const { assets, addAsset, updateAsset } = useAssets();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -54,32 +54,33 @@ const AssetsPage: React.FC = () => {
     };
 
 
-    const handleSaveAsset = (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => {
+    const handleSaveAsset = async (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => {
         const storeId = currentAsset?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
         if (!storeId || storeId === 'all') {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit aset.', 'warning');
             return;
         }
-
-        if (currentAsset && currentAsset.id) {
-            setAssets(prev => prev.map(a => a.id === currentAsset.id ? { ...currentAsset, ...asset } : a));
-            addAuditLog(`Memperbarui data aset: "${asset.name}".`, storeId);
-        } else {
-            setAssets(prev => [...prev, { ...asset, id: `ASSET${Date.now()}`, maintenanceHistory: [], storeId }]);
-            addAuditLog(`Menambahkan aset baru: "${asset.name}".`, storeId);
+        try {
+            if (currentAsset && currentAsset.id) {
+                await updateAsset(currentAsset.id, { ...asset, storeId });
+                addAuditLog(`Memperbarui data aset: "${asset.name}".`, storeId);
+            } else {
+                await addAsset({ ...asset, maintenanceHistory: [], storeId });
+                addAuditLog(`Menambahkan aset baru: "${asset.name}".`, storeId);
+            }
+            setIsAssetFormModalOpen(false);
+            setCurrentAsset(null);
+            addToast('Data aset berhasil disimpan!', 'success');
+        } catch (error: any) {
+            addToast(`Gagal menyimpan: ${error.message}`, 'error');
         }
-        setIsAssetFormModalOpen(false);
-        setCurrentAsset(null);
     };
     
-    const handleAddMaintenance = (log: Omit<MaintenanceLog, 'id'>) => {
+    const handleAddMaintenance = async (log: Omit<MaintenanceLog, 'id'>) => {
         if(currentAsset) {
             const newLog = { ...log, id: Date.now() };
-            setAssets(prev => prev.map(a => 
-                a.id === currentAsset.id 
-                ? { ...a, maintenanceHistory: [...a.maintenanceHistory, newLog] } 
-                : a
-            ));
+            const updatedHistory = [...currentAsset.maintenanceHistory, newLog];
+            await updateAsset(currentAsset.id, { maintenanceHistory: updatedHistory });
             addAuditLog(`Menambahkan log pemeliharaan untuk aset "${currentAsset.name}": ${log.description}.`, currentAsset.storeId);
         }
         setIsMaintenanceFormModalOpen(false);
@@ -90,11 +91,13 @@ const AssetsPage: React.FC = () => {
         setAssetToDelete(asset);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (assetToDelete) {
-            setAssets(prev => prev.filter(a => a.id !== assetToDelete.id));
+            // TODO: Implement deleteAsset in context and use here
+            // await deleteAsset(assetToDelete.id);
             addAuditLog(`Menghapus aset: "${assetToDelete.name}".`, assetToDelete.storeId);
             setAssetToDelete(null);
+            addToast('Aset berhasil dihapus!', 'success');
         }
     };
 

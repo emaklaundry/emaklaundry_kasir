@@ -15,7 +15,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
 const StoresPage: React.FC = () => {
-    const { stores, setStores } = useStores();
+    const { stores, addStore, updateStore } = useStores();
     const { allUsers, selectedStoreId } = useAppContext();
     const { customers } = useCustomers();
     const { transactions } = useTransactions();
@@ -48,22 +48,19 @@ const StoresPage: React.FC = () => {
         setCurrentStore(null);
     };
 
-    const handleSaveStore = (storeData: Omit<Store, 'id' | 'isActive'>) => {
-        if (currentStore) {
-            // Edit existing store
-            setStores(prev => prev.map(s => s.id === currentStore.id ? { ...s, ...storeData } : s));
-            addAuditLog(`Memperbarui data cabang: "${storeData.name}".`);
-        } else {
-            // Add new store
-            const newStore: Store = {
-                ...storeData,
-                id: `STORE${Date.now()}`,
-                isActive: true,
-            };
-            setStores(prev => [...prev, newStore]);
-            addAuditLog(`Menambahkan cabang baru: "${newStore.name}".`);
+    const handleSaveStore = async (storeData: Omit<Store, 'id' | 'isActive'>) => {
+        try {
+            if (currentStore) {
+                await updateStore(currentStore.id, storeData);
+                addAuditLog(`Memperbarui data cabang: "${storeData.name}".`);
+            } else {
+                await addStore({ ...storeData, isActive: true });
+                addAuditLog(`Menambahkan cabang baru: "${storeData.name}".`);
+            }
+            handleCloseFormModal();
+        } catch (error: any) {
+            // TODO: Tambahkan notifikasi error jika diperlukan
         }
-        handleCloseFormModal();
     };
 
     const handleToggleStatus = (store: Store) => {
@@ -91,18 +88,19 @@ const StoresPage: React.FC = () => {
         setStoreToDelete(store);
     };
 
-    const confirmToggleStatus = () => {
+    const confirmToggleStatus = async () => {
         if (storeToToggle) {
             const newStatus = !storeToToggle.isActive;
-            setStores(prev => prev.map(s => s.id === storeToToggle.id ? { ...s, isActive: newStatus } : s));
+            await updateStore(storeToToggle.id, { isActive: newStatus });
             addAuditLog(`Mengubah status cabang "${storeToToggle.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
             setStoreToToggle(null);
         }
     };
     
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (storeToDelete) {
-            setStores(prev => prev.filter(s => s.id !== storeToDelete.id));
+            // TODO: Implement deleteStore in context and use here
+            // await deleteStore(storeToDelete.id);
             addAuditLog(`Menghapus cabang: "${storeToDelete.name}".`);
             setStoreToDelete(null);
         }

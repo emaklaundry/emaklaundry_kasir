@@ -1,15 +1,11 @@
-import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
-import { User, UserRole, Store } from '../types';
-import { mockUsers } from '../data/mockData';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { User, Store } from '../types';
 import { useStores } from './StoreContext';
-import { usePersistentState } from '../hooks/usePersistentState';
+import { supabase } from '../utils/supabaseClient';
 
 interface AppContextType {
-  currentUser: User;
-  setCurrentUser: (user: User) => void;
-  users: User[]; // Filtered list
-  allUsers: User[]; // Unfiltered list
-  setAllUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  currentUser: User | null;
+  signOut: () => Promise<void>;
   stores: Store[];
   selectedStoreId: string; // 'all' or a specific store ID
   setSelectedStoreId: (storeId: string) => void;
@@ -17,55 +13,54 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const USERS_STORAGE_KEY = 'laundry_users';
-const CURRENT_USER_ID_KEY = 'laundry_current_user_id';
+
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allUsers, setAllUsers] = usePersistentState<User[]>(USERS_STORAGE_KEY, mockUsers);
-
-  const [currentUserId, setCurrentUserId] = usePersistentState<number>(
-      CURRENT_USER_ID_KEY,
-      allUsers.find(u => u.role === UserRole.SuperAdmin)?.id || allUsers[0].id
-  );
-  
-  const currentUser = useMemo(() => allUsers.find(u => u.id === currentUserId) || allUsers[0], [allUsers, currentUserId]);
-  
-  const setCurrentUser = (user: User) => {
-      setCurrentUserId(user.id);
-  };
-  
   const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // When user changes to a non-super-admin, reset the global store filter
-    // to 'all' because they can only see their own store's data anyway.
-    // This prevents a confusing state where a specific store is selected in the state
-    // but has no effect on a non-admin user.
-    if (currentUser.role !== UserRole.SuperAdmin) {
-        setSelectedStoreId('all');
-    }
-  }, [currentUser]);
-
-  const users = useMemo(() => {
-    // This logic is specific to users (showing all Super Admins), so it's not using the generic hook.
-    if (currentUser.role === UserRole.SuperAdmin) {
-      if (selectedStoreId === 'all') {
-        return allUsers;
+    const getProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        if (!error && data) {
+          setCurrentUser({
+            id: data.id,
+            name: data.name,
+            role: data.role,
+            storeId: data.store_id,
+            createdAt: data.created_at ? new Date(data.created_at) : undefined,
+          });
+        } else {
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
       }
-      // Show users for the selected store, plus all Super Admins
-      return allUsers.filter(u => u.storeId === selectedStoreId || u.role === UserRole.SuperAdmin);
-    }
-    // Other roles see users from their own store, plus all Super Admins
-    return allUsers.filter(u => u.storeId === currentUser.storeId || u.role === UserRole.SuperAdmin);
-  }, [allUsers, currentUser, selectedStoreId]);
+    };
+    getProfile();
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      getProfile();
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+  };
 
   const contextValue = {
     currentUser,
-    setCurrentUser,
-    users,
-    allUsers,
-    setAllUsers,
+    signOut,
     stores,
     selectedStoreId,
     setSelectedStoreId,

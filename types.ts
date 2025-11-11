@@ -130,12 +130,11 @@ export interface Expense {
 }
 
 export interface User {
-  id: number;
+  id: string; // uuid dari Supabase Auth
   name: string;
   role: UserRole;
-  isActive: boolean;
   storeId?: string;
-  canGiveDiscount?: boolean;
+  createdAt?: Date;
 }
 
 export interface AuditLog {

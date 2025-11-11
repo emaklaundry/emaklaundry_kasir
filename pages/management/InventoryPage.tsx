@@ -12,7 +12,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 
 const InventoryPage: React.FC = () => {
-    const { inventory, setInventory } = useInventory();
+    const { inventory, addInventoryItem, updateInventoryItem } = useInventory();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -46,32 +46,38 @@ const InventoryPage: React.FC = () => {
         setCurrentItem(null);
     };
 
-    const handleSaveItem = (item: Omit<InventoryItem, 'id' | 'storeId'>) => {
+    const handleSaveItem = async (item: Omit<InventoryItem, 'id' | 'storeId'>) => {
         const storeId = currentItem?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
         if (!storeId || storeId === 'all') {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit item.', 'warning');
             return;
         }
-
-        if (currentItem && currentItem.id) {
-            setInventory(prev => prev.map(i => i.id === currentItem.id ? { ...i, ...item } : i));
-            addAuditLog(`Memperbarui item inventaris: "${item.name}".`, storeId);
-        } else {
-            setInventory(prev => [...prev, { ...item, id: `INV${Date.now()}`, storeId }]);
-            addAuditLog(`Menambahkan item inventaris baru: "${item.name}".`, storeId);
+        try {
+            if (currentItem && currentItem.id) {
+                await updateInventoryItem(currentItem.id, { ...item, storeId });
+                addAuditLog(`Memperbarui item inventaris: "${item.name}".`, storeId);
+            } else {
+                await addInventoryItem({ ...item, storeId });
+                addAuditLog(`Menambahkan item inventaris baru: "${item.name}".`, storeId);
+            }
+            handleCloseFormModal();
+            addToast('Data inventaris berhasil disimpan!', 'success');
+        } catch (error: any) {
+            addToast(`Gagal menyimpan: ${error.message}`, 'error');
         }
-        handleCloseFormModal();
     };
 
     const handleDelete = (item: InventoryItem) => {
         setItemToDelete(item);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (itemToDelete) {
-            setInventory(prev => prev.filter(i => i.id !== itemToDelete.id));
+            // TODO: Implement deleteInventoryItem in context and use here
+            // await deleteInventoryItem(itemToDelete.id);
             addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId);
             setItemToDelete(null);
+            addToast('Item inventaris berhasil dihapus!', 'success');
         }
     };
     

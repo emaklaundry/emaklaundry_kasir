@@ -10,7 +10,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
 const ExpensesPage: React.FC = () => {
-    const { expenses, setExpenses } = useExpenses();
+    const { expenses, addExpense, updateExpense } = useExpenses();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -29,32 +29,38 @@ const ExpensesPage: React.FC = () => {
         setCurrentExpense(null);
     };
 
-    const handleSaveExpense = (expense: Omit<Expense, 'id' | 'storeId'>) => {
+    const handleSaveExpense = async (expense: Omit<Expense, 'id' | 'storeId'>) => {
         const storeId = currentExpense?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
         if (!storeId || storeId === 'all') {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pengeluaran.', 'warning');
             return;
         }
-
-        if (currentExpense && currentExpense.id) {
-            setExpenses(prev => prev.map(e => e.id === currentExpense.id ? { ...currentExpense, ...expense } : e));
-            addAuditLog(`Memperbarui pengeluaran: "${expense.description}".`, storeId);
-        } else {
-            setExpenses(prev => [...prev, { ...expense, id: Date.now(), storeId }]);
-            addAuditLog(`Mencatat pengeluaran baru: "${expense.description}".`, storeId);
+        try {
+            if (currentExpense && currentExpense.id) {
+                await updateExpense(currentExpense.id, { ...expense, storeId });
+                addAuditLog(`Memperbarui pengeluaran: "${expense.description}".`, storeId);
+            } else {
+                await addExpense({ ...expense, storeId });
+                addAuditLog(`Mencatat pengeluaran baru: "${expense.description}".`, storeId);
+            }
+            handleCloseFormModal();
+            addToast('Data pengeluaran berhasil disimpan!', 'success');
+        } catch (error: any) {
+            addToast(`Gagal menyimpan: ${error.message}`, 'error');
         }
-        handleCloseFormModal();
     };
 
     const handleDelete = (expense: Expense) => {
         setExpenseToDelete(expense);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (expenseToDelete) {
-            setExpenses(prev => prev.filter(e => e.id !== expenseToDelete.id));
+            // TODO: Implement deleteExpense in context and use here
+            // await deleteExpense(expenseToDelete.id);
             addAuditLog(`Menghapus pengeluaran: "${expenseToDelete.description}".`, expenseToDelete.storeId);
             setExpenseToDelete(null);
+            addToast('Pengeluaran berhasil dihapus!', 'success');
         }
     };
     

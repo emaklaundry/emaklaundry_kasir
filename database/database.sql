@@ -1,3 +1,20 @@
+-- Tabel profiles (User Supabase)
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  name text not null,
+  role text not null, -- 'Super Admin', 'Admin Cabang', 'Kasir'
+  store_id uuid references stores(id),
+  created_at timestamp with time zone default now()
+);
+
+-- Contoh: Aktifkan RLS pada tabel transactions
+-- alter table transactions enable row level security;
+--
+-- Policy Super Admin bisa akses semua data:
+-- create policy "Super Admins can see all transactions." on transactions for select using ((select role from profiles where id = auth.uid()) = 'Super Admin');
+--
+-- Policy user hanya bisa akses data cabang sendiri:
+-- create policy "Users can see transactions from their own store." on transactions for select using (store_id = (select store_id from profiles where id = auth.uid()));
 -- Tabel stores (Cabang)
 create table stores (
   id uuid primary key default gen_random_uuid(),

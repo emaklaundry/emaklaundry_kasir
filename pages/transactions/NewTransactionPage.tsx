@@ -21,8 +21,8 @@ import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
     const { settings } = useSettings();
-    const { transactions, setTransactions } = useTransactions();
-    const { customers, setCustomers } = useCustomers();
+    const { transactions, addTransaction } = useTransactions();
+    const { customers, addCustomer } = useCustomers();
     const { services } = useServices();
     const { currentUser, selectedStoreId } = useAppContext();
     const { addAuditLog } = useAuditLogs();
@@ -239,18 +239,24 @@ const NewTransactionPage: React.FC = () => {
         return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
     }, [currentUser, selectedStoreId]);
 
-    const handleSaveCustomer = (customer: Omit<Customer, 'id' | 'storeId'>) => {
+    const handleSaveCustomer = async (customer: Omit<Customer, 'id' | 'storeId'>) => {
         if (!currentStoreId || currentStoreId === 'all') {
             addToast('Silakan pilih cabang spesifik untuk menambah pelanggan.', 'warning');
             return;
         }
-        const newCustomer = { ...customer, id: `CUST${Date.now()}`, storeId: currentStoreId };
-        setCustomers(prev => [...prev, newCustomer]);
-        setSelectedCustomer(newCustomer);
-        setIsCustomerModalOpen(false);
+        try {
+            await addCustomer({ ...customer, storeId: currentStoreId });
+            // Ambil customer terbaru dari context (asumsi context auto-refresh)
+            const latestCustomer = customers[customers.length - 1];
+            setSelectedCustomer(latestCustomer);
+            setIsCustomerModalOpen(false);
+            addToast('Pelanggan berhasil ditambahkan!', 'success');
+        } catch (error: any) {
+            addToast(`Gagal menambah pelanggan: ${error.message}`, 'error');
+        }
     };
     
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isSaving) return;
 
@@ -270,12 +276,10 @@ const NewTransactionPage: React.FC = () => {
             addToast('Silakan pilih metode pembayaran.', 'warning');
             return;
         }
-        
+
         setIsSaving(true);
-        
-        setTimeout(() => {
-            const newTransaction: Transaction = {
-                id: `TRX${Date.now()}`,
+        try {
+            const newTransaction: Omit<Transaction, 'id'> = {
                 customerId: selectedCustomer.id,
                 items,
                 subtotal,
@@ -293,14 +297,15 @@ const NewTransactionPage: React.FC = () => {
                 createdByUserId: currentUser.id,
                 storeId: currentStoreId,
             };
-            
-            setTransactions(prev => [...prev, newTransaction]);
-            addAuditLog(`Membuat transaksi baru ${newTransaction.id} untuk pelanggan ${selectedCustomer.name}.`, newTransaction.storeId);
-            
-            setNewlyCreatedTransaction(newTransaction);
+            await addTransaction(newTransaction);
+            addAuditLog(`Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`, currentStoreId);
+            setNewlyCreatedTransaction({ ...newTransaction, id: 'AUTO' }); // id dummy, context akan refresh
             setIsWhatsAppModalOpen(true);
+        } catch (error: any) {
+            addToast(`Gagal menyimpan transaksi: ${error.message}`, 'error');
+        } finally {
             setIsSaving(false);
-        }, 700);
+        }
     };
     
     const handleCloseWhatsAppModal = () => {

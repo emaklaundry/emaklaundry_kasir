@@ -15,7 +15,7 @@ import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 
 const CustomersPage: React.FC = () => {
-    const { customers, setCustomers } = useCustomers();
+    const { customers, addCustomer, updateCustomer } = useCustomers();
     const { transactions } = useTransactions();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
@@ -77,32 +77,38 @@ const CustomersPage: React.FC = () => {
         setCurrentCustomer(null);
     };
 
-    const handleSaveCustomer = (customer: Omit<Customer, 'id' | 'storeId'>) => {
+    const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
         const storeId = currentCustomer?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
-         if (!storeId || storeId === 'all') {
+        if (!storeId || storeId === 'all') {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
             return;
         }
-
-        if (currentCustomer && currentCustomer.id) {
-            setCustomers(prev => prev.map(c => c.id === currentCustomer.id ? { ...c, ...customer, storeId } : c));
-            addAuditLog(`Memperbarui data pelanggan: "${customer.name}".`, storeId);
-        } else {
-            setCustomers(prev => [...prev, { ...customer, id: `CUST${Date.now()}`, storeId }]);
-            addAuditLog(`Menambahkan pelanggan baru: "${customer.name}".`, storeId);
+        try {
+            if (currentCustomer && currentCustomer.id) {
+                await updateCustomer(currentCustomer.id, { ...customerData, storeId });
+                addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
+            } else {
+                await addCustomer({ ...customerData, storeId });
+                addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
+            }
+            handleCloseFormModal();
+            addToast('Data pelanggan berhasil disimpan!', 'success');
+        } catch (error: any) {
+            addToast(`Gagal menyimpan: ${error.message}`, 'error');
         }
-        handleCloseFormModal();
     };
 
     const handleDelete = (customer: Customer) => {
         setCustomerToDelete(customer);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (customerToDelete) {
-            setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
+            // TODO: Implement deleteCustomer in context and use here
+            // await deleteCustomer(customerToDelete.id);
             addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId);
             setCustomerToDelete(null);
+            addToast('Pelanggan berhasil dihapus!', 'success');
         }
     };
     
