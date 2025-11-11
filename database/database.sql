@@ -1,179 +1,273 @@
--- Contoh: Aktifkan RLS pada tabel transactions
--- alter table transactions enable row level security;
---
--- Policy Super Admin bisa akses semua data:
--- create policy "Super Admins can see all transactions." on transactions for select using ((select role from profiles where id = auth.uid()) = 'Super Admin');
---
--- Policy user hanya bisa akses data cabang sendiri:
--- create policy "Users can see transactions from their own store." on transactions for select using (store_id = (select store_id from profiles where id = auth.uid()));
-
-create table stores (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
+-- 1. Membuat tabel 'stores' dengan ID sebagai 'text' DAN "isActive"
+CREATE TABLE public.stores (
+  id text PRIMARY KEY NOT NULL,
+  name text NOT NULL,
   address text,
   phone text,
-  created_at timestamp with time zone default now()
+  "isActive" boolean DEFAULT true,
+  created_at timestamp WITH TIME ZONE DEFAULT NOW()
 );
 
-create table profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  name text not null,
-  role text not null, -- 'Super Admin', 'Admin Cabang', 'Kasir'
-  store_id uuid references stores(id),
-  created_at timestamp with time zone default now()
+-- 2. Membuat tabel 'profiles' yang mereferensikan stores(id) sebagai 'text'
+CREATE TABLE public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  role text NOT NULL, -- 'Super Admin', 'Admin Cabang', 'Kasir'
+  store_id text REFERENCES stores(id),
+  created_at timestamp WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tabel customers (Pelanggan)
-create table customers (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
+-- 3. Membuat tabel 'customers' yang mereferensikan stores(id) sebagai 'text'
+CREATE TABLE public.customers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
   phone text,
   address text,
-  store_id uuid references stores(id) on delete set null,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel services (Layanan)
-create table services (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  category text not null,
-  price integer not null,
-  store_id uuid references stores(id) on delete set null,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel inventory_items (Inventaris)
-create table inventory_items (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  quantity integer not null,
-  unit text,
-  store_id uuid references stores(id) on delete set null,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel assets (Aset)
-create table assets (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  status text not null,
-  purchase_date date,
-  store_id uuid references stores(id) on delete set null,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel maintenance_logs (Riwayat Pemeliharaan)
-create table maintenance_logs (
-  id uuid primary key default gen_random_uuid(),
-  asset_id uuid references assets(id) on delete cascade,
-  description text,
-  date date,
-  cost integer,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel scheduled_maintenances (Jadwal Pemeliharaan)
-create table scheduled_maintenances (
-  id uuid primary key default gen_random_uuid(),
-  asset_id uuid references assets(id) on delete cascade,
-  scheduled_date date,
-  description text,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel expenses (Pengeluaran)
-create table expenses (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  amount integer not null,
-  date date,
-  store_id uuid references stores(id) on delete set null,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel transactions (Transaksi)
-create table transactions (
-  id uuid primary key default gen_random_uuid(),
-  customer_id uuid references customers(id) on delete set null,
-  store_id uuid references stores(id) on delete set null,
-  total integer not null,
-  payment_status text,
-  order_status text,
-  payment_method text,
-  created_at timestamp with time zone default now()
-);
-
--- Tabel transaction_items (Item Transaksi)
-create table transaction_items (
-  id uuid primary key default gen_random_uuid(),
-  transaction_id uuid references transactions(id) on delete cascade,
-  service_id uuid references services(id) on delete set null,
-  quantity integer not null,
-  price integer not null,
   notes text,
-  created_at timestamp with time zone default now()
+  "defaultDiscount" integer DEFAULT 0,
+  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
+  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- Aktifkan Row Level Security (RLS) pada semua tabel utama
-alter table stores enable row level security;
-alter table profiles enable row level security;
-alter table customers enable row level security;
-alter table services enable row level security;
-alter table inventory_items enable row level security;
-alter table assets enable row level security;
-alter table maintenance_logs enable row level security;
-alter table scheduled_maintenances enable row level security;
-alter table expenses enable row level security;
-alter table transactions enable row level security;
-alter table transaction_items enable row level security;
+-- 4. Membuat tabel 'services' yang mereferensikan stores(id) sebagai 'text'
+CREATE TABLE public.services (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  category text NOT NULL,
+  price integer NOT NULL,
+  unit text NOT NULL,
+  "durationDays" integer NOT NULL,
+  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+);
 
--- Policy: hanya user yang sesuai dengan store_id di profiles yang bisa akses data cabangnya
-create policy "Users can access their own store's data" on stores
-  for select using (id = (select store_id from profiles where id = auth.uid()));
+-- 5. Membuat tabel 'inventory_items' yang mereferensikan stores(id) sebagai 'text'
+CREATE TABLE public.inventory_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  stock integer NOT NULL,
+  "lowStockThreshold" integer NOT NULL,
+  unit text NOT NULL,
+  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+);
 
-create policy "Users can access their own store's data" on customers
-  for select using (store_id = (select store_id from profiles where id = auth.uid()));
+-- 6. Membuat tabel 'assets' yang mereferensikan stores(id) sebagai 'text'
+CREATE TABLE public.assets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  "serialNumber" text,
+  "purchaseDate" date,
+  "purchaseCost" numeric,
+  status text NOT NULL,
+  "maintenanceHistory" jsonb,
+  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+);
 
-create policy "Users can access their own store's data" on services
-  for select using (store_id = (select store_id from profiles where id = auth.uid()));
+-- 7. Membuat tabel 'scheduled_maintenances'
+CREATE TABLE public.scheduled_maintenances (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "assetId" uuid REFERENCES assets(id) ON DELETE CASCADE,
+  description text NOT NULL,
+  "frequencyValue" integer NOT NULL,
+  "frequencyUnit" text NOT NULL,
+  "nextDueDate" date NOT NULL,
+  "lastCompletedDate" date
+);
 
-create policy "Users can access their own store's data" on inventory_items
-  for select using (store_id = (select store_id from profiles where id = auth.uid()));
+-- 8. Membuat tabel 'expenses' yang mereferensikan stores(id) sebagai 'text'
+CREATE TABLE public.expenses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  date date NOT NULL,
+  description text NOT NULL,
+  category text NOT NULL,
+  amount numeric NOT NULL,
+  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+);
 
-create policy "Users can access their own store's data" on assets
-  for select using (store_id = (select store_id from profiles where id = auth.uid()));
+-- 9. Membuat tabel 'transactions'
+CREATE TABLE public.transactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "customerId" uuid REFERENCES customers(id) ON DELETE SET NULL,
+  items jsonb NOT NULL,
+  subtotal numeric NOT NULL,
+  discount numeric NOT NULL,
+  tax numeric NOT NULL,
+  total numeric NOT NULL,
+  "paymentStatus" text NOT NULL,
+  "orderStatus" text NOT NULL,
+  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
+  "estimatedCompletionDate" date,
+  "amountPaid" numeric NOT NULL,
+  change numeric NOT NULL,
+  "paymentMethod" text,
+  "createdByUserId" uuid REFERENCES profiles(id),
+  "storeId" text REFERENCES stores(id) ON DELETE SET NULL,
+  notes text
+);
 
-create policy "Users can access their own store's data" on expenses
-  for select using (store_id = (select store_id from profiles where id = auth.uid()));
+-- 10. Membuat tabel 'audit_logs'
+CREATE TABLE public.audit_logs (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  timestamp timestamp WITH TIME ZONE DEFAULT NOW(),
+  "user" text,
+  action text,
+  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+);
 
-create policy "Users can access their own store's data" on transactions
-  for select using (store_id = (select store_id from profiles where id = auth.uid()));
+-- 11. Membuat tabel 'settings'
+CREATE TABLE public.settings (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  "receiptMessage" text,
+  "taxRate" numeric,
+  "discountRate" numeric
+);
 
-create policy "Users can access their own store's data" on transaction_items
-  for select using (
-    transaction_id in (
-      select id from transactions where store_id = (select store_id from profiles where id = auth.uid())
-    )
-  );
+-- === MASUKKAN DATA AWAL (SEEDING) ===
 
+-- Memasukkan Super Admin Profile
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES (
+  '11c86333-295c-4bd9-9302-a69fda4811c0',
+  'Super Admin',
+  'Super Admin',
+  NULL
+);
 
--- Policy minimal untuk tabel maintenance_logs
-create policy "Users can access maintenance logs of their store's assets" on maintenance_logs
-  for select using (
-    asset_id in (
-      select id from assets where store_id = (select store_id from profiles where id = auth.uid())
-    )
-  );
+-- Memasukkan Stores (Cabang)
+INSERT INTO public.stores (id, name, address, "isActive")
+VALUES
+  ('STORE1', 'Jakarta Pusat', 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan', true),
+  ('STORE2', 'Bandung', 'Jl. Asia Afrika No.1, Bandung', true);
 
--- Policy minimal untuk tabel scheduled_maintenances
-create policy "Users can access scheduled maintenances of their store's assets" on scheduled_maintenances
-  for select using (
-    asset_id in (
-      select id from assets where store_id = (select store_id from profiles where id = auth.uid())
-    )
-  );
+-- Memasukkan Services (Layanan)
+INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
+VALUES
+  ('Cuci Kering Lipat', 'Kiloan', 8000, 'kg', 2, 'STORE1'),
+  ('Cuci Setrika', 'Kiloan', 10000, 'kg', 3, 'STORE1'),
+  ('Setrika Saja', 'Kiloan', 6000, 'kg', 1, 'STORE1'),
+  ('Kemeja', 'Satuan', 15000, 'pcs', 2, 'STORE1'),
+  ('Jas', 'Satuan', 50000, 'pcs', 4, 'STORE1'),
+  ('Selimut', 'Satuan', 25000, 'pcs', 3, 'STORE1'),
+  ('Cuci Sepatu', 'Sepatu', 40000, 'pasang', 5, 'STORE1'),
+  ('Karpet Tipis', 'Karpet', 15000, 'm²', 5, 'STORE1');
 
--- Policy minimal untuk tabel profiles (user hanya bisa akses profil sendiri)
-create policy "Users can access their own profile" on profiles
-  for select using (id = auth.uid());
+-- Memasukkan Settings (Pengaturan)
+INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate")
+VALUES (
+  'Terima kasih telah menggunakan jasa kami! Silakan simpan struk ini sebagai bukti transaksi.',
+  0,
+  0
+);
+
+-- === TERAKHIR: AKTIFKAN RLS ===
+-- (Anda bisa menjalankan ini sekarang atau nanti, tapi ini penting untuk keamanan)
+
+ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.scheduled_maintenances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- Policy: User bisa melihat profil mereka sendiri
+CREATE POLICY "Users can see their own profile"
+  ON public.profiles FOR SELECT
+  USING (id = auth.uid());
+
+-- Policy: Super Admin bisa melihat SEMUA data
+CREATE POLICY "Super Admins can see all data"
+  ON public.stores FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.customers FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.services FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.inventory_items FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.assets FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.scheduled_maintenances FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.expenses FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.transactions FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+  
+CREATE POLICY "Super Admins can see all data"
+  ON public.audit_logs FOR SELECT
+  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
+
+-- Policy: User non-admin hanya bisa melihat data cabang mereka sendiri
+CREATE POLICY "Users can see their own store data"
+  ON public.stores FOR SELECT
+  USING (id = (select store_id from profiles where id = auth.uid()));
+
+CREATE POLICY "Users can see their own store data"
+  ON public.customers FOR SELECT
+  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+
+CREATE POLICY "Users can see their own store data"
+  ON public.services FOR SELECT
+  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+
+CREATE POLICY "Users can see their own store data"
+  ON public.inventory_items FOR SELECT
+  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+
+CREATE POLICY "Users can see their own store data"
+  ON public.assets FOR SELECT
+  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+
+CREATE POLICY "Users can see their own store data"
+  ON public.scheduled_maintenances FOR SELECT
+  USING ( "assetId" IN (SELECT id FROM assets WHERE "storeId" = (select store_id from profiles where id = auth.uid())) );
+
+CREATE POLICY "Users can see their own store data"
+  ON public.expenses FOR SELECT
+  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+
+CREATE POLICY "Users can see their own store data"
+  ON public.transactions FOR SELECT
+  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+
+CREATE POLICY "Users can see their own store data"
+  ON public.audit_logs FOR SELECT
+  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+
+-- Policy: Pengguna yang terautentikasi bisa membaca Settings
+CREATE POLICY "Allow authenticated read access"
+  ON public.settings FOR SELECT
+  USING ( auth.role() = 'authenticated' );
+
+-- Policy: SEMUA pengguna yang terautentikasi bisa INSERT data (RLS di atas akan memfilter SELECT)
+-- Anda bisa memperketat ini jika diperlukan
+CREATE POLICY "Allow insert for authenticated users"
+  ON public.customers FOR INSERT
+  WITH CHECK ( "storeId" = (select store_id from profiles where id = auth.uid()) OR (select role from profiles where id = auth.uid()) = 'Super Admin' );
+
+CREATE POLICY "Allow insert for authenticated users"
+  ON public.transactions FOR INSERT
+  WITH CHECK ( "storeId" = (select store_id from profiles where id = auth.uid()) OR (select role from profiles where id = auth.uid()) = 'Super Admin' );
+
+CREATE POLICY "Allow insert for authenticated users"
+  ON public.expenses FOR INSERT
+  WITH CHECK ( "storeId" = (select store_id from profiles where id = auth.uid()) OR (select role from profiles where id = auth.uid()) = 'Super Admin' );
+
+-- (Tambahkan policy INSERT/UPDATE/DELETE lain sesuai kebutuhan)

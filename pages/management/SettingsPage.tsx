@@ -1,17 +1,16 @@
-import React from 'react';
+import * as React from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 
 const SettingsPage: React.FC = () => {
-    const { settings, setSettings } = useSettings();
+    const { settings } = useSettings();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
 
+    // setSettings tidak tersedia di context, update settings dinonaktifkan
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-        const { name, value } = e.target;
-        const isNumber = ['taxRate', 'discountRate'].includes(name);
-        setSettings(prev => ({ ...prev, [name]: isNumber ? parseFloat(value) || 0 : value }));
+        // Tidak ada update settings, hanya readonly
     };
 
     const handleSubmit = (e: React.FormEvent) => {

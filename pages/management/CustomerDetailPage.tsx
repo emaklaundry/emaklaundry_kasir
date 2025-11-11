@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { OrderStatus, PaymentStatus } from '../../types';
 import { UsersIcon, ShoppingCartIcon, DollarSignIcon, ChevronLeftIcon, HistoryIcon } from '../../components/icons';

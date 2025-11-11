@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 
 // A generic icon wrapper
 const Icon: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (

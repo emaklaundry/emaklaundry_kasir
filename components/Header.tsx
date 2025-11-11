@@ -1,7 +1,7 @@
 
 
 
-import React from 'react';
+import * as React from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { UserRole } from '../types';
 import { useTheme, Theme } from '../hooks/useTheme';
@@ -31,8 +31,8 @@ const ThemeToggleButton: React.FC = () => {
 const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
   const { 
     currentUser, 
-    setCurrentUser, 
-    allUsers, 
+  // setCurrentUser, // property tidak ada di AppContextType
+  // allUsers, // property tidak ada di AppContextType
     stores, 
     selectedStoreId, 
     setSelectedStoreId 
@@ -40,12 +40,8 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
   const { open } = useCommandPalette();
 
 
-  const handleUserChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedUser = allUsers.find(u => u.id === parseInt(event.target.value, 10));
-    if (selectedUser) {
-      setCurrentUser(selectedUser);
-    }
-  };
+  // Dropdown user dinonaktifkan karena allUsers/setCurrentUser tidak tersedia
+  // const handleUserChange = ...
 
   const currentStore = stores.find(s => s.id === currentUser.storeId);
   const activeStores = stores.filter(s => s.isActive);
@@ -82,18 +78,7 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
               </select>
             </div>
           )}
-          <div className="flex items-center">
-             <span className="hidden sm:inline text-base text-slate-600 dark:text-slate-300 mr-2">Login sebagai:</span>
-            <select 
-              value={currentUser.id} 
-              onChange={handleUserChange} 
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            >
-              {allUsers.map(user => (
-                <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
-              ))}
-            </select>
-          </div>
+          {/* Dropdown user dinonaktifkan karena allUsers/setCurrentUser tidak tersedia */}
         </div>
       </div>
        {currentUser.role !== UserRole.SuperAdmin && currentStore && (

@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PrinterIcon, ChevronLeftIcon } from '../../components/icons';
 import { useSettings } from '../../contexts/SettingsContext';

@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { AppProvider } from './AppContext';
 import { InventoryProvider } from './InventoryContext';
 import { TransactionProvider } from './TransactionContext';

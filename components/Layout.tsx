@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';

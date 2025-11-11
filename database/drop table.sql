@@ -9,3 +9,5 @@ drop table if exists services cascade;
 drop table if exists customers cascade;
 drop table if exists profiles cascade;
 drop table if exists stores cascade;
+drop table if exists audit_logs cascade;
+drop table if exists settings cascade;
