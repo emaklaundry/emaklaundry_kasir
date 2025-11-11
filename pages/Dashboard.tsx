@@ -145,11 +145,11 @@ const calculateStats = (transactions: Transaction[], startDate: Date, endDate: D
 const Dashboard: React.FC = () => {
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { inventory } = useInventory();
-    const { transactions, setTransactions } = useTransactions();
+    const { transactions, updateTransaction } = useTransactions();
     const { customers } = useCustomers();
-    const { expenses, setExpenses } = useExpenses();
-    const { scheduledMaintenances, setScheduledMaintenances } = useScheduledMaintenances();
-    const { assets, setAssets } = useAssets();
+    const { expenses, addExpense } = useExpenses();
+    const { scheduledMaintenances, updateScheduledMaintenance } = useScheduledMaintenances();
+    const { assets, updateAsset } = useAssets();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
     
@@ -172,13 +172,13 @@ const Dashboard: React.FC = () => {
                 revenue: 0,
                 date,
             };
-        }).reverse();
+            addExpense(newExpense);
 
         transactions.forEach(t => {
             const transactionDate = new Date(t.createdAt);
             const dayData = data.find(d => 
                 d.date.getDate() === transactionDate.getDate() &&
-                d.date.getMonth() === transactionDate.getMonth() &&
+            updateTransaction(updatedTransaction.id, updatedTransaction);
                 d.date.getFullYear() === transactionDate.getFullYear()
             );
             if (dayData) {
@@ -199,7 +199,7 @@ const Dashboard: React.FC = () => {
 
         const currentStats = calculateStats(transactions, currentPeriodStart, currentPeriodEnd);
         const prevStats = calculateStats(transactions, prevPeriodStart, prevPeriodEnd);
-
+            updateTransaction(transactionId, updatedTransaction);
         const getTrend = (current: number, previous: number): TrendData => {
             if (previous === 0) {
                 return current > 0 ? { trend: 'up', percentage: '100%' } : { trend: 'neutral', percentage: '0%' };
@@ -272,32 +272,32 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleSaveExpense = useCallback((expense: Expense) => {
+    const handleSaveExpense = useCallback(async (expense: Expense) => {
         const storeId = currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
         if (!storeId || storeId === 'all') { 
             addToast('Silakan pilih cabang spesifik untuk mencatat pengeluaran.', 'warning');
             return;
         }
         const newExpense = { ...expense, id: Date.now(), storeId };
-        setExpenses(prev => [...prev, newExpense]);
+        await addExpense(newExpense);
         addAuditLog(`Mencatat pengeluaran cepat: "${newExpense.description}".`, storeId);
         setIsExpenseModalOpen(false);
-    }, [currentUser.role, currentUser.storeId, selectedStoreId, setExpenses, addAuditLog, addToast]);
+    }, [currentUser.role, currentUser.storeId, selectedStoreId, addExpense, addAuditLog, addToast]);
 
     const handleOpenPaymentModal = useCallback((transaction: Transaction) => {
         setTransactionForPayment(transaction);
         setIsPaymentModalOpen(true);
     }, []);
 
-    const handleSavePayment = useCallback((updatedTransaction: Transaction) => {
-        setTransactions(prev => prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t)));
+    const handleSavePayment = useCallback(async (updatedTransaction: Transaction) => {
+        await updateTransaction(updatedTransaction.id, updatedTransaction);
         addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
         setIsPaymentModalOpen(false);
         setTransactionForPayment(null);
         addToast('Pembayaran berhasil disimpan.', 'success');
-    }, [setTransactions, addAuditLog, addToast]);
+    }, [updateTransaction, addAuditLog, addToast]);
     
-    const handleNextStatus = useCallback((transactionId: string) => {
+    const handleNextStatus = useCallback(async (transactionId: string) => {
         const transaction = transactions.find(t => t.id === transactionId);
         if (!transaction) return;
 
@@ -311,45 +311,32 @@ const Dashboard: React.FC = () => {
         }
 
         const updatedTransaction = { ...transaction, orderStatus: nextStatus };
-        setTransactions(prev => prev.map(t => (t.id === transactionId ? updatedTransaction : t)));
+        await updateTransaction(transaction.id, { orderStatus: nextStatus });
         addAuditLog(`Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`, transaction.storeId);
 
         if (nextStatus === OrderStatus.Ready) {
-            setTransactionForWhatsApp(updatedTransaction);
+            setTransactionForWhatsApp({ ...transaction, orderStatus: nextStatus });
             setIsWhatsAppModalOpen(true);
         }
-    }, [transactions, setTransactions, addAuditLog]);
+    }, [transactions, updateTransaction, addAuditLog]);
     
-    const handleMarkMaintenanceAsComplete = useCallback((schedule: ScheduledMaintenance) => {
+    const handleMarkMaintenanceAsComplete = useCallback(async (schedule: ScheduledMaintenance) => {
         const asset = assets.find(a => a.id === schedule.assetId);
         if (!asset) return;
-        
-        setAssets(prevAssets => prevAssets.map(a => {
-            if (a.id === asset.id) {
-                const newLog = {
-                    id: Date.now(),
-                    date: new Date(),
-                    description: `[Jadwal] - ${schedule.description}`,
-                    cost: 0 
-                };
-                return { ...a, maintenanceHistory: [...a.maintenanceHistory, newLog] };
-            }
-            return a;
-        }));
-
-        setScheduledMaintenances(prevSchedules => prevSchedules.map(s => {
-            if (s.id === schedule.id) {
-                return {
-                    ...s,
-                    lastCompletedDate: new Date(),
-                    nextDueDate: calculateNextDueDate(s.nextDueDate, s.frequencyValue, s.frequencyUnit)
-                };
-            }
-            return s;
-        }));
+        const newLog = {
+            id: `LOG${Date.now()}`,
+            date: new Date(),
+            description: `[Jadwal] - ${schedule.description}`,
+            cost: 0
+        };
+        await updateAsset(asset.id, { maintenanceHistory: [...asset.maintenanceHistory, newLog] });
+        await updateScheduledMaintenance(schedule.id, {
+            lastCompletedDate: new Date(),
+            nextDueDate: calculateNextDueDate(schedule.nextDueDate, schedule.frequencyValue, schedule.frequencyUnit)
+        });
         addAuditLog(`Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}" dari Dashboard.`, asset.storeId);
         addToast(`Perawatan "${schedule.description}" ditandai selesai.`, 'success');
-    }, [assets, setAssets, setScheduledMaintenances, addAuditLog, addToast]);
+    }, [assets, updateAsset, updateScheduledMaintenance, addAuditLog, addToast]);
 
     const customerForWhatsApp = useMemo(() => {
         if (!transactionForWhatsApp) return null;

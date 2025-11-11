@@ -53,7 +53,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
                     maintenanceHistory: [...asset.maintenanceHistory, newLog]
                 };
             }
-            return asset;
+                const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         }));
         
         addAuditLog(`Melaporkan kerusakan cepat untuk aset "${assetName}": ${formData.description}.`, storeId);
@@ -76,7 +76,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
               </>
             }
         >
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                    updateAsset(prevAssets => prevAssets.map(asset => {
                 <div>
                     <label htmlFor="asset" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Pilih Aset</label>
                     <select name="asset" id="asset" value={selectedAssetId} onChange={handleAssetChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white">

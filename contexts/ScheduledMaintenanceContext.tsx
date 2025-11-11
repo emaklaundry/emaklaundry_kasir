@@ -7,6 +7,7 @@ interface ScheduledMaintenanceContextType {
   scheduledMaintenances: ScheduledMaintenance[];
   addScheduledMaintenance: (sm: Omit<ScheduledMaintenance, 'id'>) => Promise<void>;
   updateScheduledMaintenance: (id: string, data: Partial<ScheduledMaintenance>) => Promise<void>;
+  deleteScheduledMaintenance: (id: string) => Promise<void>;
 }
 
 const ScheduledMaintenanceContext = createContext<ScheduledMaintenanceContextType | undefined>(undefined);
@@ -37,6 +38,13 @@ export const ScheduledMaintenanceProvider: React.FC<{ children: ReactNode }> = (
   const updateScheduledMaintenance = async (id: string, data: Partial<ScheduledMaintenance>) => {
     const { data: updated, error } = await supabase.from('scheduled_maintenances').update(data).eq('id', id).select();
     if (!error && updated) setAllScheduledMaintenances((prev) => prev.map(sm => sm.id === id ? { ...sm, ...updated[0] } : sm));
+  };
+  
+  const deleteScheduledMaintenance = async (id: string) => {
+    const { error } = await supabase.from('scheduled_maintenances').delete().eq('id', id);
+    if (error) throw error;
+    setAllScheduledMaintenances((prev) => prev.filter(sm => sm.id !== id));
+  };
   };
 
   return (
