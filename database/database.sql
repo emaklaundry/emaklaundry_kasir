@@ -1,4 +1,5 @@
 
+
 -- 1. Membuat tabel 'stores' dengan ID sebagai 'uuid' DAN "isActive"
 CREATE TABLE public.stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -116,42 +117,6 @@ CREATE TABLE public.settings (
   "discountRate" numeric
 );
 
--- === MASUKKAN DATA AWAL (SEEDING) ===
-
--- Memasukkan Super Admin Profile
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES (
-  '11c86333-295c-4bd9-9302-a69fda4811c0',
-  'Super Admin',
-  'Super Admin',
-  NULL
-);
-
--- Contoh seeding baru, gunakan uuid_generate_v4() atau gen_random_uuid() untuk id
-INSERT INTO public.stores (id, name, address, "isActive")
-VALUES
-  (gen_random_uuid(), 'Jakarta Pusat', 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan', true),
-  (gen_random_uuid(), 'Bandung', 'Jl. Asia Afrika No.1, Bandung', true);
-
--- Memasukkan Services (Layanan)
-INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
-VALUES
-  ('Cuci Kering Lipat', 'Kiloan', 8000, 'kg', 2, 'STORE1'),
-  ('Cuci Setrika', 'Kiloan', 10000, 'kg', 3, 'STORE1'),
-  ('Setrika Saja', 'Kiloan', 6000, 'kg', 1, 'STORE1'),
-  ('Kemeja', 'Satuan', 15000, 'pcs', 2, 'STORE1'),
-  ('Jas', 'Satuan', 50000, 'pcs', 4, 'STORE1'),
-  ('Selimut', 'Satuan', 25000, 'pcs', 3, 'STORE1'),
-  ('Cuci Sepatu', 'Sepatu', 40000, 'pasang', 5, 'STORE1'),
-  ('Karpet Tipis', 'Karpet', 15000, 'm²', 5, 'STORE1');
-
-INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate")
-VALUES (
-  'Terima kasih telah menggunakan jasa kami! Silakan simpan struk ini sebagai bukti transaksi.',
-  0,
-  0
-);
-
 -- Aktifkan RLS untuk tabel settings
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
@@ -246,7 +211,7 @@ CREATE POLICY "Users can see their own store data"
 
 CREATE POLICY "Users can see their own store data"
   ON public.audit_logs FOR SELECT
-  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
+  USING ( (select role from profiles where id = auth.uid()) = 'Super Admin' OR "storeId" = (select store_id from profiles where id = auth.uid()) );
 
 -- Policy: Pengguna yang terautentikasi bisa membaca Settings
 CREATE POLICY "Allow authenticated read access"
@@ -267,4 +232,52 @@ CREATE POLICY "Allow insert for authenticated users"
   ON public.expenses FOR INSERT
   WITH CHECK ( "storeId" = (select store_id from profiles where id = auth.uid()) OR (select role from profiles where id = auth.uid()) = 'Super Admin' );
 
--- (Tambahkan policy INSERT/UPDATE/DELETE lain sesuai kebutuhan)
+
+-- Policy CRUD untuk stores
+CREATE POLICY "Allow insert for authenticated users" ON public.stores FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for authenticated users" ON public.stores FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for authenticated users" ON public.stores FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Policy CRUD untuk services
+CREATE POLICY "Allow insert for authenticated users" ON public.services FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for authenticated users" ON public.services FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for authenticated users" ON public.services FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Policy CRUD untuk inventory_items
+CREATE POLICY "Allow insert for authenticated users" ON public.inventory_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for authenticated users" ON public.inventory_items FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for authenticated users" ON public.inventory_items FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Policy CRUD untuk assets
+CREATE POLICY "Allow insert for authenticated users" ON public.assets FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for authenticated users" ON public.assets FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for authenticated users" ON public.assets FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Policy CRUD untuk scheduled_maintenances
+CREATE POLICY "Allow insert for authenticated users" ON public.scheduled_maintenances FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for authenticated users" ON public.scheduled_maintenances FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for authenticated users" ON public.scheduled_maintenances FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Policy CRUD untuk audit_logs
+CREATE POLICY "Allow insert for authenticated users" ON public.audit_logs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for authenticated users" ON public.audit_logs FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for authenticated users" ON public.audit_logs FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Policy CRUD untuk settings
+CREATE POLICY "Allow insert for authenticated users" ON public.settings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow update for authenticated users" ON public.settings FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow delete for authenticated users" ON public.settings FOR DELETE USING (auth.role() = 'authenticated');
+
+
+-- Ganti UUID di bawah ini jika perlu, pastikan user dengan id ini juga ada di auth.users
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL);
+
+INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('', 0, 0);
+
+
+
+
+
+
+
