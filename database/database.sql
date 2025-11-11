@@ -14,7 +14,9 @@ CREATE TABLE public.profiles (
   name text NOT NULL,
   role text NOT NULL, -- 'Super Admin', 'Admin Cabang', 'Kasir'
   store_id text REFERENCES stores(id),
-  created_at timestamp WITH TIME ZONE DEFAULT NOW()
+  created_at timestamp WITH TIME ZONE DEFAULT NOW(),
+  "isActive" boolean DEFAULT true,
+  "canGiveDiscount" boolean DEFAULT false
 );
 
 -- 3. Membuat tabel 'customers' yang mereferensikan stores(id) sebagai 'text'
