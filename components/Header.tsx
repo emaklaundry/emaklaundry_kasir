@@ -31,8 +31,7 @@ const ThemeToggleButton: React.FC = () => {
 const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
   const { 
     currentUser, 
-  // setCurrentUser, // property tidak ada di AppContextType
-  // allUsers, // property tidak ada di AppContextType
+    signOut,
     stores, 
     selectedStoreId, 
     setSelectedStoreId 
@@ -79,6 +78,18 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
             </div>
           )}
           {/* Dropdown user dinonaktifkan karena allUsers/setCurrentUser tidak tersedia */}
+          {/* Info profil user */}
+          <div className="flex flex-col items-end mr-2 text-right">
+            <span className="font-semibold text-slate-700 dark:text-slate-200">{currentUser.name}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{currentUser.role}</span>
+          </div>
+          <button
+            onClick={signOut}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-base font-medium"
+            aria-label="Logout"
+          >
+            Logout
+          </button>
         </div>
       </div>
        {currentUser.role !== UserRole.SuperAdmin && currentStore && (

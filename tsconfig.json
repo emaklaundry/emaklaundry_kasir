@@ -26,5 +26,10 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": [
+    "data/mockData.ts",
+    "env.d.ts",
+    "hooks/usePersistentState.ts"
+  ]
 }

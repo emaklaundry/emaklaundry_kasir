@@ -152,13 +152,15 @@ VALUES
   ('Cuci Sepatu', 'Sepatu', 40000, 'pasang', 5, 'STORE1'),
   ('Karpet Tipis', 'Karpet', 15000, 'm²', 5, 'STORE1');
 
--- Memasukkan Settings (Pengaturan)
 INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate")
 VALUES (
   'Terima kasih telah menggunakan jasa kami! Silakan simpan struk ini sebagai bukti transaksi.',
   0,
   0
 );
+
+-- Aktifkan RLS untuk tabel settings
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 -- === TERAKHIR: AKTIFKAN RLS ===
 -- (Anda bisa menjalankan ini sekarang atau nanti, tapi ini penting untuk keamanan)
