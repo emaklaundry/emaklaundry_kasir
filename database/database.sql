@@ -1,6 +1,7 @@
--- 1. Membuat tabel 'stores' dengan ID sebagai 'text' DAN "isActive"
+
+-- 1. Membuat tabel 'stores' dengan ID sebagai 'uuid' DAN "isActive"
 CREATE TABLE public.stores (
-  id text PRIMARY KEY NOT NULL,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   address text,
   phone text,
@@ -8,18 +9,16 @@ CREATE TABLE public.stores (
   created_at timestamp WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Membuat tabel 'profiles' yang mereferensikan stores(id) sebagai 'text'
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL,
   role text NOT NULL, -- 'Super Admin', 'Admin Cabang', 'Kasir'
-  store_id text REFERENCES stores(id),
+  store_id uuid REFERENCES stores(id),
   created_at timestamp WITH TIME ZONE DEFAULT NOW(),
   "isActive" boolean DEFAULT true,
   "canGiveDiscount" boolean DEFAULT false
 );
 
--- 3. Membuat tabel 'customers' yang mereferensikan stores(id) sebagai 'text'
 CREATE TABLE public.customers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -28,10 +27,9 @@ CREATE TABLE public.customers (
   notes text,
   "defaultDiscount" integer DEFAULT 0,
   "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
-  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- 4. Membuat tabel 'services' yang mereferensikan stores(id) sebagai 'text'
 CREATE TABLE public.services (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -39,20 +37,18 @@ CREATE TABLE public.services (
   price integer NOT NULL,
   unit text NOT NULL,
   "durationDays" integer NOT NULL,
-  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- 5. Membuat tabel 'inventory_items' yang mereferensikan stores(id) sebagai 'text'
 CREATE TABLE public.inventory_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   stock integer NOT NULL,
   "lowStockThreshold" integer NOT NULL,
   unit text NOT NULL,
-  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- 6. Membuat tabel 'assets' yang mereferensikan stores(id) sebagai 'text'
 CREATE TABLE public.assets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -61,7 +57,7 @@ CREATE TABLE public.assets (
   "purchaseCost" numeric,
   status text NOT NULL,
   "maintenanceHistory" jsonb,
-  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
 -- 7. Membuat tabel 'scheduled_maintenances'
@@ -75,17 +71,15 @@ CREATE TABLE public.scheduled_maintenances (
   "lastCompletedDate" date
 );
 
--- 8. Membuat tabel 'expenses' yang mereferensikan stores(id) sebagai 'text'
 CREATE TABLE public.expenses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date date NOT NULL,
   description text NOT NULL,
   category text NOT NULL,
   amount numeric NOT NULL,
-  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- 9. Membuat tabel 'transactions'
 CREATE TABLE public.transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "customerId" uuid REFERENCES customers(id) ON DELETE SET NULL,
@@ -102,17 +96,16 @@ CREATE TABLE public.transactions (
   change numeric NOT NULL,
   "paymentMethod" text,
   "createdByUserId" uuid REFERENCES profiles(id),
-  "storeId" text REFERENCES stores(id) ON DELETE SET NULL,
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
   notes text
 );
 
--- 10. Membuat tabel 'audit_logs'
 CREATE TABLE public.audit_logs (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   timestamp timestamp WITH TIME ZONE DEFAULT NOW(),
   "user" text,
   action text,
-  "storeId" text REFERENCES stores(id) ON DELETE SET NULL
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
 -- 11. Membuat tabel 'settings'
@@ -134,11 +127,11 @@ VALUES (
   NULL
 );
 
--- Memasukkan Stores (Cabang)
+-- Contoh seeding baru, gunakan uuid_generate_v4() atau gen_random_uuid() untuk id
 INSERT INTO public.stores (id, name, address, "isActive")
 VALUES
-  ('STORE1', 'Jakarta Pusat', 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan', true),
-  ('STORE2', 'Bandung', 'Jl. Asia Afrika No.1, Bandung', true);
+  (gen_random_uuid(), 'Jakarta Pusat', 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan', true),
+  (gen_random_uuid(), 'Bandung', 'Jl. Asia Afrika No.1, Bandung', true);
 
 -- Memasukkan Services (Layanan)
 INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
