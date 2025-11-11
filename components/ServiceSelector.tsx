@@ -67,7 +67,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, favoriteSer
     const ServiceButton: React.FC<{service: Service, index: number}> = ({ service, index }) => (
         <button 
             type="button" 
-            ref={el => serviceButtonRefs.current[index] = el}
+            ref={el => { serviceButtonRefs.current[index] = el; }}
             key={service.id} 
             onClick={() => onSelectService(service)}
             onMouseOver={() => setActiveIndex(index)}

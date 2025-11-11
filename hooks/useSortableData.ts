@@ -42,7 +42,7 @@ export const useSortableData = <T extends object>(
                 : bValue.localeCompare(aValue);
         }
 
-        // Fallback for other types
+        // Fallback for other types (like boolean)
         if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
         return 0;

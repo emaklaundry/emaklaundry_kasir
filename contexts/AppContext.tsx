@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { User, UserRole, Store } from '../types';
 import { mockUsers } from '../data/mockData';
 import { useStores } from './StoreContext';
@@ -36,6 +36,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
+
+  useEffect(() => {
+    // When user changes to a non-super-admin, reset the global store filter
+    // to 'all' because they can only see their own store's data anyway.
+    // This prevents a confusing state where a specific store is selected in the state
+    // but has no effect on a non-admin user.
+    if (currentUser.role !== UserRole.SuperAdmin) {
+        setSelectedStoreId('all');
+    }
+  }, [currentUser]);
 
   const users = useMemo(() => {
     // This logic is specific to users (showing all Super Admins), so it's not using the generic hook.

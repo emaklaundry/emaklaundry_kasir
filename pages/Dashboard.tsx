@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '../types';
 import { 
@@ -272,7 +272,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleSaveExpense = (expense: Expense) => {
+    const handleSaveExpense = useCallback((expense: Expense) => {
         const storeId = currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
         if (!storeId || storeId === 'all') { 
             addToast('Silakan pilih cabang spesifik untuk mencatat pengeluaran.', 'warning');
@@ -282,22 +282,22 @@ const Dashboard: React.FC = () => {
         setExpenses(prev => [...prev, newExpense]);
         addAuditLog(`Mencatat pengeluaran cepat: "${newExpense.description}".`, storeId);
         setIsExpenseModalOpen(false);
-    };
+    }, [currentUser.role, currentUser.storeId, selectedStoreId, setExpenses, addAuditLog, addToast]);
 
-    const handleOpenPaymentModal = (transaction: Transaction) => {
+    const handleOpenPaymentModal = useCallback((transaction: Transaction) => {
         setTransactionForPayment(transaction);
         setIsPaymentModalOpen(true);
-    };
+    }, []);
 
-    const handleSavePayment = (updatedTransaction: Transaction) => {
+    const handleSavePayment = useCallback((updatedTransaction: Transaction) => {
         setTransactions(prev => prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t)));
         addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
         setIsPaymentModalOpen(false);
         setTransactionForPayment(null);
         addToast('Pembayaran berhasil disimpan.', 'success');
-    };
+    }, [setTransactions, addAuditLog, addToast]);
     
-    const handleNextStatus = (transactionId: string) => {
+    const handleNextStatus = useCallback((transactionId: string) => {
         const transaction = transactions.find(t => t.id === transactionId);
         if (!transaction) return;
 
@@ -318,9 +318,9 @@ const Dashboard: React.FC = () => {
             setTransactionForWhatsApp(updatedTransaction);
             setIsWhatsAppModalOpen(true);
         }
-    };
+    }, [transactions, setTransactions, addAuditLog]);
     
-    const handleMarkMaintenanceAsComplete = (schedule: ScheduledMaintenance) => {
+    const handleMarkMaintenanceAsComplete = useCallback((schedule: ScheduledMaintenance) => {
         const asset = assets.find(a => a.id === schedule.assetId);
         if (!asset) return;
         
@@ -349,7 +349,7 @@ const Dashboard: React.FC = () => {
         }));
         addAuditLog(`Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}" dari Dashboard.`, asset.storeId);
         addToast(`Perawatan "${schedule.description}" ditandai selesai.`, 'success');
-    };
+    }, [assets, setAssets, setScheduledMaintenances, addAuditLog, addToast]);
 
     const customerForWhatsApp = useMemo(() => {
         if (!transactionForWhatsApp) return null;

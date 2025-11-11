@@ -15,6 +15,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose
         address: customer?.address || '',
         notes: customer?.notes || '',
         defaultDiscount: customer?.defaultDiscount || 0,
+        createdAt: customer?.createdAt || new Date(),
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

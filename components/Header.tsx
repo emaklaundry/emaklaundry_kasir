@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { UserRole } from '../types';
@@ -43,10 +44,6 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
     const selectedUser = allUsers.find(u => u.id === parseInt(event.target.value, 10));
     if (selectedUser) {
       setCurrentUser(selectedUser);
-      // Reset store selection if the new user is not a super admin
-      if (selectedUser.role !== UserRole.SuperAdmin) {
-        setSelectedStoreId('all');
-      }
     }
   };
 
