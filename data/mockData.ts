@@ -1,43 +1,4 @@
-import {
-  Customer,
-  Service,
-  ServiceCategory,
-  Transaction,
-  OrderStatus,
-  PaymentStatus,
-  PaymentMethod,
-  InventoryItem,
-  Asset,
-  Expense,
-  User,
-  UserRole,
-  Settings,
-  Store,
-  ScheduledMaintenance
-} from '../types';
 
-export const mockStores: Store[] = [
-    { id: 'STORE1', name: 'Jakarta Pusat', address: 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan', isActive: true },
-    { id: 'STORE2', name: 'Bandung', address: 'Jl. Asia Afrika No.1, Bandung', isActive: true },
-];
-
-export const mockCustomers: Customer[] = [
-  { id: 'CUST1', name: 'Budi Santoso', phone: '081234567890', address: 'Jl. Merdeka No. 10, Jakarta', notes: 'Pelanggan VIP', storeId: 'STORE1', defaultDiscount: 10, createdAt: new Date(new Date().setDate(new Date().getDate() - 30)) },
-  { id: 'CUST2', name: 'Siti Aminah', phone: '087654321098', address: 'Jl. Pahlawan No. 5, Surabaya', storeId: 'STORE1', createdAt: new Date(new Date().setDate(new Date().getDate() - 10)) },
-  { id: 'CUST3', name: 'Agus Wijaya', phone: '085566778899', address: 'Jl. Sudirman No. 15, Bandung', storeId: 'STORE2', defaultDiscount: 5, createdAt: new Date(new Date().setDate(new Date().getDate() - 5)) },
-  { id: 'CUST4', name: 'Dewi Lestari', phone: '082122334455', address: 'Jl. Gajah Mada No. 20, Semarang', storeId: 'STORE2', createdAt: new Date() },
-];
-
-export const mockServices: Service[] = [
-  { id: 'S1', name: 'Cuci Kering Lipat', category: ServiceCategory.Kiloan, price: 8000, unit: 'kg', durationDays: 2 },
-  { id: 'S2', name: 'Cuci Setrika', category: ServiceCategory.Kiloan, price: 10000, unit: 'kg', durationDays: 3 },
-  { id: 'S3', name: 'Setrika Saja', category: ServiceCategory.Kiloan, price: 6000, unit: 'kg', durationDays: 1 },
-  { id: 'S4', name: 'Kemeja', category: ServiceCategory.Satuan, price: 15000, unit: 'pcs', durationDays: 2 },
-  { id: 'S5', name: 'Jas', category: ServiceCategory.Satuan, price: 50000, unit: 'pcs', durationDays: 4 },
-  { id: 'S6', name: 'Selimut', category: ServiceCategory.Satuan, price: 25000, unit: 'pcs', durationDays: 3 },
-  { id: 'S7', name: 'Cuci Sepatu', category: ServiceCategory.Sepatu, price: 40000, unit: 'pasang', durationDays: 5 },
-  { id: 'S8', name: 'Karpet Tipis', category: ServiceCategory.Karpet, price: 15000, unit: 'm²', durationDays: 5 },
-];
 
 export let mockTransactions: Transaction[] = [
   {

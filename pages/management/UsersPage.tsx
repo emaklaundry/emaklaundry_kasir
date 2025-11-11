@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../../utils/supabaseClient';
 import { User, UserRole, Store } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, UsersIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
@@ -116,14 +116,31 @@ const UsersPage: React.FC = () => {
         }
     };
     
-    // Ambil data users dari Supabase, misal dengan useEffect/useSWR/fetcher
-    // Contoh:
-    // const { data: users = [], mutate } = useSWR('profiles', fetchProfiles)
-    const users: User[] = [];
-    const usersWithStore = useMemo(() => users.map(user => ({
+    // Ambil data users dari Supabase
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    useEffect(() => {
+        const fetchProfiles = async () => {
+            const { data, error } = await supabase.from('profiles').select('*');
+            if (error) {
+                addToast(`Gagal mengambil data pengguna: ${error.message}`, 'error');
+            } else if (data) {
+                const formattedUsers = data.map(profile => ({
+                    id: profile.id,
+                    name: profile.name,
+                    role: profile.role,
+                    storeId: profile.store_id,
+                    isActive: profile.isActive,
+                    canGiveDiscount: profile.canGiveDiscount
+                }));
+                setAllUsers(formattedUsers);
+            }
+        };
+        fetchProfiles();
+    }, []);
+    const usersWithStore = useMemo(() => allUsers.map(user => ({
         ...user,
         storeName: stores.find(s => s.id === user.storeId)?.name || 'N/A'
-    })), [users, stores]);
+    })), [allUsers, stores]);
 
     // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type UserWithStore = (typeof usersWithStore)[0];

@@ -1,3 +1,12 @@
+-- Tambahan kolom yang hilang ke tabel 'profiles' (pastikan sudah dijalankan di Supabase SQL Editor)
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS "isActive" boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS "canGiveDiscount" boolean DEFAULT false;
+
+-- Memberi nilai default pada Super Admin yang sudah ada
+UPDATE public.profiles
+SET "isActive" = true, "canGiveDiscount" = true
+WHERE id = '11c86333-295c-4bd9-9302-a69fda4811c0';
 -- Tambahan kolom isActive dan canGiveDiscount ke tabel profiles
 ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS "isActive" boolean DEFAULT true,
