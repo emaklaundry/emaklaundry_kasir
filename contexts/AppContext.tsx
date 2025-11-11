@@ -56,19 +56,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const signOut = async () => {
     await supabase.auth.signOut();
     setCurrentUser(null);
-  };
-
-  const contextValue = {
-    currentUser,
-    signOut,
-    stores,
-    selectedStoreId,
-    setSelectedStoreId,
-  };
-
-  return (
-    <AppContext.Provider value={contextValue}>
-      {children}
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*, store_id, isActive, canGiveDiscount')
+            .eq('id', session.user.id)
+            .single();
+          if (!error && data) {
+            setCurrentUser({
+              id: data.id,
+              name: data.name,
+              role: data.role,
+              storeId: data.store_id,
+              createdAt: data.created_at ? new Date(data.created_at) : undefined,
+              isActive: data.isActive,
+              canGiveDiscount: data.canGiveDiscount
     </AppContext.Provider>
   );
 };
