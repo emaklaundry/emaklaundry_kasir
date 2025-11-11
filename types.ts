@@ -88,7 +88,7 @@ export interface Transaction {
   amountPaid: number;
   change: number;
   paymentMethod?: PaymentMethod;
-  createdByUserId: number;
+  createdByUserId: string;
   storeId: string;
   notes?: string;
 }
@@ -103,7 +103,7 @@ export interface InventoryItem {
 }
 
 export interface MaintenanceLog {
-  id: number;
+  id: string;
   date: Date;
   description: string;
   cost: number;
@@ -121,7 +121,7 @@ export interface Asset {
 }
 
 export interface Expense {
-  id: number;
+  id: string;
   date: Date;
   description: string;
   category: string;
@@ -138,7 +138,7 @@ export interface User {
 }
 
 export interface AuditLog {
-  id: number;
+  id: string;
   timestamp: Date;
   user: string;
   action: string;
@@ -146,6 +146,7 @@ export interface AuditLog {
 }
 
 export interface Settings {
+  id: number;
   receiptMessage: string;
   taxRate: number;
   discountRate: number;

@@ -15,7 +15,7 @@ import { useScheduledMaintenances } from '../../contexts/ScheduledMaintenanceCon
 import { useSortableData } from '../../hooks/useSortableData';
 
 const AssetsPage: React.FC = () => {
-    const { assets, addAsset, updateAsset } = useAssets();
+    const { assets, addAsset, updateAsset, deleteAsset } = useAssets();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -78,7 +78,7 @@ const AssetsPage: React.FC = () => {
     
     const handleAddMaintenance = async (log: Omit<MaintenanceLog, 'id'>) => {
         if(currentAsset) {
-            const newLog = { ...log, id: Date.now() };
+            const newLog = { ...log, id: Date.now().toString() };
             const updatedHistory = [...currentAsset.maintenanceHistory, newLog];
             await updateAsset(currentAsset.id, { maintenanceHistory: updatedHistory });
             addAuditLog(`Menambahkan log pemeliharaan untuk aset "${currentAsset.name}": ${log.description}.`, currentAsset.storeId);
@@ -93,11 +93,15 @@ const AssetsPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (assetToDelete) {
-            // TODO: Implement deleteAsset in context and use here
-            // await deleteAsset(assetToDelete.id);
-            addAuditLog(`Menghapus aset: "${assetToDelete.name}".`, assetToDelete.storeId);
-            setAssetToDelete(null);
-            addToast('Aset berhasil dihapus!', 'success');
+            try {
+                await deleteAsset(assetToDelete.id);
+                addAuditLog(`Menghapus aset: "${assetToDelete.name}".`, assetToDelete.storeId);
+                addToast('Aset berhasil dihapus!', 'success');
+            } catch (error: any) {
+                addToast(`Gagal menghapus: ${error.message}`, 'error');
+            } finally {
+                setAssetToDelete(null);
+            }
         }
     };
 

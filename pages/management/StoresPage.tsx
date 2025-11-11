@@ -15,8 +15,8 @@ import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
 const StoresPage: React.FC = () => {
-    const { stores, addStore, updateStore } = useStores();
-    const { allUsers, selectedStoreId } = useAppContext();
+    const { stores, addStore, updateStore, deleteStore } = useStores();
+    const { selectedStoreId } = useAppContext();
     const { customers } = useCustomers();
     const { transactions } = useTransactions();
     const { inventory } = useInventory();
@@ -73,12 +73,12 @@ const StoresPage: React.FC = () => {
             return;
         }
 
-        const isStoreInUse = allUsers.some(u => u.storeId === store.id) ||
-                             customers.some(c => c.storeId === store.id) ||
-                             transactions.some(t => t.storeId === store.id) ||
-                             inventory.some(i => i.storeId === store.id) ||
-                             assets.some(a => a.storeId === store.id) ||
-                             expenses.some(e => e.storeId === store.id);
+        const isStoreInUse =
+            customers.some(c => c.storeId === store.id) ||
+            transactions.some(t => t.storeId === store.id) ||
+            inventory.some(i => i.storeId === store.id) ||
+            assets.some(a => a.storeId === store.id) ||
+            expenses.some(e => e.storeId === store.id);
 
         if (isStoreInUse) {
             addToast(`Cabang "${store.name}" tidak dapat dihapus karena masih digunakan.`, 'error');
@@ -99,10 +99,14 @@ const StoresPage: React.FC = () => {
     
     const confirmDelete = async () => {
         if (storeToDelete) {
-            // TODO: Implement deleteStore in context and use here
-            // await deleteStore(storeToDelete.id);
-            addAuditLog(`Menghapus cabang: "${storeToDelete.name}".`);
-            setStoreToDelete(null);
+            try {
+                await deleteStore(storeToDelete.id);
+                addAuditLog(`Menghapus cabang: "${storeToDelete.name}".`);
+            } catch (error: any) {
+                addToast(`Gagal menghapus: ${error.message}`, 'error');
+            } finally {
+                setStoreToDelete(null);
+            }
         }
     };
 

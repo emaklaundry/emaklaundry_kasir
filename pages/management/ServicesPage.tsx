@@ -8,7 +8,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
 const ServicesPage: React.FC = () => {
-    const { services, addService, updateService } = useServices();
+    const { services, addService, updateService, deleteService } = useServices();
     const { addAuditLog } = useAuditLogs();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentService, setCurrentService] = useState<Service | null>(null);
@@ -59,10 +59,14 @@ const ServicesPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (serviceToDelete) {
-            // TODO: Implement deleteService in context and use here
-            // await deleteService(serviceToDelete.id);
-            addAuditLog(`Menghapus layanan: "${serviceToDelete.name}".`);
-            setServiceToDelete(null);
+            try {
+                await deleteService(serviceToDelete.id);
+                addAuditLog(`Menghapus layanan: "${serviceToDelete.name}".`);
+            } catch (error: any) {
+                // TODO: Tambahkan notifikasi error jika diperlukan
+            } finally {
+                setServiceToDelete(null);
+            }
         }
     };
     

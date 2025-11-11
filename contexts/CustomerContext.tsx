@@ -6,6 +6,7 @@ interface CustomerContextType {
   customers: Customer[];
   addCustomer: (customer: Omit<Customer, 'id'>) => Promise<void>;
   updateCustomer: (id: string, data: Partial<Customer>) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
@@ -31,8 +32,14 @@ export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }
     if (!error && updated) setCustomers((prev) => prev.map(c => c.id === id ? { ...c, ...updated[0] } : c));
   };
 
+  const deleteCustomer = async (id: string) => {
+    const { error } = await supabase.from('customers').delete().eq('id', id);
+    if (error) throw error;
+    setCustomers((prev) => prev.filter(c => c.id !== id));
+  };
+
   return (
-    <CustomerContext.Provider value={{ customers, addCustomer, updateCustomer }}>
+    <CustomerContext.Provider value={{ customers, addCustomer, updateCustomer, deleteCustomer }}>
       {children}
     </CustomerContext.Provider>
   );

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Expense } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
@@ -6,6 +6,7 @@ interface ExpenseContextType {
   expenses: Expense[];
   addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
   updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
@@ -31,8 +32,14 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (!error && updated) setExpenses((prev) => prev.map(e => e.id === id ? { ...e, ...updated[0] } : e));
   };
 
+  const deleteExpense = async (id: string) => {
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    if (error) throw error;
+    setExpenses((prev) => prev.filter(e => e.id !== id));
+  };
+
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpense, updateExpense }}>
+    <ExpenseContext.Provider value={{ expenses, addExpense, updateExpense, deleteExpense }}>
       {children}
     </ExpenseContext.Provider>
   );

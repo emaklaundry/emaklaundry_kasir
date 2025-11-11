@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Expense, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, DollarSignIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -10,7 +10,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
 const ExpensesPage: React.FC = () => {
-    const { expenses, addExpense, updateExpense } = useExpenses();
+    const { expenses, addExpense, updateExpense, deleteExpense } = useExpenses();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -36,7 +36,7 @@ const ExpensesPage: React.FC = () => {
             return;
         }
         try {
-            if (currentExpense && currentExpense.id) {
+            if (currentExpense && typeof currentExpense.id === 'string') {
                 await updateExpense(currentExpense.id, { ...expense, storeId });
                 addAuditLog(`Memperbarui pengeluaran: "${expense.description}".`, storeId);
             } else {
@@ -56,11 +56,14 @@ const ExpensesPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (expenseToDelete) {
-            // TODO: Implement deleteExpense in context and use here
-            // await deleteExpense(expenseToDelete.id);
-            addAuditLog(`Menghapus pengeluaran: "${expenseToDelete.description}".`, expenseToDelete.storeId);
-            setExpenseToDelete(null);
-            addToast('Pengeluaran berhasil dihapus!', 'success');
+            try {
+                await deleteExpense(expenseToDelete.id);
+                addAuditLog(`Menghapus pengeluaran: "${expenseToDelete.description}".`, expenseToDelete.storeId);
+                setExpenseToDelete(null);
+                addToast('Pengeluaran berhasil dihapus!', 'success');
+            } catch (error: any) {
+                addToast(`Gagal menghapus: ${error.message}`, 'error');
+            }
         }
     };
     

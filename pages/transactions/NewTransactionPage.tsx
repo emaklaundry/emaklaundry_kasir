@@ -47,7 +47,7 @@ const NewTransactionPage: React.FC = () => {
     const [tenderedAmountStr, setTenderedAmountStr] = useState('');
 
 
-    const canApplyDiscount = currentUser.role === UserRole.SuperAdmin || currentUser.canGiveDiscount;
+    const canApplyDiscount = currentUser.role === UserRole.SuperAdmin;
 
     useEffect(() => {
         if (!canApplyDiscount) {

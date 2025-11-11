@@ -15,7 +15,7 @@ import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 
 const CustomersPage: React.FC = () => {
-    const { customers, addCustomer, updateCustomer } = useCustomers();
+    const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
     const { transactions } = useTransactions();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
@@ -104,11 +104,15 @@ const CustomersPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (customerToDelete) {
-            // TODO: Implement deleteCustomer in context and use here
-            // await deleteCustomer(customerToDelete.id);
-            addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId);
-            setCustomerToDelete(null);
-            addToast('Pelanggan berhasil dihapus!', 'success');
+            try {
+                await deleteCustomer(customerToDelete.id);
+                addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId);
+                addToast('Pelanggan berhasil dihapus!', 'success');
+            } catch (error: any) {
+                addToast(`Gagal menghapus: ${error.message}`, 'error');
+            } finally {
+                setCustomerToDelete(null);
+            }
         }
     };
     

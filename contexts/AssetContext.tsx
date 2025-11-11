@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Asset } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
@@ -6,6 +6,7 @@ interface AssetContextType {
   assets: Asset[];
   addAsset: (asset: Omit<Asset, 'id'>) => Promise<void>;
   updateAsset: (id: string, data: Partial<Asset>) => Promise<void>;
+  deleteAsset: (id: string) => Promise<void>;
 }
 
 const AssetContext = createContext<AssetContextType | undefined>(undefined);
@@ -31,8 +32,14 @@ export const AssetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (!error && updated) setAssets((prev) => prev.map(a => a.id === id ? { ...a, ...updated[0] } : a));
   };
 
+  const deleteAsset = async (id: string) => {
+    const { error } = await supabase.from('assets').delete().eq('id', id);
+    if (error) throw error;
+    setAssets((prev) => prev.filter(a => a.id !== id));
+  };
+
   return (
-    <AssetContext.Provider value={{ assets, addAsset, updateAsset }}>
+    <AssetContext.Provider value={{ assets, addAsset, updateAsset, deleteAsset }}>
       {children}
     </AssetContext.Provider>
   );

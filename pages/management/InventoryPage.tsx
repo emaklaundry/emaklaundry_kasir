@@ -12,7 +12,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 
 const InventoryPage: React.FC = () => {
-    const { inventory, addInventoryItem, updateInventoryItem } = useInventory();
+    const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -73,11 +73,15 @@ const InventoryPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (itemToDelete) {
-            // TODO: Implement deleteInventoryItem in context and use here
-            // await deleteInventoryItem(itemToDelete.id);
-            addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId);
-            setItemToDelete(null);
-            addToast('Item inventaris berhasil dihapus!', 'success');
+            try {
+                await deleteInventoryItem(itemToDelete.id);
+                addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId);
+                addToast('Item inventaris berhasil dihapus!', 'success');
+            } catch (error: any) {
+                addToast(`Gagal menghapus: ${error.message}`, 'error');
+            } finally {
+                setItemToDelete(null);
+            }
         }
     };
     

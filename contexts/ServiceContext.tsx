@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Service } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
@@ -6,6 +6,7 @@ interface ServiceContextType {
   services: Service[];
   addService: (service: Omit<Service, 'id'>) => Promise<void>;
   updateService: (id: string, data: Partial<Service>) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
 }
 
 const ServiceContext = createContext<ServiceContextType | undefined>(undefined);
@@ -31,8 +32,14 @@ export const ServiceProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (!error && updated) setServices((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
   };
 
+  const deleteService = async (id: string) => {
+    const { error } = await supabase.from('services').delete().eq('id', id);
+    if (error) throw error;
+    setServices((prev) => prev.filter(s => s.id !== id));
+  };
+
   return (
-    <ServiceContext.Provider value={{ services, addService, updateService }}>
+    <ServiceContext.Provider value={{ services, addService, updateService, deleteService }}>
       {children}
     </ServiceContext.Provider>
   );

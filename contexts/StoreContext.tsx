@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Store } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
@@ -6,6 +6,7 @@ interface StoreContextType {
   stores: Store[];
   addStore: (store: Omit<Store, 'id'>) => Promise<void>;
   updateStore: (id: string, data: Partial<Store>) => Promise<void>;
+  deleteStore: (id: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -31,8 +32,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (!error && updated) setStores((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
   };
 
+  const deleteStore = async (id: string) => {
+    const { error } = await supabase.from('stores').delete().eq('id', id);
+    if (error) throw error;
+    setStores((prev) => prev.filter(s => s.id !== id));
+  };
+
   return (
-    <StoreContext.Provider value={{ stores, addStore, updateStore }}>
+    <StoreContext.Provider value={{ stores, addStore, updateStore, deleteStore }}>
       {children}
     </StoreContext.Provider>
   );
