@@ -218,6 +218,7 @@ const TransactionPage: React.FC = () => {
         setIsBulkConfirmOpen(true);
     };
 
+
     const confirmBulkAction = async () => {
         if (!bulkActionStatus) return;
 
@@ -245,29 +246,6 @@ const TransactionPage: React.FC = () => {
             setBulkActionStatus(null);
         }
     };
-    
-                <tbody>
-                    {paginatedTransactions.length > 0 ? (
-                        paginatedTransactions.map(t => (
-                            // ...existing transaction row rendering code...
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan={8}>
-                                <EmptyState
-                                    icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
-                                    title="Tidak Ada Transaksi"
-                                    description={searchTerm || selectedDate || statusFilter !== 'all' || paymentFilter !== 'all' || customerFilter !== 'all' ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
-                                >
-                                    <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
-                                        <PlusCircleIcon className="h-5 w-5 mr-2" />
-                                        Buat Transaksi Baru
-                                    </Link>
-                                </EmptyState>
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
 
     const statusOptions: (OrderStatus | 'all')[] = ['all', ...Object.values(OrderStatus)];
     
