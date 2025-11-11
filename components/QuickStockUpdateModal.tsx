@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useInventory } from '../contexts/InventoryContext';
+import { useToasts } from '../contexts/ToastContext';
 import { InventoryItem } from '../types';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useAppContext } from '../contexts/AppContext';
@@ -11,7 +12,8 @@ interface QuickStockUpdateModalProps {
 }
 
 const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, onClose }) => {
-  const { inventory, setInventory } = useInventory();
+  const { inventory, updateInventoryItem } = useInventory();
+  const { addToast } = useToasts();
   const [stockUpdates, setStockUpdates] = useState<{ [key: string]: number }>({});
   const { addAuditLog } = useAuditLogs();
   const { currentUser, selectedStoreId } = useAppContext();
@@ -34,19 +36,29 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const storeId = currentUser.storeId || selectedStoreId;
-    // We need to update the global state (allInventory) not the filtered one
-    // setInventory function from context points to setAllInventory
-    setInventory(prevInventory => 
-      prevInventory.map(item => {
-        if (stockUpdates[item.id] !== undefined && stockUpdates[item.id] !== item.stock) {
-          addAuditLog(`Memperbarui stok cepat untuk "${item.name}" dari ${item.stock} menjadi ${stockUpdates[item.id]}.`, storeId);
-          return { ...item, stock: stockUpdates[item.id] };
-        }
-        return item;
-      })
-    );
+    const updates: Promise<void>[] = [];
+    const originalInventoryMap = new Map(inventory.map(i => [i.id, i]));
+
+    for (const itemId in stockUpdates) {
+      const originalItem = originalInventoryMap.get(itemId);
+      const newStock = stockUpdates[itemId];
+      if (originalItem && originalItem.stock !== newStock) {
+        updates.push(
+          updateInventoryItem(itemId, { stock: newStock }).then(() => {
+            addAuditLog(`Memperbarui stok cepat untuk "${originalItem.name}" dari ${originalItem.stock} menjadi ${newStock}.`, storeId);
+          })
+        );
+      }
+    }
+
+    try {
+      await Promise.all(updates);
+      addToast('Semua stok berhasil diperbarui!', 'success');
+    } catch (error: any) {
+      addToast(`Gagal memperbarui beberapa stok: ${error.message}`, 'error');
+    }
     onClose();
   };
 

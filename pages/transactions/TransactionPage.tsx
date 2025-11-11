@@ -15,7 +15,7 @@ import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 
 const TransactionPage: React.FC = () => {
-    const { transactions, setTransactions } = useTransactions();
+    const { transactions, updateTransaction } = useTransactions();
     const { customers } = useCustomers();
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
@@ -112,19 +112,22 @@ const TransactionPage: React.FC = () => {
         }
     };
     
-    const handleOrderStatusChange = (id: string, newStatus: OrderStatus) => {
+    const handleOrderStatusChange = async (id: string, newStatus: OrderStatus) => {
         const targetTransaction = transactions.find(t => t.id === id);
         if (!targetTransaction) return;
 
         const updatedTransaction = { ...targetTransaction, orderStatus: newStatus };
         const shouldShowWhatsAppModal = newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
-        
-        setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
-        addAuditLog(`Mengubah status transaksi ${id} menjadi "${newStatus}".`, targetTransaction.storeId);
-        
-        if (shouldShowWhatsAppModal) {
-            setTransactionForWhatsApp(updatedTransaction);
-            setIsWhatsAppModalOpen(true);
+
+        try {
+            await updateTransaction(id, { orderStatus: newStatus });
+            addAuditLog(`Mengubah status transaksi ${id} menjadi "${newStatus}".`, targetTransaction.storeId);
+            if (shouldShowWhatsAppModal) {
+                setTransactionForWhatsApp(updatedTransaction);
+                setIsWhatsAppModalOpen(true);
+            }
+        } catch (error: any) {
+            addToast(`Gagal memperbarui status: ${error.message}`, 'error');
         }
     };
 
@@ -133,17 +136,19 @@ const TransactionPage: React.FC = () => {
         setIsPaymentModalOpen(true);
     };
 
-    const handleSavePayment = (updatedTransaction: Transaction) => {
+    const handleSavePayment = async (updatedTransaction: Transaction) => {
         const shouldShowModal = updatedTransaction.paymentStatus === PaymentStatus.Paid && updatedTransaction.orderStatus === OrderStatus.Completed;
-
-        setTransactions(prev => prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t));
-        addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
-        setIsPaymentModalOpen(false);
-        setSelectedTransaction(null);
-        
-        if (shouldShowModal) {
-            setTransactionForWhatsApp(updatedTransaction);
-            setIsWhatsAppModalOpen(true);
+        try {
+            await updateTransaction(updatedTransaction.id, updatedTransaction);
+            addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
+            setIsPaymentModalOpen(false);
+            setSelectedTransaction(null);
+            if (shouldShowModal) {
+                setTransactionForWhatsApp(updatedTransaction);
+                setIsWhatsAppModalOpen(true);
+            }
+        } catch (error: any) {
+            addToast(`Gagal memperbarui pembayaran: ${error.message}`, 'error');
         }
     };
 
@@ -212,7 +217,7 @@ const TransactionPage: React.FC = () => {
         setIsBulkConfirmOpen(true);
     };
 
-    const confirmBulkAction = () => {
+    const confirmBulkAction = async () => {
         if (!bulkActionStatus) return;
 
         const transactionsToUpdate = transactions.filter(t => selectedIds.has(t.id));
@@ -225,15 +230,19 @@ const TransactionPage: React.FC = () => {
             return;
         }
 
-        setTransactions(prev =>
-            prev.map(t =>
-                selectedIds.has(t.id) ? { ...t, orderStatus: bulkActionStatus } : t
-            )
-        );
-        addAuditLog(`Mengubah status ${selectedIds.size} transaksi menjadi "${bulkActionStatus}" secara massal.`);
-        setSelectedIds(new Set());
-        setIsBulkConfirmOpen(false);
-        setBulkActionStatus(null);
+        try {
+            const updatePromises = transactionsToUpdate.map(t => 
+                updateTransaction(t.id, { orderStatus: bulkActionStatus })
+            );
+            await Promise.all(updatePromises);
+            addAuditLog(`Mengubah status ${selectedIds.size} transaksi menjadi "${bulkActionStatus}" secara massal.`);
+            setSelectedIds(new Set());
+        } catch (error: any) {
+            addToast(`Gagal memperbarui status massal: ${error.message}`, 'error');
+        } finally {
+            setIsBulkConfirmOpen(false);
+            setBulkActionStatus(null);
+        }
     };
     
     const NoTransactionsFound = () => (
