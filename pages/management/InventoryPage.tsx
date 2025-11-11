@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { InventoryItem, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -202,10 +203,12 @@ const InventoryPage: React.FC = () => {
                             })
                         ) : (
                             <tr>
-                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6} className="text-center py-12">
-                                    <PackageIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{debouncedSearchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
-                                    <p className="mt-1 text-base text-slate-500">{debouncedSearchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
+                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6}>
+                                    <EmptyState
+                                        icon={<PackageIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                        title={debouncedSearchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}
+                                        description={debouncedSearchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -247,11 +250,11 @@ const InventoryPage: React.FC = () => {
                         )
                     })
                 ) : (
-                     <div className="text-center py-12">
-                        <PackageIcon className="mx-auto w-12 h-12 text-slate-400" />
-                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{debouncedSearchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}</h3>
-                        <p className="mt-1 text-base text-slate-500">{debouncedSearchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}</p>
-                    </div>
+                    <EmptyState
+                        icon={<PackageIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                        title={debouncedSearchTerm || filter !== 'all' ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}
+                        description={debouncedSearchTerm || filter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan item pertama Anda.'}
+                    />
                 )}
             </div>
 

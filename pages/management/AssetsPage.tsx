@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Asset, MaintenanceLog, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon, WrenchIcon, CalendarIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -241,10 +242,12 @@ const AssetsPage: React.FC = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5} className="text-center py-12">
-                                    <WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm || maintenanceFilter !== 'all' ? 'Aset Tidak Ditemukan' : 'Belum Ada Aset'}</h3>
-                                    <p className="mt-1 text-base text-slate-500">{searchTerm || maintenanceFilter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan aset pertama Anda.'}</p>
+                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5}>
+                                    <EmptyState
+                                        icon={<WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                        title={searchTerm || maintenanceFilter !== 'all' ? 'Aset Tidak Ditemukan' : 'Belum Ada Aset'}
+                                        description={searchTerm || maintenanceFilter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan aset pertama Anda.'}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -282,11 +285,11 @@ const AssetsPage: React.FC = () => {
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-12">
-                        <WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />
-                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm || maintenanceFilter !== 'all' ? 'Aset Tidak Ditemukan' : 'Belum Ada Aset'}</h3>
-                        <p className="mt-1 text-base text-slate-500">{searchTerm || maintenanceFilter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan aset pertama Anda.'}</p>
-                    </div>
+                    <EmptyState
+                        icon={<WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                        title={searchTerm || maintenanceFilter !== 'all' ? 'Aset Tidak Ditemukan' : 'Belum Ada Aset'}
+                        description={searchTerm || maintenanceFilter !== 'all' ? 'Coba kata kunci atau filter lain.' : 'Mulai dengan menambahkan aset pertama Anda.'}
+                    />
                 )}
             </div>
 

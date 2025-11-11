@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../../utils/supabaseClient';
 import { User, UserRole, Store } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, UsersIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -162,13 +163,7 @@ const UsersPage: React.FC = () => {
         return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
     };
 
-    const NoUsersFound = () => (
-        <div className="text-center py-12">
-            <UsersIcon className="mx-auto w-12 h-12 text-slate-400" />
-            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}</h3>
-            <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain atau tambahkan pengguna baru.' : 'Mulai dengan menambahkan pengguna pertama Anda.'}</p>
-        </div>
-    );
+
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -245,9 +240,13 @@ const UsersPage: React.FC = () => {
                                 );
                             })
                         ) : (
-                             <tr>
+                            <tr>
                                 <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 5 : 4}>
-                                    <NoUsersFound />
+                                    <EmptyState
+                                        icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                        title={searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}
+                                        description={searchTerm ? 'Coba kata kunci lain atau tambahkan pengguna baru.' : 'Mulai dengan menambahkan pengguna pertama Anda.'}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -283,7 +282,11 @@ const UsersPage: React.FC = () => {
                         )
                     })
                 ) : (
-                    <NoUsersFound />
+                    <EmptyState
+                        icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                        title={searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}
+                        description={searchTerm ? 'Coba kata kunci lain atau tambahkan pengguna baru.' : 'Mulai dengan menambahkan pengguna pertama Anda.'}
+                    />
                 )}
             </div>
 

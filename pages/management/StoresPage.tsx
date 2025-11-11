@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Store } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, TruckIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -110,13 +111,7 @@ const StoresPage: React.FC = () => {
         }
     };
 
-    const NoStoresFound = () => (
-        <div className="text-center py-12">
-            <TruckIcon className="mx-auto w-12 h-12 text-slate-400" />
-            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Belum Ada Cabang</h3>
-            <p className="mt-1 text-base text-slate-500">Mulai dengan menambahkan cabang pertama Anda.</p>
-        </div>
-    );
+
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -166,7 +161,11 @@ const StoresPage: React.FC = () => {
                         ) : (
                             <tr>
                                 <td colSpan={4}>
-                                    <NoStoresFound />
+                                    <EmptyState
+                                        icon={<TruckIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                        title="Belum Ada Cabang"
+                                        description="Mulai dengan menambahkan cabang pertama Anda."
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -196,7 +195,11 @@ const StoresPage: React.FC = () => {
                         </div>
                     ))
                 ) : (
-                    <NoStoresFound />
+                    <EmptyState
+                        icon={<TruckIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                        title="Belum Ada Cabang"
+                        description="Mulai dengan menambahkan cabang pertama Anda."
+                    />
                 )}
             </div>
 

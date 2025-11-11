@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Expense, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, DollarSignIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import ExpenseFormModal from '../../components/ExpenseFormModal';
@@ -150,11 +151,13 @@ const ExpensesPage: React.FC = () => {
                                 </tr>
                             ))
                         ) : (
-                             <tr>
-                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5} className="text-center py-12">
-                                    <DollarSignIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Pengeluaran Tidak Ditemukan' : 'Belum Ada Pengeluaran'}</h3>
-                                    <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain atau tambahkan pengeluaran baru.' : 'Mulai dengan menambahkan data pengeluaran pertama Anda.'}</p>
+                            <tr>
+                                <td colSpan={currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5}>
+                                    <EmptyState
+                                        icon={<DollarSignIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                        title={searchTerm ? 'Pengeluaran Tidak Ditemukan' : 'Belum Ada Pengeluaran'}
+                                        description={searchTerm ? 'Coba kata kunci lain atau tambahkan pengeluaran baru.' : 'Mulai dengan menambahkan data pengeluaran pertama Anda.'}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -187,11 +190,11 @@ const ExpensesPage: React.FC = () => {
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-12">
-                        <DollarSignIcon className="mx-auto w-12 h-12 text-slate-400" />
-                        <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Pengeluaran Tidak Ditemukan' : 'Belum Ada Pengeluaran'}</h3>
-                        <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain.' : 'Mulai dengan menambahkan data pengeluaran pertama Anda.'}</p>
-                    </div>
+                    <EmptyState
+                        icon={<DollarSignIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                        title={searchTerm ? 'Pengeluaran Tidak Ditemukan' : 'Belum Ada Pengeluaran'}
+                        description={searchTerm ? 'Coba kata kunci lain.' : 'Mulai dengan menambahkan data pengeluaran pertama Anda.'}
+                    />
                 )}
             </div>
 

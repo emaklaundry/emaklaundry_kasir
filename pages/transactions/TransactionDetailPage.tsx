@@ -4,6 +4,7 @@ import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { OrderStatus, PaymentStatus } from '../../types';
 import { ChevronLeftIcon, PrinterIcon, UsersIcon, ShoppingCartIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({ label, value, className }) => (
     <div className={`flex justify-between items-start py-2 ${className}`}>
@@ -40,10 +41,13 @@ const TransactionDetailPage: React.FC = () => {
 
     if (!transaction || !customer) {
         return (
-            <div className="text-center p-10">
-                <p className="text-xl text-slate-500 dark:text-slate-400">Transaksi tidak ditemukan.</p>
+            <EmptyState
+                icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                title="Transaksi tidak ditemukan"
+                description="Transaksi yang Anda cari tidak tersedia atau telah dihapus."
+            >
                 <Link to="/transactions" className="mt-4 inline-block text-blue-600 hover:underline">Kembali ke Daftar Transaksi</Link>
-            </div>
+            </EmptyState>
         );
     }
 

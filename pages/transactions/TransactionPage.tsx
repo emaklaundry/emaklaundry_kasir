@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Transaction, OrderStatus, PaymentStatus, Customer } from '../../types';
 import { PlusCircleIcon, SearchIcon, PrinterIcon, SendIcon, EyeIcon, DollarSignIcon, ShoppingCartIcon, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import PaymentModal from '../../components/PaymentModal';
@@ -245,21 +246,28 @@ const TransactionPage: React.FC = () => {
         }
     };
     
-    const NoTransactionsFound = () => (
-        <div className="text-center py-12">
-            <ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />
-            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">Tidak Ada Transaksi</h3>
-            <p className="mt-1 text-base text-slate-500">
-                {searchTerm || selectedDate || statusFilter !== 'all' || paymentFilter !== 'all' || customerFilter !== 'all' ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
-            </p>
-            <div className="mt-6">
-                <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
-                    <PlusCircleIcon className="h-5 w-5 mr-2" />
-                    Buat Transaksi Baru
-                </Link>
-            </div>
-        </div>
-    );
+                <tbody>
+                    {paginatedTransactions.length > 0 ? (
+                        paginatedTransactions.map(t => (
+                            // ...existing transaction row rendering code...
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={8}>
+                                <EmptyState
+                                    icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                    title="Tidak Ada Transaksi"
+                                    description={searchTerm || selectedDate || statusFilter !== 'all' || paymentFilter !== 'all' || customerFilter !== 'all' ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
+                                >
+                                    <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
+                                        <PlusCircleIcon className="h-5 w-5 mr-2" />
+                                        Buat Transaksi Baru
+                                    </Link>
+                                </EmptyState>
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
 
     const statusOptions: (OrderStatus | 'all')[] = ['all', ...Object.values(OrderStatus)];
     
@@ -417,7 +425,16 @@ const TransactionPage: React.FC = () => {
                             ) : (
                                 <tr>
                                     <td colSpan={8}>
-                                       <NoTransactionsFound />
+                                        <EmptyState
+                                            icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                            title="Tidak Ada Transaksi"
+                                            description={searchTerm || selectedDate || statusFilter !== 'all' || paymentFilter !== 'all' || customerFilter !== 'all' ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
+                                        >
+                                            <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
+                                                <PlusCircleIcon className="h-5 w-5 mr-2" />
+                                                Buat Transaksi Baru
+                                            </Link>
+                                        </EmptyState>
                                     </td>
                                 </tr>
                             )}
@@ -451,7 +468,16 @@ const TransactionPage: React.FC = () => {
                             </div>
                         ))
                     ) : (
-                        <NoTransactionsFound />
+                        <EmptyState
+                            icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                            title="Tidak Ada Transaksi"
+                            description={searchTerm || selectedDate || statusFilter !== 'all' || paymentFilter !== 'all' || customerFilter !== 'all' ? "Tidak ada transaksi yang cocok dengan kriteria filter Anda." : "Belum ada transaksi yang dibuat."}
+                        >
+                            <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs">
+                                <PlusCircleIcon className="h-5 w-5 mr-2" />
+                                Buat Transaksi Baru
+                            </Link>
+                        </EmptyState>
                     )}
                 </div>
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />

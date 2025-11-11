@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Service, ServiceCategory } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
 import ServiceFormModal from '../../components/ServiceFormModal';
@@ -119,16 +120,17 @@ const ServicesPage: React.FC = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={5} className="text-center py-12">
-                                    <PackageIcon className="mx-auto w-12 h-12 text-slate-400" />
-                                    <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{searchTerm ? 'Layanan Tidak Ditemukan' : 'Belum Ada Layanan'}</h3>
-                                    <p className="mt-1 text-base text-slate-500">{searchTerm ? 'Coba kata kunci lain atau tambahkan layanan baru.' : 'Mulai dengan menambahkan layanan pertama Anda.'}</p>
-                                    <div className="mt-6">
+                                <td colSpan={5}>
+                                    <EmptyState
+                                        icon={<PackageIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                                        title={searchTerm ? 'Layanan Tidak Ditemukan' : 'Belum Ada Layanan'}
+                                        description={searchTerm ? 'Coba kata kunci lain atau tambahkan layanan baru.' : 'Mulai dengan menambahkan layanan pertama Anda.'}
+                                    >
                                         <button onClick={() => handleOpenFormModal()} className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto">
                                             <PlusCircleIcon className="h-5 w-5 mr-2" />
                                             Tambah Layanan
                                         </button>
-                                    </div>
+                                    </EmptyState>
                                 </td>
                             </tr>
                         )}

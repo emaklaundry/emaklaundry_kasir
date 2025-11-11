@@ -23,12 +23,24 @@ export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, []);
 
   const addCustomer = async (customer: Omit<Customer, 'id'>): Promise<Customer | null> => {
-    const { data, error } = await supabase.from('customers').insert([customer]).select();
-    if (!error && data && data[0]) {
-      setCustomers((prev) => [...prev, ...data]);
-      return data[0];
+    // Optimistic update: buat id sementara
+    const tempId = 'temp-' + Date.now();
+    const optimisticCustomer = { ...customer, id: tempId } as Customer;
+    setCustomers((prev) => [...prev, optimisticCustomer]);
+    try {
+      const { data, error } = await supabase.from('customers').insert([customer]).select();
+      if (!error && data && data[0]) {
+        setCustomers((prev) => prev.map(c => c.id === tempId ? data[0] : c));
+        return data[0];
+      } else {
+        // Rollback jika gagal
+        setCustomers((prev) => prev.filter(c => c.id !== tempId));
+        return null;
+      }
+    } catch (e) {
+      setCustomers((prev) => prev.filter(c => c.id !== tempId));
+      return null;
     }
-    return null;
   };
 
   const updateCustomer = async (id: string, data: Partial<Customer>) => {

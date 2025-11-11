@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { PrinterIcon, ChevronLeftIcon } from '../../components/icons';
+import { PrinterIcon, ChevronLeftIcon, ShoppingCartIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
@@ -17,10 +18,13 @@ const ReceiptPage: React.FC = () => {
 
     if (!transaction || !customer) {
         return (
-            <div className="text-center p-10">
-                <p className="text-xl text-slate-500 dark:text-slate-400">Transaksi tidak ditemukan.</p>
+            <EmptyState
+                icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                title="Transaksi tidak ditemukan"
+                description="Transaksi yang Anda cari tidak tersedia atau telah dihapus."
+            >
                 <Link to="/transactions" className="mt-4 inline-block text-blue-600 hover:underline">Kembali ke Daftar Transaksi</Link>
-            </div>
+            </EmptyState>
         );
     }
 

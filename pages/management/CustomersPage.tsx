@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Customer, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon, UsersIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
@@ -119,17 +120,16 @@ const CustomersPage: React.FC = () => {
     const canAddNewCustomer = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
     
     const NoCustomersFound = () => (
-        <div className="text-center py-12">
-            <UsersIcon className="mx-auto w-12 h-12 text-slate-400" />
-            <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">{debouncedSearchTerm ? 'Pelanggan Tidak Ditemukan' : 'Belum Ada Pelanggan'}</h3>
-            <p className="mt-1 text-base text-slate-500">{debouncedSearchTerm ? 'Coba kata kunci lain atau tambahkan pelanggan baru.' : 'Mulai dengan menambahkan pelanggan pertama Anda.'}</p>
-            <div className="mt-6">
-                <button onClick={() => handleOpenFormModal()} disabled={!canAddNewCustomer} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed">
-                    <PlusCircleIcon className="h-5 w-5 mr-2" />
-                    Tambah Pelanggan
-                </button>
-            </div>
-        </div>
+        <EmptyState
+            icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
+            title={debouncedSearchTerm ? 'Pelanggan Tidak Ditemukan' : 'Belum Ada Pelanggan'}
+            description={debouncedSearchTerm ? 'Coba kata kunci lain atau tambahkan pelanggan baru.' : 'Mulai dengan menambahkan pelanggan pertama Anda.'}
+        >
+            <button onClick={() => handleOpenFormModal()} disabled={!canAddNewCustomer} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed">
+                <PlusCircleIcon className="h-5 w-5 mr-2" />
+                Tambah Pelanggan
+            </button>
+        </EmptyState>
     );
 
     return (
