@@ -135,6 +135,8 @@ export interface User {
   role: UserRole;
   storeId?: string;
   createdAt?: Date;
+  isActive: boolean;
+  canGiveDiscount: boolean;
 }
 
 export interface AuditLog {

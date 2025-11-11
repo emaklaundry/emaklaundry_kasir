@@ -1,15 +1,19 @@
 import React, { useState, useMemo } from 'react';
+import { supabase } from '../../utils/supabaseClient';
 import { User, UserRole, Store } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, UsersIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
+import { useToasts } from '../../contexts/ToastContext';
 import UserFormModal from '../../components/UserFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
 const UsersPage: React.FC = () => {
-    const { currentUser, users, allUsers, setAllUsers, setCurrentUser, selectedStoreId } = useAppContext();
+    const { currentUser, selectedStoreId } = useAppContext();
+    const { addToast } = useToasts();
+    // Ambil data users dari Supabase (props/context/hook) sesuai implementasi fetch profiles
     const { stores } = useStores();
     const { addAuditLog } = useAuditLogs();
     
@@ -29,23 +33,41 @@ const UsersPage: React.FC = () => {
         setCurrentUserToEdit(null);
     };
 
-    const handleSaveUser = (user: Omit<User, 'id'>) => {
-        const updatedUser = { ...(currentUserToEdit || {}), ...user, id: currentUserToEdit?.id || Date.now() } as User;
-        
-        if (currentUserToEdit) {
-            setAllUsers(prev => prev.map(u => u.id === currentUserToEdit.id ? updatedUser : u));
-            addAuditLog(`Memperbarui data pengguna: "${user.name}".`);
-        } else {
-            setAllUsers(prev => [...prev, updatedUser]);
-            addAuditLog(`Menambahkan pengguna baru: "${user.name}".`);
+    const handleSaveUser = async (userData: Omit<User, 'id'>) => {
+        const finalData = { ...userData };
+        if (finalData.role === UserRole.SuperAdmin) {
+            finalData.storeId = undefined;
+            finalData.isActive = true;
+            finalData.canGiveDiscount = true;
+        } else if (!finalData.storeId) {
+            addToast('Silakan pilih cabang untuk peran ini.', 'warning');
+            return;
         }
 
-        // If the user being edited is the currently logged-in user, update their session
-        if(currentUser.id === updatedUser.id) {
-            setCurrentUser(updatedUser);
-        }
+        try {
+            if (currentUserToEdit && currentUserToEdit.id) {
+                // --- EDIT PENGGUNA ---
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({
+                        name: finalData.name,
+                        role: finalData.role,
+                        store_id: finalData.storeId,
+                        isActive: finalData.isActive,
+                        canGiveDiscount: finalData.canGiveDiscount
+                    })
+                    .eq('id', currentUserToEdit.id);
 
-        handleCloseFormModal();
+                if (error) throw error;
+                addAuditLog(`Memperbarui data pengguna: "${finalData.name}".`);
+                addToast('Pengguna berhasil diperbarui!', 'success');
+            } else {
+                addToast('Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication).', 'info');
+            }
+            handleCloseFormModal();
+        } catch (error: any) {
+            addToast(`Gagal menyimpan: ${error.message}`, 'error');
+        }
     };
 
     const handleDelete = (user: User) => {
@@ -53,24 +75,21 @@ const UsersPage: React.FC = () => {
         setUserToDelete(user);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (userToDelete) {
-            // If deleting the current user, log them out or switch to a default user.
-            if (currentUser.id === userToDelete.id) {
-                const superAdmin = allUsers.find(u => u.role === UserRole.SuperAdmin && u.id !== userToDelete.id);
-                const nextUser = superAdmin || allUsers.find(u => u.id !== userToDelete.id);
-                if (nextUser) {
-                    setCurrentUser(nextUser);
-                } else {
-                    // This would only happen if the last user is deleted.
-                    alert("Tidak bisa menghapus pengguna terakhir.");
-                    setUserToDelete(null);
-                    return;
-                }
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .delete()
+                    .eq('id', userToDelete.id);
+                if (error) throw error;
+                addAuditLog(`Menghapus profil pengguna: "${userToDelete.name}".`);
+                addToast('Profil pengguna berhasil dihapus.', 'success');
+            } catch (error: any) {
+                addToast(`Gagal menghapus: ${error.message}`, 'error');
+            } finally {
+                setUserToDelete(null);
             }
-            setAllUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-            addAuditLog(`Menghapus pengguna: "${userToDelete.name}".`);
-            setUserToDelete(null);
         }
     };
 
@@ -79,15 +98,28 @@ const UsersPage: React.FC = () => {
         setUserToToggleStatus(user);
     };
 
-    const confirmToggleStatus = () => {
+    const confirmToggleStatus = async () => {
         if (userToToggleStatus) {
             const newStatus = !userToToggleStatus.isActive;
-            setAllUsers(prev => prev.map(u => u.id === userToToggleStatus.id ? { ...u, isActive: newStatus } : u));
-            addAuditLog(`Mengubah status pengguna "${userToToggleStatus.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
-            setUserToToggleStatus(null);
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ isActive: newStatus })
+                    .eq('id', userToToggleStatus.id);
+                if (error) throw error;
+                addAuditLog(`Mengubah status pengguna "${userToToggleStatus.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
+            } catch (error: any) {
+                addToast(`Gagal mengubah status: ${error.message}`, 'error');
+            } finally {
+                setUserToToggleStatus(null);
+            }
         }
     };
     
+    // Ambil data users dari Supabase, misal dengan useEffect/useSWR/fetcher
+    // Contoh:
+    // const { data: users = [], mutate } = useSWR('profiles', fetchProfiles)
+    const users: User[] = [];
     const usersWithStore = useMemo(() => users.map(user => ({
         ...user,
         storeName: stores.find(s => s.id === user.storeId)?.name || 'N/A'

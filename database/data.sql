@@ -1,3 +1,12 @@
+-- Tambahan kolom isActive dan canGiveDiscount ke tabel profiles
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS "isActive" boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS "canGiveDiscount" boolean DEFAULT false;
+
+-- Set nilai default untuk pengguna yang sudah ada
+UPDATE public.profiles
+SET "isActive" = true, "canGiveDiscount" = false
+WHERE "isActive" IS NULL;
 -- LANGKAH 1: PERBAIKI TABEL (Jalankan ini dulu)
 -- Menambahkan kolom "isActive" yang hilang ke tabel stores
 ALTER TABLE public.stores
