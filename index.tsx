@@ -1,6 +1,9 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom/client';
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import App from './App';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+// @ts-ignore
 import { registerSW } from 'virtual:pwa-register';
 
 registerSW({ onNeedRefresh() {}, onOfflineReady() {} });
@@ -11,8 +14,11 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+const queryClient = new QueryClient();
 root.render(
   <React.StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   </React.StrictMode>
 );
