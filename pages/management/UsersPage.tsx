@@ -24,6 +24,15 @@ const UsersPage: React.FC = () => {
     const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const handleOpenFormModal = (user: User | null = null) => {
+        setCurrentUserToEdit(user);
+        setIsFormModalOpen(true);
+    };
+
+    const handleToggleStatus = (user: User) => {
+        setUserToToggleStatus(user);
+    };
+
 
     const handleAddUser = () => {
         addToast('Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication). Setelah itu, profil dapat diedit di halaman ini.', 'info');

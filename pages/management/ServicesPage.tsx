@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Service, ServiceCategory } from '../../types';
+import { Service, ServiceCategory, UserRole } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -8,6 +8,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { useAppContext } from '../../contexts/AppContext';
 
 const ServicesPage: React.FC = () => {
     const { services, addService, updateService, deleteService } = useServices();
@@ -17,6 +18,7 @@ const ServicesPage: React.FC = () => {
     const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const { addToast } = useToasts();
+    const { currentUser, selectedStoreId } = useAppContext();
 
     const filteredServices = useMemo(() => services.filter(service =>
         service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,27 +40,7 @@ const ServicesPage: React.FC = () => {
 
     const handleCloseFormModal = () => {
         setIsFormModalOpen(false);
-        const handleSaveService = async (serviceData: Omit<Service, 'id' | 'storeId'>) => {
-            const storeId = currentService?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
-
-            if (!storeId || storeId === 'all') {
-                addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit layanan.', 'warning');
-                return;
-            }
-
-            try {
-                if (currentService) {
-                    await updateService(currentService.id, { ...serviceData, storeId });
-                    addAuditLog(`Memperbarui layanan: "${serviceData.name}".`, storeId);
-                } else {
-                    await addService({ ...serviceData, storeId });
-                    addAuditLog(`Menambahkan layanan baru: "${serviceData.name}".`, storeId);
-                }
-                handleCloseFormModal();
-            } catch (error: any) {
-                addToast(`Gagal menyimpan layanan: ${error.message}`, 'error');
-            }
-        };
+        setCurrentService(null);
     };
 
     const handleSaveService = async (serviceData: Omit<Service, 'id'>) => {

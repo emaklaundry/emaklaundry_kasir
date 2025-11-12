@@ -56,48 +56,8 @@ const NewTransactionPage: React.FC = () => {
         }
         return false;
     }, [currentUser, selectedCustomer]);
-
-    // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
-    if (isLoadingSettings) {
-        return (
-            <div className="flex justify-center items-center w-full h-96">
-                <SpinnerIcon className="w-16 h-16" />
-                <span className="sr-only">Memuat pengaturan...</span>
-            </div>
-        );
-    }
-
-    if (!settings) {
-         return (
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
-                <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">Gagal Memuat Pengaturan Aplikasi</h2>
-                <p className="text-lg text-slate-700 dark:text-slate-300">
-                    Tidak dapat memuat data pajak, diskon, dan lainnya. 
-                    Pastikan Anda memiliki koneksi dan hak akses yang benar untuk melihat tabel 'settings'.
-                </p>
-            </div>
-        );
-    }
-
-
-    // (Deklarasi canApplyDiscount sudah ada di atas, hapus duplikat ini)
-
-    useEffect(() => {
-        if (!canApplyDiscount) {
-            setDiscountValue(0);
-            return;
-        }
-
-        if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) {
-            setDiscountType('percent');
-            setDiscountValue(selectedCustomer.defaultDiscount);
-            addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
-        } else {
-            setDiscountType('percent');
-            setDiscountValue(settings.discountRate);
-        }
-    }, [selectedCustomer, settings.discountRate, addToast, canApplyDiscount]);
-
+    // Semua hook turunannya juga harus dipanggil di level atas
+    // (dipindahkan dari bawah) agar Rules of Hooks tidak dilanggar.
 
     const favoriteServices = useMemo(() => {
         const serviceCounts = transactions.reduce((acc, transaction) => {
@@ -114,18 +74,87 @@ const NewTransactionPage: React.FC = () => {
             .filter((s): s is Service => s !== undefined);
     }, [transactions, services]);
 
-    const resetForm = () => {
-        setSelectedCustomer(null);
-        setItems([]);
-        setNotes('');
-        setDiscountValue(settings.discountRate);
-        setDiscountType('percent');
-        setPaymentMethod(undefined);
-        setAmountPaidStr('0');
-        setTenderedAmountStr('');
-        setIsPayingNow(false);
-        setNewlyCreatedTransaction(null);
-    };
+    const subtotal = useMemo(() => {
+        return items.reduce((sum, item) => sum + item.subtotal, 0);
+    }, [items]);
+
+    const discountAmount = useMemo(() => {
+        if (!canApplyDiscount) return 0;
+        if (discountType === 'percent') {
+            return subtotal * (discountValue / 100);
+        }
+        return Math.min(discountValue, subtotal);
+    }, [subtotal, discountValue, discountType, canApplyDiscount]);
+
+    const taxAmount = useMemo(() => {
+        const taxableAmount = subtotal - discountAmount;
+        return taxableAmount * ((settings?.taxRate ?? 0) / 100);
+    }, [subtotal, discountAmount, settings?.taxRate]);
+    
+    const grandTotal = useMemo(() => {
+        return subtotal - discountAmount + taxAmount;
+    }, [subtotal, discountAmount, taxAmount]);
+
+    useEffect(() => {
+        if (isPayingNow) {
+            setAmountPaidStr(formatRupiah(grandTotal));
+        }
+    }, [grandTotal, isPayingNow]);
+
+    const amountToPay = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
+    const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
+
+    const changeAmount = useMemo(() => {
+        if (!isPayingNow || paymentMethod !== PaymentMethod.Cash || tenderedAmount < amountToPay) {
+            return 0;
+        }
+        return tenderedAmount - amountToPay;
+    }, [isPayingNow, paymentMethod, tenderedAmount, amountToPay]);
+    
+    const actualAmountPaid = useMemo(() => {
+        if (!isPayingNow) return 0;
+        return amountToPay;
+    }, [isPayingNow, amountToPay]);
+
+    const paymentStatus = useMemo(() => {
+        if (!isPayingNow) return PaymentStatus.Unpaid;
+        if (grandTotal <= 0) return PaymentStatus.Paid;
+        if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
+        if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
+        return PaymentStatus.PartiallyPaid;
+    }, [isPayingNow, actualAmountPaid, grandTotal]);
+
+    const estimatedCompletionDate = useMemo(() => {
+        if (items.length === 0) {
+            const today = new Date();
+            today.setDate(today.getDate() + 1);
+            return today;
+        }
+        const maxDuration = Math.max(...items.map(item => services.find(s => s.id === item.serviceId)?.durationDays || 0));
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + maxDuration);
+        return completionDate;
+    }, [items, services]);
+
+    const currentStoreId = useMemo(() => {
+        return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
+    }, [currentUser, selectedStoreId]);
+
+    useEffect(() => {
+        if (!canApplyDiscount) {
+            setDiscountValue(0);
+            return;
+        }
+
+        if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) {
+            setDiscountType('percent');
+            setDiscountValue(selectedCustomer.defaultDiscount);
+            addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
+        } else {
+            setDiscountType('percent');
+            setDiscountValue(settings?.discountRate ?? 0);
+        }
+    }, [selectedCustomer, settings?.discountRate, addToast, canApplyDiscount]);
 
     const handleAddService = useCallback((service: typeof services[0]) => {
         setItems(currentItems => {
@@ -150,7 +179,45 @@ const NewTransactionPage: React.FC = () => {
                 return [...currentItems, newItem];
             }
         });
-    }, []);
+    }, [services]);
+
+    // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
+    if (isLoadingSettings) {
+        return (
+            <div className="flex justify-center items-center w-full h-96">
+                <SpinnerIcon className="w-16 h-16" />
+                <span className="sr-only">Memuat pengaturan...</span>
+            </div>
+        );
+    }
+
+    if (!settings) {
+         return (
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+                <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">Gagal Memuat Pengaturan Aplikasi</h2>
+                <p className="text-lg text-slate-700 dark:text-slate-300">
+                    Tidak dapat memuat data pajak, diskon, dan lainnya. 
+                    Pastikan Anda memiliki koneksi dan hak akses yang benar untuk melihat tabel 'settings'.
+                </p>
+            </div>
+        );
+    }
+
+
+    
+
+    const resetForm = () => {
+        setSelectedCustomer(null);
+        setItems([]);
+        setNotes('');
+        setDiscountValue(settings?.discountRate ?? 0);
+        setDiscountType('percent');
+        setPaymentMethod(undefined);
+        setAmountPaidStr('0');
+        setTenderedAmountStr('');
+        setIsPayingNow(false);
+        setNewlyCreatedTransaction(null);
+    };
 
     const handleItemChange = (index: number, field: 'quantity' | 'taggedItems' | 'itemDetails', value: number | string | { note: string }[]) => {
         const newItems = [...items];
@@ -211,76 +278,9 @@ const NewTransactionPage: React.FC = () => {
         setIsKiloanTaggingModalOpen(false);
     }
 
-
     const handleRemoveItem = (index: number) => {
         setItems(items.filter((_, i) => i !== index));
     };
-
-    const subtotal = useMemo(() => {
-        return items.reduce((sum, item) => sum + item.subtotal, 0);
-    }, [items]);
-
-    const discountAmount = useMemo(() => {
-        if (!canApplyDiscount) return 0;
-        if (discountType === 'percent') {
-            return subtotal * (discountValue / 100);
-        }
-        return Math.min(discountValue, subtotal);
-    }, [subtotal, discountValue, discountType, canApplyDiscount]);
-
-    const taxAmount = useMemo(() => {
-        const taxableAmount = subtotal - discountAmount;
-        return taxableAmount * (settings.taxRate / 100);
-    }, [subtotal, discountAmount, settings.taxRate]);
-    
-    const grandTotal = useMemo(() => {
-        return subtotal - discountAmount + taxAmount;
-    }, [subtotal, discountAmount, taxAmount]);
-
-    useEffect(() => {
-        if (isPayingNow) {
-            setAmountPaidStr(formatRupiah(grandTotal));
-        }
-    }, [grandTotal, isPayingNow]);
-
-    const amountToPay = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
-    const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
-
-    const changeAmount = useMemo(() => {
-        if (!isPayingNow || paymentMethod !== PaymentMethod.Cash || tenderedAmount < amountToPay) {
-            return 0;
-        }
-        return tenderedAmount - amountToPay;
-    }, [isPayingNow, paymentMethod, tenderedAmount, amountToPay]);
-    
-    const actualAmountPaid = useMemo(() => {
-        if (!isPayingNow) return 0;
-        return amountToPay;
-    }, [isPayingNow, amountToPay]);
-
-    const paymentStatus = useMemo(() => {
-        if (!isPayingNow) return PaymentStatus.Unpaid;
-        if (grandTotal <= 0) return PaymentStatus.Paid;
-        if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
-        if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
-        return PaymentStatus.PartiallyPaid;
-    }, [isPayingNow, actualAmountPaid, grandTotal]);
-
-    const estimatedCompletionDate = useMemo(() => {
-        if (items.length === 0) {
-            const today = new Date();
-            today.setDate(today.getDate() + 1);
-            return today;
-        }
-        const maxDuration = Math.max(...items.map(item => services.find(s => s.id === item.serviceId)?.durationDays || 0));
-        const completionDate = new Date();
-        completionDate.setDate(completionDate.getDate() + maxDuration);
-        return completionDate;
-    }, [items, services]);
-
-    const currentStoreId = useMemo(() => {
-        return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
-    }, [currentUser, selectedStoreId]);
 
     const handleSaveCustomer = async (customer: Omit<Customer, 'id' | 'storeId'>) => {
         if (!currentStoreId || currentStoreId === 'all') {
