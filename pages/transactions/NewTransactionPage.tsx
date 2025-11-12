@@ -20,7 +20,30 @@ import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 
 const NewTransactionPage: React.FC = () => {
     const navigate = useNavigate();
-    const { settings } = useSettings();
+    // 1. TAMBAHKAN 'isLoading' DARI useSettings
+    const { settings, isLoading: isLoadingSettings } = useSettings();
+    // 2. TAMBAHKAN BLOK LOADING CHECK SEBELUM RETURN UTAMA
+    if (isLoadingSettings) {
+        return (
+            <div className="flex justify-center items-center w-full h-96">
+                <SpinnerIcon className="w-16 h-16" />
+                <span className="sr-only">Memuat pengaturan...</span>
+            </div>
+        );
+    }
+
+    // 3. TAMBAHKAN BLOK ERROR CHECK JIKA SETTINGS GAGAL DIMUAT
+    if (!settings) {
+         return (
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+                <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">Gagal Memuat Pengaturan Aplikasi</h2>
+                <p className="text-lg text-slate-700 dark:text-slate-300">
+                    Tidak dapat memuat data pajak, diskon, dan lainnya. 
+                    Pastikan Anda memiliki koneksi dan hak akses yang benar untuk melihat tabel 'settings'.
+                </p>
+            </div>
+        );
+    }
     const { transactions, addTransaction } = useTransactions();
     const { customers, addCustomer } = useCustomers();
     const { services } = useServices();

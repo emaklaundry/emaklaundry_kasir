@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import { User, Store } from '../types';
 import { useStores } from './StoreContext';
 import { supabase } from '../utils/supabaseClient';
+import { useToasts } from './ToastContext'; // 1. IMPOR useToasts
 
 interface AppContextType {
   currentUser: User | null;
@@ -19,6 +20,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { addToast } = useToasts(); // 2. INISIALISASI HOOK
 
   useEffect(() => {
     const getProfile = async () => {
@@ -30,15 +32,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .eq('id', session.user.id)
           .single();
         if (!error && data) {
-          setCurrentUser({
-            id: data.id,
-            name: data.name,
-            role: data.role,
-            storeId: data.store_id,
-            createdAt: data.created_at ? new Date(data.created_at) : undefined,
-            isActive: data.isActive,
-            canGiveDiscount: data.canGiveDiscount
-          });
+          // 3. TAMBAHKAN LOGIKA PENGECEKAN DI SINI
+          if (data.isActive === false) {
+            // Jika user tidak aktif
+            addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
+            await supabase.auth.signOut(); // Langsung logout kembali
+            setCurrentUser(null);
+          } else {
+            // Jika user aktif, lanjutkan seperti biasa
+            setCurrentUser({
+              id: data.id,
+              name: data.name,
+              role: data.role,
+              storeId: data.store_id,
+              createdAt: data.created_at ? new Date(data.created_at) : undefined,
+              isActive: data.isActive,
+              canGiveDiscount: data.canGiveDiscount
+            });
+          }
         } else {
           setCurrentUser(null);
         }
@@ -53,7 +64,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [addToast]); // 4. Tambahkan addToast ke dependency array
 
   const signOut = async () => {
     await supabase.auth.signOut();

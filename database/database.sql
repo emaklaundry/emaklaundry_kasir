@@ -190,7 +190,8 @@ CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
   FOR ALL USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id())
   WITH CHECK (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
 CREATE POLICY "Super Admins can manage all profiles" ON public.profiles
-  FOR ALL USING (public.get_my_role() = 'Super Admin');
+  FOR ALL USING (public.get_my_role() = 'Super Admin')
+  WITH CHECK (public.get_my_role() = 'Super Admin');
 
 -- --- Tabel: stores ---
 CREATE POLICY "Allow SELECT for store users" ON public.stores
@@ -275,8 +276,6 @@ CREATE POLICY "Allow SELECT for Admins" ON public.audit_logs
 DROP POLICY IF EXISTS "Allow INSERT for all users" ON public.audit_logs;
 CREATE POLICY "Allow INSERT for all logged-in users" ON public.audit_logs
   FOR INSERT
-    TO public
-    USING (auth.uid() IS NOT NULL)
     WITH CHECK (auth.uid() IS NOT NULL);
 
 -- --- Tabel: settings ---
