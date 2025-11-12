@@ -22,6 +22,29 @@ const NewTransactionPage: React.FC = () => {
     // --- SEMUA HOOK HARUS DI ATAS SINI ---
     const navigate = useNavigate();
     const { settings, isLoading: isLoadingSettings } = useSettings();
+    const { transactions, addTransaction } = useTransactions();
+    const { customers, addCustomer } = useCustomers();
+    const { services } = useServices();
+    const { currentUser, selectedStoreId } = useAppContext();
+    const { addAuditLog } = useAuditLogs();
+    const { addToast } = useToasts();
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+    const [items, setItems] = useState<TransactionItem[]>([]);
+    const [notes, setNotes] = useState('');
+    const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
+    const [discountValue, setDiscountValue] = useState(0);
+    const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+    const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
+    const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+    const [newlyCreatedTransaction, setNewlyCreatedTransaction] = useState<Transaction | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isPayingNow, setIsPayingNow] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
+    const [amountPaidStr, setAmountPaidStr] = useState('0');
+    const [tenderedAmountStr, setTenderedAmountStr] = useState('');
 
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
@@ -44,30 +67,6 @@ const NewTransactionPage: React.FC = () => {
             </div>
         );
     }
-    const { transactions, addTransaction } = useTransactions();
-    const { customers, addCustomer } = useCustomers();
-    const { services } = useServices();
-    const { currentUser, selectedStoreId } = useAppContext();
-    const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
-    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-    const [items, setItems] = useState<TransactionItem[]>([]);
-    const [notes, setNotes] = useState('');
-    const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
-    const [discountValue, setDiscountValue] = useState(0);
-    const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-    const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-    const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
-    const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
-    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
-    const [newlyCreatedTransaction, setNewlyCreatedTransaction] = useState<Transaction | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
-    
-    const [isPayingNow, setIsPayingNow] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
-    const [amountPaidStr, setAmountPaidStr] = useState('0');
-    const [tenderedAmountStr, setTenderedAmountStr] = useState('');
 
 
     const canApplyDiscount = useMemo(() => {
