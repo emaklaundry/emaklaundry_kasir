@@ -46,6 +46,17 @@ const NewTransactionPage: React.FC = () => {
     const [amountPaidStr, setAmountPaidStr] = useState('0');
     const [tenderedAmountStr, setTenderedAmountStr] = useState('');
 
+    // Semua useMemo, useEffect, useCallback juga di sini
+    const canApplyDiscount = useMemo(() => {
+        if (!currentUser) return false;
+        if (currentUser.role === UserRole.SuperAdmin) return true;
+        if ((currentUser.role === UserRole.BranchAdmin || currentUser.role === UserRole.Cashier)) {
+            if (currentUser.canGiveDiscount) return true;
+            if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) return true;
+        }
+        return false;
+    }, [currentUser, selectedCustomer]);
+
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
         return (
@@ -69,15 +80,7 @@ const NewTransactionPage: React.FC = () => {
     }
 
 
-    const canApplyDiscount = useMemo(() => {
-        if (currentUser.role === UserRole.SuperAdmin) return true;
-        if ((currentUser.role === UserRole.BranchAdmin || currentUser.role === UserRole.Cashier)) {
-            // Cek hak diskon dari user atau customer
-            if (currentUser.canGiveDiscount) return true;
-            if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) return true;
-        }
-        return false;
-    }, [currentUser, selectedCustomer]);
+    // (Deklarasi canApplyDiscount sudah ada di atas, hapus duplikat ini)
 
     useEffect(() => {
         if (!canApplyDiscount) {
