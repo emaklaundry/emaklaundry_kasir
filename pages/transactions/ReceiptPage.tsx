@@ -132,7 +132,7 @@ const ReceiptPage: React.FC = () => {
             
             <div className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
                 <p>Estimasi Selesai: {new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}</p>
-                <p className="mt-2">{settings.receiptMessage}</p>
+                <p className="mt-2">{settings?.receiptMessage ?? 'Terima kasih telah menggunakan layanan kami.'}</p>
             </div>
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4 print-hide">
