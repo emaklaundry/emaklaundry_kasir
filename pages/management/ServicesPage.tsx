@@ -4,6 +4,7 @@ import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon, ArrowUpI
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
+import { useToasts } from '../../contexts/ToastContext';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
@@ -15,6 +16,7 @@ const ServicesPage: React.FC = () => {
     const [currentService, setCurrentService] = useState<Service | null>(null);
     const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const { addToast } = useToasts();
 
     const filteredServices = useMemo(() => services.filter(service =>
         service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,7 +52,7 @@ const ServicesPage: React.FC = () => {
             }
             handleCloseFormModal();
         } catch (error: any) {
-            
+            addToast(`Gagal menyimpan layanan: ${error.message}`, 'error');
         }
     };
 
@@ -64,7 +66,7 @@ const ServicesPage: React.FC = () => {
                 await deleteService(serviceToDelete.id);
                 addAuditLog(`Menghapus layanan: "${serviceToDelete.name}".`);
             } catch (error: any) {
-                
+                addToast(`Gagal menghapus layanan: ${error.message}`, 'error');
             } finally {
                 setServiceToDelete(null);
             }

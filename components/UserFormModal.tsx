@@ -38,8 +38,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
         const finalData = { ...formData };
         if (finalData.role === UserRole.SuperAdmin) {
             finalData.storeId = undefined;
-            // Super admin always considered active (logic only, no property)
-            // Super admin can always give discounts (logic only, no property)
+            // Catatan: Properti isActive dan canGiveDiscount untuk Super Admin diatur di logic penyimpanan (UsersPage),
+            // bukan di modal ini. Modal hanya menonaktifkan input.
         } else if (!finalData.storeId) {
             addToast('Silakan pilih cabang untuk peran ini.', 'warning');
             return;
