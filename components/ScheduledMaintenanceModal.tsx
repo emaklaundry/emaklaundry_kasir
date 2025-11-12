@@ -15,16 +15,7 @@ interface ScheduledMaintenanceModalProps {
     onClose: () => void;
 }
 
-const calculateNextDueDate = (currentDueDate: Date, value: number, unit: 'days' | 'weeks' | 'months' | 'years'): Date => {
-    const newDate = new Date(currentDueDate);
-    switch (unit) {
-        case 'days': newDate.setDate(newDate.getDate() + value); break;
-        case 'weeks': newDate.setDate(newDate.getDate() + value * 7); break;
-        case 'months': newDate.setMonth(newDate.getMonth() + value); break;
-        case 'years': newDate.setFullYear(newDate.getFullYear() + value); break;
-    }
-    return newDate;
-};
+import { calculateNextDueDate } from '../utils/formatting';
 
 
 const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ asset, isOpen, onClose }) => {

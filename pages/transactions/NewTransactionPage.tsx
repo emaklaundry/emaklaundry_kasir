@@ -131,16 +131,26 @@ const NewTransactionPage: React.FC = () => {
         const newItems = [...items];
         const item = newItems[index];
         const service = services.find(s => s.id === item.serviceId);
-        
+
         if (field === 'quantity' && typeof value === 'number') {
             const newQuantity = value >= 0 ? value : 0;
             item.quantity = newQuantity;
             item.subtotal = item.price * item.quantity;
 
             if (service && service.category === ServiceCategory.Satuan) {
+                // Only extend itemDetails, never truncate
                 const currentNotes = item.itemDetails || [];
-                const newNotes = Array.from({ length: newQuantity }, (_, i) => currentNotes[i] || { note: '' });
-                item.itemDetails = newNotes;
+                if (currentNotes.length < newQuantity) {
+                    // Add new empty notes if increasing quantity
+                    const newNotes = [
+                        ...currentNotes,
+                        ...Array.from({ length: newQuantity - currentNotes.length }, () => ({ note: '' }))
+                    ];
+                    item.itemDetails = newNotes;
+                } else {
+                    // Do not truncate, keep all notes
+                    item.itemDetails = currentNotes;
+                }
             }
         } else if (field === 'taggedItems' && typeof value === 'string') {
             item.taggedItems = value;
@@ -414,7 +424,7 @@ const NewTransactionPage: React.FC = () => {
                                                             {isSatuan && (
                                                                 <button type="button" onClick={() => handleOpenNotesModal(index)} title="Catatan per Item" className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
                                                                     <MessageSquareIcon className="w-6 h-6"/>
-                                                                    {item.itemDetails?.some(d => d.note) && (
+                                                                    {item.itemDetails?.slice(0, item.quantity).some(d => d.note) && (
                                                                         <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
                                                                     )}
                                                                 </button>

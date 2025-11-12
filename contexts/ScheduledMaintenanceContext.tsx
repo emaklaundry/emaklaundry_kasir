@@ -1,64 +1,59 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScheduledMaintenance } from '../types';
 import { useAssets } from './AssetContext';
 import { supabase } from '../utils/supabaseClient';
 
-interface ScheduledMaintenanceContextType {
-  scheduledMaintenances: ScheduledMaintenance[];
-  addScheduledMaintenance: (sm: Omit<ScheduledMaintenance, 'id'>) => Promise<void>;
-  updateScheduledMaintenance: (id: string, data: Partial<ScheduledMaintenance>) => Promise<void>;
-  deleteScheduledMaintenance: (id: string) => Promise<void>;
-}
+const fetchScheduledMaintenances = async (): Promise<ScheduledMaintenance[]> => {
+  const { data, error } = await supabase.from('scheduled_maintenances').select('*');
+  if (error) throw error;
+  return data || [];
+};
 
-const ScheduledMaintenanceContext = createContext<ScheduledMaintenanceContextType | undefined>(undefined);
-
-export const ScheduledMaintenanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [allScheduledMaintenances, setAllScheduledMaintenances] = useState<ScheduledMaintenance[]>([]);
+export function useScheduledMaintenances() {
   const { assets } = useAssets();
-
-  useEffect(() => {
-    const fetchScheduledMaintenances = async () => {
-      const { data, error } = await supabase.from('scheduled_maintenances').select('*');
-      if (!error && data) setAllScheduledMaintenances(data);
-    };
-    fetchScheduledMaintenances();
-  }, []);
-
   const assetIdsInScope = useMemo(() => new Set(assets.map((a) => a.id)), [assets]);
+  const queryClient = useQueryClient();
+  const { data: allScheduledMaintenances = [], ...query } = useQuery({ queryKey: ['scheduled_maintenances'], queryFn: fetchScheduledMaintenances });
 
-  const scheduledMaintenances = useMemo(() => {
-    return allScheduledMaintenances.filter(sm => assetIdsInScope.has(sm.assetId));
-  }, [allScheduledMaintenances, assetIdsInScope]);
-
-  const addScheduledMaintenance = async (sm: Omit<ScheduledMaintenance, 'id'>) => {
-    const { data, error } = await supabase.from('scheduled_maintenances').insert([sm]).select();
-    if (error) throw error;
-    if (data) setAllScheduledMaintenances((prev) => [...prev, ...data]);
-  };
-
-  const updateScheduledMaintenance = async (id: string, data: Partial<ScheduledMaintenance>) => {
-    const { data: updated, error } = await supabase.from('scheduled_maintenances').update(data).eq('id', id).select();
-    if (error) throw error;
-    if (updated) setAllScheduledMaintenances((prev) => prev.map(sm => sm.id === id ? { ...sm, ...updated[0] } : sm));
-  };
-  
-  const deleteScheduledMaintenance = async (id: string) => {
-    const { error } = await supabase.from('scheduled_maintenances').delete().eq('id', id);
-    if (error) throw error;
-    setAllScheduledMaintenances((prev) => prev.filter(sm => sm.id !== id));
-  };
-
-  return (
-    <ScheduledMaintenanceContext.Provider value={{ scheduledMaintenances, addScheduledMaintenance, updateScheduledMaintenance, deleteScheduledMaintenance }}>
-      {children}
-    </ScheduledMaintenanceContext.Provider>
+  const scheduledMaintenances = useMemo(
+    () => allScheduledMaintenances.filter(sm => assetIdsInScope.has(sm.assetId)),
+    [allScheduledMaintenances, assetIdsInScope]
   );
-};
 
-export const useScheduledMaintenances = (): ScheduledMaintenanceContextType => {
-  const context = useContext(ScheduledMaintenanceContext);
-  if (!context) {
-    throw new Error('useScheduledMaintenances must be used within a ScheduledMaintenanceProvider');
-  }
-  return context;
-};
+  const addScheduledMaintenance = useMutation({
+    mutationFn: async (sm: Omit<ScheduledMaintenance, 'id'>) => {
+      const { data, error } = await supabase.from('scheduled_maintenances').insert([sm]).select();
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scheduled_maintenances'] })
+  });
+
+  const updateScheduledMaintenance = useMutation({
+    mutationFn: async (variables: { id: string; data: Partial<ScheduledMaintenance> }) => {
+      const { id, data } = variables;
+      const { data: updated, error } = await supabase.from('scheduled_maintenances').update(data).eq('id', id).select();
+      if (error) throw error;
+      return updated?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scheduled_maintenances'] })
+  });
+
+  const deleteScheduledMaintenance = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('scheduled_maintenances').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scheduled_maintenances'] })
+  });
+
+  return {
+    scheduledMaintenances,
+    addScheduledMaintenance: addScheduledMaintenance.mutateAsync,
+    updateScheduledMaintenance: (id: string, data: Partial<ScheduledMaintenance>) => updateScheduledMaintenance.mutateAsync({ id, data }),
+    deleteScheduledMaintenance: deleteScheduledMaintenance.mutateAsync,
+    ...query
+  };
+}

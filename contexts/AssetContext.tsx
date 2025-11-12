@@ -1,56 +1,50 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Asset } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
-interface AssetContextType {
-  assets: Asset[];
-  addAsset: (asset: Omit<Asset, 'id'>) => Promise<void>;
-  updateAsset: (id: string, data: Partial<Asset>) => Promise<void>;
-  deleteAsset: (id: string) => Promise<void>;
+const fetchAssets = async (): Promise<Asset[]> => {
+  const { data, error } = await supabase.from('assets').select('*');
+  if (error) throw error;
+  return data || [];
+};
+
+export function useAssets() {
+  const queryClient = useQueryClient();
+  const { data: assets = [], ...query } = useQuery({ queryKey: ['assets'], queryFn: fetchAssets });
+
+  const addAsset = useMutation({
+    mutationFn: async (asset: Omit<Asset, 'id'>) => {
+      const { data, error } = await supabase.from('assets').insert([asset]).select();
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] })
+  });
+
+  const updateAsset = useMutation({
+    mutationFn: async (variables: { id: string; data: Partial<Asset> }) => {
+      const { id, data } = variables;
+      const { data: updated, error } = await supabase.from('assets').update(data).eq('id', id).select();
+      if (error) throw error;
+      return updated?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] })
+  });
+
+  const deleteAsset = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('assets').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] })
+  });
+
+  return {
+    assets,
+    addAsset: addAsset.mutateAsync,
+    updateAsset: (id: string, data: Partial<Asset>) => updateAsset.mutateAsync({ id, data }),
+    deleteAsset: deleteAsset.mutateAsync,
+    ...query
+  };
 }
-
-const AssetContext = createContext<AssetContextType | undefined>(undefined);
-
-export const AssetProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [assets, setAssets] = useState<Asset[]>([]);
-
-  useEffect(() => {
-    const fetchAssets = async () => {
-      const { data, error } = await supabase.from('assets').select('*');
-      if (!error && data) setAssets(data);
-    };
-    fetchAssets();
-  }, []);
-
-  const addAsset = async (asset: Omit<Asset, 'id'>) => {
-    const { data, error } = await supabase.from('assets').insert([asset]).select();
-    if (error) throw error;
-    if (data) setAssets((prev) => [...prev, ...data]);
-  };
-
-  const updateAsset = async (id: string, data: Partial<Asset>) => {
-    const { data: updated, error } = await supabase.from('assets').update(data).eq('id', id).select();
-    if (error) throw error;
-    if (updated) setAssets((prev) => prev.map(a => a.id === id ? { ...a, ...updated[0] } : a));
-  };
-
-  const deleteAsset = async (id: string) => {
-    const { error } = await supabase.from('assets').delete().eq('id', id);
-    if (error) throw error;
-    setAssets((prev) => prev.filter(a => a.id !== id));
-  };
-
-  return (
-    <AssetContext.Provider value={{ assets, addAsset, updateAsset, deleteAsset }}>
-      {children}
-    </AssetContext.Provider>
-  );
-};
-
-export const useAssets = (): AssetContextType => {
-  const context = useContext(AssetContext);
-  if (!context) {
-    throw new Error('useAssets must be used within an AssetProvider');
-  }
-  return context;
-};

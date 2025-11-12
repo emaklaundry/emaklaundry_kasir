@@ -1,71 +1,51 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Customer } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
-interface CustomerContextType {
-  customers: Customer[];
-  addCustomer: (customer: Omit<Customer, 'id'>) => Promise<Customer | null>;
-  updateCustomer: (id: string, data: Partial<Customer>) => Promise<void>;
-  deleteCustomer: (id: string) => Promise<void>;
-}
+const fetchCustomers = async (): Promise<Customer[]> => {
+  const { data, error } = await supabase.from('customers').select('*');
+  if (error) throw error;
+  return data || [];
+};
 
-const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
+export function useCustomers() {
+  const queryClient = useQueryClient();
+  const { data: customers = [], ...query } = useQuery({ queryKey: ['customers'], queryFn: fetchCustomers });
 
-export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      const { data, error } = await supabase.from('customers').select('*');
-      if (!error && data) setCustomers(data);
-    };
-    fetchCustomers();
-  }, []);
-
-  const addCustomer = async (customer: Omit<Customer, 'id'>): Promise<Customer | null> => {
-    // Optimistic update: buat id sementara
-    const tempId = 'temp-' + Date.now();
-    const optimisticCustomer = { ...customer, id: tempId } as Customer;
-    setCustomers((prev) => [...prev, optimisticCustomer]);
-    try {
+  const addCustomer = useMutation({
+    mutationFn: async (customer: Omit<Customer, 'id'>) => {
       const { data, error } = await supabase.from('customers').insert([customer]).select();
       if (error) throw error;
-      if (data && data[0]) {
-        setCustomers((prev) => prev.map(c => c.id === tempId ? data[0] : c));
-        return data[0];
-      } else {
-        setCustomers((prev) => prev.filter(c => c.id !== tempId));
-        return null;
-      }
-    } catch (e) {
-      setCustomers((prev) => prev.filter(c => c.id !== tempId));
-      throw e;
-    }
+      return data?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] })
+  });
+
+  const updateCustomer = useMutation({
+    mutationFn: async (variables: { id: string; data: Partial<Customer> }) => {
+      const { id, data } = variables;
+      const { data: updated, error } = await supabase.from('customers').update(data).eq('id', id).select();
+      if (error) throw error;
+      return updated?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] })
+  });
+
+  const deleteCustomer = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('customers').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] })
+  });
+
+  return {
+    customers,
+    addCustomer: addCustomer.mutateAsync,
+    updateCustomer: (id: string, data: Partial<Customer>) => updateCustomer.mutateAsync({ id, data }),
+    deleteCustomer: deleteCustomer.mutateAsync,
+    ...query
   };
-
-  const updateCustomer = async (id: string, data: Partial<Customer>) => {
-    const { data: updated, error } = await supabase.from('customers').update(data).eq('id', id).select();
-    if (error) throw error;
-    if (updated) setCustomers((prev) => prev.map(c => c.id === id ? { ...c, ...updated[0] } : c));
-  };
-
-  const deleteCustomer = async (id: string) => {
-    const { error } = await supabase.from('customers').delete().eq('id', id);
-    if (error) throw error;
-    setCustomers((prev) => prev.filter(c => c.id !== id));
-  };
-
-  return (
-    <CustomerContext.Provider value={{ customers, addCustomer, updateCustomer, deleteCustomer }}>
-      {children}
-    </CustomerContext.Provider>
-  );
-};
-
-export const useCustomers = (): CustomerContextType => {
-  const context = useContext(CustomerContext);
-  if (!context) {
-    throw new Error('useCustomers must be used within a CustomerProvider');
-  }
-  return context;
-};
+}

@@ -1,56 +1,50 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Store } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
-interface StoreContextType {
-  stores: Store[];
-  addStore: (store: Omit<Store, 'id'>) => Promise<void>;
-  updateStore: (id: string, data: Partial<Store>) => Promise<void>;
-  deleteStore: (id: string) => Promise<void>;
+const fetchStores = async (): Promise<Store[]> => {
+  const { data, error } = await supabase.from('stores').select('*');
+  if (error) throw error;
+  return data || [];
+};
+
+export function useStores() {
+  const queryClient = useQueryClient();
+  const { data: stores = [], ...query } = useQuery({ queryKey: ['stores'], queryFn: fetchStores });
+
+  const addStore = useMutation({
+    mutationFn: async (store: Omit<Store, 'id'>) => {
+      const { data, error } = await supabase.from('stores').insert([store]).select();
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] })
+  });
+
+  const updateStore = useMutation({
+    mutationFn: async (variables: { id: string; data: Partial<Store> }) => {
+      const { id, data } = variables;
+      const { data: updated, error } = await supabase.from('stores').update(data).eq('id', id).select();
+      if (error) throw error;
+      return updated?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] })
+  });
+
+  const deleteStore = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('stores').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] })
+  });
+
+  return {
+    stores,
+    addStore: addStore.mutateAsync,
+    updateStore: (id: string, data: Partial<Store>) => updateStore.mutateAsync({ id, data }),
+    deleteStore: deleteStore.mutateAsync,
+    ...query
+  };
 }
-
-const StoreContext = createContext<StoreContextType | undefined>(undefined);
-
-export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [stores, setStores] = useState<Store[]>([]);
-
-  useEffect(() => {
-    const fetchStores = async () => {
-      const { data, error } = await supabase.from('stores').select('*');
-      if (!error && data) setStores(data);
-    };
-    fetchStores();
-  }, []);
-
-  const addStore = async (store: Omit<Store, 'id'>) => {
-    const { data, error } = await supabase.from('stores').insert([store]).select();
-    if (error) throw error;
-    if (data) setStores((prev) => [...prev, ...data]);
-  };
-
-  const updateStore = async (id: string, data: Partial<Store>) => {
-    const { data: updated, error } = await supabase.from('stores').update(data).eq('id', id).select();
-    if (error) throw error;
-    if (updated) setStores((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
-  };
-
-  const deleteStore = async (id: string) => {
-    const { error } = await supabase.from('stores').delete().eq('id', id);
-    if (error) throw error;
-    setStores((prev) => prev.filter(s => s.id !== id));
-  };
-
-  return (
-    <StoreContext.Provider value={{ stores, addStore, updateStore, deleteStore }}>
-      {children}
-    </StoreContext.Provider>
-  );
-};
-
-export const useStores = (): StoreContextType => {
-  const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error('useStores must be used within a StoreProvider');
-  }
-  return context;
-};

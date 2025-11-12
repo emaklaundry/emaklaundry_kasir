@@ -10,14 +10,15 @@ interface ItemNotesModalProps {
 }
 
 const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, onSave }) => {
+
+  // Always preserve all notes, but only show/edit up to item.quantity
   const [notes, setNotes] = useState<{ note: string }[]>([]);
 
   useEffect(() => {
     if (item) {
-      // Ensure the notes array matches the item quantity
-      const initialNotes = Array.from({ length: item.quantity }, (_, i) => {
-        return item.itemDetails?.[i] || { note: '' };
-      });
+      // Use all notes from itemDetails, but only show up to quantity
+      const allNotes = item.itemDetails || [];
+      const initialNotes = Array.from({ length: item.quantity }, (_, i) => allNotes[i] || { note: '' });
       setNotes(initialNotes);
     }
   }, [item]);
@@ -29,7 +30,10 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, 
   };
 
   const handleSave = () => {
-    onSave(notes);
+    // Merge edited notes with any preserved notes beyond quantity
+    const allNotes = item.itemDetails || [];
+    const mergedNotes = [...notes, ...allNotes.slice(notes.length)];
+    onSave(mergedNotes);
     onClose();
   };
 

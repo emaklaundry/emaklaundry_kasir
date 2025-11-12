@@ -1,43 +1,30 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Settings } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
-interface SettingsContextType {
-  settings: Settings | null;
-  updateSettings: (data: Partial<Settings>) => Promise<void>;
-}
+const fetchSettings = async (): Promise<Settings | null> => {
+  const { data, error } = await supabase.from('settings').select('*').single();
+  if (error) throw error;
+  return data || null;
+};
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+export function useSettings() {
+  const queryClient = useQueryClient();
+  const { data: settings = null, ...query } = useQuery({ queryKey: ['settings'], queryFn: fetchSettings });
 
-export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const updateSettings = useMutation({
+    mutationFn: async (data: Partial<Settings>) => {
+      if (!settings) return;
+      const { data: updated, error } = await supabase.from('settings').update(data).eq('id', settings.id).select();
+      if (error) throw error;
+      return updated?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings'] })
+  });
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      const { data, error } = await supabase.from('settings').select('*').single();
-      if (!error && data) setSettings(data);
-    };
-    fetchSettings();
-  }, []);
-
-  const updateSettings = async (data: Partial<Settings>) => {
-    if (!settings) return;
-    const { data: updated, error } = await supabase.from('settings').update(data).eq('id', settings.id).select();
-    if (error) throw error;
-    if (updated) setSettings(updated[0]);
+  return {
+    settings,
+    updateSettings: updateSettings.mutateAsync,
+    ...query
   };
-
-  return (
-    <SettingsContext.Provider value={{ settings, updateSettings }}>
-      {children}
-    </SettingsContext.Provider>
-  );
-};
-
-export const useSettings = (): SettingsContextType => {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
-  return context;
-};
+}

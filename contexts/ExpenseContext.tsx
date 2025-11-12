@@ -1,56 +1,50 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Expense } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
-interface ExpenseContextType {
-  expenses: Expense[];
-  addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
-  updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
-  deleteExpense: (id: string) => Promise<void>;
+const fetchExpenses = async (): Promise<Expense[]> => {
+  const { data, error } = await supabase.from('expenses').select('*');
+  if (error) throw error;
+  return data || [];
+};
+
+export function useExpenses() {
+  const queryClient = useQueryClient();
+  const { data: expenses = [], ...query } = useQuery({ queryKey: ['expenses'], queryFn: fetchExpenses });
+
+  const addExpense = useMutation({
+    mutationFn: async (expense: Omit<Expense, 'id'>) => {
+      const { data, error } = await supabase.from('expenses').insert([expense]).select();
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+  });
+
+  const updateExpense = useMutation({
+    mutationFn: async (variables: { id: string; data: Partial<Expense> }) => {
+      const { id, data } = variables;
+      const { data: updated, error } = await supabase.from('expenses').update(data).eq('id', id).select();
+      if (error) throw error;
+      return updated?.[0] || null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+  });
+
+  const deleteExpense = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+  });
+
+  return {
+    expenses,
+    addExpense: addExpense.mutateAsync,
+    updateExpense: (id: string, data: Partial<Expense>) => updateExpense.mutateAsync({ id, data }),
+    deleteExpense: deleteExpense.mutateAsync,
+    ...query
+  };
 }
-
-const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
-
-export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-
-  useEffect(() => {
-    const fetchExpenses = async () => {
-      const { data, error } = await supabase.from('expenses').select('*');
-      if (!error && data) setExpenses(data);
-    };
-    fetchExpenses();
-  }, []);
-
-  const addExpense = async (expense: Omit<Expense, 'id'>) => {
-    const { data, error } = await supabase.from('expenses').insert([expense]).select();
-    if (error) throw error;
-    if (data) setExpenses((prev) => [...prev, ...data]);
-  };
-
-  const updateExpense = async (id: string, data: Partial<Expense>) => {
-    const { data: updated, error } = await supabase.from('expenses').update(data).eq('id', id).select();
-    if (error) throw error;
-    if (updated) setExpenses((prev) => prev.map(e => e.id === id ? { ...e, ...updated[0] } : e));
-  };
-
-  const deleteExpense = async (id: string) => {
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
-    if (error) throw error;
-    setExpenses((prev) => prev.filter(e => e.id !== id));
-  };
-
-  return (
-    <ExpenseContext.Provider value={{ expenses, addExpense, updateExpense, deleteExpense }}>
-      {children}
-    </ExpenseContext.Provider>
-  );
-};
-
-export const useExpenses = (): ExpenseContextType => {
-  const context = useContext(ExpenseContext);
-  if (!context) {
-    throw new Error('useExpenses must be used within an ExpenseProvider');
-  }
-  return context;
-};
