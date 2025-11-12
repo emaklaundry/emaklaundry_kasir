@@ -25,7 +25,7 @@ export enum PaymentMethod {
 
 export enum UserRole {
   SuperAdmin = 'Super Admin',
-  BranchAdmin = 'Admin Cabang',
+  BranchAdmin = 'Admin', // DIUBAH: dari 'Admin Cabang' menjadi 'Admin' agar cocok dengan SQL
   Cashier = 'Kasir',
 }
 

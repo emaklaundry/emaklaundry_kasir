@@ -1,6 +1,7 @@
+-- === 1. MEMBUAT TABEL ===
+-- Skema tabel inti Anda sudah sangat baik.
+-- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
 
-
--- 1. Membuat tabel 'stores' dengan ID sebagai 'uuid' DAN "isActive"
 CREATE TABLE public.stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -13,8 +14,8 @@ CREATE TABLE public.stores (
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL,
-  role text NOT NULL, -- 'Super Admin', 'Admin Cabang', 'Kasir'
-  store_id uuid REFERENCES stores(id),
+  role text NOT NULL, -- 'Super Admin', 'Admin', 'Kasir'
+  store_id uuid REFERENCES stores(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
   created_at timestamp WITH TIME ZONE DEFAULT NOW(),
   "isActive" boolean DEFAULT true,
   "canGiveDiscount" boolean DEFAULT false
@@ -61,7 +62,6 @@ CREATE TABLE public.assets (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- 7. Membuat tabel 'scheduled_maintenances'
 CREATE TABLE public.scheduled_maintenances (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "assetId" uuid REFERENCES assets(id) ON DELETE CASCADE,
@@ -96,7 +96,7 @@ CREATE TABLE public.transactions (
   "amountPaid" numeric NOT NULL,
   change numeric NOT NULL,
   "paymentMethod" text,
-  "createdByUserId" uuid REFERENCES profiles(id),
+  "createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
   notes text
 );
@@ -109,7 +109,17 @@ CREATE TABLE public.audit_logs (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- 11. Membuat tabel 'settings'
+-- DIHAPUS: Tabel user_credentials tidak diperlukan jika menggunakan Supabase Auth.
+-- Ini menyebabkan duplikasi dan kebingungan dengan RLS.
+-- Gunakan email/password dari 'auth.users' untuk login.
+--
+-- CREATE TABLE public.user_credentials (
+--   profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+--   username text UNIQUE NOT NULL,
+--   password_hash text NOT NULL
+-- );
+-- ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
+
 CREATE TABLE public.settings (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   "receiptMessage" text,
@@ -117,11 +127,8 @@ CREATE TABLE public.settings (
   "discountRate" numeric
 );
 
--- Aktifkan RLS untuk tabel settings
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
-
--- === TERAKHIR: AKTIFKAN RLS ===
--- (Anda bisa menjalankan ini sekarang atau nanti, tapi ini penting untuk keamanan)
+-- === 2. AKTIFKAN RLS ===
+-- (Ini sama seperti skrip Anda, semua sudah benar)
 
 ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -133,151 +140,200 @@ ALTER TABLE public.scheduled_maintenances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-
--- Policy: User bisa melihat profil mereka sendiri
-CREATE POLICY "Users can see their own profile"
-  ON public.profiles FOR SELECT
-  USING (id = auth.uid());
-
--- Policy: Super Admin bisa melihat SEMUA data
-CREATE POLICY "Super Admins can see all data"
-  ON public.stores FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.customers FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.services FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.inventory_items FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.assets FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.scheduled_maintenances FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.expenses FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.transactions FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-  
-CREATE POLICY "Super Admins can see all data"
-  ON public.audit_logs FOR SELECT
-  USING ((select role from profiles where id = auth.uid()) = 'Super Admin');
-
--- Policy: User non-admin hanya bisa melihat data cabang mereka sendiri
-CREATE POLICY "Users can see their own store data"
-  ON public.stores FOR SELECT
-  USING (id = (select store_id from profiles where id = auth.uid()));
-
-CREATE POLICY "Users can see their own store data"
-  ON public.customers FOR SELECT
-  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
-
-CREATE POLICY "Users can see their own store data"
-  ON public.services FOR SELECT
-  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
-
-CREATE POLICY "Users can see their own store data"
-  ON public.inventory_items FOR SELECT
-  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
-
-CREATE POLICY "Users can see their own store data"
-  ON public.assets FOR SELECT
-  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
-
-CREATE POLICY "Users can see their own store data"
-  ON public.scheduled_maintenances FOR SELECT
-  USING ( "assetId" IN (SELECT id FROM assets WHERE "storeId" = (select store_id from profiles where id = auth.uid())) );
-
-CREATE POLICY "Users can see their own store data"
-  ON public.expenses FOR SELECT
-  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
-
-CREATE POLICY "Users can see their own store data"
-  ON public.transactions FOR SELECT
-  USING ( "storeId" = (select store_id from profiles where id = auth.uid()) );
-
-CREATE POLICY "Users can see their own store data"
-  ON public.audit_logs FOR SELECT
-  USING ( (select role from profiles where id = auth.uid()) = 'Super Admin' OR "storeId" = (select store_id from profiles where id = auth.uid()) );
-
--- Policy: Pengguna yang terautentikasi bisa membaca Settings
-CREATE POLICY "Allow authenticated read access"
-  ON public.settings FOR SELECT
-  USING ( auth.role() = 'authenticated' );
-
--- Policy: SEMUA pengguna yang terautentikasi bisa INSERT data (RLS di atas akan memfilter SELECT)
--- Anda bisa memperketat ini jika diperlukan
-CREATE POLICY "Allow insert for authenticated users"
-  ON public.customers FOR INSERT
-  WITH CHECK ( "storeId" = (select store_id from profiles where id = auth.uid()) OR (select role from profiles where id = auth.uid()) = 'Super Admin' );
-
-CREATE POLICY "Allow insert for authenticated users"
-  ON public.transactions FOR INSERT
-  WITH CHECK ( "storeId" = (select store_id from profiles where id = auth.uid()) OR (select role from profiles where id = auth.uid()) = 'Super Admin' );
-
-CREATE POLICY "Allow insert for authenticated users"
-  ON public.expenses FOR INSERT
-  WITH CHECK ( "storeId" = (select store_id from profiles where id = auth.uid()) OR (select role from profiles where id = auth.uid()) = 'Super Admin' );
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 
--- Policy CRUD untuk stores
-CREATE POLICY "Allow insert for authenticated users" ON public.stores FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow update for authenticated users" ON public.stores FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow delete for authenticated users" ON public.stores FOR DELETE USING (auth.role() = 'authenticated');
+-- === 3. HELPER FUNCTIONS UNTUK RLS ===
+-- Menambahkan fungsi ini membuat RLS lebih bersih dan lebih cepat
 
--- Policy CRUD untuk services
-CREATE POLICY "Allow insert for authenticated users" ON public.services FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow update for authenticated users" ON public.services FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow delete for authenticated users" ON public.services FOR DELETE USING (auth.role() = 'authenticated');
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER -- DIPERLUKAN: Menjalankan fungsi sebagai pembuat (bukan pemanggil) untuk bypass RLS
+SET search_path = public -- DIPERLUKAN: Mencegah pembajakan search path
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid()
+$$;
 
--- Policy CRUD untuk inventory_items
-CREATE POLICY "Allow insert for authenticated users" ON public.inventory_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow update for authenticated users" ON public.inventory_items FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow delete for authenticated users" ON public.inventory_items FOR DELETE USING (auth.role() = 'authenticated');
-
--- Policy CRUD untuk assets
-CREATE POLICY "Allow insert for authenticated users" ON public.assets FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow update for authenticated users" ON public.assets FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow delete for authenticated users" ON public.assets FOR DELETE USING (auth.role() = 'authenticated');
-
--- Policy CRUD untuk scheduled_maintenances
-CREATE POLICY "Allow insert for authenticated users" ON public.scheduled_maintenances FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow update for authenticated users" ON public.scheduled_maintenances FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow delete for authenticated users" ON public.scheduled_maintenances FOR DELETE USING (auth.role() = 'authenticated');
-
--- Policy CRUD untuk audit_logs
-CREATE POLICY "Allow insert for authenticated users" ON public.audit_logs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow update for authenticated users" ON public.audit_logs FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow delete for authenticated users" ON public.audit_logs FOR DELETE USING (auth.role() = 'authenticated');
-
--- Policy CRUD untuk settings
-CREATE POLICY "Allow insert for authenticated users" ON public.settings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow update for authenticated users" ON public.settings FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow delete for authenticated users" ON public.settings FOR DELETE USING (auth.role() = 'authenticated');
+CREATE OR REPLACE FUNCTION public.get_my_store_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER -- DIPERLUKAN: Menjalankan fungsi sebagai pembuat (bukan pemanggil) untuk bypass RLS
+SET search_path = public -- DIPERLUKAN: Mencegah pembajakan search path
+AS $$
+  SELECT store_id FROM public.profiles WHERE id = auth.uid()
+$$;
 
 
--- Ganti UUID di bawah ini jika perlu, pastikan user dengan id ini juga ada di auth.users
+-- === 4. MEMBUAT RLS POLICY YANG BARU DAN AMAN ===
+
+-- Pola Umum:
+-- SELECT: Super Admin, Admin (cabang), Kasir (cabang)
+-- INSERT: Super Admin, Admin (cabang), Kasir (cabang)
+-- UPDATE: Super Admin, Admin (cabang)
+-- DELETE: Super Admin, Admin (cabang)
+
+-- --- Tabel: profiles ---
+CREATE POLICY "Users can see their own profile" ON public.profiles
+  FOR SELECT USING (id = auth.uid());
+CREATE POLICY "Admins can see profiles in their store" ON public.profiles
+  FOR SELECT USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
+CREATE POLICY "Super Admins can see all profiles" ON public.profiles
+  FOR SELECT USING (public.get_my_role() = 'Super Admin');
+CREATE POLICY "Users can update their own profile" ON public.profiles
+  FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
+  FOR ALL USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id())
+  WITH CHECK (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
+CREATE POLICY "Super Admins can manage all profiles" ON public.profiles
+  FOR ALL USING (public.get_my_role() = 'Super Admin');
+
+-- --- Tabel: stores ---
+CREATE POLICY "Allow SELECT for store users" ON public.stores
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR id = public.get_my_store_id());
+CREATE POLICY "Allow INSERT/UPDATE/DELETE for Super Admins only" ON public.stores
+  FOR ALL USING (public.get_my_role() = 'Super Admin')
+  WITH CHECK (public.get_my_role() = 'Super Admin');
+
+-- --- Tabel: customers ---
+CREATE POLICY "Allow SELECT for store users" ON public.customers
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow INSERT for store users" ON public.customers
+  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.customers
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow DELETE for Admins" ON public.customers
+  FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+
+-- --- Tabel: services ---
+CREATE POLICY "Allow SELECT for store users" ON public.services
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow INSERT for Admins" ON public.services
+  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.services
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow DELETE for Admins" ON public.services
+  FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+
+-- --- Tabel: inventory_items ---
+CREATE POLICY "Allow SELECT for store users" ON public.inventory_items
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow INSERT for store users" ON public.inventory_items
+  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow UPDATE for Admins" ON public.inventory_items
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow DELETE for Admins" ON public.inventory_items
+  FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+
+-- --- Tabel: assets ---
+CREATE POLICY "Allow SELECT for store users" ON public.assets
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow INSERT for Admins" ON public.assets
+  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow UPDATE for Admins" ON public.assets
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow DELETE for Admins" ON public.assets
+  FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+
+-- --- Tabel: scheduled_maintenances ---
+CREATE POLICY "Allow SELECT for store users" ON public.scheduled_maintenances
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "assetId" IN (SELECT id FROM public.assets WHERE "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow INSERT for Admins" ON public.scheduled_maintenances
+  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "assetId" IN (SELECT id FROM public.assets WHERE "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow UPDATE for Admins" ON public.scheduled_maintenances
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "assetId" IN (SELECT id FROM public.assets WHERE "storeId" = public.get_my_store_id())));
+CREATE POLICY "Allow DELETE for Admins" ON public.scheduled_maintenances
+  FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "assetId" IN (SELECT id FROM public.assets WHERE "storeId" = public.get_my_store_id())));
+
+-- --- Tabel: expenses ---
+CREATE POLICY "Allow SELECT for store users" ON public.expenses
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow INSERT for store users" ON public.expenses
+  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow UPDATE for Admins" ON public.expenses
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow DELETE for Admins" ON public.expenses
+  FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+
+-- --- Tabel: transactions ---
+CREATE POLICY "Allow SELECT for store users" ON public.transactions
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow INSERT for store users" ON public.transactions
+  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+CREATE POLICY "Allow UPDATE for Admins" ON public.transactions
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow DELETE for Admins" ON public.transactions
+  FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+
+-- --- Tabel: audit_logs ---
+CREATE POLICY "Allow SELECT for Admins" ON public.audit_logs
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+CREATE POLICY "Allow INSERT for all users" ON public.audit_logs
+  FOR INSERT WITH CHECK (true); -- Diasumsikan fungsi trigger atau app yang akan mengisinya
+
+-- --- Tabel: settings ---
+CREATE POLICY "Allow all read access" ON public.settings
+  FOR SELECT USING (true);
+CREATE POLICY "Allow ALL for Super Admin only" ON public.settings
+  FOR ALL USING (public.get_my_role() = 'Super Admin')
+  WITH CHECK (public.get_my_role() = 'Super Admin');
+
+
+-- === 5. DATA CONTOH (SAMPLE DATA) ===
+
+-- user dengan id ini ada di auth.users
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL);
 
-INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('', 0, 0);
+-- cabang: Kota Banjar
+-- UUID: 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+INSERT INTO public.stores (id, name, address, "isActive")
+VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banjar', true);
+
+-- admin: admin_banjar (cabang Kota Banjar)
+-- nama: yopi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+-- role: Admin
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+
+-- DIHAPUS: Insert ke user_credentials. Gunakan Supabase Auth.
+-- INSERT INTO public.user_credentials (profile_id, username, password_hash)
+-- VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'admin_banjar', '$2b$10$VA30w6vAXfP3REFPEIpkqu6vjgs/FvBJHB8nWQouvVmZd0wUTfMaC');
+
+-- kasir: ani (cabang Kota Banjar)
+-- nama: ani, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+
+-- DIHAPUS: Insert ke user_credentials. Gunakan Supabase Auth.
+-- INSERT INTO public.user_credentials (profile_id, username, password_hash)
+-- VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', '$2b$10$VA30w6vAXfP3REFPEIpkqu6vjgs/FvBJHB8nWQouvVmZd0wUTfMaC');
 
 
+-- === 6. FUNCTIONS (Stubs) ===
+-- (Sama seperti skrip Anda)
+
+CREATE OR REPLACE FUNCTION public.log_profiles_audit()
+RETURNS trigger AS $$
+BEGIN
+  -- TODO: Implementasikan logic audit log
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql
+SET search_path = public;
+
+-- DIHAPUS: Fungsi ini tidak diperlukan lagi
+-- CREATE OR REPLACE FUNCTION public.log_user_credentials_audit()
+-- RETURNS trigger AS $$
+-- BEGIN
+--   RETURN NEW;
+-- END;
+-- $$ LANGUAGE plpgsql
+-- SET search_path = public;
 
 
+-- === 7. PENGATURAN AWAL (Initial Settings) ===
 
-
-
+INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0);
