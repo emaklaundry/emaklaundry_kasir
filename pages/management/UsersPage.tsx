@@ -72,12 +72,7 @@ const UsersPage: React.FC = () => {
         }
     };
 
-    const handleDelete = (user: User) => {
-        if (user.role === UserRole.SuperAdmin) return;
-        setUserToDelete(user);
-            try {
-        setUserToToggleStatus(user);
-    };
+
 
     const confirmToggleStatus = async () => {
         if (userToToggleStatus) {
@@ -205,14 +200,6 @@ const UsersPage: React.FC = () => {
                                             >
                                                 <PowerIcon className="w-5 h-5" />
                                             </button>
-                                            <button 
-                                                onClick={() => handleDelete(user)} 
-                                                title={isSuperAdmin ? "Super Admin tidak bisa dihapus" : "Hapus"} 
-                                                disabled={isSuperAdmin}
-                                                className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <Trash2Icon className="w-5 h-5" />
-                                            </button>
                                         </td>
                                     </tr>
                                 );
@@ -253,8 +240,7 @@ const UsersPage: React.FC = () => {
                                 </div>
                                 <div className="mt-3 flex items-center justify-end gap-2 border-t dark:border-slate-600 pt-2">
                                     <button onClick={() => { setCurrentUserToEdit(user); setIsFormModalOpen(true); }} title="Edit" className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"><EditIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleToggleStatus(user)} title={isSuperAdmin ? "Super Admin tidak bisa dinonaktifkan" : (user.isActive ? "Nonaktifkan" : "Aktifkan")} disabled={isSuperAdmin} className={`p-2 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50`}><PowerIcon className="w-5 h-5" /></button>
-                                    <button onClick={() => handleDelete(user)} title={isSuperAdmin ? "Super Admin tidak bisa dihapus" : "Hapus"} disabled={isSuperAdmin} className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"><Trash2Icon className="w-5 h-5" /></button>
+                                    <button onClick={() => setUserToToggleStatus(user)} title={isSuperAdmin ? "Super Admin tidak bisa dinonaktifkan" : (user.isActive ? "Nonaktifkan" : "Aktifkan")} disabled={isSuperAdmin} className={`p-2 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50`}><PowerIcon className="w-5 h-5" /></button>
                                 </div>
                             </div>
                         )
@@ -277,15 +263,6 @@ const UsersPage: React.FC = () => {
                 />
             )}
 
-            {userToDelete && (
-                <ConfirmationModal
-                    isOpen={true}
-                    onClose={() => setUserToDelete(null)}
-                    onConfirm={confirmDelete}
-                    title="Hapus Pengguna"
-                    message={`Apakah Anda yakin ingin menghapus pengguna "${userToDelete.name}"?`}
-                />
-            )}
 
             {userToToggleStatus && (
                 <ConfirmationModal
