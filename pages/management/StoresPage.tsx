@@ -175,8 +175,8 @@ const StoresPage: React.FC = () => {
 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
-                 {stores.length > 0 ? (
-                    stores.map(store => (
+                {sortedStores.length > 0 ? (
+                   sortedStores.map(store => (
                         <div key={store.id} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
                             <div className="flex justify-between items-start">
                                 <div>

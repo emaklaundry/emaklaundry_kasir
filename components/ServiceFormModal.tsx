@@ -6,7 +6,7 @@ import { formatRupiah, parseRupiah } from '../utils/formatting';
 interface ServiceFormModalProps {
     service: Service | null,
     onClose: () => void,
-    onSave: (service: Omit<Service, 'id'>) => void
+    onSave: (service: Omit<Service, 'id' | 'storeId'>) => void
 }
 
 const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, onSave }) => {

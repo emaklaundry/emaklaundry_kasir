@@ -19,10 +19,11 @@ import WhatsAppModal from '../../components/WhatsAppModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 
 const NewTransactionPage: React.FC = () => {
+    // --- SEMUA HOOK HARUS DI ATAS SINI ---
     const navigate = useNavigate();
-    // 1. TAMBAHKAN 'isLoading' DARI useSettings
     const { settings, isLoading: isLoadingSettings } = useSettings();
-    // 2. TAMBAHKAN BLOK LOADING CHECK SEBELUM RETURN UTAMA
+
+    // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
         return (
             <div className="flex justify-center items-center w-full h-96">
@@ -32,7 +33,6 @@ const NewTransactionPage: React.FC = () => {
         );
     }
 
-    // 3. TAMBAHKAN BLOK ERROR CHECK JIKA SETTINGS GAGAL DIMUAT
     if (!settings) {
          return (
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">

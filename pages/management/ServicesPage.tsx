@@ -38,7 +38,27 @@ const ServicesPage: React.FC = () => {
 
     const handleCloseFormModal = () => {
         setIsFormModalOpen(false);
-        setCurrentService(null);
+        const handleSaveService = async (serviceData: Omit<Service, 'id' | 'storeId'>) => {
+            const storeId = currentService?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+
+            if (!storeId || storeId === 'all') {
+                addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit layanan.', 'warning');
+                return;
+            }
+
+            try {
+                if (currentService) {
+                    await updateService(currentService.id, { ...serviceData, storeId });
+                    addAuditLog(`Memperbarui layanan: "${serviceData.name}".`, storeId);
+                } else {
+                    await addService({ ...serviceData, storeId });
+                    addAuditLog(`Menambahkan layanan baru: "${serviceData.name}".`, storeId);
+                }
+                handleCloseFormModal();
+            } catch (error: any) {
+                addToast(`Gagal menyimpan layanan: ${error.message}`, 'error');
+            }
+        };
     };
 
     const handleSaveService = async (serviceData: Omit<Service, 'id'>) => {

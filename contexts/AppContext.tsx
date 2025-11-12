@@ -23,6 +23,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { addToast } = useToasts(); // 2. INISIALISASI HOOK
 
   useEffect(() => {
+    // Definisikan getProfile di dalam useEffect agar closure addToast selalu fresh
     const getProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -32,14 +33,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .eq('id', session.user.id)
           .single();
         if (!error && data) {
-          // 3. TAMBAHKAN LOGIKA PENGECEKAN DI SINI
           if (data.isActive === false) {
-            // Jika user tidak aktif
             addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
-            await supabase.auth.signOut(); // Langsung logout kembali
+            await supabase.auth.signOut();
             setCurrentUser(null);
           } else {
-            // Jika user aktif, lanjutkan seperti biasa
             setCurrentUser({
               id: data.id,
               name: data.name,
@@ -64,7 +62,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, [addToast]); // 4. Tambahkan addToast ke dependency array
+  }, [addToast]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

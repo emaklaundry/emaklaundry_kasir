@@ -25,7 +25,6 @@ const UsersPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
 
-    // Tombol tambah pengguna hanya tampilkan info toast
     const handleAddUser = () => {
         addToast('Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication). Setelah itu, profil dapat diedit di halaman ini.', 'info');
     };
@@ -76,29 +75,7 @@ const UsersPage: React.FC = () => {
     const handleDelete = (user: User) => {
         if (user.role === UserRole.SuperAdmin) return;
         setUserToDelete(user);
-    };
-
-    const confirmDelete = async () => {
-        if (userToDelete) {
             try {
-                const { error } = await supabase
-                    .from('profiles')
-                    .delete()
-                    .eq('id', userToDelete.id);
-                if (error) throw error;
-                addAuditLog(`Menghapus profil pengguna: "${userToDelete.name}".`);
-                addToast('Profil pengguna berhasil dihapus.', 'success');
-                await fetchProfiles();
-            } catch (error: any) {
-                addToast(`Gagal menghapus: ${error.message}`, 'error');
-            } finally {
-                setUserToDelete(null);
-            }
-        }
-    };
-
-    const handleToggleStatus = (user: User) => {
-        if (user.role === UserRole.SuperAdmin) return;
         setUserToToggleStatus(user);
     };
 

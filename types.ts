@@ -56,6 +56,7 @@ export interface Service {
   price: number;
   unit: string;
   durationDays: number;
+  storeId: string; // <-- TAMBAHKAN INI
 }
 
 export interface TransactionItemDetail {
