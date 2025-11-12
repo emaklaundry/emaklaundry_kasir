@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { AppProvider } from './AppContext';
-// Removed unused Provider imports; only hooks are exported from these contexts
+// AppProviders: Only wraps UI/UX providers (Toast, Theme, CommandPalette, etc). Data providers (QueryClientProvider) are set at index.tsx root.
 import { ToastProvider } from './ToastContext';
 import { CommandPaletteProvider } from '../hooks/useCommandPalette';
 

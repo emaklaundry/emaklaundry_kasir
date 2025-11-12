@@ -24,9 +24,10 @@ const UsersPage: React.FC = () => {
     const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleOpenFormModal = (user: User | null = null) => {
-        setCurrentUserToEdit(user);
-        setIsFormModalOpen(true);
+
+    // Tombol tambah pengguna hanya tampilkan info toast
+    const handleAddUser = () => {
+        addToast('Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication). Setelah itu, profil dapat diedit di halaman ini.', 'info');
     };
 
     const handleCloseFormModal = () => {
@@ -180,7 +181,7 @@ const UsersPage: React.FC = () => {
                             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                         />
                     </div>
-                    <button onClick={() => handleOpenFormModal()} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">
+                    <button onClick={handleAddUser} className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">
                         <PlusCircleIcon className="h-5 w-5 mr-2" />
                         Tambah Pengguna
                     </button>
@@ -274,7 +275,7 @@ const UsersPage: React.FC = () => {
                                     </span>
                                 </div>
                                 <div className="mt-3 flex items-center justify-end gap-2 border-t dark:border-slate-600 pt-2">
-                                    <button onClick={() => handleOpenFormModal(user)} title="Edit" className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"><EditIcon className="w-5 h-5" /></button>
+                                    <button onClick={() => { setCurrentUserToEdit(user); setIsFormModalOpen(true); }} title="Edit" className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"><EditIcon className="w-5 h-5" /></button>
                                     <button onClick={() => handleToggleStatus(user)} title={isSuperAdmin ? "Super Admin tidak bisa dinonaktifkan" : (user.isActive ? "Nonaktifkan" : "Aktifkan")} disabled={isSuperAdmin} className={`p-2 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50`}><PowerIcon className="w-5 h-5" /></button>
                                     <button onClick={() => handleDelete(user)} title={isSuperAdmin ? "Super Admin tidak bisa dihapus" : "Hapus"} disabled={isSuperAdmin} className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50"><Trash2Icon className="w-5 h-5" /></button>
                                 </div>

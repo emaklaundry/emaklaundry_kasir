@@ -1,3 +1,16 @@
+-- User credentials table for local auth (if needed)
+CREATE TABLE IF NOT EXISTS public.user_credentials (
+  profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  username text UNIQUE NOT NULL,
+  password_hash text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
+-- RLS policies for user_credentials
+CREATE POLICY "Users can see their own credentials" ON public.user_credentials
+  FOR SELECT USING (profile_id = auth.uid());
+CREATE POLICY "Users can update their own credentials" ON public.user_credentials
+  FOR UPDATE USING (profile_id = auth.uid());
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
@@ -32,15 +45,33 @@ CREATE TABLE public.customers (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
+
+-- ENUM for service category
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
+    CREATE TYPE public.service_category AS ENUM ('Kiloan','Satuan','Sepatu','Karpet');
+  END IF;
+END$$;
+
 CREATE TABLE public.services (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
-  category text NOT NULL,
+  category public.service_category NOT NULL,
   price integer NOT NULL,
   unit text NOT NULL,
   "durationDays" integer NOT NULL,
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
+
+-- User credentials table for local auth (if needed)
+CREATE TABLE IF NOT EXISTS public.user_credentials (
+  profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  username text UNIQUE NOT NULL,
+  password_hash text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE public.inventory_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -158,8 +189,9 @@ $$;
 
 -- === 4. MEMBUAT RLS POLICY YANG BARU DAN AMAN ===
 -- --- Tabel: profiles ---
-CREATE POLICY "Users can see their own profile" ON public.profiles
-  FOR SELECT USING (id = auth.uid());
+DROP POLICY IF EXISTS "Users can see their own profile" ON public.profiles;
+CREATE POLICY "Users can see their own profile (if active)" ON public.profiles
+  FOR SELECT USING (id = auth.uid() AND "isActive" = true);
 CREATE POLICY "Admins can see profiles in their store" ON public.profiles
   FOR SELECT USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
 CREATE POLICY "Super Admins can see all profiles" ON public.profiles
@@ -298,14 +330,8 @@ VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234
 -- === 6. FUNCTIONS (Stubs) ===
 -- (Sama seperti skrip Anda)
 
-CREATE OR REPLACE FUNCTION public.log_profiles_audit()
-RETURNS trigger AS $$
-BEGIN
-  -- TODO: Implementasikan logic audit log
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql
-SET search_path = public;
+
+-- (Audit log trigger removed; handled by frontend or implement if needed)
 
 
 -- === 7. PENGATURAN AWAL (Initial Settings) ===
