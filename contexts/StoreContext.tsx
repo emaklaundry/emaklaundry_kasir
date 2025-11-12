@@ -24,12 +24,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addStore = async (store: Omit<Store, 'id'>) => {
     const { data, error } = await supabase.from('stores').insert([store]).select();
-    if (!error && data) setStores((prev) => [...prev, ...data]);
+    if (error) throw error;
+    if (data) setStores((prev) => [...prev, ...data]);
   };
 
   const updateStore = async (id: string, data: Partial<Store>) => {
     const { data: updated, error } = await supabase.from('stores').update(data).eq('id', id).select();
-    if (!error && updated) setStores((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
+    if (error) throw error;
+    if (updated) setStores((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
   };
 
   const deleteStore = async (id: string) => {

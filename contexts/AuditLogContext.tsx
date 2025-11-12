@@ -30,7 +30,8 @@ export const AuditLogProvider: React.FC<{ children: ReactNode }> = ({ children }
       ...(storeId && storeId !== 'all' ? { storeId } : {})
     };
     const { data, error } = await supabase.from('audit_logs').insert([newLog]).select();
-    if (!error && data) setLogs(prevLogs => [data[0], ...prevLogs]);
+    if (error) throw error;
+    if (data) setLogs(prevLogs => [data[0], ...prevLogs]);
   }, [currentUser]);
 
   return (

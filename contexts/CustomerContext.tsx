@@ -29,23 +29,24 @@ export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }
     setCustomers((prev) => [...prev, optimisticCustomer]);
     try {
       const { data, error } = await supabase.from('customers').insert([customer]).select();
-      if (!error && data && data[0]) {
+      if (error) throw error;
+      if (data && data[0]) {
         setCustomers((prev) => prev.map(c => c.id === tempId ? data[0] : c));
         return data[0];
       } else {
-        // Rollback jika gagal
         setCustomers((prev) => prev.filter(c => c.id !== tempId));
         return null;
       }
     } catch (e) {
       setCustomers((prev) => prev.filter(c => c.id !== tempId));
-      return null;
+      throw e;
     }
   };
 
   const updateCustomer = async (id: string, data: Partial<Customer>) => {
     const { data: updated, error } = await supabase.from('customers').update(data).eq('id', id).select();
-    if (!error && updated) setCustomers((prev) => prev.map(c => c.id === id ? { ...c, ...updated[0] } : c));
+    if (error) throw error;
+    if (updated) setCustomers((prev) => prev.map(c => c.id === id ? { ...c, ...updated[0] } : c));
   };
 
   const deleteCustomer = async (id: string) => {

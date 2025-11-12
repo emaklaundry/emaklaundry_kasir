@@ -23,7 +23,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const updateSettings = async (data: Partial<Settings>) => {
     if (!settings) return;
     const { data: updated, error } = await supabase.from('settings').update(data).eq('id', settings.id).select();
-    if (!error && updated) setSettings(updated[0]);
+    if (error) throw error;
+    if (updated) setSettings(updated[0]);
   };
 
   return (

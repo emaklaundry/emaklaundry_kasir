@@ -23,7 +23,8 @@ export const TransactionProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const addTransaction = async (transaction: Omit<Transaction, 'id'>): Promise<Transaction | null> => {
     const { data, error } = await supabase.from('transactions').insert([transaction]).select();
-    if (!error && data && data.length > 0) {
+    if (error) throw error;
+    if (data && data.length > 0) {
       setTransactions((prev) => [...prev, ...data]);
       return data[0];
     }
@@ -32,7 +33,8 @@ export const TransactionProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const updateTransaction = async (id: string, data: Partial<Transaction>) => {
     const { data: updated, error } = await supabase.from('transactions').update(data).eq('id', id).select();
-    if (!error && updated) setTransactions((prev) => prev.map(t => t.id === id ? { ...t, ...updated[0] } : t));
+    if (error) throw error;
+    if (updated) setTransactions((prev) => prev.map(t => t.id === id ? { ...t, ...updated[0] } : t));
   };
 
   return (

@@ -24,12 +24,14 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const addInventoryItem = async (item: Omit<InventoryItem, 'id'>) => {
     const { data, error } = await supabase.from('inventory_items').insert([item]).select();
-    if (!error && data) setInventory((prev) => [...prev, ...data]);
+    if (error) throw error;
+    if (data) setInventory((prev) => [...prev, ...data]);
   };
 
   const updateInventoryItem = async (id: string, data: Partial<InventoryItem>) => {
     const { data: updated, error } = await supabase.from('inventory_items').update(data).eq('id', id).select();
-    if (!error && updated) setInventory((prev) => prev.map(i => i.id === id ? { ...i, ...updated[0] } : i));
+    if (error) throw error;
+    if (updated) setInventory((prev) => prev.map(i => i.id === id ? { ...i, ...updated[0] } : i));
   };
 
   const deleteInventoryItem = async (id: string) => {

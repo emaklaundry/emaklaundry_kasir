@@ -32,12 +32,14 @@ export const ScheduledMaintenanceProvider: React.FC<{ children: ReactNode }> = (
 
   const addScheduledMaintenance = async (sm: Omit<ScheduledMaintenance, 'id'>) => {
     const { data, error } = await supabase.from('scheduled_maintenances').insert([sm]).select();
-    if (!error && data) setAllScheduledMaintenances((prev) => [...prev, ...data]);
+    if (error) throw error;
+    if (data) setAllScheduledMaintenances((prev) => [...prev, ...data]);
   };
 
   const updateScheduledMaintenance = async (id: string, data: Partial<ScheduledMaintenance>) => {
     const { data: updated, error } = await supabase.from('scheduled_maintenances').update(data).eq('id', id).select();
-    if (!error && updated) setAllScheduledMaintenances((prev) => prev.map(sm => sm.id === id ? { ...sm, ...updated[0] } : sm));
+    if (error) throw error;
+    if (updated) setAllScheduledMaintenances((prev) => prev.map(sm => sm.id === id ? { ...sm, ...updated[0] } : sm));
   };
   
   const deleteScheduledMaintenance = async (id: string) => {

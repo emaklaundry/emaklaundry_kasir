@@ -24,12 +24,14 @@ export const AssetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addAsset = async (asset: Omit<Asset, 'id'>) => {
     const { data, error } = await supabase.from('assets').insert([asset]).select();
-    if (!error && data) setAssets((prev) => [...prev, ...data]);
+    if (error) throw error;
+    if (data) setAssets((prev) => [...prev, ...data]);
   };
 
   const updateAsset = async (id: string, data: Partial<Asset>) => {
     const { data: updated, error } = await supabase.from('assets').update(data).eq('id', id).select();
-    if (!error && updated) setAssets((prev) => prev.map(a => a.id === id ? { ...a, ...updated[0] } : a));
+    if (error) throw error;
+    if (updated) setAssets((prev) => prev.map(a => a.id === id ? { ...a, ...updated[0] } : a));
   };
 
   const deleteAsset = async (id: string) => {

@@ -50,7 +50,7 @@ const ServicesPage: React.FC = () => {
             }
             handleCloseFormModal();
         } catch (error: any) {
-            // TODO: Tambahkan notifikasi error jika diperlukan
+            
         }
     };
 
@@ -64,7 +64,7 @@ const ServicesPage: React.FC = () => {
                 await deleteService(serviceToDelete.id);
                 addAuditLog(`Menghapus layanan: "${serviceToDelete.name}".`);
             } catch (error: any) {
-                // TODO: Tambahkan notifikasi error jika diperlukan
+                
             } finally {
                 setServiceToDelete(null);
             }

@@ -60,7 +60,7 @@ const StoresPage: React.FC = () => {
             }
             handleCloseFormModal();
         } catch (error: any) {
-            // TODO: Tambahkan notifikasi error jika diperlukan
+            
         }
     };
 

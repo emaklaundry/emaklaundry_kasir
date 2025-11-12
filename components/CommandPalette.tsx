@@ -15,6 +15,7 @@ interface Command {
     section: string;
     action: () => void;
     keywords?: string;
+    path?: string;
 }
 
 const CommandPalette: React.FC = () => {
@@ -27,30 +28,27 @@ const CommandPalette: React.FC = () => {
     const resultsRef = useRef<HTMLDivElement>(null);
 
     const baseCommands: Omit<Command, 'id' | 'action'>[] = [
-        { title: 'Dashboard', icon: HomeIcon, section: 'Navigasi' },
-        { title: 'Daftar Transaksi', icon: ShoppingCartIcon, section: 'Navigasi', keywords: 'list' },
-        { title: 'Buat Transaksi Baru', icon: PlusCircleIcon, section: 'Navigasi', keywords: 'new add' },
-        { title: 'Manajemen Pelanggan', icon: UsersIcon, section: 'Navigasi', keywords: 'customer' },
-        { title: 'Manajemen Layanan', icon: PackageIcon, section: 'Navigasi', keywords: 'service' },
-        { title: 'Manajemen Inventaris', icon: WrenchIcon, section: 'Navigasi', keywords: 'inventory' },
-        { title: 'Manajemen Aset', icon: WrenchIcon, section: 'Navigasi', keywords: 'asset maintenance' },
-        { title: 'Manajemen Pengeluaran', icon: DollarSignIcon, section: 'Navigasi', keywords: 'expense' },
-        { title: 'Manajemen Pengguna', icon: UsersIcon, section: 'Navigasi', keywords: 'user' },
-        { title: 'Manajemen Cabang', icon: TruckIcon, section: 'Navigasi', keywords: 'store' },
-        { title: 'Laporan', icon: BarChartIcon, section: 'Navigasi', keywords: 'report' },
-        { title: 'Log Audit', icon: HistoryIcon, section: 'Navigasi', keywords: 'audit log' },
-        { title: 'Pengaturan', icon: SettingsIcon, section: 'Navigasi', keywords: 'setting' },
+        { title: 'Dashboard', icon: HomeIcon, section: 'Navigasi', path: '/' },
+        { title: 'Daftar Transaksi', icon: ShoppingCartIcon, section: 'Navigasi', keywords: 'list', path: '/transactions' },
+        { title: 'Buat Transaksi Baru', icon: PlusCircleIcon, section: 'Navigasi', keywords: 'new add', path: '/transactions/new' },
+        { title: 'Manajemen Pelanggan', icon: UsersIcon, section: 'Navigasi', keywords: 'customer', path: '/management/customers' },
+        { title: 'Manajemen Layanan', icon: PackageIcon, section: 'Navigasi', keywords: 'service', path: '/management/services' },
+        { title: 'Manajemen Inventaris', icon: WrenchIcon, section: 'Navigasi', keywords: 'inventory', path: '/management/inventory' },
+        { title: 'Manajemen Aset', icon: WrenchIcon, section: 'Navigasi', keywords: 'asset maintenance', path: '/management/assets' },
+        { title: 'Manajemen Pengeluaran', icon: DollarSignIcon, section: 'Navigasi', keywords: 'expense', path: '/management/expenses' },
+        { title: 'Manajemen Pengguna', icon: UsersIcon, section: 'Navigasi', keywords: 'user', path: '/management/users' },
+        { title: 'Manajemen Cabang', icon: TruckIcon, section: 'Navigasi', keywords: 'store', path: '/management/stores' },
+        { title: 'Laporan', icon: BarChartIcon, section: 'Navigasi', keywords: 'report', path: '/reports' },
+        { title: 'Log Audit', icon: HistoryIcon, section: 'Navigasi', keywords: 'audit log', path: '/audit-log' },
+        { title: 'Pengaturan', icon: SettingsIcon, section: 'Navigasi', keywords: 'setting', path: '/settings' },
     ];
     
     const allCommands = useMemo(() => {
-        const navigationCommands: Command[] = baseCommands.map(cmd => {
-            const path = `/${cmd.title.toLowerCase().replace(/ /g, '-').replace('manajemen-', 'management/')}`;
-            return {
-                ...cmd,
-                id: `nav-${path}`,
-                action: () => navigate(path.replace('buat-transaksi-baru', 'transactions/new')),
-            };
-        });
+        const navigationCommands: Command[] = baseCommands.map(cmd => ({
+            ...cmd,
+            id: `nav-${cmd.path}`,
+            action: () => navigate(cmd.path!),
+        }));
 
         const customerCommands: Command[] = customers.map(customer => ({
             id: `cust-${customer.id}`,
@@ -62,7 +60,6 @@ const CommandPalette: React.FC = () => {
         }));
         
         return [...navigationCommands, ...customerCommands];
-
     }, [customers, navigate]);
     
     const filteredCommands = useMemo(() => {

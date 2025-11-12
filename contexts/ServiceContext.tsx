@@ -24,12 +24,14 @@ export const ServiceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const addService = async (service: Omit<Service, 'id'>) => {
     const { data, error } = await supabase.from('services').insert([service]).select();
-    if (!error && data) setServices((prev) => [...prev, ...data]);
+    if (error) throw error;
+    if (data) setServices((prev) => [...prev, ...data]);
   };
 
   const updateService = async (id: string, data: Partial<Service>) => {
     const { data: updated, error } = await supabase.from('services').update(data).eq('id', id).select();
-    if (!error && updated) setServices((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
+    if (error) throw error;
+    if (updated) setServices((prev) => prev.map(s => s.id === id ? { ...s, ...updated[0] } : s));
   };
 
   const deleteService = async (id: string) => {

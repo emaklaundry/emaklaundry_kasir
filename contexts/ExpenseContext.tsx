@@ -24,12 +24,14 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const addExpense = async (expense: Omit<Expense, 'id'>) => {
     const { data, error } = await supabase.from('expenses').insert([expense]).select();
-    if (!error && data) setExpenses((prev) => [...prev, ...data]);
+    if (error) throw error;
+    if (data) setExpenses((prev) => [...prev, ...data]);
   };
 
   const updateExpense = async (id: string, data: Partial<Expense>) => {
     const { data: updated, error } = await supabase.from('expenses').update(data).eq('id', id).select();
-    if (!error && updated) setExpenses((prev) => prev.map(e => e.id === id ? { ...e, ...updated[0] } : e));
+    if (error) throw error;
+    if (updated) setExpenses((prev) => prev.map(e => e.id === id ? { ...e, ...updated[0] } : e));
   };
 
   const deleteExpense = async (id: string) => {
