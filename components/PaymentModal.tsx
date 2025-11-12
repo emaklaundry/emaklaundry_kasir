@@ -5,18 +5,20 @@ import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useToasts } from '../contexts/ToastContext';
 import { SpinnerIcon } from './icons';
 
+
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | null;
-  onSave: (updatedTransaction: Transaction) => void;
+  onSave: (updatedTransaction: Transaction) => Promise<void> | void;
+  disabled?: boolean;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transaction, onSave }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transaction, onSave, disabled }) => {
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
   const [amountToPayStr, setAmountToPayStr] = useState('');
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  // No internal isSaving state
   const { addToast } = useToasts();
 
   const remainingBalance = useMemo(() => {
@@ -29,7 +31,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
       setMethod(transaction.paymentMethod || PaymentMethod.Cash);
       setAmountToPayStr(formatRupiah(remainingBalance));
       setTenderedAmountStr('');
-      setIsSaving(false);
     }
   }, [transaction, remainingBalance]);
 
@@ -43,7 +44,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
     return tenderedAmount - amountToPay;
   }, [method, tenderedAmount, amountToPay]);
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!transaction) return;
 
     if (amountToPay <= 0) {
@@ -60,23 +61,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
         addToast("Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.", 'error');
         return;
     }
-    
-    setIsSaving(true);
-    setTimeout(() => {
-        const newAmountPaid = transaction.amountPaid + amountToPay;
-        const isNowPaidInFull = newAmountPaid >= transaction.total;
-        const newStatus = isNowPaidInFull ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
-        const finalChange = isNowPaidInFull ? change : 0;
 
-        onSave({
-          ...transaction,
-          amountPaid: newAmountPaid,
-          paymentStatus: newStatus,
-          paymentMethod: method,
-          change: finalChange,
-        });
-        onClose();
-    }, 700);
+    const newAmountPaid = transaction.amountPaid + amountToPay;
+    const isNowPaidInFull = newAmountPaid >= transaction.total;
+    const newStatus = isNowPaidInFull ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
+    const finalChange = isNowPaidInFull ? change : 0;
+
+    await onSave({
+      ...transaction,
+      amountPaid: newAmountPaid,
+      paymentStatus: newStatus,
+      paymentMethod: method,
+      change: finalChange,
+    });
+    onClose();
   };
 
   if (!transaction) return null;
@@ -91,10 +89,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
           <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
           <button 
             onClick={handleSave} 
-            disabled={isSaving || amountToPay <= 0 || amountToPay > remainingBalance}
+            disabled={disabled || amountToPay <= 0 || amountToPay > remainingBalance}
             className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
-            {isSaving ? <SpinnerIcon className="w-6 h-6" /> : 'Simpan Pembayaran'}
+            Simpan Pembayaran
           </button>
         </>
       }

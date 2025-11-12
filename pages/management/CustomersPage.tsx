@@ -23,6 +23,7 @@ const CustomersPage: React.FC = () => {
     const { addToast } = useToasts();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -84,6 +85,7 @@ const CustomersPage: React.FC = () => {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
             return;
         }
+        setIsSaving(true);
         try {
             if (currentCustomer && currentCustomer.id) {
                 await updateCustomer(currentCustomer.id, { ...customerData, storeId });
@@ -96,6 +98,8 @@ const CustomersPage: React.FC = () => {
             addToast('Data pelanggan berhasil disimpan!', 'success');
         } catch (error: any) {
             addToast(`Gagal menyimpan: ${error.message}`, 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -241,6 +245,7 @@ const CustomersPage: React.FC = () => {
                     customer={currentCustomer}
                     onClose={handleCloseFormModal}
                     onSave={handleSaveCustomer}
+                    disabled={isSaving}
                 />
             )}
 

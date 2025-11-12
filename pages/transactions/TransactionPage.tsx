@@ -35,6 +35,7 @@ const TransactionPage: React.FC = () => {
     
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+    const [isSavingPayment, setIsSavingPayment] = useState(false);
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
     const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -139,6 +140,7 @@ const TransactionPage: React.FC = () => {
 
     const handleSavePayment = async (updatedTransaction: Transaction) => {
         const shouldShowModal = updatedTransaction.paymentStatus === PaymentStatus.Paid && updatedTransaction.orderStatus === OrderStatus.Completed;
+        setIsSavingPayment(true);
         try {
             await updateTransaction(updatedTransaction.id, updatedTransaction);
             addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
@@ -150,6 +152,8 @@ const TransactionPage: React.FC = () => {
             }
         } catch (error: any) {
             addToast(`Gagal memperbarui pembayaran: ${error.message}`, 'error');
+        } finally {
+            setIsSavingPayment(false);
         }
     };
 
@@ -460,7 +464,7 @@ const TransactionPage: React.FC = () => {
                 </div>
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
             </div>
-            {isPaymentModalOpen && <PaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} transaction={selectedTransaction} onSave={handleSavePayment} />}
+            {isPaymentModalOpen && <PaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} transaction={selectedTransaction} onSave={handleSavePayment} disabled={isSavingPayment} />}
             {isWhatsAppModalOpen && <WhatsAppModal isOpen={isWhatsAppModalOpen} onClose={() => setIsWhatsAppModalOpen(false)} transaction={transactionForWhatsApp} customer={customerForWhatsApp} />}
             {isBulkConfirmOpen && <ConfirmationModal isOpen={true} onClose={() => setIsBulkConfirmOpen(false)} onConfirm={confirmBulkAction} title="Konfirmasi Aksi Massal" message={`Anda yakin ingin mengubah status ${selectedIds.size} transaksi menjadi "${bulkActionStatus}"?`} confirmText="Ya, Ubah" />}
         </>

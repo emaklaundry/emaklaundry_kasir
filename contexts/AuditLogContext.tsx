@@ -22,9 +22,10 @@ export function useAuditLogs() {
         action: action,
         ...(storeId && storeId !== 'all' ? { storeId } : {})
       };
-      const { data, error } = await supabase.from('audit_logs').insert([newLog]).select();
-      if (error) throw error;
-      return data?.[0] || null;
+  // Hapus .select() dan jangan simpan 'data' karena tidak diperlukan
+  const { error } = await supabase.from('audit_logs').insert([newLog]);
+  if (error) throw error;
+  return null; // Kembalikan null karena operasi berhasil
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['audit_logs'] })
   });

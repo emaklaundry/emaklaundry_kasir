@@ -273,12 +273,11 @@ CREATE POLICY "Allow DELETE for Admins" ON public.transactions
 CREATE POLICY "Allow SELECT for Admins" ON public.audit_logs
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 DROP POLICY IF EXISTS "Allow INSERT for all users" ON public.audit_logs;
-CREATE POLICY "Allow INSERT for all app users" ON public.audit_logs
-  FOR INSERT WITH CHECK (
-    auth.role() = 'authenticated'
-    OR public.get_my_role() = 'Admin'
-    OR public.get_my_role() = 'Super Admin'
-  );
+CREATE POLICY "Allow INSERT for all logged-in users" ON public.audit_logs
+  FOR INSERT
+    TO public
+    USING (auth.uid() IS NOT NULL)
+    WITH CHECK (auth.uid() IS NOT NULL);
 
 -- --- Tabel: settings ---
 CREATE POLICY "Allow all read access" ON public.settings

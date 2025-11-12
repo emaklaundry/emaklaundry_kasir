@@ -1,16 +1,16 @@
+
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { Customer } from '../types';
-import { SpinnerIcon } from './icons';
 
 interface CustomerFormModalProps {
     customer: Customer | null;
     onClose: () => void;
-    onSave: (customer: Omit<Customer, 'id' | 'storeId'>) => void;
+    onSave: (customer: Omit<Customer, 'id' | 'storeId'>) => Promise<void> | void;
+    disabled?: boolean;
 }
 
-const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose, onSave }) => {
-    const [isSaving, setIsSaving] = useState(false);
+const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose, onSave, disabled }) => {
     const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId'>>({
         name: customer?.name || '',
         phone: customer?.phone || '',
@@ -29,14 +29,9 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isSaving) return;
-        setIsSaving(true);
-        setTimeout(() => {
-            onSave(formData);
-            // No need to set isSaving back to false as the modal will close.
-        }, 700);
+        await onSave(formData);
     };
 
     return (
@@ -47,8 +42,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose
             footer={
                 <>
                     <button type="button" onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                    <button type="submit" onClick={handleSubmit} disabled={isSaving} className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 w-32 disabled:bg-blue-400">
-                        {isSaving ? <SpinnerIcon className="w-6 h-6" /> : 'Simpan'}
+                    <button type="submit" onClick={handleSubmit} disabled={disabled} className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 w-32 disabled:bg-blue-400">
+                        Simpan
                     </button>
                 </>
             }
