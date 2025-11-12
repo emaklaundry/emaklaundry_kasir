@@ -109,17 +109,6 @@ CREATE TABLE public.audit_logs (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- DIHAPUS: Tabel user_credentials tidak diperlukan jika menggunakan Supabase Auth.
--- Ini menyebabkan duplikasi dan kebingungan dengan RLS.
--- Gunakan email/password dari 'auth.users' untuk login.
---
--- CREATE TABLE public.user_credentials (
---   profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
---   username text UNIQUE NOT NULL,
---   password_hash text NOT NULL
--- );
--- ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
-
 CREATE TABLE public.settings (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   "receiptMessage" text,
@@ -168,13 +157,6 @@ $$;
 
 
 -- === 4. MEMBUAT RLS POLICY YANG BARU DAN AMAN ===
-
--- Pola Umum:
--- SELECT: Super Admin, Admin (cabang), Kasir (cabang)
--- INSERT: Super Admin, Admin (cabang), Kasir (cabang)
--- UPDATE: Super Admin, Admin (cabang)
--- DELETE: Super Admin, Admin (cabang)
-
 -- --- Tabel: profiles ---
 CREATE POLICY "Users can see their own profile" ON public.profiles
   FOR SELECT USING (id = auth.uid());
@@ -298,19 +280,20 @@ VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banj
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
--- DIHAPUS: Insert ke user_credentials. Gunakan Supabase Auth.
--- INSERT INTO public.user_credentials (profile_id, username, password_hash)
--- VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'admin_banjar', '$2b$10$VA30w6vAXfP3REFPEIpkqu6vjgs/FvBJHB8nWQouvVmZd0wUTfMaC');
-
 -- kasir: ani (cabang Kota Banjar)
 -- nama: ani, password: 12345678 (diasumsikan dibuat di Supabase Auth)
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
--- DIHAPUS: Insert ke user_credentials. Gunakan Supabase Auth.
--- INSERT INTO public.user_credentials (profile_id, username, password_hash)
--- VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', '$2b$10$VA30w6vAXfP3REFPEIpkqu6vjgs/FvBJHB8nWQouvVmZd0wUTfMaC');
+-- kasir: didi (cabang Kota Banjar)
+-- nama: didi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
+-- kasir: lilis (cabang Kota Banjar)
+-- nama: lilis, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
 -- === 6. FUNCTIONS (Stubs) ===
 -- (Sama seperti skrip Anda)
@@ -323,15 +306,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SET search_path = public;
-
--- DIHAPUS: Fungsi ini tidak diperlukan lagi
--- CREATE OR REPLACE FUNCTION public.log_user_credentials_audit()
--- RETURNS trigger AS $$
--- BEGIN
---   RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql
--- SET search_path = public;
 
 
 -- === 7. PENGATURAN AWAL (Initial Settings) ===
