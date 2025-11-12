@@ -10,13 +10,14 @@ interface AssetFormModalProps {
 }
 
 const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave }) => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(() => ({
         name: asset?.name || '',
         serialNumber: asset?.serialNumber || '',
-        purchaseDate: asset?.purchaseDate || new Date(),
+        // Ensure purchaseDate is a Date instance (asset may store ISO string)
+        purchaseDate: asset?.purchaseDate ? new Date(asset.purchaseDate as any) : new Date(),
         purchaseCost: asset?.purchaseCost || 0,
         status: asset?.status || 'Active',
-    });
+    }));
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -29,7 +30,9 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        // Serialize purchaseDate to ISO string when sending to backend to avoid type mismatches.
+        const payload = { ...formData, purchaseDate: formData.purchaseDate instanceof Date ? formData.purchaseDate.toISOString() : formData.purchaseDate };
+        onSave(payload as any);
     };
 
     return (

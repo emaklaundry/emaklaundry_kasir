@@ -43,14 +43,23 @@ const ServicesPage: React.FC = () => {
         setCurrentService(null);
     };
 
-    const handleSaveService = async (serviceData: Omit<Service, 'id'>) => {
+    const handleSaveService = async (serviceData: Omit<Service, 'id' | 'storeId'>) => {
+        // Determine storeId to attach to the service so inserts/updates comply with RLS policies.
+        const storeId = currentService?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+
+        if (!storeId || storeId === 'all') {
+            addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit layanan.', 'warning');
+            return;
+        }
+
         try {
             if (currentService) {
-                await updateService(currentService.id, serviceData);
-                addAuditLog(`Memperbarui layanan: "${serviceData.name}".`);
+                // include storeId when updating since the form doesn't include it
+                await updateService(currentService.id, { ...serviceData, storeId });
+                addAuditLog(`Memperbarui layanan: "${serviceData.name}".`, storeId);
             } else {
-                await addService(serviceData);
-                addAuditLog(`Menambahkan layanan baru: "${serviceData.name}".`);
+                await addService({ ...serviceData, storeId });
+                addAuditLog(`Menambahkan layanan baru: "${serviceData.name}".`, storeId);
             }
             handleCloseFormModal();
         } catch (error: any) {

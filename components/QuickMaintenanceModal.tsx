@@ -17,11 +17,11 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     const { addAuditLog } = useAuditLogs();
     const { addToast } = useToasts();
     const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id || '');
-    const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>({
+    const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>(() => ({
         date: new Date(),
         description: '',
         cost: 0
-    });
+    }));
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;

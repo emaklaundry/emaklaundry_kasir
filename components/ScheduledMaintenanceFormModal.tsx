@@ -19,7 +19,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
                 description: schedule.description,
                 frequencyValue: schedule.frequencyValue,
                 frequencyUnit: schedule.frequencyUnit,
-                nextDueDate: schedule.nextDueDate,
+                nextDueDate: schedule.nextDueDate ? new Date(schedule.nextDueDate) : new Date(),
             };
         }
         const tomorrow = new Date();
