@@ -10,6 +10,8 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "types": [
       "node"
     ],
@@ -27,6 +29,7 @@
     "noEmit": true
   },
   "exclude": [
+    "dist",
     "data/mockData.ts",
     "env.d.ts",
     "hooks/usePersistentState.ts"

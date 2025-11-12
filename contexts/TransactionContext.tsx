@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '../types';
 import { supabase } from '../utils/supabaseClient';
+import { sanitizeTransactionUpdate } from '../utils/sanitizeTransaction';
 
 const fetchTransactions = async (): Promise<Transaction[]> => {
   const { data, error } = await supabase.from('transactions').select('*');
@@ -24,7 +25,10 @@ export function useTransactions() {
   const updateTransaction = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Transaction> }) => {
       const { id, data } = variables;
-      const { data: updated, error } = await supabase.from('transactions').update(data).eq('id', id).select();
+      const payload = sanitizeTransactionUpdate(data);
+
+      const { data: updated, error } = await supabase.from('transactions').update(payload).eq('id', id).select();
+
       if (error) throw error;
       return updated?.[0] || null;
     },

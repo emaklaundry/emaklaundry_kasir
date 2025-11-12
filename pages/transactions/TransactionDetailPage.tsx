@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router';
+import { Link } from 'react-router-dom';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { OrderStatus, PaymentStatus } from '../../types';
@@ -120,9 +121,9 @@ const TransactionDetailPage: React.FC = () => {
                                 <tr key={index} className="border-b dark:border-slate-700">
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                                         {item.serviceName}
-                                        {item.itemDetails && item.itemDetails.some(d => d.note) && (
+                                        {item.itemDetails?.slice(0, item.quantity).some(d => d.note) && (
                                             <div className="pl-4 mt-1 space-y-0.5">
-                                                {item.itemDetails.map((detail, detailIndex) => detail.note && (
+                                                {item.itemDetails?.slice(0, item.quantity).map((detail, detailIndex) => detail.note && (
                                                     <p key={detailIndex} className="text-sm font-normal text-slate-500 dark:text-slate-400">
                                                         - Item #{detailIndex + 1}: {detail.note}
                                                     </p>

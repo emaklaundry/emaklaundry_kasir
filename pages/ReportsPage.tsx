@@ -5,7 +5,7 @@ import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAppContext } from '../contexts/AppContext';
-import { supabase } from '../utils/supabaseClient';
+import { useUsers } from '../contexts/UserContext';
 import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
 
@@ -114,29 +114,7 @@ const ReportsPage: React.FC = () => {
     const { services } = useServices();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addToast } = useToasts();
-    const [allUsers, setAllUsers] = useState<User[]>([]);
-
-    const fetchProfiles = useCallback(async () => {
-        const { data, error } = await supabase.from('profiles').select('*');
-        if (error) {
-            addToast(`Gagal mengambil data pengguna: ${error.message}`, 'error');
-        } else if (data) {
-            const formattedUsers = data.map(profile => ({
-                id: profile.id,
-                name: profile.name,
-                role: profile.role,
-                storeId: profile.store_id,
-                isActive: profile.isActive,
-                canGiveDiscount: profile.canGiveDiscount,
-                createdAt: new Date(profile.created_at),
-            }));
-            setAllUsers(formattedUsers);
-        }
-    }, [addToast]);
-
-    useEffect(() => {
-        fetchProfiles();
-    }, [fetchProfiles]);
+    const { users: allUsers } = useUsers();
     
     const [reportType, setReportType] = useState<'range' | 'yearlySummary'>('range');
     const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');

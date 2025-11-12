@@ -15,6 +15,12 @@ View your app in AI Studio: https://ai.studio/apps/drive/1sJwyWStS_27aufK-NZoI5v
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Create a `.env.local` file and set the following Vite environment variables (required for Supabase):
+
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
 3. Run the app:
    `npm run dev`

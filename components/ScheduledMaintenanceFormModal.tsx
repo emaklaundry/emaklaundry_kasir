@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { ScheduledMaintenance } from '../types';
 
-type ScheduleFormData = Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate'>;
+type ScheduleFormData = Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate' | 'nextDueDate'> & { nextDueDate: string };
 
 interface ScheduledMaintenanceFormModalProps {
     isOpen: boolean;
@@ -13,24 +13,24 @@ interface ScheduledMaintenanceFormModalProps {
 
 const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps> = ({ isOpen, onClose, onSave, schedule }) => {
     
-    const getInitialFormData = (): ScheduleFormData => {
-        if(schedule) {
+        const getInitialFormData = (): ScheduleFormData => {
+            if (schedule) {
+                return {
+                    description: schedule.description,
+                    frequencyValue: schedule.frequencyValue,
+                    frequencyUnit: schedule.frequencyUnit,
+                    nextDueDate: schedule.nextDueDate ? String(schedule.nextDueDate).split('T')[0] : new Date().toISOString().split('T')[0],
+                };
+            }
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
             return {
-                description: schedule.description,
-                frequencyValue: schedule.frequencyValue,
-                frequencyUnit: schedule.frequencyUnit,
-                nextDueDate: schedule.nextDueDate ? new Date(schedule.nextDueDate) : new Date(),
+                description: '',
+                frequencyValue: 1,
+                frequencyUnit: 'months',
+                nextDueDate: tomorrow.toISOString().split('T')[0],
             };
-        }
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        return {
-            description: '',
-            frequencyValue: 1,
-            frequencyUnit: 'months',
-            nextDueDate: tomorrow,
         };
-    };
 
     const [formData, setFormData] = useState<ScheduleFormData>(getInitialFormData());
 
@@ -41,17 +41,20 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         if (type === 'number') {
-            setFormData(prev => ({...prev, [name]: parseInt(value, 10) || 1 }));
+            setFormData(prev => ({ ...prev, [name]: parseInt(value, 10) || 1 }));
         } else if (type === 'date') {
-            setFormData(prev => ({...prev, [name]: new Date(value) }));
+            setFormData(prev => ({ ...prev, [name]: value }));
         } else {
-            setFormData(prev => ({...prev, [name]: value }));
+            setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        // convert nextDueDate YYYY-MM-DD to ISO at local midnight
+        const [y, m, d] = (formData.nextDueDate || '').split('-').map(Number);
+        const iso = isNaN(y) ? new Date().toISOString() : new Date(y, (m || 1) - 1, d || 1).toISOString();
+        onSave({ ...formData, nextDueDate: iso } as any);
     };
 
     return (
@@ -88,7 +91,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
                 </div>
                  <div>
                     <label htmlFor="nextDueDate" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Tanggal Jatuh Tempo Berikutnya</label>
-                    <input type="date" name="nextDueDate" id="nextDueDate" value={formData.nextDueDate.toISOString().split('T')[0]} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                    <input type="date" name="nextDueDate" id="nextDueDate" value={formData.nextDueDate} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Ini adalah tanggal pertama jadwal akan dimulai.</p>
                 </div>
             </form>

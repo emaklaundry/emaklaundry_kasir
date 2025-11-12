@@ -13,7 +13,8 @@ interface ExpenseFormModalProps {
 
 const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, onClose, onSave }) => {
     const [formData, setFormData] = useState({
-        date: new Date(),
+        // store date as YYYY-MM-DD string to avoid timezone issues
+        date: new Date().toISOString().split('T')[0],
         description: '',
         category: 'Operasional',
         amount: 0,
@@ -21,7 +22,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, on
 
     useEffect(() => {
         setFormData({
-            date: expense?.date ? new Date(expense.date as any) : new Date(),
+            date: expense?.date ? String(expense.date).split('T')[0] : new Date().toISOString().split('T')[0],
             description: expense?.description || '',
             category: expense?.category || 'Operasional',
             amount: expense?.amount || 0,
@@ -33,14 +34,19 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, on
         const { name, value, type } = e.target;
         if (name === 'amount') {
             setFormData(prev => ({ ...prev, amount: parseRupiah(value) }));
+        } else if (name === 'date') {
+            setFormData(prev => ({ ...prev, date: value }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
+            setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        // convert YYYY-MM-DD to ISO at local midnight to avoid timezone shift
+        const [y, m, d] = (formData.date || '').split('-').map(Number);
+        const iso = isNaN(y) ? new Date().toISOString() : new Date(y, (m || 1) - 1, d || 1).toISOString();
+        onSave({ ...formData, date: iso } as any);
     };
 
     return (
@@ -72,7 +78,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, on
                 </div>
                 <div>
                     <label htmlFor="date" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Tanggal</label>
-                    <input type="date" name="date" id="date" value={formData.date.toISOString().split('T')[0]} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                        <input type="date" name="date" id="date" value={formData.date} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                 </div>
             </form>
         </Modal>

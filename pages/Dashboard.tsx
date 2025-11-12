@@ -280,7 +280,15 @@ const Dashboard: React.FC = () => {
     }, []);
 
     const handleSavePayment = useCallback(async (updatedTransaction: Transaction) => {
-        await updateTransaction(updatedTransaction.id, updatedTransaction);
+        // send only fields that exist in the DB to avoid PGRST204 errors
+        const payload: Partial<Transaction> = {
+            amountPaid: updatedTransaction.amountPaid,
+            paymentStatus: updatedTransaction.paymentStatus,
+            paymentMethod: updatedTransaction.paymentMethod,
+            change: updatedTransaction.change,
+        };
+
+        await updateTransaction(updatedTransaction.id, payload);
         addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
         setIsPaymentModalOpen(false);
         setTransactionForPayment(null);

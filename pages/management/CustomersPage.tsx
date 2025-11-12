@@ -104,6 +104,13 @@ const CustomersPage: React.FC = () => {
     };
 
     const handleDelete = (customer: Customer) => {
+        // Prevent deleting a customer that is referenced by transactions
+        const hasTransactions = transactions.some(t => t.customerId === customer.id);
+        if (hasTransactions) {
+            addToast(`Pelanggan "${customer.name}" tidak dapat dihapus karena masih memiliki transaksi.`, 'error');
+            return;
+        }
+
         setCustomerToDelete(customer);
     };
 

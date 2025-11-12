@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { supabase } from '../../utils/supabaseClient';
+import { useUsers } from '../../contexts/UserContext';
 import { User, UserRole, Store } from '../../types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, UsersIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
@@ -17,7 +17,8 @@ const UsersPage: React.FC = () => {
     // Ambil data users dari Supabase (props/context/hook) sesuai implementasi fetch profiles
     const { stores } = useStores();
     const { addAuditLog } = useAuditLogs();
-    
+    const { users, updateUser } = useUsers();
+
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -56,22 +57,15 @@ const UsersPage: React.FC = () => {
 
         try {
             if (currentUserToEdit && currentUserToEdit.id) {
-                // --- EDIT PENGGUNA ---
-                const { error } = await supabase
-                    .from('profiles')
-                    .update({
-                        name: finalData.name,
-                        role: finalData.role,
-                        store_id: finalData.storeId,
-                        isActive: finalData.isActive,
-                        canGiveDiscount: finalData.canGiveDiscount
-                    })
-                    .eq('id', currentUserToEdit.id);
-
-                if (error) throw error;
+                await updateUser(currentUserToEdit.id, {
+                    name: finalData.name,
+                    role: finalData.role,
+                    storeId: finalData.storeId,
+                    isActive: finalData.isActive,
+                    canGiveDiscount: finalData.canGiveDiscount
+                });
                 addAuditLog(`Memperbarui data pengguna: "${finalData.name}".`);
                 addToast('Pengguna berhasil diperbarui!', 'success');
-                await fetchProfiles();
                 handleCloseFormModal();
             } else {
                 addToast('Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication).', 'info');
@@ -87,13 +81,8 @@ const UsersPage: React.FC = () => {
         if (userToToggleStatus) {
             const newStatus = !userToToggleStatus.isActive;
             try {
-                const { error } = await supabase
-                    .from('profiles')
-                    .update({ isActive: newStatus })
-                    .eq('id', userToToggleStatus.id);
-                if (error) throw error;
+                await updateUser(userToToggleStatus.id, { isActive: newStatus });
                 addAuditLog(`Mengubah status pengguna "${userToToggleStatus.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
-                await fetchProfiles();
             } catch (error: any) {
                 addToast(`Gagal mengubah status: ${error.message}`, 'error');
             } finally {
@@ -101,32 +90,10 @@ const UsersPage: React.FC = () => {
             }
         }
     };
-    
-    // Ambil data users dari Supabase
-    const [allUsers, setAllUsers] = useState<User[]>([]);
-    const fetchProfiles = React.useCallback(async () => {
-        const { data, error } = await supabase.from('profiles').select('*');
-        if (error) {
-            addToast(`Gagal mengambil data pengguna: ${error.message}`, 'error');
-        } else if (data) {
-            const formattedUsers = data.map(profile => ({
-                id: profile.id,
-                name: profile.name,
-                role: profile.role,
-                storeId: profile.store_id,
-                isActive: profile.isActive,
-                canGiveDiscount: profile.canGiveDiscount
-            }));
-            setAllUsers(formattedUsers);
-        }
-    }, [addToast]);
-    useEffect(() => {
-        fetchProfiles();
-    }, [fetchProfiles]);
-    const usersWithStore = useMemo(() => allUsers.map(user => ({
+    const usersWithStore = useMemo(() => users.map(user => ({
         ...user,
         storeName: stores.find(s => s.id === user.storeId)?.name || 'N/A'
-    })), [allUsers, stores]);
+    })), [users, stores]);
 
     // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type UserWithStore = (typeof usersWithStore)[0];

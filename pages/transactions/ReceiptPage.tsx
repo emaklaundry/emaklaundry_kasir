@@ -66,9 +66,9 @@ const ReceiptPage: React.FC = () => {
                             </div>
                             <p className="font-semibold text-slate-800 dark:text-slate-200">Rp {item.subtotal.toLocaleString('id-ID')}</p>
                         </div>
-                        {item.itemDetails && item.itemDetails.some(d => d.note) && (
+                        {item.itemDetails?.slice(0, item.quantity).some(d => d.note) && (
                             <div className="pl-4 mt-1 space-y-0.5">
-                                {item.itemDetails.map((detail, detailIndex) => detail.note && (
+                                {item.itemDetails?.slice(0, item.quantity).map((detail, detailIndex) => detail.note && (
                                     <p key={detailIndex} className="text-sm text-slate-500 dark:text-slate-400">
                                         - Item #{detailIndex + 1}: {detail.note}
                                     </p>

@@ -142,7 +142,15 @@ const TransactionPage: React.FC = () => {
         const shouldShowModal = updatedTransaction.paymentStatus === PaymentStatus.Paid && updatedTransaction.orderStatus === OrderStatus.Completed;
         setIsSavingPayment(true);
         try {
-            await updateTransaction(updatedTransaction.id, updatedTransaction);
+            // Send only DB columns (partial) to avoid sending client-only fields like customerName
+            const payload: Partial<Transaction> = {
+                amountPaid: updatedTransaction.amountPaid,
+                paymentStatus: updatedTransaction.paymentStatus,
+                paymentMethod: updatedTransaction.paymentMethod,
+                change: updatedTransaction.change,
+            };
+
+            await updateTransaction(updatedTransaction.id, payload);
             addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
             setIsPaymentModalOpen(false);
             setSelectedTransaction(null);

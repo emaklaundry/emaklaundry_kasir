@@ -13,26 +13,32 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
     const [formData, setFormData] = useState(() => ({
         name: asset?.name || '',
         serialNumber: asset?.serialNumber || '',
-        // Ensure purchaseDate is a Date instance (asset may store ISO string)
-        purchaseDate: asset?.purchaseDate ? new Date(asset.purchaseDate as any) : new Date(),
+        // store date as YYYY-MM-DD string to avoid timezone shifting
+        purchaseDate: asset?.purchaseDate ? String(asset.purchaseDate).split('T')[0] : new Date().toISOString().split('T')[0],
         purchaseCost: asset?.purchaseCost || 0,
         status: asset?.status || 'Active',
     }));
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
-         if (name === 'purchaseCost') {
+        if (name === 'purchaseCost') {
             setFormData(prev => ({ ...prev, purchaseCost: parseRupiah(value) }));
+        } else if (name === 'purchaseDate') {
+            // keep as YYYY-MM-DD string
+            setFormData(prev => ({ ...prev, purchaseDate: value }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
+            setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // Serialize purchaseDate to ISO string when sending to backend to avoid type mismatches.
-        const payload = { ...formData, purchaseDate: formData.purchaseDate instanceof Date ? formData.purchaseDate.toISOString() : formData.purchaseDate };
-        onSave(payload as any);
+    // Convert YYYY-MM-DD -> ISO at local midnight to avoid timezone shifts
+    const [y, m, d] = (formData.purchaseDate || '').split('-').map(Number);
+    const iso = isNaN(y) ? new Date().toISOString() : new Date(y, (m || 1) - 1, d || 1).toISOString();
+    const payload = { ...formData, purchaseDate: iso };
+    onSave(payload as any);
     };
 
     return (
@@ -61,7 +67,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="purchaseDate" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Tanggal Beli</label>
-                        <input type="date" name="purchaseDate" id="purchaseDate" value={formData.purchaseDate.toISOString().split('T')[0]} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                        <input type="date" name="purchaseDate" id="purchaseDate" value={formData.purchaseDate} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                     </div>
                     <div>
                         <label htmlFor="purchaseCost" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Biaya Beli (Rp)</label>
