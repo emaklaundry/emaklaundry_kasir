@@ -1,16 +1,4 @@
--- User credentials table for local auth (if needed)
-CREATE TABLE IF NOT EXISTS public.user_credentials (
-  profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
-  username text UNIQUE NOT NULL,
-  password_hash text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
--- RLS policies for user_credentials
-CREATE POLICY "Users can see their own credentials" ON public.user_credentials
-  FOR SELECT USING (profile_id = auth.uid());
-CREATE POLICY "Users can update their own credentials" ON public.user_credentials
-  FOR UPDATE USING (profile_id = auth.uid());
+-- ...existing code...
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
@@ -284,8 +272,13 @@ CREATE POLICY "Allow DELETE for Admins" ON public.transactions
 -- --- Tabel: audit_logs ---
 CREATE POLICY "Allow SELECT for Admins" ON public.audit_logs
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
-CREATE POLICY "Allow INSERT for all users" ON public.audit_logs
-  FOR INSERT WITH CHECK (true); -- Diasumsikan fungsi trigger atau app yang akan mengisinya
+DROP POLICY IF EXISTS "Allow INSERT for all users" ON public.audit_logs;
+CREATE POLICY "Allow INSERT for all app users" ON public.audit_logs
+  FOR INSERT WITH CHECK (
+    auth.role() = 'authenticated'
+    OR public.get_my_role() = 'Admin'
+    OR public.get_my_role() = 'Super Admin'
+  );
 
 -- --- Tabel: settings ---
 CREATE POLICY "Allow all read access" ON public.settings
