@@ -14,9 +14,9 @@ export function useServices() {
 
   const addService = useMutation({
     mutationFn: async (service: Omit<Service, 'id'>) => {
-      const { data, error } = await supabase.from('services').insert([service]).select();
+      const { error } = await supabase.from('services').insert([service]);
       if (error) throw error;
-      return data?.[0] || null;
+      return null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] })
   });

@@ -14,9 +14,10 @@ export function useAssets() {
 
   const addAsset = useMutation({
     mutationFn: async (asset: Omit<Asset, 'id'>) => {
-      const { data, error } = await supabase.from('assets').insert([asset]).select();
+      const { error } = await supabase.from('assets').insert([asset]);
       if (error) throw error;
-      return data?.[0] || null;
+      // We invalidate and refetch the assets list, caller doesn't rely on returned row
+      return null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] })
   });

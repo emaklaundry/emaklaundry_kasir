@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Laundry Management System</title>
-  <!-- Favicon and App Icons -->
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
@@ -12,8 +11,7 @@
   <meta name="msapplication-TileColor" content="#2563eb">
   <meta name="theme-color" content="#2563eb">
     
-  <link rel="stylesheet" href="/dist/output.css">
-    <style type="text/css">
+  <style type="text/css">
       body {
         font-family: 'Inter', sans-serif;
       }
@@ -23,23 +21,117 @@
         outline-offset: 2px;
         border-radius: 4px;
       }
+      
+      /* --- MULAI PERBAIKAN CETAK --- */
       @media print {
         .print-hide {
           display: none !important;
         }
+        
+        /* Kelas untuk menampilkan elemen HANYA saat mencetak */
+        .print-only-block { display: block !important; }
+        .print-only-table { display: table !important; }
+        .print-only-header { display: table-header-group !important; }
+        .print-only-row { display: table-row !important; }
+        .print-only-cell { display: table-cell !important; }
+
+        /* Sembunyikan elemen print-only saat di layar */
+        .print-only-block,
+        .print-only-table,
+        .print-only-header,
+        .print-only-row,
+        .print-only-cell {
+            display: none !important;
+        }
+
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
         body {
           background-color: white !important;
+          font-family: 'Times New Roman', Times, serif; /* Font profesional untuk cetak */
+          font-size: 11pt;
         }
+        
         * {
           color: black !important;
           background-color: transparent !important;
           box-shadow: none !important;
           text-shadow: none !important;
         }
+        
         main {
           padding: 0 !important;
         }
+
+        h1 { font-size: 24pt; margin-bottom: 12px; }
+        h2 { font-size: 18pt; margin-top: 24px; margin-bottom: 8px; }
+        h3 { font-size: 14pt; margin-bottom: 6px; }
+
+        /* Sembunyikan bagan visual saat mencetak */
+        .print-chart-hide {
+          display: none !important;
+        }
+
+        /* Hindari elemen terpotong di antara halaman */
+        .report-section {
+          page-break-inside: avoid;
+          margin-top: 20px;
+          border: 1px solid #ccc !important;
+          padding: 16px !important;
+          border-radius: 0 !important;
+        }
+        
+        /* Format ulang StatCards menjadi daftar ringkasan */
+        .print-stat-card-container {
+            display: block !important; /* Timpa grid */
+            border: 1px solid #ccc !important;
+            padding: 16px !important;
+            page-break-inside: avoid;
+        }
+        .print-stat-card {
+          display: flex !important;
+          justify-content: space-between;
+          align-items: center;
+          border: none !important;
+          border-bottom: 1px solid #eee !important;
+          padding: 8px 0 !important;
+          page-break-inside: avoid;
+        }
+         .print-stat-card p:first-child { /* Judul */
+           font-size: 12pt;
+           font-weight: normal;
+        }
+         .print-stat-card p:last-child { /* Nilai */
+           font-size: 14pt;
+           font-weight: bold;
+         }
+        
+        /* Styling tabel cetak */
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+        }
+        th, td {
+          border: 1px solid #999 !important;
+          padding: 6px 8px !important;
+          font-size: 11pt;
+        }
+        thead {
+          background-color: #eee !important;
+          display: table-header-group !important; /* Ulangi header di setiap halaman */
+        }
+        tbody tr {
+           page-break-inside: avoid;
+        }
+        a {
+           text-decoration: none;
+           color: black !important;
+        }
       }
+      /* --- AKHIR PERBAIKAN CETAK --- */
     </style>
     <script type="importmap">
     {
@@ -51,7 +143,6 @@
       }
     }
     </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-200">
     <div id="root"></div>

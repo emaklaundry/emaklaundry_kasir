@@ -6,6 +6,7 @@ import { MaintenanceLog } from '../types';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useToasts } from '../contexts/ToastContext';
+import { useEffect } from 'react';
 
 interface QuickMaintenanceModalProps {
   isOpen: boolean;
@@ -22,6 +23,16 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
         description: '',
         cost: 0
     }));
+
+    // Ensure selectedAssetId and form defaults are in sync when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            // If assets loaded after mount, pick first asset when nothing selected
+            setSelectedAssetId(prev => prev || assets[0]?.id || '');
+            // Reset form when opening
+            setFormData({ date: new Date(), description: '', cost: 0 });
+        }
+    }, [isOpen, assets]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -74,7 +85,13 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             footer={
               <>
                 <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                <button onClick={handleSave} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan Laporan</button>
+                                <button 
+                                    onClick={handleSave} 
+                                    className={`text-white font-medium rounded-lg text-lg px-6 py-3 ${(!selectedAssetId || !formData.description) ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-800'}`}
+                                    disabled={!selectedAssetId || !formData.description}
+                                >
+                                    Simpan Laporan
+                                </button>
               </>
             }
         >

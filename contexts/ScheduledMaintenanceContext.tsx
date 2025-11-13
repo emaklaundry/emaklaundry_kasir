@@ -23,9 +23,9 @@ export function useScheduledMaintenances() {
 
   const addScheduledMaintenance = useMutation({
     mutationFn: async (sm: Omit<ScheduledMaintenance, 'id'>) => {
-      const { data, error } = await supabase.from('scheduled_maintenances').insert([sm]).select();
+      const { error } = await supabase.from('scheduled_maintenances').insert([sm]);
       if (error) throw error;
-      return data?.[0] || null;
+      return null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scheduled_maintenances'] })
   });

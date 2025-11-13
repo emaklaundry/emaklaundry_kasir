@@ -177,9 +177,10 @@ $$;
 
 -- === 4. MEMBUAT RLS POLICY YANG BARU DAN AMAN ===
 -- --- Tabel: profiles ---
-DROP POLICY IF EXISTS "Users can see their own profile" ON public.profiles;
-CREATE POLICY "Users can see their own profile (if active)" ON public.profiles
-  FOR SELECT USING (id = auth.uid() AND "isActive" = true);
+-- Ensure users can always read their own profile so the client can display a helpful message
+DROP POLICY IF EXISTS "Users can see their own profile (if active)" ON public.profiles;
+CREATE POLICY "Users can see their own profile" ON public.profiles
+  FOR SELECT USING (id = auth.uid());
 CREATE POLICY "Admins can see profiles in their store" ON public.profiles
   FOR SELECT USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
 CREATE POLICY "Super Admins can see all profiles" ON public.profiles

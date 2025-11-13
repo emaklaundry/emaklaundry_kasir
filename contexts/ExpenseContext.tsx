@@ -14,9 +14,9 @@ export function useExpenses() {
 
   const addExpense = useMutation({
     mutationFn: async (expense: Omit<Expense, 'id'>) => {
-      const { data, error } = await supabase.from('expenses').insert([expense]).select();
+      const { error } = await supabase.from('expenses').insert([expense]);
       if (error) throw error;
-      return data?.[0] || null;
+      return null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
   });

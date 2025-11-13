@@ -1,7 +1,8 @@
 
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import './index.css'
+import App from './App'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // @ts-ignore
 import { registerSW } from 'virtual:pwa-register';

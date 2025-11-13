@@ -13,7 +13,8 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "types": [
-      "node"
+      "node",
+      "vitest"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,

@@ -10,8 +10,9 @@ import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
 
 const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
-    <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
-        <Icon className="w-10 h-10 text-slate-500" />
+    // TAMBAHKAN: kelas 'print-stat-card' dan 'print-hide' pada ikon
+    <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}>
+        <Icon className="w-10 h-10 text-slate-500 print-hide" />
         <div>
             <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
             <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
@@ -52,7 +53,8 @@ const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, exp
                 >
                 </div>
             )}
-            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px]">
+            {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan SVG saat cetak */}
+            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
                 {/* Y-Axis Grid Lines and Labels */}
                 {Array.from({ length: yAxisLabels }).map((_, i) => {
                     const y = chartHeight - 20 - (i * (chartHeight - 30) / (yAxisLabels - 1));
@@ -103,6 +105,29 @@ const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, exp
                 <line x1={yAxisWidth} y1={10} x2={yAxisWidth} y2={chartHeight - 20} stroke="currentColor" className="text-slate-300 dark:text-slate-600" />
                 <line x1={yAxisWidth} y1={chartHeight - 20} x2={chartWidth} y2={chartHeight - 20} stroke="currentColor" className="text-slate-300 dark:text-slate-600" />
             </svg>
+            
+            {/* --- TAMBAHKAN: Tabel ini HANYA akan muncul saat dicetak --- */}
+            <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
+                <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                    <tr className="print-only-row">
+                        <th className="print-only-cell px-4 py-3">Bulan</th>
+                        <th className="print-only-cell px-4 py-3 text-right">Pendapatan</th>
+                        <th className="print-only-cell px-4 py-3 text-right">Pengeluaran</th>
+                        <th className="print-only-cell px-4 py-3 text-right">Laba</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.map((d) => (
+                        <tr key={d.month} className="print-only-row border-b dark:border-slate-700">
+                            <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">{d.month}</td>
+                            <td className="print-only-cell px-4 py-3 text-right">Rp {d.revenue.toLocaleString('id-ID')}</td>
+                            <td className="print-only-cell px-4 py-3 text-right">Rp {d.expenses.toLocaleString('id-ID')}</td>
+                            <td className="print-only-cell px-4 py-3 text-right font-semibold">Rp {d.profit.toLocaleString('id-ID')}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            {/* --- AKHIR BLOK CETAK --- */}
         </div>
     );
 };

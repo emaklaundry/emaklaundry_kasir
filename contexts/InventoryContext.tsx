@@ -14,9 +14,10 @@ export function useInventory() {
 
   const addInventoryItem = useMutation({
     mutationFn: async (item: Omit<InventoryItem, 'id'>) => {
-      const { data, error } = await supabase.from('inventory_items').insert([item]).select();
+      const { error } = await supabase.from('inventory_items').insert([item]);
       if (error) throw error;
-      return data?.[0] || null;
+      // Caller invalidates / refetches; no need to return the created row
+      return null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventory'] })
   });

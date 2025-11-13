@@ -14,9 +14,9 @@ export function useStores() {
 
   const addStore = useMutation({
     mutationFn: async (store: Omit<Store, 'id'>) => {
-      const { data, error } = await supabase.from('stores').insert([store]).select();
+      const { error } = await supabase.from('stores').insert([store]);
       if (error) throw error;
-      return data?.[0] || null;
+      return null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] })
   });
