@@ -25,6 +25,11 @@ describe('sanitizeTransactionUpdate', () => {
     expect(out).toHaveProperty('subtotal', 100);
     expect(out).toHaveProperty('total', 110);
     expect(out).toHaveProperty('amountPaid', 110);
+    // Penambahan pengujian properti yang sebelumnya tidak diuji
+    expect(out).toHaveProperty('discount', 0);
+    expect(out).toHaveProperty('tax', 10);
+    expect(out).toHaveProperty('paymentStatus', 'Paid');
+    expect(out).toHaveProperty('change', 0);
     expect(out).not.toHaveProperty('customerName');
     expect(out).not.toHaveProperty('foo');
   });
