@@ -68,7 +68,6 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onSelectSer
             ref={el => { serviceButtonRefs.current[index] = el; }}
             key={service.id} 
             onClick={() => onSelectService(service)}
-            onMouseOver={() => setActiveIndex(index)}
             className={`text-left p-3 border rounded-lg transition-all duration-200 h-full flex flex-col justify-between ${
                 activeIndex === index 
                 ? 'bg-brand-blue-100 dark:bg-brand-blue-900/70 border-brand-blue-400 dark:border-brand-blue-500 ring-2 ring-brand-blue-300' 
