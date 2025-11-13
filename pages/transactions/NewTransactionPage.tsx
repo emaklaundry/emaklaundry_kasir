@@ -1,3 +1,25 @@
+
+const NewTransactionPage: React.FC = () => {
+    // --- SEMUA HOOK HARUS DI ATAS SINI ---
+    const navigate = useNavigate();
+    const { settings, isLoading: isLoadingSettings } = useSettings();
+    const { transactions, addTransaction } = useTransactions();
+    const { customers, addCustomer } = useCustomers();
+    const { services } = useServices();
+    const { currentUser, selectedStoreId } = useAppContext();
+    const { addAuditLog } = useAuditLogs();
+    const { addToast, updateToast } = useToasts();
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+    const [items, setItems] = useState<TransactionItem[]>([]);
+    // State untuk warning item kiloan
+    const [showKiloanWarning, setShowKiloanWarning] = useState(false);
+    // Efek untuk warning item kiloan dobel
+    useEffect(() => {
+        if (showKiloanWarning) {
+            addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+            setShowKiloanWarning(false);
+        }
+    }, [showKiloanWarning, addToast]);
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '../../types';
@@ -162,39 +184,34 @@ const NewTransactionPage: React.FC = () => {
     }, [canApplyDiscount, selectedCustomer, addToast]);
 
     const handleAddService = useCallback((service: Service) => {
-        // 1. Baca 'items' dari scope.
-        const existingItemIndex = items.findIndex(item => item.serviceId === service.id);
         const isKiloan = service.category === ServiceCategory.Kiloan;
-
-        if (existingItemIndex > -1) {
-            if (isKiloan) {
-                // 2. Panggil addToast di luar 'setItems'. Ini adalah event handler biasa.
-                addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
-                // 3. Tidak perlu update state, jadi kita 'return' lebih awal.
-                return;
-            }
-
-            // Untuk item Satuan, kita update state seperti biasa.
-            setItems(currentItems => {
+        setItems(currentItems => {
+            const existingItemIndex = currentItems.findIndex(item => item.serviceId === service.id);
+            if (existingItemIndex > -1) {
+                if (isKiloan) {
+                    setShowKiloanWarning(true);
+                    return currentItems;
+                }
+                // Untuk item Satuan, update kuantitas seperti biasa
                 const updatedItems = [...currentItems];
                 const currentItem = updatedItems[existingItemIndex];
                 currentItem.quantity += 1;
                 currentItem.subtotal = currentItem.price * currentItem.quantity;
                 return updatedItems;
-            });
-        } else {
-            // Untuk item baru
-            const newItem: TransactionItem = {
-                serviceId: service.id,
-                serviceName: service.name,
-                price: service.price,
-                unit: service.unit,
-                quantity: 1,
-                subtotal: service.price * 1,
-            };
-            setItems(currentItems => [...currentItems, newItem]);
-        }
-    }, [items, addToast]);
+            } else {
+                // Untuk item baru
+                const newItem: TransactionItem = {
+                    serviceId: service.id,
+                    serviceName: service.name,
+                    price: service.price,
+                    unit: service.unit,
+                    quantity: 1,
+                    subtotal: service.price * 1,
+                };
+                return [...currentItems, newItem];
+            }
+        });
+    }, []);
 
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
@@ -452,6 +469,8 @@ const NewTransactionPage: React.FC = () => {
                                                         <div className="flex items-center">
                                                             <input 
                                                                 type="number" 
+                                                                id={`item-qty-${index}`}
+                                                                name={`itemQty${index}`}
                                                                 min="0" 
                                                                 step={item.unit === 'kg' ? "0.1" : "1"}
                                                                 value={item.quantity} 
@@ -506,7 +525,7 @@ const NewTransactionPage: React.FC = () => {
                                 />
                                  <div>
                                     <label htmlFor="notes" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Catatan (Opsional)</label>
-                                    <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
+                                    <textarea id="notes" name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
                                 </div>
                                 <div className="space-y-3 pt-4 border-t dark:border-slate-700">
                                     <div className="flex justify-between items-center text-lg">
@@ -526,6 +545,7 @@ const NewTransactionPage: React.FC = () => {
                                             <input 
                                                 type="number"
                                                 id="discountValue"
+                                                name="discountValue"
                                                 min="0"
                                                 value={discountValue}
                                                 onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
@@ -591,6 +611,7 @@ const NewTransactionPage: React.FC = () => {
                                         <input 
                                             type="text" 
                                             id="amountPaid" 
+                                            name="amountPaid"
                                             value={amountPaidStr}
                                             onChange={e => handleAmountToPayChange(e.target.value)}
                                             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -603,6 +624,7 @@ const NewTransactionPage: React.FC = () => {
                                             <input 
                                                 type="text" 
                                                 id="tenderedAmount" 
+                                                name="tenderedAmount"
                                                 value={tenderedAmountStr}
                                                 onChange={e => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
                                                 className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"

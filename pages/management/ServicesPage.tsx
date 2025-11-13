@@ -112,6 +112,8 @@ const ServicesPage: React.FC = () => {
                         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input 
                             type="text" 
+                            id="service-search"
+                            name="serviceSearch"
                             placeholder="Cari layanan..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}

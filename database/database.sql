@@ -181,8 +181,8 @@ $$;
 DROP POLICY IF EXISTS "Users can see their own profile (if active)" ON public.profiles;
 CREATE POLICY "Users can see their own profile" ON public.profiles
   FOR SELECT USING (id = auth.uid());
-CREATE POLICY "Admins can see profiles in their store" ON public.profiles
-  FOR SELECT USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
+CREATE POLICY "Admins and Kasirs can see profiles in their store" ON public.profiles
+  FOR SELECT USING (public.get_my_role() IN ('Admin', 'Kasir') AND store_id = public.get_my_store_id());
 CREATE POLICY "Super Admins can see all profiles" ON public.profiles
   FOR SELECT USING (public.get_my_role() = 'Super Admin');
 CREATE POLICY "Users can update their own profile" ON public.profiles

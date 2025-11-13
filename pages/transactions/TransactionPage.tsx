@@ -294,6 +294,8 @@ const TransactionPage: React.FC = () => {
                         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input 
                             type="text" 
+                            id="transaction-search"
+                            name="transactionSearch"
                             placeholder="Cari ID, nama, atau no. HP..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
@@ -315,6 +317,7 @@ const TransactionPage: React.FC = () => {
                     <div>
                         <input 
                             id="selectedDate"
+                            name="selectedDate"
                             type="date"
                             value={selectedDate}
                             onChange={e => setSelectedDate(e.target.value)}

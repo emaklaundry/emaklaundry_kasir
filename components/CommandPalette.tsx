@@ -27,6 +27,12 @@ const CommandPalette: React.FC = () => {
     const inputRef = useRef<HTMLInputElement>(null);
     const resultsRef = useRef<HTMLDivElement>(null);
 
+    // ...existing code...
+
+    // Pastikan input pencarian memiliki id dan name unik
+    // Contoh:
+    // <input id="command-palette-search" name="commandPaletteSearch" ... />
+
     const baseCommands: Omit<Command, 'id' | 'action'>[] = [
         { title: 'Dashboard', icon: HomeIcon, section: 'Navigasi', path: '/' },
         { title: 'Daftar Transaksi', icon: ShoppingCartIcon, section: 'Navigasi', keywords: 'list', path: '/transactions' },

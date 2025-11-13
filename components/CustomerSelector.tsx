@@ -64,7 +64,8 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selected
                     <input 
                         ref={inputRef}
                         type="text" 
-                        id="customerName" 
+                        id="customerName"
+                        name="customerName"
                         value={searchTerm} 
                         onChange={handleInputChange}
                         onFocus={() => setIsDropdownOpen(true)}

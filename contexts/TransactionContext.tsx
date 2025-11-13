@@ -63,12 +63,34 @@ export function useTransactions(filter: TransactionFilter = {}) {
   const updateTransaction = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Transaction> }) => {
       const { id, data } = variables;
-      const payload = sanitizeTransactionUpdate(data);
 
-      const { data: updated, error } = await supabase.from('transactions').update(payload).eq('id', id).select();
+      // Payload khusus untuk RPC
+      const rpcPayload: {
+        transaction_id_input: string;
+        p_amount_paid?: number;
+        p_change?: number;
+        p_payment_method?: string;
+        p_payment_status?: string;
+        p_order_status?: string;
+      } = {
+        transaction_id_input: id,
+        p_amount_paid: data.amountPaid,
+        p_change: data.change,
+        p_payment_method: data.paymentMethod,
+        p_payment_status: data.paymentStatus,
+        p_order_status: data.orderStatus,
+      };
+
+      // Panggil RPC, bukan update langsung
+      const { data: updated, error } = await supabase.rpc(
+        'update_transaction_progress',
+        rpcPayload
+      );
 
       if (error) throw error;
-      return updated?.[0] || null;
+      // RPC mengembalikan array, ambil item pertama jika ada
+      const resultData = Array.isArray(updated) ? updated[0] : updated;
+      return resultData || null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
   });
