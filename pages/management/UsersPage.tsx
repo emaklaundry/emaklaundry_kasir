@@ -104,17 +104,14 @@ const UsersPage: React.FC = () => {
         storeName: stores.find(s => s.id === user.storeId)?.name || 'N/A'
     })), [users, stores]);
 
-    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type UserWithStore = (typeof usersWithStore)[0];
 
     const filteredUsers = useMemo(() => usersWithStore.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase())
     ), [usersWithStore, searchTerm]);
 
-    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedUsers, requestSort, sortConfig } = useSortableData<UserWithStore>(filteredUsers);
     
-    // FIX: Use the explicit type for the key to ensure type safety.
     const getSortIcon = (key: keyof UserWithStore) => {
         if (!sortConfig || sortConfig.key !== key) return null;
         if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;

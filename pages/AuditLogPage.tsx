@@ -45,15 +45,12 @@ const AuditLogPage: React.FC = () => {
         }));
     }, [filteredLogs, stores]);
     
-    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type LogWithStore = (typeof logsWithStore)[0];
 
-    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedLogs, requestSort, sortConfig } = useSortableData<LogWithStore>(logsWithStore, { key: 'timestamp', direction: 'descending' });
     const { currentData: paginatedLogs, currentPage, totalPages, onPageChange } = usePagination(sortedLogs);
 
 
-    // FIX: Use the explicit type for the key to ensure type safety.
     const getSortIcon = (key: keyof LogWithStore) => {
         if (!sortConfig || sortConfig.key !== key) return null;
         if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;

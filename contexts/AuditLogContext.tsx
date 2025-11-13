@@ -22,7 +22,6 @@ export function useAuditLogs() {
         action: action,
         ...(storeId && storeId !== 'all' ? { storeId } : {})
       };
-  // Hapus .select() dan jangan simpan 'data' karena tidak diperlukan
   const { error } = await supabase.from('audit_logs').insert([newLog]);
   if (error) throw error;
   return null; // Kembalikan null karena operasi berhasil

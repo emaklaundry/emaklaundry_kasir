@@ -83,7 +83,6 @@ const ExpensesPage: React.FC = () => {
         storeName: stores.find(s => s.id === expense.storeId)?.name || 'N/A'
     })), [expenses, stores]);
 
-    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type ExpenseWithStore = (typeof expensesWithStore)[0];
 
     const filteredExpenses = useMemo(() => expensesWithStore.filter(expense =>
@@ -91,10 +90,8 @@ const ExpensesPage: React.FC = () => {
         expense.category.toLowerCase().includes(searchTerm.toLowerCase())
     ), [expensesWithStore, searchTerm]);
     
-    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedExpenses, requestSort, sortConfig } = useSortableData<ExpenseWithStore>(filteredExpenses, { key: 'date', direction: 'descending' });
 
-    // FIX: Use the explicit type for the key to ensure type safety.
     const getSortIcon = (key: keyof ExpenseWithStore) => {
         if (!sortConfig || sortConfig.key !== key) return null;
         if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;

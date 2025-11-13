@@ -129,7 +129,6 @@ const AssetsPage: React.FC = () => {
         storeName: stores.find(s => s.id === asset.storeId)?.name || 'N/A'
     })), [assets, stores]);
 
-    // FIX: Define a type for the sorted data to ensure type safety with the useSortableData hook.
     type AssetWithStore = (typeof assetsWithStore)[0];
 
     const dueMaintenanceAssetIds = useMemo(() => {
@@ -152,10 +151,8 @@ const AssetsPage: React.FC = () => {
             (asset.serialNumber && asset.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()))
     }), [assetsWithStore, searchTerm, maintenanceFilter, dueMaintenanceAssetIds]);
     
-    // FIX: Explicitly provide the generic type to useSortableData to prevent incorrect type inference.
     const { items: sortedAssets, requestSort, sortConfig } = useSortableData<AssetWithStore>(filteredAssets);
 
-    // FIX: Use the explicit type for the key to ensure type safety.
     const getSortIcon = (key: keyof AssetWithStore) => {
         if (!sortConfig || sortConfig.key !== key) return null;
         if (sortConfig.direction === 'ascending') return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
