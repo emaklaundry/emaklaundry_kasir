@@ -1,4 +1,40 @@
--- ...existing code...
+
+-- === ENUM DEFINITIONS (PASTIKAN INI DI PALING ATAS) ===
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
+    CREATE TYPE public.service_category AS ENUM ('Kiloan','Satuan','Sepatu','Karpet');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE public.user_role AS ENUM ('Super Admin','Admin','Kasir');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+    CREATE TYPE public.payment_status AS ENUM ('Lunas','Belum Lunas','Bayar Sebagian');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
+    CREATE TYPE public.order_status AS ENUM ('Selesai','Diproses','Batal','Menunggu Pembayaran');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
+    CREATE TYPE public.payment_method AS ENUM ('Cash','Transfer','QRIS','Debit','Credit');
+  END IF;
+END$$;
+
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
@@ -33,15 +69,6 @@ CREATE TABLE public.customers (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
-
--- ENUM for service category
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
-    CREATE TYPE public.service_category AS ENUM ('Kiloan','Satuan','Sepatu','Karpet');
-  END IF;
-END$$;
-
 CREATE TABLE public.services (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -51,38 +78,6 @@ CREATE TABLE public.services (
   "durationDays" integer NOT NULL,
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
-
--- ENUM untuk Role Pengguna
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-    CREATE TYPE public.user_role AS ENUM ('Super Admin','Admin','Kasir');
-  END IF;
-END$$;
-
--- ENUM untuk Status Pembayaran
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
-    CREATE TYPE public.payment_status AS ENUM ('Lunas','Belum Lunas','Bayar Sebagian');
-  END IF;
-END$$;
-
--- ENUM untuk Status Order
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
-    CREATE TYPE public.order_status AS ENUM ('Selesai','Diproses','Batal','Menunggu Pembayaran');
-  END IF;
-END$$;
-
--- ENUM untuk Metode Pembayaran
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
-    CREATE TYPE public.payment_method AS ENUM ('Cash','Transfer','QRIS','Debit','Credit');
-  END IF;
-END$$;
 
 
 -- User credentials table for local auth (if needed)
