@@ -55,7 +55,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Sidebar />
             <div className="sm:ml-64">
                 <Header pageTitle={pageTitle} />
-                <main className={`p-4 md:p-6 ${isCashier ? 'pb-24 sm:pb-6' : ''}`}>
+                <main className={`p-4 md:p-6 ${isCashier ? 'pb-24 sm:pb-6' : ''} print-main-content`}>
                     {children}
                 </main>
             </div>

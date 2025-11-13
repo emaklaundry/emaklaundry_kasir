@@ -263,10 +263,33 @@ const ReportsPage: React.FC = () => {
 
     const isRangeReport = reportType === 'range';
 
+    // --- TAMBAHAN: Teks header untuk laporan cetak ---
+    const printHeaderTitle = useMemo(() => {
+        if (reportType === 'yearlySummary') {
+            return `Ringkasan Tahunan ${new Date().getFullYear()}`;
+        }
+        // Untuk 'range'
+        const startStr = startDate.toLocaleDateString('id-ID');
+        const endStr = endDate.toLocaleDateString('id-ID');
+        if (rangeType === 'custom') {
+            return `Laporan Kustom (${startStr} - ${endStr})`;
+        }
+        return `Laporan ${rangeType === 'weekly' ? 'Mingguan' : 'Bulanan'} (Hingga ${endStr})`;
+    }, [reportType, rangeType, startDate, endDate]);
+
     return (
         <div className="space-y-6">
-            <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400 -mb-2">{getStoreName()}</h2>
-            <div className="flex justify-between items-center flex-wrap gap-4">
+            <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400 -mb-2 print-hide">{getStoreName()}</h2>
+
+            {/* --- TAMBAHAN: Header yang HANYA muncul saat dicetak --- */}
+            <div className="print-only-block">
+                <h1>{getStoreName()}</h1>
+                <h3>{printHeaderTitle}</h3>
+            </div>
+            {/* --- AKHIR BLOK CETAK --- */}
+
+            {/* TAMBAHKAN: 'print-hide' untuk menyembunyikan seluruh baris filter ini saat cetak */}
+            <div className="flex justify-between items-center flex-wrap gap-4 print-hide">
                  <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                     <button onClick={() => setReportType('range')} className={`px-4 py-2 text-base font-medium rounded-md ${isRangeReport ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Rentang Waktu</button>
                     <button onClick={() => setReportType('yearlySummary')} className={`px-4 py-2 text-base font-medium rounded-md ${!isRangeReport ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Ringkasan Tahunan</button>
@@ -292,22 +315,27 @@ const ReportsPage: React.FC = () => {
 
             {isRangeReport ? (
                 <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* TAMBAHKAN: 'print-stat-card-container' untuk styling pembungkus saat cetak */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print-stat-card-container">
                     <StatCard icon={DollarSignIcon} title="Total Pendapatan" value={`Rp ${totalRevenue.toLocaleString('id-ID')}`} color="border-green-500" />
                     <StatCard icon={DollarSignIcon} title="Total Pengeluaran" value={`Rp ${totalExpenses.toLocaleString('id-ID')}`} color="border-red-500" />
                     <StatCard icon={BarChartIcon} title="Laba Bersih" value={`Rp ${netProfit.toLocaleString('id-ID')}`} color="border-blue-500" />
                     <StatCard icon={PackageIcon} title="Total Transaksi" value={filteredData.transactions.length} color="border-yellow-500" />
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Layanan Terlaris</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Layanan</th><th className="px-4 py-2 text-right">Pendapatan</th></tr></thead><tbody>{topServices.map(s => (<tr key={s.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{s.name}</td><td className="px-4 py-2 text-right">Rp {s.revenue.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pelanggan Teratas</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Pelanggan</th><th className="px-4 py-2 text-right">Total Belanja</th></tr></thead><tbody>{topCustomers.map(c => (<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-right">Rp {c.total.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
+                    {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Layanan Terlaris</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Layanan</th><th className="px-4 py-2 text-right">Pendapatan</th></tr></thead><tbody>{topServices.map(s => (<tr key={s.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{s.name}</td><td className="px-4 py-2 text-right">Rp {s.revenue.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
+                    {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pelanggan Teratas</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Pelanggan</th><th className="px-4 py-2 text-right">Total Belanja</th></tr></thead><tbody>{topCustomers.map(c => (<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-right">Rp {c.total.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
-                        <BarChartIcon className="w-6 h-6 mr-3 text-slate-500" />
+                        <BarChartIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
                         Pendapatan per Kategori Layanan
                     </h2>
-                    <div className="space-y-3">
+                    {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan bagan visual saat cetak */}
+                    <div className="space-y-3 print-chart-hide">
                         {revenueByCategory.length > 0 ? revenueByCategory.map(c => (
                             <div key={c.category}>
                                 <div className="flex justify-between mb-1">
@@ -326,11 +354,32 @@ const ReportsPage: React.FC = () => {
                             <p className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data pendapatan.</p>
                         )}
                     </div>
+                    
+                    {/* --- TAMBAHKAN: Tabel ini HANYA akan muncul saat dicetak --- */}
+                    <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
+                         <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                            <tr className="print-only-row">
+                                <th className="print-only-cell px-4 py-3">Kategori</th>
+                                <th className="print-only-cell px-4 py-3 text-right">Pendapatan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {revenueByCategory.map((c) => (
+                                <tr key={c.category} className="print-only-row border-b dark:border-slate-700">
+                                    <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">{c.category}</td>
+                                    <td className="print-only-cell px-4 py-3 text-right">Rp {c.revenue.toLocaleString('id-ID')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {/* --- AKHIR BLOK CETAK --- */}
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><UsersIcon className="w-6 h-6 mr-3 text-slate-500" />Performa Kasir</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Kasir</th><th className="px-4 py-2 text-center">Total Transaksi</th><th className="px-4 py-2 text-right">Total Pendapatan</th><th className="px-4 py-2 text-right">Total Diskon</th></tr></thead><tbody>{cashierPerformance.length>0?cashierPerformance.map(c=>(<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-center">{c.transactionCount}</td><td className="px-4 py-2 text-right">Rp {c.totalRevenue.toLocaleString('id-ID')}</td><td className="px-4 py-2 text-right">Rp {c.totalDiscount.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={4} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data performa.</td></tr>)}</tbody></table></div></div>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />Performa Kasir</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Kasir</th><th className="px-4 py-2 text-center">Total Transaksi</th><th className="px-4 py-2 text-right">Total Pendapatan</th><th className="px-4 py-2 text-right">Total Diskon</th></tr></thead><tbody>{cashierPerformance.length>0?cashierPerformance.map(c=>(<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-center">{c.transactionCount}</td><td className="px-4 py-2 text-right">Rp {c.totalRevenue.toLocaleString('id-ID')}</td><td className="px-4 py-2 text-right">Rp {c.totalDiscount.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={4} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data performa.</td></tr>)}</tbody></table></div></div>
+                {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
-                        <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500" />
+                        <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
                         Rincian Pengeluaran
                     </h2>
                     <div className="overflow-x-auto">
@@ -378,7 +427,8 @@ const ReportsPage: React.FC = () => {
                 </div>
                 </>
             ) : (
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                // TAMBAHKAN: 'report-section' untuk menghindari page-break
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
                     <YearlySummaryChart data={monthlySummary} />
                 </div>

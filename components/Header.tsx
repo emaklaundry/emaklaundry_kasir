@@ -46,7 +46,7 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
   const activeStores = stores.filter(s => s.isActive);
 
   return (
-    <header className="bg-white dark:bg-slate-800 shadow-sm p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
+  <header className="print-hide bg-white dark:bg-slate-800 shadow-sm p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl md:text-3xl font-semibold text-slate-800 dark:text-white">{pageTitle}</h1>
         <div className="flex items-center space-x-2 sm:space-x-4">
