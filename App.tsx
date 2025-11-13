@@ -27,9 +27,9 @@ const StoresPage = lazy(() => import('@/pages/management/StoresPage'));
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser } = useAppContext();
-    const isAdmin = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.Admin;
-        return isAdmin ? <>{children}</> : <Navigate to="/" />;
+    const { currentUser } = useAppContext();
+        const isAdmin = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.BranchAdmin;
+                return isAdmin ? <>{children}</> : <Navigate to="/" />;
 };
 
 const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -94,7 +94,7 @@ const App: React.FC = () => {
   useTheme(); // Initialize and apply theme
   return (
     <AppProviders>
-        <HashRouter>
+        <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AppRoutes />
         </HashRouter>
     </AppProviders>
