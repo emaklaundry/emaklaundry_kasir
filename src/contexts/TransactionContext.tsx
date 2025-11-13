@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '../../types';
-import { supabase, updateTransactionProgress } from '../../utils/supabaseClient';
+import { supabase, updateTransactionProgress } from '@/utils/supabaseClient';
 
 
 // Pagination-aware fetchTransactions
