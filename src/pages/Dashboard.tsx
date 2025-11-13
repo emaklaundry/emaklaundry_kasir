@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '../../types';
+import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '@/types';
 import { 
     ShoppingCartIcon, PackageIcon, WrenchIcon, PlusCircleIcon, DollarSignIcon, 
     CalendarIcon, ChevronRightIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon
@@ -119,7 +119,7 @@ const StatCard: React.FC<{
 };
 
 
-import { calculateNextDueDate } from '../../utils/formatting';
+import { calculateNextDueDate } from '@/utils/formatting';
 
 // Helper function to calculate stats for a given period
 const calculateStats = (transactions: Transaction[], startDate: Date, endDate: Date) => {

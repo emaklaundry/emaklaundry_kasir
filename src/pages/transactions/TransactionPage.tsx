@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '../../../types';
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 import { PlusCircleIcon, SearchIcon, PrinterIcon, SendIcon, EyeIcon, DollarSignIcon, ShoppingCartIcon, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import { useTransactions } from '../../contexts/TransactionContext';

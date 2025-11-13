@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Customer } from '../../types';
-import { supabase } from '../../utils/supabaseClient';
+import { Customer } from '@/types';
+import { supabase } from '@/utils/supabaseClient';
 
 const fetchCustomers = async (): Promise<Customer[]> => {
   const { data, error } = await supabase.from('customers').select('*');

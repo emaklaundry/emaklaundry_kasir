@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { InventoryItem } from '../../types';
-import { supabase } from '../../utils/supabaseClient';
+import { InventoryItem } from '@/types';
+import { supabase } from '@/utils/supabaseClient';
 
 const fetchInventory = async (): Promise<InventoryItem[]> => {
   const { data, error } = await supabase.from('inventory_items').select('*');

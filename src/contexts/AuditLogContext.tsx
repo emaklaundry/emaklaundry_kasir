@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AuditLog } from '../../types';
+import { AuditLog } from '@/types';
 import { useAppContext } from './AppContext';
-import { supabase } from '../../utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient';
 
 const fetchLogs = async (): Promise<AuditLog[]> => {
   const { data, error } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false });

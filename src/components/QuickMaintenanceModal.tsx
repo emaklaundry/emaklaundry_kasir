@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { useAssets } from '../contexts/AssetContext';
-import { MaintenanceLog } from '../../types';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { MaintenanceLog } from '@/types';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useToasts } from '../contexts/ToastContext';
 import { useEffect } from 'react';

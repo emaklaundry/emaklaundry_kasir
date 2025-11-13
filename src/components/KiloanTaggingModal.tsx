@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { TransactionItem } from '../../types';
+import { TransactionItem } from '@/types';
 
 interface KiloanTaggingModalProps {
   isOpen: boolean;

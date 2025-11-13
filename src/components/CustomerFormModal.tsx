@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import Modal from './Modal';
-import { Customer } from '../../types';
+import { Customer } from '@/types';
 
 interface CustomerFormModalProps {
     customer: Customer | null;

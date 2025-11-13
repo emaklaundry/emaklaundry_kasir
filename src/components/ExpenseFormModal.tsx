@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { Expense } from '../../types';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { Expense } from '@/types';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
 
 interface ExpenseFormModalProps {
     expense: Expense | null;

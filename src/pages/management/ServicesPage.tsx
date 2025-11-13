@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Service, ServiceCategory, UserRole } from '../../../types';
+import { Service, ServiceCategory, UserRole } from '@/types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PackageIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';

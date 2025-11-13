@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { ScheduledMaintenance } from '../../types';
+import { ScheduledMaintenance } from '@/types';
 
 type ScheduleFormData = Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate' | 'nextDueDate'> & { nextDueDate: string };
 

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Service } from '../../types';
-import { supabase } from '../../utils/supabaseClient';
+import { Service } from '@/types';
+import { supabase } from '@/utils/supabaseClient';
 
 const fetchServices = async (): Promise<Service[]> => {
   const { data, error } = await supabase.from('services').select('*');

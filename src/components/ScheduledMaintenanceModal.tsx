@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import Modal from './Modal';
-import { Asset, ScheduledMaintenance } from '../../types';
+import { Asset, ScheduledMaintenance } from '@/types';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
 import { useToasts } from '../contexts/ToastContext';
@@ -15,7 +15,7 @@ interface ScheduledMaintenanceModalProps {
     onClose: () => void;
 }
 
-import { calculateNextDueDate } from '../../utils/formatting';
+import { calculateNextDueDate } from '@/utils/formatting';
 
 
 const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ asset, isOpen, onClose }) => {

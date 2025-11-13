@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
-import { Asset } from '../../types';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { Asset } from '@/types';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
 
 interface AssetFormModalProps {
     asset: Asset | null,

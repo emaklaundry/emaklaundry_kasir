@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
-import { MaintenanceLog } from '../../types';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { MaintenanceLog } from '@/types';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
 
 interface MaintenanceFormModalProps {
     assetName: string,

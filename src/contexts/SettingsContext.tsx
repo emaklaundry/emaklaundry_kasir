@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings } from '../../types';
-import { supabase } from '../../utils/supabaseClient';
+import { Settings } from '@/types';
+import { supabase } from '@/utils/supabaseClient';
 
 const fetchSettings = async (): Promise<Settings | null> => {
   // Use a safer fetch that returns the first row if multiple exist and doesn't fail

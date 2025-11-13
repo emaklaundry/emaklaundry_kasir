@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus } from '../../../types';
+import { OrderStatus, PaymentStatus } from '@/types';
 import { UsersIcon, ShoppingCartIcon, DollarSignIcon, ChevronLeftIcon, HistoryIcon } from '../../components/icons';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';

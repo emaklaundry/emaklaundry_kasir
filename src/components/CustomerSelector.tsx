@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Customer } from '../../types';
+import { Customer } from '@/types';
 import { SearchIcon, PlusCircleIcon } from './icons';
 
 interface CustomerSelectorProps {

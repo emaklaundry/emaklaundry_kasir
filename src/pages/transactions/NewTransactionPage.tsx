@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '../../../types';
+import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '@/types';
 import { Trash2Icon, MessageSquareIcon, PlusCircleIcon, TagIcon, SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -9,7 +9,7 @@ import { useCustomers } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import { useAppContext } from '../../contexts/AppContext';
-import { formatRupiah } from '../../../utils/formatting';
+import { formatRupiah } from '@/utils/formatting';
 import { useTransactionForm } from '../../hooks/useTransactionForm';
 import CustomerSelector from '../../components/CustomerSelector';
 import ServiceSelector from '../../components/ServiceSelector';

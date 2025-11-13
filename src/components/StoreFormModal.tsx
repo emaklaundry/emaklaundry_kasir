@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
-import { Store } from '../../types';
+import { Store } from '@/types';
 
 interface StoreFormModalProps {
     store: Store | null,
