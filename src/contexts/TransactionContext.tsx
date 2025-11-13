@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '../../types';
-import { supabase } from '../../utils/supabaseClient';
-import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
+import { supabase, updateTransactionProgress } from '../../utils/supabaseClient';
 
 
 // Pagination-aware fetchTransactions
@@ -63,12 +62,16 @@ export function useTransactions(filter: TransactionFilter = {}) {
   const updateTransaction = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Transaction> }) => {
       const { id, data } = variables;
-      const payload = sanitizeTransactionUpdate(data);
-
-      const { data: updated, error } = await supabase.from('transactions').update(payload).eq('id', id).select();
-
-      if (error) throw error;
-      return updated?.[0] || null;
+      // Only pass allowed progress fields to the RPC
+      const progressFields = {
+        amountPaid: data.amountPaid,
+        change: data.change,
+        paymentMethod: data.paymentMethod,
+        paymentStatus: data.paymentStatus,
+        orderStatus: data.orderStatus
+      };
+      const updated = await updateTransactionProgress(id, progressFields);
+      return updated;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
   });

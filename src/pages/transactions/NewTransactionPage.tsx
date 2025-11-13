@@ -162,19 +162,13 @@ const NewTransactionPage: React.FC = () => {
     }, [canApplyDiscount, selectedCustomer, addToast]);
 
     const handleAddService = useCallback((service: Service) => {
-        // 1. Baca 'items' dari scope.
         const existingItemIndex = items.findIndex(item => item.serviceId === service.id);
         const isKiloan = service.category === ServiceCategory.Kiloan;
-
         if (existingItemIndex > -1) {
             if (isKiloan) {
-                // 2. Panggil addToast di luar 'setItems'. Ini adalah event handler biasa.
                 addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
-                // 3. Tidak perlu update state, jadi kita 'return' lebih awal.
                 return;
             }
-
-            // Untuk item Satuan, kita update state seperti biasa.
             setItems(currentItems => {
                 const updatedItems = [...currentItems];
                 const currentItem = updatedItems[existingItemIndex];
@@ -183,7 +177,6 @@ const NewTransactionPage: React.FC = () => {
                 return updatedItems;
             });
         } else {
-            // Untuk item baru
             const newItem: TransactionItem = {
                 serviceId: service.id,
                 serviceName: service.name,
@@ -195,6 +188,190 @@ const NewTransactionPage: React.FC = () => {
             setItems(currentItems => [...currentItems, newItem]);
         }
     }, [items, addToast]);
+
+    const resetForm = useCallback(() => {
+        setSelectedCustomer(null);
+        setItems([]);
+        setNotes('');
+        setDiscountValue(settings?.discountRate ?? 0);
+        setDiscountType('percent');
+        setPaymentMethod(undefined);
+        setAmountPaidStr('0');
+        setTenderedAmountStr('');
+        setIsPayingNow(false);
+        setNewlyCreatedTransaction(null);
+    }, [settings?.discountRate]);
+
+    const handleItemChange = useCallback((index: number, field: 'quantity' | 'taggedItems' | 'itemDetails', value: number | string | { note: string }[]) => {
+        const newItems = [...items];
+        const item = newItems[index];
+        const service = services.find(s => s.id === item.serviceId);
+        if (field === 'quantity' && typeof value === 'number') {
+            const newQuantity = value >= 0 ? value : 0;
+            item.quantity = newQuantity;
+            item.subtotal = item.price * item.quantity;
+            if (service && service.category === ServiceCategory.Satuan) {
+                const currentNotes = item.itemDetails || [];
+                if (currentNotes.length < newQuantity) {
+                    const newNotes = [
+                        ...currentNotes,
+                        ...Array.from({ length: newQuantity - currentNotes.length }, () => ({ note: '' }))
+                    ];
+                    item.itemDetails = newNotes;
+                } else {
+                    item.itemDetails = currentNotes;
+                }
+            }
+        } else if (field === 'taggedItems' && typeof value === 'string') {
+            item.taggedItems = value;
+        } else if (field === 'itemDetails' && Array.isArray(value)) {
+            item.itemDetails = value as { note: string }[];
+        }
+        setItems(newItems);
+    }, [items, services]);
+
+    const handleOpenNotesModal = useCallback((index: number) => {
+        setEditingItemIndex(index);
+        setIsNotesModalOpen(true);
+    }, []);
+
+    const handleOpenKiloanTaggingModal = useCallback((index: number) => {
+        setEditingItemIndex(index);
+        setIsKiloanTaggingModalOpen(true);
+    }, []);
+
+    const handleSaveNotes = useCallback((notes: { note: string }[]) => {
+        if (editingItemIndex !== null) {
+            handleItemChange(editingItemIndex, 'itemDetails', notes);
+        }
+        setEditingItemIndex(null);
+        setIsNotesModalOpen(false);
+    }, [editingItemIndex, handleItemChange]);
+
+    const handleSaveKiloanTags = useCallback((tags: string) => {
+        if (editingItemIndex !== null) {
+            handleItemChange(editingItemIndex, 'taggedItems', tags);
+        }
+        setEditingItemIndex(null);
+        setIsKiloanTaggingModalOpen(false);
+    }, [editingItemIndex, handleItemChange]);
+
+    const handleRemoveItem = useCallback((index: number) => {
+        setItems(items.filter((_, i) => i !== index));
+    }, [items]);
+
+    const handleSaveCustomer = useCallback(async (customer: Omit<Customer, 'id' | 'storeId'>) => {
+        if (!currentStoreId || currentStoreId === 'all') {
+            addToast('Silakan pilih cabang spesifik untuk menambah pelanggan.', 'warning');
+            return;
+        }
+        const toastId = addToast('Menambah pelanggan...', 'info');
+        try {
+            const newCustomer = await addCustomer({ ...customer, storeId: currentStoreId });
+            if (newCustomer) {
+                setSelectedCustomer(newCustomer);
+                setIsCustomerModalOpen(false);
+                updateToast(toastId, 'Pelanggan berhasil ditambahkan!', 'success');
+            } else {
+                updateToast(toastId, 'Gagal menambah pelanggan: Data tidak valid.', 'error');
+            }
+        } catch (error: any) {
+            updateToast(toastId, `Gagal menambah pelanggan: ${error.message}`, 'error');
+        }
+    }, [currentStoreId, addCustomer, addToast, updateToast]);
+
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSaving) return;
+        if (!currentStoreId || currentStoreId === 'all') {
+            addToast('Super Admin harus memilih cabang spesifik untuk membuat transaksi.', 'warning');
+            return;
+        }
+        if(!selectedCustomer) {
+            addToast('Pelanggan harus dipilih.', 'warning');
+            return;
+        }
+        if (items.length === 0) {
+             addToast('Minimal satu layanan harus ditambahkan.', 'warning');
+            return;
+        }
+        if (isPayingNow && actualAmountPaid > 0 && !paymentMethod) {
+            addToast('Silakan pilih metode pembayaran.', 'warning');
+            return;
+        }
+        setIsSaving(true);
+        const toastId = addToast('Menyimpan transaksi...', 'info');
+        try {
+            const newTransaction: Omit<Transaction, 'id'> = {
+                customerId: selectedCustomer.id,
+                items,
+                subtotal,
+                discount: discountAmount,
+                tax: taxAmount,
+                total: grandTotal,
+                paymentStatus,
+                orderStatus: OrderStatus.Processing,
+                createdAt: new Date(),
+                estimatedCompletionDate: estimatedCompletionDate,
+                notes,
+                amountPaid: actualAmountPaid,
+                change: changeAmount,
+                paymentMethod: (isPayingNow && actualAmountPaid > 0) ? paymentMethod : undefined,
+                createdByUserId: currentUser.id,
+                storeId: currentStoreId,
+            };
+            const savedTransaction = await addTransaction(newTransaction);
+            if (savedTransaction) {
+                addAuditLog(`Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`, currentStoreId);
+                setNewlyCreatedTransaction(savedTransaction);
+                setIsWhatsAppModalOpen(true);
+                updateToast(toastId, 'Transaksi berhasil disimpan.', 'success');
+            } else {
+                updateToast(toastId, 'Gagal menyimpan transaksi: Tidak ada data yang dikembalikan.', 'error');
+            }
+        } catch (error: any) {
+            updateToast(toastId, `Gagal menyimpan transaksi: ${error.message}`, 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    }, [isSaving, currentStoreId, addToast, selectedCustomer, items, isPayingNow, actualAmountPaid, paymentMethod, addTransaction, subtotal, discountAmount, taxAmount, grandTotal, paymentStatus, estimatedCompletionDate, notes, changeAmount, currentUser, addAuditLog, updateToast]);
+
+    const handleCloseWhatsAppModal = useCallback(() => {
+        setIsWhatsAppModalOpen(false);
+        setIsSuccessModalOpen(true);
+    }, []);
+
+    const handleNewTransaction = useCallback(() => {
+        resetForm();
+        setIsSuccessModalOpen(false);
+    }, [resetForm]);
+
+    const handleViewTransactions = useCallback(() => {
+        setIsSuccessModalOpen(false);
+        navigate('/transactions');
+    }, [navigate]);
+
+    const handleDiscountTypeChange = useCallback((type: 'percent' | 'fixed') => {
+        setDiscountType(type);
+        setDiscountValue(0);
+    }, []);
+
+    const handlePaymentOptionChange = useCallback((paying: boolean) => {
+        setIsPayingNow(paying);
+        if (paying) {
+            setAmountPaidStr(formatRupiah(grandTotal));
+        } else {
+            setAmountPaidStr('0');
+            setPaymentMethod(undefined);
+            setTenderedAmountStr('');
+        }
+    }, [grandTotal]);
+
+    const handleAmountToPayChange = useCallback((valueStr: string) => {
+        const rawValue = parseRupiah(valueStr);
+        const cappedValue = rawValue > grandTotal ? grandTotal : rawValue;
+        setAmountPaidStr(formatRupiah(cappedValue));
+    }, [grandTotal]);
 
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
