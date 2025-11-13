@@ -1,44 +1,4 @@
 
-const NewTransactionPage: React.FC = () => {
-    // --- SEMUA HOOK HARUS DI ATAS SINI ---
-    const navigate = useNavigate();
-    const { settings, isLoading: isLoadingSettings } = useSettings();
-    const { transactions, addTransaction } = useTransactions();
-    const { customers, addCustomer } = useCustomers();
-    const { services } = useServices();
-    const { currentUser, selectedStoreId } = useAppContext();
-    const { addAuditLog } = useAuditLogs();
-    const { addToast, updateToast } = useToasts();
-    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-    const [items, setItems] = useState<TransactionItem[]>([]);
-    // State untuk warning item kiloan
-    const [showKiloanWarning, setShowKiloanWarning] = useState(false);
-    // Efek untuk warning item kiloan dobel
-    useEffect(() => {
-        if (showKiloanWarning) {
-            addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
-            setShowKiloanWarning(false);
-        }
-    }, [showKiloanWarning, addToast]);
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '../../types';
-import { Trash2Icon, MessageSquareIcon, PlusCircleIcon, TagIcon, SpinnerIcon } from '../../components/icons';
-import SuccessModal from '../../components/SuccessModal';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useTransactions } from '../../contexts/TransactionContext';
-import { useCustomers } from '../../contexts/CustomerContext';
-import { useServices } from '../../contexts/ServiceContext';
-import ItemNotesModal from '../../components/ItemNotesModal';
-import { useAppContext } from '../../contexts/AppContext';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
-import CustomerSelector from '../../components/CustomerSelector';
-import ServiceSelector from '../../components/ServiceSelector';
-import CustomerFormModal from '../../components/CustomerFormModal';
-import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
-import WhatsAppModal from '../../components/WhatsAppModal';
-import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 
 const NewTransactionPage: React.FC = () => {
     // --- SEMUA HOOK HARUS DI ATAS SINI ---
@@ -152,29 +112,7 @@ const NewTransactionPage: React.FC = () => {
     useEffect(() => {
         if (!canApplyDiscount) {
             setDiscountValue(0);
-            return;
-        }
-        if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) {
-            setDiscountType('percent');
-            setDiscountValue(selectedCustomer.defaultDiscount);
-        } else {
-            setDiscountType('percent');
-            setDiscountValue(settings?.discountRate ?? 0);
-        }
-    }, [selectedCustomer, settings?.discountRate, canApplyDiscount]);
-
-    // Efek terpisah untuk toast diskon otomatis, agar tidak menyebabkan setState saat render
-    useEffect(() => {
-        if (
-            canApplyDiscount &&
-            selectedCustomer &&
-            selectedCustomer.defaultDiscount &&
-            selectedCustomer.defaultDiscount > 0
-        ) {
-            // Bungkus pemanggilan addToast dalam setTimeout(0)
-            // Ini akan memindahkannya ke antrian makro (macro-task queue),
-            // memastikan pemanggilan terjadi SETELAH render saat ini selesai.
-            const timerId = setTimeout(() => {
+            import React, { useState, useMemo, useEffect, useCallback } from 'react';
                 addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
             }, 0);
 
