@@ -3,15 +3,53 @@ import { Transaction } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { sanitizeTransactionUpdate } from '../utils/sanitizeTransaction';
 
-const fetchTransactions = async (): Promise<Transaction[]> => {
-  const { data, error } = await supabase.from('transactions').select('*');
+
+// Pagination-aware fetchTransactions
+export interface TransactionFilter {
+  page?: number;
+  pageSize?: number;
+  dateRange?: { from: string; to: string };
+  storeId?: string;
+  paymentStatus?: string;
+  orderStatus?: string;
+}
+
+const fetchTransactions = async (filter: TransactionFilter = {}): Promise<{ data: Transaction[]; count: number }> => {
+  const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
+  let query = supabase.from('transactions').select('*', { count: 'exact' });
+  if (dateRange) {
+    query = query.gte('createdAt', dateRange.from).lte('createdAt', dateRange.to);
+  }
+  if (storeId && storeId !== 'all') {
+    query = query.eq('storeId', storeId);
+  }
+  if (paymentStatus) {
+    query = query.eq('paymentStatus', paymentStatus);
+  }
+  if (orderStatus) {
+    query = query.eq('orderStatus', orderStatus);
+  }
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+  const { data, error, count } = await query;
   if (error) throw error;
-  return data || [];
+  return { data: data || [], count: count || 0 };
 };
 
-export function useTransactions() {
+
+export function useTransactions(filter: TransactionFilter = {}) {
   const queryClient = useQueryClient();
-  const { data: transactions = [], ...query } = useQuery({ queryKey: ['transactions'], queryFn: fetchTransactions });
+  const {
+    data: result,
+    ...query
+  } = useQuery({
+    queryKey: ['transactions', filter],
+    queryFn: () => fetchTransactions(filter),
+    keepPreviousData: true
+  });
+  const transactions = result?.data || [];
+  const totalCount = result?.count || 0;
 
   const addTransaction = useMutation({
     mutationFn: async (transaction: Omit<Transaction, 'id'>) => {
@@ -37,6 +75,7 @@ export function useTransactions() {
 
   return {
     transactions,
+    totalCount,
     addTransaction: addTransaction.mutateAsync,
     updateTransaction: (id: string, data: Partial<Transaction>) => updateTransaction.mutateAsync({ id, data }),
     ...query

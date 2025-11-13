@@ -149,38 +149,52 @@ const NewTransactionPage: React.FC = () => {
             selectedCustomer.defaultDiscount &&
             selectedCustomer.defaultDiscount > 0
         ) {
-            addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
+            // Bungkus pemanggilan addToast dalam setTimeout(0)
+            // Ini akan memindahkannya ke antrian makro (macro-task queue),
+            // memastikan pemanggilan terjadi SETELAH render saat ini selesai.
+            const timerId = setTimeout(() => {
+                addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
+            }, 0);
+
+            // Selalu bersihkan timer jika komponen unmount sebelum timeout berjalan
+            return () => clearTimeout(timerId);
         }
     }, [canApplyDiscount, selectedCustomer, addToast]);
 
     const handleAddService = useCallback((service: Service) => {
-        setItems(items => {
-            const existingItemIndex = items.findIndex(item => item.serviceId === service.id);
-            const isKiloan = service.category === ServiceCategory.Kiloan;
-            if (existingItemIndex > -1) {
-                if (isKiloan) {
-                    addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
-                    return items;
-                }
-                // Satuan/other: tambah quantity
-                const updatedItems = [...items];
+        // 1. Baca 'items' dari scope.
+        const existingItemIndex = items.findIndex(item => item.serviceId === service.id);
+        const isKiloan = service.category === ServiceCategory.Kiloan;
+
+        if (existingItemIndex > -1) {
+            if (isKiloan) {
+                // 2. Panggil addToast di luar 'setItems'. Ini adalah event handler biasa.
+                addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+                // 3. Tidak perlu update state, jadi kita 'return' lebih awal.
+                return;
+            }
+
+            // Untuk item Satuan, kita update state seperti biasa.
+            setItems(currentItems => {
+                const updatedItems = [...currentItems];
                 const currentItem = updatedItems[existingItemIndex];
                 currentItem.quantity += 1;
                 currentItem.subtotal = currentItem.price * currentItem.quantity;
                 return updatedItems;
-            } else {
-                const newItem: TransactionItem = {
-                    serviceId: service.id,
-                    serviceName: service.name,
-                    price: service.price,
-                    unit: service.unit,
-                    quantity: 1,
-                    subtotal: service.price * 1,
-                };
-                return [...items, newItem];
-            }
-        });
-    }, [addToast]);
+            });
+        } else {
+            // Untuk item baru
+            const newItem: TransactionItem = {
+                serviceId: service.id,
+                serviceName: service.name,
+                price: service.price,
+                unit: service.unit,
+                quantity: 1,
+                subtotal: service.price * 1,
+            };
+            setItems(currentItems => [...currentItems, newItem]);
+        }
+    }, [items, addToast]);
 
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {

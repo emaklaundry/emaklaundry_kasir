@@ -72,7 +72,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, [addToast, currentUser]);
+  }, [addToast]);
 
   const signOut = async () => {
     // Tambahkan log logout sebelum currentUser dihapus
