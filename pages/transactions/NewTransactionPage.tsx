@@ -156,17 +156,24 @@ const NewTransactionPage: React.FC = () => {
         }
     }, [selectedCustomer, settings?.discountRate, addToast, canApplyDiscount]);
 
-    const handleAddService = useCallback((service: typeof services[0]) => {
+    const handleAddService = useCallback((service: Service) => {
         setItems(currentItems => {
             const existingItemIndex = currentItems.findIndex(i => i.serviceId === service.id);
             if (existingItemIndex > -1 && service.category !== ServiceCategory.Satuan) {
-                const newItems = [...currentItems];
-                const existingItem = newItems[existingItemIndex];
-                existingItem.quantity += 1;
-                existingItem.subtotal = existingItem.price * existingItem.quantity;
-                return newItems;
+                // Immutable update: create new array and new object for the updated item
+                return currentItems.map((item, index) => {
+                    if (index === existingItemIndex) {
+                        const newQuantity = item.quantity + 1;
+                        return {
+                            ...item,
+                            quantity: newQuantity,
+                            subtotal: item.price * newQuantity
+                        };
+                    }
+                    return item;
+                });
             } else {
-                 const newItem: TransactionItem = {
+                const newItem: TransactionItem = {
                     serviceId: service.id,
                     serviceName: service.name,
                     quantity: 1,
@@ -179,7 +186,7 @@ const NewTransactionPage: React.FC = () => {
                 return [...currentItems, newItem];
             }
         });
-    }, [services]);
+    }, []);
 
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
