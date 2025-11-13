@@ -75,14 +75,13 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
                     <p className="text-lg font-semibold text-slate-800 dark:text-slate-200">{customer.name} ({customer.phone})</p>
                 </div>
                 <div>
-                    <label htmlFor="whatsappMessage" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Isi Pesan</label>
-                    <textarea
-                        id="whatsappMessage"
-                        rows={6}
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                    <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Isi Pesan</label>
+                    <div
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                    />
+                        style={{ whiteSpace: 'pre-wrap' }}
+                    >
+                        {message}
+                    </div>
                 </div>
             </div>
         </Modal>
