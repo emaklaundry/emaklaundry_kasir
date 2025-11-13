@@ -63,8 +63,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
         >
             <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
-                    <label htmlFor="name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Pengguna</label>
-                    <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
+                    <label htmlFor="user-name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Pengguna</label>
+                    <input type="text" name="name" id="user-name" autoComplete="name" value={formData.name} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
                 </div>
                  <div>
                     <label htmlFor="role" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Peran</label>
@@ -91,7 +91,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center">
                         <input
-                            id="isActive"
+                            id="user-isActive"
                             name="isActive"
                             type="checkbox"
                             checked={formData.isActive}
@@ -99,13 +99,13 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
                             disabled={isEditingSuperAdmin}
                             className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="isActive" className="ml-2 text-base font-medium text-slate-900 dark:text-white">
+                        <label htmlFor="user-isActive" className="ml-2 text-base font-medium text-slate-900 dark:text-white">
                             Aktif
                         </label>
                     </div>
                     <div className="flex items-center">
                         <input
-                            id="canGiveDiscount"
+                            id="user-canGiveDiscount"
                             name="canGiveDiscount"
                             type="checkbox"
                             checked={formData.canGiveDiscount}
@@ -113,7 +113,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
                             disabled={isEditingSuperAdmin}
                             className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="canGiveDiscount" className="ml-2 text-base font-medium text-slate-900 dark:text-white">
+                        <label htmlFor="user-canGiveDiscount" className="ml-2 text-base font-medium text-slate-900 dark:text-white">
                             Bisa Beri Diskon
                         </label>
                     </div>
