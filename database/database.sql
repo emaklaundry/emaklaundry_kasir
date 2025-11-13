@@ -15,7 +15,7 @@ CREATE TABLE public.stores (
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL,
-  role text NOT NULL, -- 'Super Admin', 'Admin', 'Kasir'
+  role public.user_role NOT NULL, -- DIUBAH DARI TEXT
   store_id uuid REFERENCES stores(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
   created_at timestamp WITH TIME ZONE DEFAULT NOW(),
   "isActive" boolean DEFAULT true,
@@ -51,6 +51,39 @@ CREATE TABLE public.services (
   "durationDays" integer NOT NULL,
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
+
+-- ENUM untuk Role Pengguna
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE public.user_role AS ENUM ('Super Admin','Admin','Kasir');
+  END IF;
+END$$;
+
+-- ENUM untuk Status Pembayaran
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+    CREATE TYPE public.payment_status AS ENUM ('Lunas','Belum Lunas','Bayar Sebagian');
+  END IF;
+END$$;
+
+-- ENUM untuk Status Order
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
+    CREATE TYPE public.order_status AS ENUM ('Selesai','Diproses','Batal','Menunggu Pembayaran');
+  END IF;
+END$$;
+
+-- ENUM untuk Metode Pembayaran
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
+    CREATE TYPE public.payment_method AS ENUM ('Cash','Transfer','QRIS','Debit','Credit');
+  END IF;
+END$$;
+
 
 -- User credentials table for local auth (if needed)
 CREATE TABLE IF NOT EXISTS public.user_credentials (
@@ -108,14 +141,14 @@ CREATE TABLE public.transactions (
   discount numeric NOT NULL,
   tax numeric NOT NULL,
   total numeric NOT NULL,
-  "paymentStatus" text NOT NULL,
-  "orderStatus" text NOT NULL,
+"paymentStatus" public.payment_status NOT NULL, -- DIUBAH DARI TEXT
+"orderStatus" public.order_status NOT NULL, -- DIUBAH DARI TEXT
   "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "estimatedCompletionDate" date,
   "amountPaid" numeric NOT NULL,
   change numeric NOT NULL,
-  "paymentMethod" text,
-  "createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
+"paymentMethod" public.payment_method, -- DIUBAH DARI TEXT
+"createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
   notes text
 );
@@ -134,6 +167,10 @@ CREATE TABLE public.settings (
   "taxRate" numeric,
   "discountRate" numeric
 );
+
+-- Tambahkan index pada kolom penting
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON public.customers (phone);
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON public.transactions ("createdAt" DESC);
 
 -- === 2. AKTIFKAN RLS ===
 -- (Ini sama seperti skrip Anda, semua sudah benar)
