@@ -1,3 +1,112 @@
+-- === RPC: create_new_transaction ===
+-- Fungsi ini menerima input minimal dari klien, melakukan kalkulasi harga, diskon, pajak, dan total di server,
+-- lalu menyisipkan transaksi ke tabel transactions secara aman.
+CREATE OR REPLACE FUNCTION public.create_new_transaction(
+  p_customer_id uuid,
+  p_items jsonb,
+  p_notes text DEFAULT NULL,
+  p_payment_method public.payment_method DEFAULT NULL,
+  p_is_paying_now boolean DEFAULT false,
+  p_discount_type text DEFAULT 'percent',
+  p_discount_value numeric DEFAULT 0,
+  p_created_by_user_id uuid,
+  p_store_id uuid
+)
+RETURNS SETOF public.transactions
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_subtotal numeric := 0;
+  v_discount_amount numeric := 0;
+  v_tax_amount numeric := 0;
+  v_grand_total numeric := 0;
+  v_items public.transactions.items%TYPE;
+  v_payment_status public.payment_status := 'Belum Lunas';
+  v_order_status public.order_status := 'Diproses';
+  v_amount_paid numeric := 0;
+  v_change numeric := 0;
+  v_estimated_completion_date date := NULL;
+  v_tax_rate numeric := 0;
+  v_discount_rate numeric := 0;
+  v_settings_row public.settings%ROWTYPE;
+  v_item jsonb;
+  v_service_row public.services%ROWTYPE;
+  v_service_duration integer := 1;
+  v_max_duration integer := 1;
+BEGIN
+  -- Ambil settings (tax & discount)
+  SELECT * INTO v_settings_row FROM public.settings ORDER BY id DESC LIMIT 1;
+  v_tax_rate := COALESCE(v_settings_row."taxRate", 0);
+  v_discount_rate := COALESCE(v_settings_row."discountRate", 0);
+
+  -- Validasi items
+  IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
+    RAISE EXCEPTION 'Items tidak boleh kosong';
+  END IF;
+
+  -- Hitung subtotal dan estimasi durasi
+  v_items := '[]'::jsonb;
+  v_max_duration := 1;
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+  LOOP
+    SELECT * INTO v_service_row FROM public.services WHERE id = (v_item->>'serviceId')::uuid;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Service id % tidak ditemukan', v_item->>'serviceId';
+    END IF;
+    v_service_duration := v_service_row."durationDays";
+    IF v_service_duration > v_max_duration THEN
+      v_max_duration := v_service_duration;
+    END IF;
+    v_subtotal := v_subtotal + (v_service_row.price * (v_item->>'quantity')::numeric);
+    -- Update item dengan harga dan subtotal yang benar
+    v_items := v_items || jsonb_build_array(
+      jsonb_set(
+        jsonb_set(
+          v_item, '{price}', to_jsonb(v_service_row.price)
+        ), '{subtotal}', to_jsonb(v_service_row.price * (v_item->>'quantity')::numeric)
+      )
+    );
+  END LOOP;
+
+  -- Hitung diskon
+  IF p_discount_type = 'percent' THEN
+    v_discount_amount := v_subtotal * (COALESCE(p_discount_value, v_discount_rate) / 100);
+  ELSE
+    v_discount_amount := LEAST(COALESCE(p_discount_value, 0), v_subtotal);
+  END IF;
+
+  -- Hitung pajak
+  v_tax_amount := (v_subtotal - v_discount_amount) * (v_tax_rate / 100);
+
+  -- Hitung grand total
+  v_grand_total := v_subtotal - v_discount_amount + v_tax_amount;
+
+  -- Status pembayaran
+  IF p_is_paying_now AND v_grand_total > 0 THEN
+    v_amount_paid := v_grand_total;
+    v_payment_status := 'Lunas';
+  ELSE
+    v_amount_paid := 0;
+    v_payment_status := 'Belum Lunas';
+  END IF;
+  v_change := 0;
+
+  -- Estimasi tanggal selesai
+  v_estimated_completion_date := (now() + (v_max_duration || ' days')::interval)::date;
+
+  -- Insert transaksi
+  INSERT INTO public.transactions (
+    "customerId", items, subtotal, discount, tax, total, "paymentStatus", "orderStatus",
+    "createdAt", "estimatedCompletionDate", "amountPaid", change, "paymentMethod",
+    "createdByUserId", "storeId", notes
+  ) VALUES (
+    p_customer_id, v_items, v_subtotal, v_discount_amount, v_tax_amount, v_grand_total, v_payment_status, v_order_status,
+    now(), v_estimated_completion_date, v_amount_paid, v_change, p_payment_method,
+    p_created_by_user_id, p_store_id, p_notes
+  ) RETURNING *;
+END;
+$$;
 
 -- === ENUM DEFINITIONS (PASTIKAN INI DI PALING ATAS) ===
 -- Hapus tipe lama jika ada (hati-hati jika sudah ada data!)

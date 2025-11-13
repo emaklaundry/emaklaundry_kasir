@@ -248,21 +248,15 @@ const NewTransactionPage: React.FC = () => {
         setIsSaving(true);
         const toastId = addToast('Menyimpan transaksi...', 'info');
         try {
-            const newTransaction: Omit<Transaction, 'id'> = {
+            // Kirim hanya data minimal ke backend, kalkulasi hanya untuk preview UI
+            const newTransaction = {
                 customerId: selectedCustomer.id,
                 items,
-                subtotal,
-                discount: discountAmount,
-                tax: taxAmount,
-                total: grandTotal,
-                paymentStatus,
-                orderStatus: OrderStatus.Processing,
-                createdAt: new Date(),
-                estimatedCompletionDate: estimatedCompletionDate,
                 notes,
-                amountPaid: actualAmountPaid,
-                change: changeAmount,
                 paymentMethod: (isPayingNow && actualAmountPaid > 0) ? paymentMethod : undefined,
+                isPayingNow,
+                discountType,
+                discountValue,
                 createdByUserId: currentUser.id,
                 storeId: currentStoreId,
             };

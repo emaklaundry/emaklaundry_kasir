@@ -51,8 +51,34 @@ export function useTransactions(filter: TransactionFilter = {}) {
   const totalCount = result?.count || 0;
 
   const addTransaction = useMutation({
-    mutationFn: async (transaction: Omit<Transaction, 'id'>) => {
-      const { data, error } = await supabase.from('transactions').insert([transaction]).select();
+    mutationFn: async (transaction: Omit<Transaction, 'id'> & {
+      discountType?: 'percent' | 'fixed';
+      discountValue?: number;
+      isPayingNow?: boolean;
+    }) => {
+      // Kirim hanya data minimal ke RPC
+      const {
+        customerId,
+        items,
+        notes,
+        paymentMethod,
+        isPayingNow = false,
+        discountType = 'percent',
+        discountValue = 0,
+        createdByUserId,
+        storeId
+      } = transaction;
+      const { data, error } = await supabase.rpc('create_new_transaction', {
+        p_customer_id: customerId,
+        p_items: items,
+        p_notes: notes,
+        p_payment_method: paymentMethod,
+        p_is_paying_now: isPayingNow,
+        p_discount_type: discountType,
+        p_discount_value: discountValue,
+        p_created_by_user_id: createdByUserId,
+        p_store_id: storeId
+      });
       if (error) throw error;
       return data?.[0] || null;
     },
