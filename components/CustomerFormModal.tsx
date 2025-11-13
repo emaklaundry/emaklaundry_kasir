@@ -29,8 +29,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+        if (e && 'preventDefault' in e) e.preventDefault();
         await onSave(formData);
     };
 
@@ -42,13 +42,13 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose
             footer={
                 <>
                     <button type="button" onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                    <button type="submit" onClick={handleSubmit} disabled={disabled} className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 w-32 disabled:bg-blue-400">
+                    <button type="button" onClick={handleSubmit} disabled={disabled} className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 w-32 disabled:bg-blue-400">
                         Simpan
                     </button>
                 </>
             }
         >
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <div role="form" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="name" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Nama Pelanggan</label>
@@ -72,7 +72,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose
                     <label htmlFor="notes" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Catatan (Opsional)</label>
                     <textarea name="notes" id="notes" value={formData.notes} onChange={handleChange} rows={3} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
                 </div>
-            </form>
+            </div>
         </Modal>
     );
 };

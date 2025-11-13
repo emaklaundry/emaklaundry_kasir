@@ -1,21 +1,75 @@
--- Seed data: daftar layanan contoh untuk tabel `public.services`
--- Ganti `store_id` sesuai cabang Anda saat memasukkan ke database.
--- Contoh cara pakai di Supabase SQL editor: paste file ini dan jalankan.
--- Seed data: daftar layanan lengkap berdasarkan input pengguna.
--- Pastikan untuk mengganti nilai "storeId" jika Anda ingin memasukkan layanan ke cabang selain contoh di bawah.
--- Contoh cara pakai di Supabase SQL editor: buka editor SQL, paste isi file ini, lalu jalankan.
+-- apply_rpc_and_seed.sql
+-- This file contains the `update_transaction_progress` RPC and the service seed block
+-- that targets the store named 'Cabang Kota Banjar'.
+-- Paste this entire file into Supabase SQL Editor (or run with psql) to apply.
 
--- NOTE: Harga disimpan sebagai integer dalam satuan Rupiah tanpa pemisah ribuan.
--- Durasi dalam kolom "durationDays" dinyatakan dalam hari. Untuk layanan yang waktunya dalam jam
--- saya set nilai 0 (artinya 'jam' / express; Anda bisa menyesuaikannya menjadi 1 jika ingin menyatakan 1 hari).
+BEGIN;
 
--- Pastikan kita menggunakan schema public saat menjalankan seed ini
+-- Ensure we use public schema
 SET LOCAL search_path = public;
 
+-- RPC: update_transaction_progress (idempotent - replaces existing function)
+CREATE OR REPLACE FUNCTION public.update_transaction_progress(
+  transaction_id_input uuid,
+  p_amount_paid numeric DEFAULT NULL,
+  p_change numeric DEFAULT NULL,
+  p_payment_method text DEFAULT NULL,
+  p_payment_status text DEFAULT NULL,
+  p_order_status text DEFAULT NULL
+)
+RETURNS SETOF public.transactions
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  caller uuid := auth.uid();
+  caller_role text;
+  caller_store uuid;
+  tx_store uuid;
+BEGIN
+  -- Load caller profile
+  SELECT role, store_id INTO caller_role, caller_store FROM public.profiles WHERE id = caller;
+  IF caller_role IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  -- Ensure transaction exists and get its store
+  SELECT "storeId" INTO tx_store FROM public.transactions WHERE id = transaction_id_input;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'transaction not found';
+  END IF;
+
+  -- Permission check: Super Admin bypasses store check
+  IF caller_role <> 'Super Admin' AND tx_store IS DISTINCT FROM caller_store THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  -- Perform update (only allowed progress fields)
+  UPDATE public.transactions
+  SET
+    "amountPaid" = COALESCE(p_amount_paid, "amountPaid"),
+    "change" = COALESCE(p_change, "change"),
+    "paymentMethod" = COALESCE(p_payment_method, "paymentMethod"),
+    "paymentStatus" = COALESCE(p_payment_status, "paymentStatus"),
+    "orderStatus" = COALESCE(p_order_status, "orderStatus")
+  WHERE id = transaction_id_input;
+
+  -- Best-effort audit log write (do not fail the function if audit fails)
+  BEGIN
+    INSERT INTO public.audit_logs("user", action, "storeId")
+    VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
+  EXCEPTION WHEN OTHERS THEN
+    -- ignore audit failures
+    NULL;
+  END;
+
+  RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
+END;
+$$;
+
+-- Seed services: upsert a large list of services into the target store (Cabang Kota Banjar)
 CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx ON public.services (lower(name), "storeId");
 
--- Cari store_id untuk "Cabang Kota Banjar" (sesuai file database.sql). Jika tidak ditemukan,
--- query akan menghasilkan nol baris dan tidak ada yang di-insert.
 WITH target_store AS (
   SELECT id FROM public.stores
   WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456' OR name ILIKE 'Cabang Kota Banjar'
@@ -25,7 +79,6 @@ INSERT INTO public.services (name, category, price, unit, "durationDays", "store
 SELECT v.name, v.category::public.service_category, v.price, v.unit, v.duration, ts.id
 FROM (
   VALUES
-    -- Kiloan
     ('Campuran','Kiloan',10000,'kg',1),
     ('Cuci dan lipat (min. 3 kg) - 1 hari','Kiloan',8000,'kg',1),
     ('Cuci dan lipat (min. 3 kg) - 2 hari','Kiloan',6000,'kg',2),
@@ -50,12 +103,8 @@ FROM (
     ('Sprei (kiloan)','Kiloan',10000,'kg',1),
     ('Surpet','Kiloan',10000,'kg',1),
     ('Tikar','Kiloan',10000,'kg',1),
-
-    -- Karpet per meter
     ('Karpet tebal (per m)','Karpet',12000,'m2',2),
     ('Karpet tipis / masjid (per m)','Karpet',7000,'m2',2),
-
-    -- Satuan
     ('Bantal','Satuan',15000,'pcs',1),
     ('Bed cover','Satuan',18000,'pcs',1),
     ('Bed cover jumbo/besar','Satuan',25000,'pcs',1),
@@ -106,17 +155,4 @@ ON CONFLICT (lower(name), "storeId") DO UPDATE SET
   "durationDays" = EXCLUDED."durationDays",
   category = EXCLUDED.category;
 
--- Non-destruktif: seed ini hanya menambahkan/menyegarkan layanan untuk store Banjar
--- tanpa menghapus layanan di store lain. Jika Anda ingin memindahkan/bersihkan layanan
--- lama di store lain, jalankan operasi terpisah setelah mem-backup database.
-
--- Jika Anda ingin menghindari duplikat berdasarkan nama + storeId, pertimbangkan menambahkan index unik:
--- CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx ON public.services (lower(name), "storeId");
--- Contoh upsert (ON CONFLICT) setelah membuat index di atas:
--- INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId") VALUES
---   ('Campuran', 'Kiloan', 10000, 'kg', 1, '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
--- ON CONFLICT ON CONSTRAINT services_name_store_idx
--- DO UPDATE SET price = EXCLUDED.price, unit = EXCLUDED.unit, "durationDays" = EXCLUDED."durationDays";
-
--- Verifikasi setelah menjalankan:
--- SELECT id, name, category, price, unit, "durationDays", "storeId" FROM public.services ORDER BY name;
+COMMIT;

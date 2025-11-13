@@ -13,7 +13,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 
 const UsersPage: React.FC = () => {
     const { currentUser, selectedStoreId } = useAppContext();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
     // Ambil data users dari Supabase (props/context/hook) sesuai implementasi fetch profiles
     const { stores } = useStores();
     const { addAuditLog } = useAuditLogs();
@@ -23,6 +23,7 @@ const UsersPage: React.FC = () => {
     const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
+    const [isSavingUser, setIsSavingUser] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     const handleOpenFormModal = (user: User | null = null) => {
@@ -55,6 +56,8 @@ const UsersPage: React.FC = () => {
             return;
         }
 
+        const toastId = addToast('Menyimpan pengguna...', 'info');
+        setIsSavingUser(true);
         try {
             if (currentUserToEdit && currentUserToEdit.id) {
                 await updateUser(currentUserToEdit.id, {
@@ -65,13 +68,15 @@ const UsersPage: React.FC = () => {
                     canGiveDiscount: finalData.canGiveDiscount
                 });
                 addAuditLog(`Memperbarui data pengguna: "${finalData.name}".`);
-                addToast('Pengguna berhasil diperbarui!', 'success');
+                updateToast(toastId, 'Pengguna berhasil diperbarui!', 'success');
                 handleCloseFormModal();
             } else {
-                addToast('Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication).', 'info');
+                updateToast(toastId, 'Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication).', 'info');
             }
         } catch (error: any) {
-            addToast(`Gagal menyimpan: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+        } finally {
+            setIsSavingUser(false);
         }
     };
 
@@ -79,14 +84,18 @@ const UsersPage: React.FC = () => {
 
     const confirmToggleStatus = async () => {
         if (userToToggleStatus) {
-            const newStatus = !userToToggleStatus.isActive;
+            const toastId = addToast(`${userToToggleStatus.isActive ? 'Menonaktifkan' : 'Mengaktifkan'} pengguna...`, 'info');
+            setIsSavingUser(true);
             try {
+                const newStatus = !userToToggleStatus.isActive;
                 await updateUser(userToToggleStatus.id, { isActive: newStatus });
                 addAuditLog(`Mengubah status pengguna "${userToToggleStatus.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
+                updateToast(toastId, `Status pengguna ${userToToggleStatus.name} diubah menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`, 'success');
             } catch (error: any) {
-                addToast(`Gagal mengubah status: ${error.message}`, 'error');
+                updateToast(toastId, `Gagal mengubah status: ${error.message}`, 'error');
             } finally {
                 setUserToToggleStatus(null);
+                setIsSavingUser(false);
             }
         }
     };
@@ -115,7 +124,15 @@ const UsersPage: React.FC = () => {
 
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            {isSavingUser && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Pengguna</h1>
                 <div className="w-full md:w-auto flex items-center gap-4">

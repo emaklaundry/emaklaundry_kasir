@@ -19,7 +19,8 @@ const AssetsPage: React.FC = () => {
     const { assets, addAsset, updateAsset, deleteAsset } = useAssets();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
+    const [isSavingAsset, setIsSavingAsset] = useState(false);
     const { scheduledMaintenances } = useScheduledMaintenances();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -61,19 +62,24 @@ const AssetsPage: React.FC = () => {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit aset.', 'warning');
             return;
         }
+        const toastId = addToast('Menyimpan aset...', 'info');
+        setIsSavingAsset(true);
         try {
             if (currentAsset && currentAsset.id) {
                 await updateAsset(currentAsset.id, { ...asset, storeId });
                 addAuditLog(`Memperbarui data aset: "${asset.name}".`, storeId);
+                updateToast(toastId, 'Data aset berhasil diperbarui!', 'success');
             } else {
                 await addAsset({ ...asset, maintenanceHistory: [], storeId });
                 addAuditLog(`Menambahkan aset baru: "${asset.name}".`, storeId);
+                updateToast(toastId, 'Aset baru berhasil ditambahkan!', 'success');
             }
             setIsAssetFormModalOpen(false);
             setCurrentAsset(null);
-            addToast('Data aset berhasil disimpan!', 'success');
         } catch (error: any) {
-            addToast(`Gagal menyimpan: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+        } finally {
+            setIsSavingAsset(false);
         }
     };
     
@@ -94,14 +100,17 @@ const AssetsPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (assetToDelete) {
+            const toastId = addToast('Menghapus aset...', 'info');
+            setIsSavingAsset(true);
             try {
                 await deleteAsset(assetToDelete.id);
                 addAuditLog(`Menghapus aset: "${assetToDelete.name}".`, assetToDelete.storeId);
-                addToast('Aset berhasil dihapus!', 'success');
+                updateToast(toastId, 'Aset berhasil dihapus!', 'success');
             } catch (error: any) {
-                addToast(`Gagal menghapus: ${error.message}`, 'error');
+                updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
             } finally {
                 setAssetToDelete(null);
+                setIsSavingAsset(false);
             }
         }
     };
@@ -166,7 +175,15 @@ const AssetsPage: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            {isSavingAsset && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Aset & Pemeliharaan</h1>
                 <div className="w-full md:w-auto flex items-center gap-4">

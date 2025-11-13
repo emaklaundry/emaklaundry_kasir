@@ -266,8 +266,35 @@ CREATE POLICY "Allow SELECT for store users" ON public.transactions
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.transactions
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
-CREATE POLICY "Allow UPDATE for Admins" ON public.transactions
-  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+-- Allow Admins and Kasirs to update only progress-related fields (payment/order progress)
+-- while preventing changes to immutable/sensitive fields (total, items, customerId, storeId, createdByUserId).
+-- Implementation: USING applies to the existing row (so it ensures the actor is in the same store),
+-- and WITH CHECK compares new values against the current row (via subselects) to ensure immutable
+-- columns are unchanged. Super Admin bypasses these restrictions.
+DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
+CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
+  FOR UPDATE
+  USING (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin','Kasir')
+      AND "storeId" = public.get_my_store_id()
+    )
+  )
+  WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin','Kasir')
+      AND "storeId" = public.get_my_store_id()
+      -- Immutable/sensitive columns must remain equal to the current row
+      AND total = (SELECT total FROM public.transactions t WHERE t.id = transactions.id)
+      AND items = (SELECT items FROM public.transactions t WHERE t.id = transactions.id)
+      AND "customerId" = (SELECT "customerId" FROM public.transactions t WHERE t.id = transactions.id)
+      AND "createdByUserId" = (SELECT "createdByUserId" FROM public.transactions t WHERE t.id = transactions.id)
+      AND "storeId" = (SELECT "storeId" FROM public.transactions t WHERE t.id = transactions.id)
+    )
+  );
+
 CREATE POLICY "Allow DELETE for Admins" ON public.transactions
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 
@@ -384,6 +411,67 @@ AS $$
 $$;
 
 -- Note: This RPC intentionally omits price/unit to avoid exposing sensitive pricing data to public clients.
+
+-- === RPC: update_transaction_progress ===
+-- Atomically update allowed progress fields on a transaction and insert an audit_log entry.
+-- Caller must be authenticated. Super Admin can update any transaction; Admin/Kasir can only update transactions in their store.
+CREATE OR REPLACE FUNCTION public.update_transaction_progress(
+  transaction_id_input uuid,
+  p_amount_paid numeric DEFAULT NULL,
+  p_change numeric DEFAULT NULL,
+  p_payment_method text DEFAULT NULL,
+  p_payment_status text DEFAULT NULL,
+  p_order_status text DEFAULT NULL
+)
+RETURNS SETOF public.transactions
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  caller uuid := auth.uid();
+  caller_role text;
+  caller_store uuid;
+  tx_store uuid;
+BEGIN
+  -- Load caller profile
+  SELECT role, store_id INTO caller_role, caller_store FROM public.profiles WHERE id = caller;
+  IF caller_role IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  -- Ensure transaction exists and get its store
+  SELECT "storeId" INTO tx_store FROM public.transactions WHERE id = transaction_id_input;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'transaction not found';
+  END IF;
+
+  -- Permission check: Super Admin bypasses store check
+  IF caller_role <> 'Super Admin' AND tx_store IS DISTINCT FROM caller_store THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  -- Perform update (only allowed progress fields)
+  UPDATE public.transactions
+  SET
+    "amountPaid" = COALESCE(p_amount_paid, "amountPaid"),
+    "change" = COALESCE(p_change, "change"),
+    "paymentMethod" = COALESCE(p_payment_method, "paymentMethod"),
+    "paymentStatus" = COALESCE(p_payment_status, "paymentStatus"),
+    "orderStatus" = COALESCE(p_order_status, "orderStatus")
+  WHERE id = transaction_id_input;
+
+  -- Best-effort audit log write (do not fail the function if audit fails)
+  BEGIN
+    INSERT INTO public.audit_logs("user", action, "storeId")
+    VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
+  EXCEPTION WHEN OTHERS THEN
+    -- ignore audit failures
+    NULL;
+  END;
+
+  RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
+END;
+$$;
 
 
 -- === 7. PENGATURAN AWAL (Initial Settings) ===

@@ -25,3 +25,27 @@ export async function getPublicServices(storeId: string) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Helper to call update_transaction_progress RPC which atomically updates allowed progress fields
+ * and writes an audit log server-side.
+ */
+export async function updateTransactionProgress(transactionId: string, params: {
+	amountPaid?: number | null;
+	change?: number | null;
+	paymentMethod?: string | null;
+	paymentStatus?: string | null;
+	orderStatus?: string | null;
+}) {
+	const { amountPaid = null, change = null, paymentMethod = null, paymentStatus = null, orderStatus = null } = params;
+	const { data, error } = await supabase.rpc('update_transaction_progress', {
+		transaction_id_input: transactionId,
+		p_amount_paid: amountPaid,
+		p_change: change,
+		p_payment_method: paymentMethod,
+		p_payment_status: paymentStatus,
+		p_order_status: orderStatus
+	});
+	if (error) throw error;
+	return data;
+}

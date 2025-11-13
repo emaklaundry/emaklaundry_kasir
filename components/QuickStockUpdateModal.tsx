@@ -13,7 +13,8 @@ interface QuickStockUpdateModalProps {
 
 const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, onClose }) => {
   const { inventory, updateInventoryItem } = useInventory();
-  const { addToast } = useToasts();
+  const { addToast, updateToast } = useToasts();
+  const [isSavingStock, setIsSavingStock] = useState(false);
   const [stockUpdates, setStockUpdates] = useState<{ [key: string]: number }>({});
   const { addAuditLog } = useAuditLogs();
   const { currentUser, selectedStoreId } = useAppContext();
@@ -37,9 +38,11 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
   };
 
   const handleSave = async () => {
+    const toastId = addToast('Memperbarui stok...', 'info');
+    setIsSavingStock(true);
     const storeId = currentUser.storeId || selectedStoreId;
-    const updates: Promise<void>[] = [];
-    const originalInventoryMap = new Map(inventory.map(i => [i.id, i]));
+  const updates: Promise<void>[] = [];
+  const originalInventoryMap = new Map<string, InventoryItem>(inventory.map(i => [i.id, i] as [string, InventoryItem]));
 
     for (const itemId in stockUpdates) {
       const originalItem = originalInventoryMap.get(itemId);
@@ -55,10 +58,11 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
 
     try {
       await Promise.all(updates);
-      addToast('Semua stok berhasil diperbarui!', 'success');
+      updateToast(toastId, 'Semua stok berhasil diperbarui!', 'success');
     } catch (error: any) {
-      addToast(`Gagal memperbarui beberapa stok: ${error.message}`, 'error');
+      updateToast(toastId, `Gagal memperbarui beberapa stok: ${error.message}`, 'error');
     }
+    setIsSavingStock(false);
     onClose();
   };
 
@@ -69,8 +73,8 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
       title="Perbarui Stok Inventaris"
       footer={
         <>
-          <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-          <button onClick={handleSave} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan Perubahan</button>
+          <button onClick={onClose} disabled={isSavingStock} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50">Batal</button>
+          <button onClick={handleSave} disabled={isSavingStock} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:opacity-50">Simpan Perubahan</button>
         </>
       }
     >
@@ -89,6 +93,7 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
                   value={stockUpdates[item.id] || 0}
                   onChange={(e) => handleStockChange(item.id, parseInt(e.target.value, 10) || 0)}
                   className="w-28 bg-white border border-slate-300 text-slate-900 text-base rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right"
+                  disabled={isSavingStock}
                 />
                 <span className="text-base text-slate-500 dark:text-slate-400 w-12 text-left">{item.unit}</span>
               </div>

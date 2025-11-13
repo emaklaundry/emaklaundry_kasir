@@ -17,7 +17,8 @@ const ServicesPage: React.FC = () => {
     const [currentService, setCurrentService] = useState<Service | null>(null);
     const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
+    const [isSavingService, setIsSavingService] = useState(false);
     const { currentUser, selectedStoreId } = useAppContext();
 
     const filteredServices = useMemo(() => services.filter(service =>
@@ -52,18 +53,24 @@ const ServicesPage: React.FC = () => {
             return;
         }
 
+        const toastId = addToast('Menyimpan layanan...', 'info');
+        setIsSavingService(true);
         try {
             if (currentService) {
                 // include storeId when updating since the form doesn't include it
                 await updateService(currentService.id, { ...serviceData, storeId });
                 addAuditLog(`Memperbarui layanan: "${serviceData.name}".`, storeId);
+                updateToast(toastId, 'Layanan berhasil diperbarui.', 'success');
             } else {
                 await addService({ ...serviceData, storeId });
                 addAuditLog(`Menambahkan layanan baru: "${serviceData.name}".`, storeId);
+                updateToast(toastId, 'Layanan baru berhasil ditambahkan.', 'success');
             }
             handleCloseFormModal();
         } catch (error: any) {
-            addToast(`Gagal menyimpan layanan: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menyimpan layanan: ${error.message}`, 'error');
+        } finally {
+            setIsSavingService(false);
         }
     };
 
@@ -73,19 +80,31 @@ const ServicesPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (serviceToDelete) {
+            const toastId = addToast('Menghapus layanan...', 'info');
+            setIsSavingService(true);
             try {
                 await deleteService(serviceToDelete.id);
                 addAuditLog(`Menghapus layanan: "${serviceToDelete.name}".`);
+                updateToast(toastId, 'Layanan berhasil dihapus.', 'success');
             } catch (error: any) {
-                addToast(`Gagal menghapus layanan: ${error.message}`, 'error');
+                updateToast(toastId, `Gagal menghapus layanan: ${error.message}`, 'error');
             } finally {
                 setServiceToDelete(null);
+                setIsSavingService(false);
             }
         }
     };
     
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            {isSavingService && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Layanan</h1>
                 <div className="w-full md:w-auto flex items-center gap-4">

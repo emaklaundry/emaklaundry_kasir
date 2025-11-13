@@ -27,7 +27,7 @@ const NewTransactionPage: React.FC = () => {
     const { services } = useServices();
     const { currentUser, selectedStoreId } = useAppContext();
     const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
@@ -68,7 +68,7 @@ const NewTransactionPage: React.FC = () => {
         }, {} as Record<string, number>);
 
         return Object.entries(serviceCounts)
-            .sort(([, countA], [, countB]) => countB - countA)
+            .sort((a, b) => (b[1] as number) - (a[1] as number))
             .slice(0, 5)
             .map(([serviceId]) => services.find(s => s.id === serviceId))
             .filter((s): s is Service => s !== undefined);
@@ -287,17 +287,18 @@ const NewTransactionPage: React.FC = () => {
             addToast('Silakan pilih cabang spesifik untuk menambah pelanggan.', 'warning');
             return;
         }
+        const toastId = addToast('Menambah pelanggan...', 'info');
         try {
             const newCustomer = await addCustomer({ ...customer, storeId: currentStoreId });
             if (newCustomer) {
                 setSelectedCustomer(newCustomer);
                 setIsCustomerModalOpen(false);
-                addToast('Pelanggan berhasil ditambahkan!', 'success');
+                updateToast(toastId, 'Pelanggan berhasil ditambahkan!', 'success');
             } else {
-                addToast('Gagal menambah pelanggan: Data tidak valid.', 'error');
+                updateToast(toastId, 'Gagal menambah pelanggan: Data tidak valid.', 'error');
             }
         } catch (error: any) {
-            addToast(`Gagal menambah pelanggan: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menambah pelanggan: ${error.message}`, 'error');
         }
     };
     
@@ -323,6 +324,7 @@ const NewTransactionPage: React.FC = () => {
         }
 
         setIsSaving(true);
+        const toastId = addToast('Menyimpan transaksi...', 'info');
         try {
             const newTransaction: Omit<Transaction, 'id'> = {
                 customerId: selectedCustomer.id,
@@ -347,11 +349,12 @@ const NewTransactionPage: React.FC = () => {
                 addAuditLog(`Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`, currentStoreId);
                 setNewlyCreatedTransaction(savedTransaction);
                 setIsWhatsAppModalOpen(true);
+                updateToast(toastId, 'Transaksi berhasil disimpan.', 'success');
             } else {
-                addToast('Gagal menyimpan transaksi: Tidak ada data yang dikembalikan.', 'error');
+                updateToast(toastId, 'Gagal menyimpan transaksi: Tidak ada data yang dikembalikan.', 'error');
             }
         } catch (error: any) {
-            addToast(`Gagal menyimpan transaksi: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menyimpan transaksi: ${error.message}`, 'error');
         } finally {
             setIsSaving(false);
         }

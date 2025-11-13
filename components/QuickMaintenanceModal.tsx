@@ -16,13 +16,14 @@ interface QuickMaintenanceModalProps {
 const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, onClose }) => {
     const { assets, updateAsset } = useAssets();
     const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
     const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id || '');
     const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>(() => ({
         date: new Date(),
         description: '',
         cost: 0
     }));
+    const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
 
     // Ensure selectedAssetId and form defaults are in sync when modal opens
     useEffect(() => {
@@ -61,6 +62,8 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             return;
         }
 
+        const toastId = addToast('Menyimpan laporan...', 'info');
+        setIsSavingMaintenance(true);
         try {
             await updateAsset(selectedAssetId, {
                 maintenanceHistory: [...assetToUpdate.maintenanceHistory, newLog]
@@ -68,12 +71,16 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
 
             addAuditLog(`Melaporkan kerusakan cepat untuk aset "${assetToUpdate.name}": ${formData.description}.`, assetToUpdate.storeId);
 
+            updateToast(toastId, 'Laporan perawatan berhasil disimpan.', 'success');
+
             // Reset form
             setFormData({ date: new Date(), description: '', cost: 0 });
             setSelectedAssetId(assets[0]?.id || '');
             onClose();
         } catch (error: any) {
-            addToast(`Gagal menyimpan laporan: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menyimpan laporan: ${error.message}`, 'error');
+        } finally {
+            setIsSavingMaintenance(false);
         }
     };
 

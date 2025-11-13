@@ -19,7 +19,8 @@ const TransactionPage: React.FC = () => {
     const { transactions, updateTransaction } = useTransactions();
     const { customers } = useCustomers();
     const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
+    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
     
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState('');
@@ -121,15 +122,17 @@ const TransactionPage: React.FC = () => {
         const updatedTransaction = { ...targetTransaction, orderStatus: newStatus };
         const shouldShowWhatsAppModal = newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
 
+        const toastId = addToast('Memperbarui status...', 'info');
         try {
             await updateTransaction(id, { orderStatus: newStatus });
             addAuditLog(`Mengubah status transaksi ${id} menjadi "${newStatus}".`, targetTransaction.storeId);
+            updateToast(toastId, `Status transaksi ${id} diubah menjadi ${newStatus}.`, 'success');
             if (shouldShowWhatsAppModal) {
                 setTransactionForWhatsApp(updatedTransaction);
                 setIsWhatsAppModalOpen(true);
             }
         } catch (error: any) {
-            addToast(`Gagal memperbarui status: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal memperbarui status: ${error.message}`, 'error');
         }
     };
 
@@ -140,8 +143,9 @@ const TransactionPage: React.FC = () => {
 
     const handleSavePayment = async (updatedTransaction: Transaction) => {
         const shouldShowModal = updatedTransaction.paymentStatus === PaymentStatus.Paid && updatedTransaction.orderStatus === OrderStatus.Completed;
-        setIsSavingPayment(true);
-        try {
+    setIsSavingPayment(true);
+    const toastId = addToast('Menyimpan pembayaran...', 'info');
+    try {
             // Send only DB columns (partial) to avoid sending client-only fields like customerName
             const payload: Partial<Transaction> = {
                 amountPaid: updatedTransaction.amountPaid,
@@ -152,6 +156,7 @@ const TransactionPage: React.FC = () => {
 
             await updateTransaction(updatedTransaction.id, payload);
             addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
+            updateToast(toastId, 'Pembayaran berhasil disimpan.', 'success');
             setIsPaymentModalOpen(false);
             setSelectedTransaction(null);
             if (shouldShowModal) {
@@ -159,7 +164,7 @@ const TransactionPage: React.FC = () => {
                 setIsWhatsAppModalOpen(true);
             }
         } catch (error: any) {
-            addToast(`Gagal memperbarui pembayaran: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal memperbarui pembayaran: ${error.message}`, 'error');
         } finally {
             setIsSavingPayment(false);
         }
@@ -244,6 +249,8 @@ const TransactionPage: React.FC = () => {
             return;
         }
 
+        setIsBulkProcessing(true);
+        const toastId = addToast('Memproses aksi massal...', 'info');
         try {
             const updatePromises = transactionsToUpdate.map(t => 
                 updateTransaction(t.id, { orderStatus: bulkActionStatus })
@@ -251,11 +258,13 @@ const TransactionPage: React.FC = () => {
             await Promise.all(updatePromises);
             addAuditLog(`Mengubah status ${selectedIds.size} transaksi menjadi "${bulkActionStatus}" secara massal.`);
             setSelectedIds(new Set());
+            updateToast(toastId, `Berhasil mengubah status ${selectedIds.size} transaksi menjadi ${bulkActionStatus}.`, 'success');
         } catch (error: any) {
-            addToast(`Gagal memperbarui status massal: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal memperbarui status massal: ${error.message}`, 'error');
         } finally {
             setIsBulkConfirmOpen(false);
             setBulkActionStatus(null);
+            setIsBulkProcessing(false);
         }
     };
 
@@ -263,7 +272,15 @@ const TransactionPage: React.FC = () => {
     
     return (
         <>
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                {(isSavingPayment || isBulkProcessing) && (
+                    <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
+                        <div className="flex items-center gap-3">
+                            <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                            <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
+                        </div>
+                    </div>
+                )}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                     <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Daftar Transaksi</h1>
                     <Link to="/transactions/new" className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">

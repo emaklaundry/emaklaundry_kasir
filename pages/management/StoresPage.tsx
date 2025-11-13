@@ -24,7 +24,8 @@ const StoresPage: React.FC = () => {
     const { assets } = useAssets();
     const { expenses } = useExpenses();
     const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
+    const [isSavingStore, setIsSavingStore] = useState(false);
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentStore, setCurrentStore] = useState<Store | null>(null);
@@ -50,17 +51,23 @@ const StoresPage: React.FC = () => {
     };
 
     const handleSaveStore = async (storeData: Omit<Store, 'id' | 'isActive'>) => {
+        const toastId = addToast('Menyimpan cabang...', 'info');
+        setIsSavingStore(true);
         try {
             if (currentStore) {
                 await updateStore(currentStore.id, storeData);
                 addAuditLog(`Memperbarui data cabang: "${storeData.name}".`);
+                updateToast(toastId, 'Data cabang berhasil diperbarui.', 'success');
             } else {
                 await addStore({ ...storeData, isActive: true });
                 addAuditLog(`Menambahkan cabang baru: "${storeData.name}".`);
+                updateToast(toastId, 'Cabang baru berhasil ditambahkan.', 'success');
             }
             handleCloseFormModal();
         } catch (error: any) {
-            
+            updateToast(toastId, `Gagal menyimpan: ${error?.message || error}`, 'error');
+        } finally {
+            setIsSavingStore(false);
         }
     };
 
@@ -91,22 +98,35 @@ const StoresPage: React.FC = () => {
 
     const confirmToggleStatus = async () => {
         if (storeToToggle) {
-            const newStatus = !storeToToggle.isActive;
-            await updateStore(storeToToggle.id, { isActive: newStatus });
-            addAuditLog(`Mengubah status cabang "${storeToToggle.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
-            setStoreToToggle(null);
+            const toastId = addToast(`${storeToToggle.isActive ? 'Menonaktifkan' : 'Mengaktifkan'} cabang...`, 'info');
+            setIsSavingStore(true);
+            try {
+                const newStatus = !storeToToggle.isActive;
+                await updateStore(storeToToggle.id, { isActive: newStatus });
+                addAuditLog(`Mengubah status cabang "${storeToToggle.name}" menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`);
+                updateToast(toastId, `Status cabang ${storeToToggle.name} diubah menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`, 'success');
+            } catch (error: any) {
+                updateToast(toastId, `Gagal mengubah status: ${error?.message || error}`, 'error');
+            } finally {
+                setStoreToToggle(null);
+                setIsSavingStore(false);
+            }
         }
     };
     
     const confirmDelete = async () => {
         if (storeToDelete) {
+            const toastId = addToast('Menghapus cabang...', 'info');
+            setIsSavingStore(true);
             try {
                 await deleteStore(storeToDelete.id);
                 addAuditLog(`Menghapus cabang: "${storeToDelete.name}".`);
+                updateToast(toastId, 'Cabang berhasil dihapus.', 'success');
             } catch (error: any) {
-                addToast(`Gagal menghapus: ${error.message}`, 'error');
+                updateToast(toastId, `Gagal menghapus: ${error?.message || error}`, 'error');
             } finally {
                 setStoreToDelete(null);
+                setIsSavingStore(false);
             }
         }
     };
@@ -114,7 +134,15 @@ const StoresPage: React.FC = () => {
 
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            {isSavingStore && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
+                    </div>
+                </div>
+            )}
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Cabang</h1>
                 <button onClick={() => handleOpenFormModal()} className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">

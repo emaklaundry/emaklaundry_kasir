@@ -20,7 +20,7 @@ const CustomersPage: React.FC = () => {
     const { transactions } = useTransactions();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -85,19 +85,21 @@ const CustomersPage: React.FC = () => {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
             return;
         }
+        const toastId = addToast('Menyimpan pelanggan...', 'info');
         setIsSaving(true);
         try {
             if (currentCustomer && currentCustomer.id) {
                 await updateCustomer(currentCustomer.id, { ...customerData, storeId });
                 addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
+                updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
             } else {
                 await addCustomer({ ...customerData, storeId });
                 addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
+                updateToast(toastId, 'Pelanggan baru berhasil ditambahkan!', 'success');
             }
             handleCloseFormModal();
-            addToast('Data pelanggan berhasil disimpan!', 'success');
         } catch (error: any) {
-            addToast(`Gagal menyimpan: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -116,14 +118,17 @@ const CustomersPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (customerToDelete) {
+            const toastId = addToast('Menghapus pelanggan...', 'info');
+            setIsSaving(true);
             try {
                 await deleteCustomer(customerToDelete.id);
                 addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId);
-                addToast('Pelanggan berhasil dihapus!', 'success');
+                updateToast(toastId, 'Pelanggan berhasil dihapus!', 'success');
             } catch (error: any) {
-                addToast(`Gagal menghapus: ${error.message}`, 'error');
+                updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
             } finally {
                 setCustomerToDelete(null);
+                setIsSaving(false);
             }
         }
     };
@@ -144,7 +149,15 @@ const CustomersPage: React.FC = () => {
     );
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            {isSaving && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
                 <div className="w-full md:w-auto flex items-center gap-4">

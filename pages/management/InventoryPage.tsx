@@ -16,7 +16,8 @@ const InventoryPage: React.FC = () => {
     const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();
-    const { addToast } = useToasts();
+    const { addToast, updateToast } = useToasts();
+    const [isSavingInventory, setIsSavingInventory] = useState(false);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
@@ -53,18 +54,23 @@ const InventoryPage: React.FC = () => {
             addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit item.', 'warning');
             return;
         }
+        const toastId = addToast('Menyimpan item inventaris...', 'info');
+        setIsSavingInventory(true);
         try {
             if (currentItem && currentItem.id) {
                 await updateInventoryItem(currentItem.id, { ...item, storeId });
                 addAuditLog(`Memperbarui item inventaris: "${item.name}".`, storeId);
+                updateToast(toastId, 'Data inventaris berhasil diperbarui!', 'success');
             } else {
                 await addInventoryItem({ ...item, storeId });
                 addAuditLog(`Menambahkan item inventaris baru: "${item.name}".`, storeId);
+                updateToast(toastId, 'Item inventaris berhasil ditambahkan!', 'success');
             }
             handleCloseFormModal();
-            addToast('Data inventaris berhasil disimpan!', 'success');
         } catch (error: any) {
-            addToast(`Gagal menyimpan: ${error.message}`, 'error');
+            updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+        } finally {
+            setIsSavingInventory(false);
         }
     };
 
@@ -74,14 +80,17 @@ const InventoryPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (itemToDelete) {
+            const toastId = addToast('Menghapus item inventaris...', 'info');
+            setIsSavingInventory(true);
             try {
                 await deleteInventoryItem(itemToDelete.id);
                 addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId);
-                addToast('Item inventaris berhasil dihapus!', 'success');
+                updateToast(toastId, 'Item inventaris berhasil dihapus!', 'success');
             } catch (error: any) {
-                addToast(`Gagal menghapus: ${error.message}`, 'error');
+                updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
             } finally {
                 setItemToDelete(null);
+                setIsSavingInventory(false);
             }
         }
     };
@@ -122,7 +131,15 @@ const InventoryPage: React.FC = () => {
 
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            {isSavingInventory && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                 <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Inventaris</h1>
                 <div className="w-full md:w-auto flex items-center gap-4">

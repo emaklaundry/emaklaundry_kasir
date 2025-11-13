@@ -3,9 +3,14 @@ import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
-import { OrderStatus, PaymentStatus } from '../../types';
+import { OrderStatus, PaymentStatus, Transaction } from '../../types';
 import { ChevronLeftIcon, PrinterIcon, UsersIcon, ShoppingCartIcon } from '../../components/icons';
+import { updateTransactionProgress } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';
+import { useAppContext } from '../../contexts/AppContext';
+import { useToasts } from '../../contexts/ToastContext';
+import PaymentModal from '../../components/PaymentModal';
+// supabase client not used directly in this file; progress updates go through RPC helper
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({ label, value, className }) => (
     <div className={`flex justify-between items-start py-2 ${className}`}>
@@ -102,6 +107,9 @@ const TransactionDetailPage: React.FC = () => {
                          <p className="text-base p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg whitespace-pre-wrap">{transaction.notes}</p>
                      </div>
                 )}
+
+                {/* Action buttons for Kasir / Admin to update progress only */}
+                <ActionButtons transaction={transaction} />
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -163,3 +171,96 @@ const TransactionDetailPage: React.FC = () => {
 };
 
 export default TransactionDetailPage;
+
+const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) => {
+    const { currentUser } = useAppContext();
+    const { addToast, updateToast } = useToasts();
+    const [loading, setLoading] = React.useState(false);
+    const [isPaymentOpen, setIsPaymentOpen] = React.useState(false);
+
+    const isKasir = currentUser?.role === 'Kasir';
+    const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
+
+    if (!isKasir && !isAdmin) return null;
+
+    // Open payment modal
+    function handleOpenPaymentModal() {
+        setIsPaymentOpen(true);
+    }
+
+    async function onSavePayment(updatedTransaction: Transaction) {
+        setLoading(true);
+        const toastId = addToast('Menyimpan pembayaran...', 'info');
+        try {
+            await updateTransactionProgress(transaction.id, {
+                amountPaid: updatedTransaction.amountPaid,
+                change: updatedTransaction.change,
+                paymentMethod: updatedTransaction.paymentMethod ?? null,
+                paymentStatus: updatedTransaction.paymentStatus ?? null
+            });
+            updateToast(toastId, 'Status pembayaran diperbarui', 'success');
+        } catch (err: any) {
+            updateToast(toastId, err?.message ?? 'Gagal memperbarui status pembayaran', 'error');
+            throw err;
+        } finally {
+            setLoading(false);
+            setIsPaymentOpen(false);
+        }
+    }
+
+    async function handleMarkReady() {
+        setLoading(true);
+        const toastId = addToast('Memperbarui status pesanan...', 'info');
+        try {
+            await updateTransactionProgress(transaction.id, { orderStatus: OrderStatus.Ready });
+            updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
+        } catch (err: any) {
+            updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleMarkCompleted() {
+        setLoading(true);
+        const toastId = addToast('Memperbarui status pesanan...', 'info');
+        try {
+            await updateTransactionProgress(transaction.id, { orderStatus: OrderStatus.Completed });
+            updateToast(toastId, 'Status pesanan diperbarui: Selesai', 'success');
+        } catch (err: any) {
+            updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return (
+        <div className="mt-6 flex gap-3 relative">
+            {loading && (
+                <div className="absolute inset-0 z-50 bg-white/60 dark:bg-black/50 rounded-md flex items-center justify-center">
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-6 w-6 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        <span className="text-base font-medium text-slate-900 dark:text-white">Memproses...</span>
+                    </div>
+                </div>
+            )}
+            <button disabled={loading} onClick={handleOpenPaymentModal} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">Bayar</button>
+            <button disabled={loading} onClick={handleMarkReady} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md">Tandai Siap Ambil</button>
+            <button disabled={loading} onClick={handleMarkCompleted} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Tandai Selesai</button>
+            {isAdmin && (
+                <Link to={`/transactions/${transaction.id}/edit`} className="ml-auto inline-block text-sm text-slate-700 dark:text-slate-200 hover:underline">Edit Items</Link>
+            )}
+
+            <PaymentModal
+                isOpen={isPaymentOpen}
+                onClose={() => setIsPaymentOpen(false)}
+                transaction={transaction}
+                onSave={onSavePayment}
+                disabled={loading}
+            />
+        </div>
+    );
+};

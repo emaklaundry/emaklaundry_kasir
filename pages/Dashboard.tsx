@@ -288,16 +288,11 @@ const Dashboard: React.FC = () => {
             change: updatedTransaction.change,
         };
 
-        try {
-            await updateTransaction(updatedTransaction.id, payload);
-            addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
-            setIsPaymentModalOpen(false);
-            setTransactionForPayment(null);
-            addToast('Pembayaran berhasil disimpan.', 'success');
-        } catch (error: any) {
-            console.error('Failed to save payment from Dashboard', error);
-            addToast(`Gagal menyimpan pembayaran: ${error?.message || 'Terjadi kesalahan'}`, 'error');
-        }
+        await updateTransaction(updatedTransaction.id, payload);
+        addAuditLog(`Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`, updatedTransaction.storeId);
+        setIsPaymentModalOpen(false);
+        setTransactionForPayment(null);
+        addToast('Pembayaran berhasil disimpan.', 'success');
     }, [updateTransaction, addAuditLog, addToast]);
     
     const handleNextStatus = useCallback(async (transactionId: string) => {
@@ -313,20 +308,15 @@ const Dashboard: React.FC = () => {
             return; // No next status from 'Completed'
         }
 
-        try {
-            await updateTransaction(transaction.id, { orderStatus: nextStatus });
-            addAuditLog(`Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`, transaction.storeId);
+        const updatedTransaction = { ...transaction, orderStatus: nextStatus };
+        await updateTransaction(transaction.id, { orderStatus: nextStatus });
+        addAuditLog(`Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`, transaction.storeId);
 
-            if (nextStatus === OrderStatus.Ready) {
-                setTransactionForWhatsApp({ ...transaction, orderStatus: nextStatus });
-                setIsWhatsAppModalOpen(true);
-            }
-            addToast(`Status transaksi ${transactionId} diubah menjadi ${nextStatus}.`, 'success');
-        } catch (error: any) {
-            console.error('Failed to change order status from Dashboard', error);
-            addToast(`Gagal mengubah status: ${error?.message || 'Terjadi kesalahan'}`, 'error');
+        if (nextStatus === OrderStatus.Ready) {
+            setTransactionForWhatsApp({ ...transaction, orderStatus: nextStatus });
+            setIsWhatsAppModalOpen(true);
         }
-    }, [transactions, updateTransaction, addAuditLog, addToast]);
+    }, [transactions, updateTransaction, addAuditLog]);
     
     const handleMarkMaintenanceAsComplete = useCallback(async (schedule: ScheduledMaintenance) => {
         const asset = assets.find(a => a.id === schedule.assetId);
@@ -496,9 +486,8 @@ const Dashboard: React.FC = () => {
                                                 {t.paymentStatus !== PaymentStatus.Paid && (
                                                     <button
                                                         onClick={() => handleOpenPaymentModal(t)}
-                                                        disabled={isActionDisabled}
-                                                        className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 ${isActionDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                                                        title={isActionDisabled ? 'Pilih cabang spesifik untuk melakukan aksi ini.' : 'Proses Pembayaran'}
+                                                        className="inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 bg-green-600 hover:bg-green-700"
+                                                        title="Proses Pembayaran"
                                                     >
                                                         <DollarSignIcon className="w-4 h-4" />
                                                         <span>Bayar</span>
@@ -507,14 +496,12 @@ const Dashboard: React.FC = () => {
                                                 {t.orderStatus !== OrderStatus.Completed && (
                                                     <button
                                                         onClick={() => handleNextStatus(t.id)}
-                                                        disabled={isSelesaikanDisabled || isActionDisabled}
-                                                        className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${isActionDisabled ? 'bg-gray-400' : nextActionColor}`}
+                                                        disabled={isSelesaikanDisabled}
+                                                        className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${nextActionColor}`}
                                                         title={
-                                                            isActionDisabled
-                                                            ? 'Pilih cabang spesifik untuk melakukan aksi ini.'
-                                                            : isSelesaikanDisabled
-                                                              ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
-                                                              : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                                                            isSelesaikanDisabled
+                                                            ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                                            : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
                                                         }
                                                     >
                                                         {nextActionText}
@@ -567,9 +554,8 @@ const Dashboard: React.FC = () => {
                                             {t.paymentStatus !== PaymentStatus.Paid && (
                                                 <button
                                                     onClick={() => handleOpenPaymentModal(t)}
-                                                    disabled={isActionDisabled}
-                                                    className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${isActionDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                                                    title={isActionDisabled ? 'Pilih cabang spesifik untuk melakukan aksi ini.' : 'Proses Pembayaran'}
+                                                    className="flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 bg-green-600 hover:bg-green-700"
+                                                    title="Proses Pembayaran"
                                                 >
                                                     <DollarSignIcon className="w-4 h-4" />
                                                     <span>Bayar</span>
@@ -578,9 +564,9 @@ const Dashboard: React.FC = () => {
                                             {t.orderStatus !== OrderStatus.Completed && (
                                                 <button
                                                     onClick={() => handleNextStatus(t.id)}
-                                                    disabled={isSelesaikanDisabled || isActionDisabled}
-                                                    className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${isActionDisabled ? 'bg-gray-400' : mobileNextActionColor}`}
-                                                    title={isActionDisabled ? 'Pilih cabang spesifik untuk melakukan aksi ini.' : isSelesaikanDisabled ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.' : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`}
+                                                    disabled={isSelesaikanDisabled}
+                                                    className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
+                                                    title={isSelesaikanDisabled ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.' : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`}
                                                 >
                                                     {mobileNextActionText}
                                                     <ChevronRightIcon className="w-4 h-4" />
