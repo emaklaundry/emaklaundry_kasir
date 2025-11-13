@@ -14,6 +14,14 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         VitePWA({
+          // Use injectManifest so we can bundle and use a custom service worker source (src/sw.js)
+          strategies: 'injectManifest',
+          srcDir: 'src',
+          filename: 'sw.js',
+          injectManifest: {
+            // Files to include in the precache manifest
+            globPatterns: ['**/*.{js,css,html,png,svg,ico,json}']
+          },
           registerType: 'autoUpdate',
           includeAssets: ['favicon/favicon.ico', 'favicon/apple-touch-icon.png'],
           manifest: {
