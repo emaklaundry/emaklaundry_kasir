@@ -1,29 +1,29 @@
 import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAppContext } from './contexts/AppContext';
-import { UserRole } from './types';
-import Layout from './components/Layout';
-import { useTheme } from './hooks/useTheme';
-import { AppProviders } from './contexts/AppProviders';
-import CommandPalette from './components/CommandPalette';
+import { useAppContext } from '@/contexts/AppContext';
+import { UserRole } from '@/types';
+import Layout from '@/components/Layout';
+import { useTheme } from '@/hooks/useTheme';
+import { AppProviders } from '@/contexts/AppProviders';
+import CommandPalette from '@/components/CommandPalette';
 
 // Lazy load pages for code splitting
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const TransactionPage = lazy(() => import('./pages/transactions/TransactionPage'));
-const NewTransactionPage = lazy(() => import('./pages/transactions/NewTransactionPage'));
-const ServicesPage = lazy(() => import('./pages/management/ServicesPage'));
-const InventoryPage = lazy(() => import('./pages/management/InventoryPage'));
-const AssetsPage = lazy(() => import('./pages/management/AssetsPage'));
-const ExpensesPage = lazy(() => import('./pages/management/ExpensesPage'));
-const UsersPage = lazy(() => import('./pages/management/UsersPage'));
-const ReportsPage = lazy(() => import('./pages/ReportsPage'));
-const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
-const SettingsPage = lazy(() => import('./pages/management/SettingsPage'));
-const CustomersPage = lazy(() => import('./pages/management/CustomersPage'));
-const CustomerDetailPage = lazy(() => import('./pages/management/CustomerDetailPage'));
-const ReceiptPage = lazy(() => import('./pages/transactions/ReceiptPage'));
-const TransactionDetailPage = lazy(() => import('./pages/transactions/TransactionDetailPage'));
-const StoresPage = lazy(() => import('./pages/management/StoresPage'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const TransactionPage = lazy(() => import('@/pages/transactions/TransactionPage'));
+const NewTransactionPage = lazy(() => import('@/pages/transactions/NewTransactionPage'));
+const ServicesPage = lazy(() => import('@/pages/management/ServicesPage'));
+const InventoryPage = lazy(() => import('@/pages/management/InventoryPage'));
+const AssetsPage = lazy(() => import('@/pages/management/AssetsPage'));
+const ExpensesPage = lazy(() => import('@/pages/management/ExpensesPage'));
+const UsersPage = lazy(() => import('@/pages/management/UsersPage'));
+const ReportsPage = lazy(() => import('@/pages/ReportsPage'));
+const AuditLogPage = lazy(() => import('@/pages/AuditLogPage'));
+const SettingsPage = lazy(() => import('@/pages/management/SettingsPage'));
+const CustomersPage = lazy(() => import('@/pages/management/CustomersPage'));
+const CustomerDetailPage = lazy(() => import('@/pages/management/CustomerDetailPage'));
+const ReceiptPage = lazy(() => import('@/pages/transactions/ReceiptPage'));
+const TransactionDetailPage = lazy(() => import('@/pages/transactions/TransactionDetailPage'));
+const StoresPage = lazy(() => import('@/pages/management/StoresPage'));
 
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

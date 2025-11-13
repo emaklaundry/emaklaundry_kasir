@@ -132,48 +132,55 @@ const NewTransactionPage: React.FC = () => {
             setDiscountValue(0);
             return;
         }
-
         if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) {
             setDiscountType('percent');
             setDiscountValue(selectedCustomer.defaultDiscount);
-            addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
         } else {
             setDiscountType('percent');
             setDiscountValue(settings?.discountRate ?? 0);
         }
-    }, [selectedCustomer, settings?.discountRate, addToast, canApplyDiscount]);
+    }, [selectedCustomer, settings?.discountRate, canApplyDiscount]);
+
+    // Efek terpisah untuk toast diskon otomatis, agar tidak menyebabkan setState saat render
+    useEffect(() => {
+        if (
+            canApplyDiscount &&
+            selectedCustomer &&
+            selectedCustomer.defaultDiscount &&
+            selectedCustomer.defaultDiscount > 0
+        ) {
+            addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
+        }
+    }, [canApplyDiscount, selectedCustomer, addToast]);
 
     const handleAddService = useCallback((service: Service) => {
-        setItems(currentItems => {
-            const existingItemIndex = currentItems.findIndex(i => i.serviceId === service.id);
-            if (existingItemIndex > -1 && service.category !== ServiceCategory.Satuan) {
-                // Immutable update: create new array and new object for the updated item
-                return currentItems.map((item, index) => {
-                    if (index === existingItemIndex) {
-                        const newQuantity = item.quantity + 1;
-                        return {
-                            ...item,
-                            quantity: newQuantity,
-                            subtotal: item.price * newQuantity
-                        };
-                    }
-                    return item;
-                });
+        setItems(items => {
+            const existingItemIndex = items.findIndex(item => item.serviceId === service.id);
+            const isKiloan = service.category === ServiceCategory.Kiloan;
+            if (existingItemIndex > -1) {
+                if (isKiloan) {
+                    addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+                    return items;
+                }
+                // Satuan/other: tambah quantity
+                const updatedItems = [...items];
+                const currentItem = updatedItems[existingItemIndex];
+                currentItem.quantity += 1;
+                currentItem.subtotal = currentItem.price * currentItem.quantity;
+                return updatedItems;
             } else {
                 const newItem: TransactionItem = {
                     serviceId: service.id,
                     serviceName: service.name,
-                    quantity: 1,
                     price: service.price,
-                    subtotal: service.price,
                     unit: service.unit,
-                    itemDetails: service.category === ServiceCategory.Satuan ? [{ note: '' }] : undefined,
-                    taggedItems: '',
+                    quantity: 1,
+                    subtotal: service.price * 1,
                 };
-                return [...currentItems, newItem];
+                return [...items, newItem];
             }
         });
-    }, []);
+    }, [addToast]);
 
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
@@ -402,7 +409,7 @@ const NewTransactionPage: React.FC = () => {
                             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pilih Layanan</h2>
                             <ServiceSelector 
                                 services={services} 
-                                onSelectService={handleAddService}
+                                onAddService={handleAddService}
                             />
                         </div>
 

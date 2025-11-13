@@ -25,7 +25,7 @@ export enum PaymentMethod {
 
 export enum UserRole {
   SuperAdmin = 'Super Admin',
-  BranchAdmin = 'Admin', // DIUBAH: dari 'Admin Cabang' menjadi 'Admin' agar cocok dengan SQL
+  BranchAdmin = 'Admin',
   Cashier = 'Kasir',
 }
 
@@ -56,7 +56,7 @@ export interface Service {
   price: number;
   unit: string;
   durationDays: number;
-  storeId: string; // <-- TAMBAHKAN INI
+  storeId: string;
 }
 
 export interface TransactionItemDetail {
