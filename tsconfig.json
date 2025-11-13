@@ -12,9 +12,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": [
-      "node"
-    ],
+    "types": [],
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
