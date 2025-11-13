@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { UserRole } from '../../types';
+import { UserRole } from '@/types';
 import { useAppContext } from '../contexts/AppContext';
 
 interface StoreDataItem {
