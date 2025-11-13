@@ -1,3 +1,14 @@
+// Tipe hasil RPC get_laundry_status
+export interface LaundryStatus {
+  id: string;
+  customerName: string;
+  createdAt: string; // ISO string dari timestamp
+  estimatedCompletionDate: string | null; // ISO string dari date, bisa null
+  orderStatus: string;
+  paymentStatus: string;
+  total: number;
+  amountPaid: number;
+}
 export enum ServiceCategory {
   Kiloan = 'Kiloan',
   Satuan = 'Satuan',

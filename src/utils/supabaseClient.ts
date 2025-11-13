@@ -1,4 +1,6 @@
+
 import { createClient } from '@supabase/supabase-js';
+import type { LaundryStatus } from '@/types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -10,10 +12,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * This calls the database function `get_laundry_status(transaction_id_input uuid)` which must be created
  * in the Supabase SQL editor and defined as SECURITY DEFINER (see database/get_laundry_status.sql).
  */
-export async function getLaundryStatus(transactionId: string) {
+export async function getLaundryStatus(transactionId: string): Promise<LaundryStatus[]> {
 	const { data, error } = await supabase.rpc('get_laundry_status', { transaction_id_input: transactionId });
 	if (error) throw error;
-	return data;
+	return data as LaundryStatus[];
 }
 
 /**
