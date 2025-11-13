@@ -23,15 +23,17 @@ END$$;
 
 DO $$
 BEGIN
+  -- DROP TYPE IF EXISTS public.order_status; -- Uncomment jika ingin drop lama (hati-hati data!)
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
-    CREATE TYPE public.order_status AS ENUM ('Selesai','Diproses','Batal','Menunggu Pembayaran');
+    CREATE TYPE public.order_status AS ENUM ('Diproses','Siap Diambil','Selesai');
   END IF;
 END$$;
 
 DO $$
 BEGIN
+  -- DROP TYPE IF EXISTS public.payment_method; -- Uncomment jika ingin drop lama (hati-hati data!)
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
-    CREATE TYPE public.payment_method AS ENUM ('Cash','Transfer','QRIS','Debit','Credit');
+    CREATE TYPE public.payment_method AS ENUM ('Tunai','QRIS','Transfer Bank');
   END IF;
 END$$;
 
