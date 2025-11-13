@@ -319,11 +319,71 @@ VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
--- === 6. FUNCTIONS (Stubs) ===
--- (Sama seperti skrip Anda)
 
 
--- (Audit log trigger removed; handled by frontend or implement if needed)
+-- === RPC: get_laundry_status ===
+-- Return a safe projection of a transaction for public/customer-facing views
+CREATE OR REPLACE FUNCTION public.get_laundry_status(
+  transaction_id_input uuid
+)
+RETURNS TABLE (
+  id text,
+  "customerName" text,
+  "createdAt" timestamp with time zone,
+  "estimatedCompletionDate" date,
+  "orderStatus" text,
+  "paymentStatus" text,
+  total numeric,
+  "amountPaid" numeric
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT
+    t.id::text,
+    c.name AS "customerName",
+    t."createdAt",
+    t."estimatedCompletionDate",
+    t."orderStatus",
+    t."paymentStatus",
+    t.total,
+    t."amountPaid"
+  FROM
+    public.transactions AS t
+  JOIN
+    public.customers AS c ON t."customerId" = c.id
+  WHERE
+    t.id = transaction_id_input;
+$$;
+
+-- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
+-- so it can read rows even when restrictive RLS policies exist. Keep the function
+-- body minimal and review ownership/permissions after deployment.
+
+-- === RPC: get_public_services ===
+-- Return a safe list of services (no pricing) for a given store
+CREATE OR REPLACE FUNCTION public.get_public_services(
+  store_id_input uuid
+)
+RETURNS TABLE (
+  service_name text,
+  category text,
+  duration_days integer
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT
+    s.name AS service_name,
+    s.category::text AS category,
+    s."durationDays"::integer AS duration_days
+  FROM
+    public.services AS s
+  WHERE
+    s."storeId" = store_id_input;
+$$;
+
+-- Note: This RPC intentionally omits price/unit to avoid exposing sensitive pricing data to public clients.
 
 
 -- === 7. PENGATURAN AWAL (Initial Settings) ===
