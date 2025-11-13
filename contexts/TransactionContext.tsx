@@ -32,7 +32,17 @@ export function useTransactions() {
       if (error) throw error;
       return updated?.[0] || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    onSuccess: (updatedRow) => {
+      // Update the transactions cache immediately so UI reflects the change without waiting for a refetch
+      if (updatedRow && updatedRow.id) {
+        queryClient.setQueryData(['transactions'], (old: any) => {
+          if (!old) return old;
+          return old.map((t: any) => (t.id === updatedRow.id ? { ...t, ...updatedRow } : t));
+        });
+      }
+      // Also trigger a refetch to ensure full sync with server
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    }
   });
 
   return {
