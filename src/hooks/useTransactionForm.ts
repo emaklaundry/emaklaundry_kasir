@@ -22,7 +22,7 @@ export function useTransactionForm({ currentUser, settings, services }: UseTrans
   const canApplyDiscount = useMemo(() => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.SuperAdmin) return true;
-    if ((currentUser.role === UserRole.BranchAdmin || currentUser.role === UserRole.Cashier)) {
+    if ((currentUser.role === UserRole.Admin || currentUser.role === UserRole.Kasir)) {
       if (currentUser.canGiveDiscount) return true;
       if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) return true;
     }

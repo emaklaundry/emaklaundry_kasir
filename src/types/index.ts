@@ -36,8 +36,8 @@ export enum PaymentMethod {
 
 export enum UserRole {
   SuperAdmin = 'Super Admin',
-  BranchAdmin = 'Admin',
-  Cashier = 'Kasir',
+  Admin = 'Admin',
+  Kasir = 'Kasir',
 }
 
 export type AssetStatus = 'Active' | 'Under Maintenance' | 'Decommissioned';
