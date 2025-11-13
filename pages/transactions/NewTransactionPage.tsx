@@ -1,4 +1,22 @@
-
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '../../types';
+import { Trash2Icon, MessageSquareIcon, PlusCircleIcon, TagIcon, SpinnerIcon } from '../../components/icons';
+import SuccessModal from '../../components/SuccessModal';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useTransactions } from '../../contexts/TransactionContext';
+import { useCustomers } from '../../contexts/CustomerContext';
+import { useServices } from '../../contexts/ServiceContext';
+import ItemNotesModal from '../../components/ItemNotesModal';
+import { useAppContext } from '../../contexts/AppContext';
+import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import CustomerSelector from '../../components/CustomerSelector';
+import ServiceSelector from '../../components/ServiceSelector';
+import CustomerFormModal from '../../components/CustomerFormModal';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
+import WhatsAppModal from '../../components/WhatsAppModal';
+import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 
 const NewTransactionPage: React.FC = () => {
     // --- SEMUA HOOK HARUS DI ATAS SINI ---
@@ -112,7 +130,29 @@ const NewTransactionPage: React.FC = () => {
     useEffect(() => {
         if (!canApplyDiscount) {
             setDiscountValue(0);
-            import React, { useState, useMemo, useEffect, useCallback } from 'react';
+            return;
+        }
+        if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) {
+            setDiscountType('percent');
+            setDiscountValue(selectedCustomer.defaultDiscount);
+        } else {
+            setDiscountType('percent');
+            setDiscountValue(settings?.discountRate ?? 0);
+        }
+    }, [selectedCustomer, settings?.discountRate, canApplyDiscount]);
+
+    // Efek terpisah untuk toast diskon otomatis, agar tidak menyebabkan setState saat render
+    useEffect(() => {
+        if (
+            canApplyDiscount &&
+            selectedCustomer &&
+            selectedCustomer.defaultDiscount &&
+            selectedCustomer.defaultDiscount > 0
+        ) {
+            // Bungkus pemanggilan addToast dalam setTimeout(0)
+            // Ini akan memindahkannya ke antrian makro (macro-task queue),
+            // memastikan pemanggilan terjadi SETELAH render saat ini selesai.
+            const timerId = setTimeout(() => {
                 addToast(`Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`, 'info');
             }, 0);
 
@@ -122,34 +162,39 @@ const NewTransactionPage: React.FC = () => {
     }, [canApplyDiscount, selectedCustomer, addToast]);
 
     const handleAddService = useCallback((service: Service) => {
+        // 1. Baca 'items' dari scope.
+        const existingItemIndex = items.findIndex(item => item.serviceId === service.id);
         const isKiloan = service.category === ServiceCategory.Kiloan;
-        setItems(currentItems => {
-            const existingItemIndex = currentItems.findIndex(item => item.serviceId === service.id);
-            if (existingItemIndex > -1) {
-                if (isKiloan) {
-                    setShowKiloanWarning(true);
-                    return currentItems;
-                }
-                // Untuk item Satuan, update kuantitas seperti biasa
+
+        if (existingItemIndex > -1) {
+            if (isKiloan) {
+                // 2. Panggil addToast di luar 'setItems'. Ini adalah event handler biasa.
+                addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+                // 3. Tidak perlu update state, jadi kita 'return' lebih awal.
+                return;
+            }
+
+            // Untuk item Satuan, kita update state seperti biasa.
+            setItems(currentItems => {
                 const updatedItems = [...currentItems];
                 const currentItem = updatedItems[existingItemIndex];
                 currentItem.quantity += 1;
                 currentItem.subtotal = currentItem.price * currentItem.quantity;
                 return updatedItems;
-            } else {
-                // Untuk item baru
-                const newItem: TransactionItem = {
-                    serviceId: service.id,
-                    serviceName: service.name,
-                    price: service.price,
-                    unit: service.unit,
-                    quantity: 1,
-                    subtotal: service.price * 1,
-                };
-                return [...currentItems, newItem];
-            }
-        });
-    }, []);
+            });
+        } else {
+            // Untuk item baru
+            const newItem: TransactionItem = {
+                serviceId: service.id,
+                serviceName: service.name,
+                price: service.price,
+                unit: service.unit,
+                quantity: 1,
+                subtotal: service.price * 1,
+            };
+            setItems(currentItems => [...currentItems, newItem]);
+        }
+    }, [items, addToast]);
 
     // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
     if (isLoadingSettings) {
@@ -407,8 +452,6 @@ const NewTransactionPage: React.FC = () => {
                                                         <div className="flex items-center">
                                                             <input 
                                                                 type="number" 
-                                                                id={`item-qty-${index}`}
-                                                                name={`itemQty${index}`}
                                                                 min="0" 
                                                                 step={item.unit === 'kg' ? "0.1" : "1"}
                                                                 value={item.quantity} 
@@ -463,7 +506,7 @@ const NewTransactionPage: React.FC = () => {
                                 />
                                  <div>
                                     <label htmlFor="notes" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Catatan (Opsional)</label>
-                                    <textarea id="notes" name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
+                                    <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea>
                                 </div>
                                 <div className="space-y-3 pt-4 border-t dark:border-slate-700">
                                     <div className="flex justify-between items-center text-lg">
@@ -483,7 +526,6 @@ const NewTransactionPage: React.FC = () => {
                                             <input 
                                                 type="number"
                                                 id="discountValue"
-                                                name="discountValue"
                                                 min="0"
                                                 value={discountValue}
                                                 onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
@@ -549,7 +591,6 @@ const NewTransactionPage: React.FC = () => {
                                         <input 
                                             type="text" 
                                             id="amountPaid" 
-                                            name="amountPaid"
                                             value={amountPaidStr}
                                             onChange={e => handleAmountToPayChange(e.target.value)}
                                             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -562,7 +603,6 @@ const NewTransactionPage: React.FC = () => {
                                             <input 
                                                 type="text" 
                                                 id="tenderedAmount" 
-                                                name="tenderedAmount"
                                                 value={tenderedAmountStr}
                                                 onChange={e => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
                                                 className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"

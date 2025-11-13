@@ -37,12 +37,6 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     }));
   };
 
-  // ...existing code...
-
-  // Saat render input stock, pastikan ada id dan name unik
-  // Contoh:
-  // <input type="number" id={`stock-${item.id}`} name={`stock-${item.id}`} ... />
-
   const handleSave = async () => {
     const toastId = addToast('Memperbarui stok...', 'info');
     setIsSavingStock(true);
