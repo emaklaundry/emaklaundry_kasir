@@ -34,6 +34,6 @@
     "dist",
     "data/mockData.ts",
     "env.d.ts",
-    "hooks/usePersistentState.ts"
+    
   ]
 }
