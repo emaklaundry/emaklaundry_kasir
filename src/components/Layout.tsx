@@ -3,7 +3,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useCustomers } from '../contexts/CustomerContext';
-import { Customer, UserRole } from '../../types';
+import { Customer, UserRole } from '@/types';
 import ToastContainer from './ToastContainer';
 import { useAppContext } from '../contexts/AppContext';
 import BottomNavBar from './BottomNavBar';
