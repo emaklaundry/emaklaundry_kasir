@@ -14,7 +14,7 @@ interface PaymentModalProps {
   disabled?: boolean;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transaction, onSave, disabled }) => {
+function PaymentModal({ isOpen, onClose, transaction, onSave, disabled }: PaymentModalProps) {
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
   const [amountToPayStr, setAmountToPayStr] = useState('');
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
@@ -158,6 +158,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
         </div>
     </Modal>
   );
-};
+}
 
 export default PaymentModal;

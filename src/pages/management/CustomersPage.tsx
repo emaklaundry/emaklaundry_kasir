@@ -15,7 +15,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 
-const CustomersPage: React.FC = () => {
+function CustomersPage() {
     const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
     const { transactions } = useTransactions();
     const { currentUser, selectedStoreId, stores } = useAppContext();

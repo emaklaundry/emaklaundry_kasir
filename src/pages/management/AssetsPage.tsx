@@ -15,7 +15,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import { useScheduledMaintenances } from '../../contexts/ScheduledMaintenanceContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
-const AssetsPage: React.FC = () => {
+function AssetsPage() {
     const { assets, addAsset, updateAsset, deleteAsset } = useAssets();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();

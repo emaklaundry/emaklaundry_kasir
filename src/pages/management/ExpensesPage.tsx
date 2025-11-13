@@ -10,7 +10,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
-const ExpensesPage: React.FC = () => {
+function ExpensesPage() {
     const { expenses, addExpense, updateExpense, deleteExpense } = useExpenses();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();

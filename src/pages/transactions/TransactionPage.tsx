@@ -15,7 +15,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 
-const TransactionPage: React.FC = () => {
+function TransactionPage() {
     const { transactions, updateTransaction } = useTransactions();
     const { customers } = useCustomers();
     const { addAuditLog } = useAuditLogs();

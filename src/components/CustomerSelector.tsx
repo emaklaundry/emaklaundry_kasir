@@ -9,7 +9,7 @@ interface CustomerSelectorProps {
     onAddNewCustomer: () => void;
 }
 
-const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selectedCustomer, onSelectCustomer, onAddNewCustomer }) => {
+function CustomerSelector({ customers, selectedCustomer, onSelectCustomer, onAddNewCustomer }: CustomerSelectorProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);

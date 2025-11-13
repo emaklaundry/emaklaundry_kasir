@@ -9,7 +9,7 @@ interface KiloanTaggingModalProps {
   onSave: (tags: string) => void;
 }
 
-const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({ isOpen, onClose, item, onSave }) => {
+function KiloanTaggingModal({ isOpen, onClose, item, onSave }: KiloanTaggingModalProps) {
   const [tags, setTags] = useState('');
 
   useEffect(() => {
@@ -55,6 +55,6 @@ const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({ isOpen, onClose
       </div>
     </Modal>
   );
-};
+}
 
 export default KiloanTaggingModal;

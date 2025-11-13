@@ -8,7 +8,7 @@ import { useTheme, Theme } from '../hooks/useTheme';
 import { SunIcon, MoonIcon, CommandIcon } from './icons';
 import { useCommandPalette } from '../hooks/useCommandPalette';
 
-const ThemeToggleButton: React.FC = () => {
+function ThemeToggleButton() {
     const { theme, setTheme } = useTheme();
 
     const toggleTheme = () => {
@@ -28,7 +28,7 @@ const ThemeToggleButton: React.FC = () => {
 };
 
 
-const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
+function Header({ pageTitle }: { pageTitle: string }) {
   const { 
     currentUser, 
     signOut,
@@ -99,6 +99,6 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
        )}
     </header>
   );
-};
+}
 
 export default Header;

@@ -3,7 +3,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 
-const SettingsPage: React.FC = () => {
+function SettingsPage() {
     const { settings, updateSettings } = useSettings();
     const { addAuditLog } = useAuditLogs();
     const { addToast, updateToast } = useToasts();

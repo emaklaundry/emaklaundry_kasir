@@ -8,7 +8,7 @@ interface ModalProps {
   footer?: ReactNode;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer }) => {
+function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -48,6 +48,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer 
       </div>
     </div>
   );
-};
+}
 
 export default Modal;

@@ -9,7 +9,7 @@ interface AssetFormModalProps {
     onSave: (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => void
 }
 
-const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave }) => {
+function AssetFormModal({ asset, onClose, onSave }: AssetFormModalProps) {
     const [formData, setFormData] = useState(() => ({
         name: asset?.name || '',
         serialNumber: asset?.serialNumber || '',

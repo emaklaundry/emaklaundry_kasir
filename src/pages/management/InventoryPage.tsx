@@ -12,7 +12,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 
-const InventoryPage: React.FC = () => {
+function InventoryPage() {
     const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { addAuditLog } = useAuditLogs();

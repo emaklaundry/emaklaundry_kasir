@@ -11,7 +11,7 @@ interface WhatsAppModalProps {
   customer: Customer | null;
 }
 
-const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transaction, customer }) => {
+function WhatsAppModal({ isOpen, onClose, transaction, customer }: WhatsAppModalProps) {
     const [message, setMessage] = useState('');
     const { addToast } = useToasts();
 
@@ -83,6 +83,6 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
             </div>
         </Modal>
     );
-};
+}
 
 export default WhatsAppModal;

@@ -11,7 +11,7 @@ interface QuickStockUpdateModalProps {
   onClose: () => void;
 }
 
-const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, onClose }) => {
+function QuickStockUpdateModal({ isOpen, onClose }: QuickStockUpdateModalProps) {
   const { inventory, updateInventoryItem } = useInventory();
   const { addToast, updateToast } = useToasts();
   const [isSavingStock, setIsSavingStock] = useState(false);
@@ -107,6 +107,6 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
       </div>
     </Modal>
   );
-};
+}
 
 export default QuickStockUpdateModal;

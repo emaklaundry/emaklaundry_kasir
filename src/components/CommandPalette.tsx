@@ -11,14 +11,14 @@ import { useCustomers } from '@/contexts/CustomerContext';
 interface Command {
     id: string;
     title: string;
-    icon: React.FC<{ className?: string }>;
+    icon: (props: { className?: string }) => JSX.Element;
     section: string;
     action: () => void;
     keywords?: string;
     path?: string;
 }
 
-const CommandPalette: React.FC = () => {
+function CommandPalette() {
     const { isOpen, close } = useCommandPalette();
     const navigate = useNavigate();
     const { customers } = useCustomers();

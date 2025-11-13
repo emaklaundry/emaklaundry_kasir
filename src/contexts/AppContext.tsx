@@ -16,7 +16,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export function AppProvider({ children }: { children: ReactNode }) {
   const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -102,4 +102,4 @@ export const useAppContext = (): AppContextType => {
     throw new Error('useAppContext must be used within an AppProvider');
   }
   return context;
-};
+}

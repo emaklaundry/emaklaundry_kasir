@@ -11,7 +11,7 @@ interface ScheduledMaintenanceFormModalProps {
     schedule: ScheduledMaintenance | null;
 }
 
-const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps> = ({ isOpen, onClose, onSave, schedule }) => {
+function ScheduledMaintenanceFormModal({ isOpen, onClose, onSave, schedule }: ScheduledMaintenanceFormModalProps) {
     
         const getInitialFormData = (): ScheduleFormData => {
             if (schedule) {
@@ -97,6 +97,6 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
             </form>
         </Modal>
     );
-};
+}
 
 export default ScheduledMaintenanceFormModal;

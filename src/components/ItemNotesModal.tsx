@@ -9,7 +9,7 @@ interface ItemNotesModalProps {
   onSave: (notes: { note: string }[]) => void;
 }
 
-const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, onSave }) => {
+function ItemNotesModal({ isOpen, onClose, item, onSave }: ItemNotesModalProps) {
 
   // Always preserve all notes, but only show/edit up to item.quantity
   const [notes, setNotes] = useState<{ note: string }[]>([]);
@@ -70,6 +70,6 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, 
       </div>
     </Modal>
   );
-};
+}
 
 export default ItemNotesModal;

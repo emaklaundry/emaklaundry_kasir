@@ -6,7 +6,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 
-const ReceiptPage: React.FC = () => {
+function ReceiptPage() {
     const { id } = useParams<{ id: string }>();
     const { settings } = useSettings();
     const { transactions } = useTransactions();

@@ -27,7 +27,10 @@ interface TrendData {
     percentage: string;
 }
 
-const WeeklyRevenueChart: React.FC<{ data: { day: string, revenue: number }[] }> = ({ data }) => {
+type WeeklyRevenueChartProps = {
+    data: { day: string; revenue: number }[];
+};
+const WeeklyRevenueChart = ({ data }: WeeklyRevenueChartProps) => {
     const [tooltip, setTooltip] = useState<{ visible: boolean, content: string, x: number, y: number }>({ visible: false, content: '', x: 0, y: 0 });
 
     const maxValue = useMemo(() => {
@@ -76,14 +79,15 @@ const WeeklyRevenueChart: React.FC<{ data: { day: string, revenue: number }[] }>
 };
 
 
-const StatCard: React.FC<{ 
-    icon: React.FC<{className?: string}>, 
-    title: string, 
-    value: string | number, 
-    color: string, 
-    to?: string,
-    trendData?: TrendData 
-}> = ({ icon: Icon, title, value, color, to, trendData }) => {
+type StatCardProps = {
+    icon: (props: { className?: string }) => JSX.Element;
+    title: string;
+    value: string | number;
+    color: string;
+    to?: string;
+    trendData?: TrendData;
+};
+const StatCard = ({ icon: Icon, title, value, color, to, trendData }: StatCardProps) => {
     
     const TrendIndicator = () => {
         if (!trendData || trendData.trend === 'neutral') return null;
@@ -133,7 +137,7 @@ const calculateStats = (transactions: Transaction[], startDate: Date, endDate: D
     };
 };
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const { inventory } = useInventory();
     const { transactions, updateTransaction } = useTransactions();

@@ -20,7 +20,7 @@ import { UserRole } from '@/types';
 interface NavItem {
   path: string;
   label: string;
-  icon: React.FC<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string }>;
   adminOnly?: boolean;
   superAdminOnly?: boolean;
   children?: NavItem[];
@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
   { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
 ];
 
-const Sidebar: React.FC = () => {
+function Sidebar() {
   const { currentUser } = useAppContext();
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>(['/management']);
@@ -129,6 +129,6 @@ const Sidebar: React.FC = () => {
       </div>
     </aside>
   );
-};
+}
 
 export default Sidebar;

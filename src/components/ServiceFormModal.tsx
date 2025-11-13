@@ -9,7 +9,7 @@ interface ServiceFormModalProps {
     onSave: (service: Omit<Service, 'id' | 'storeId'>) => void
 }
 
-const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, onSave }) => {
+function ServiceFormModal({ service, onClose, onSave }: ServiceFormModalProps) {
     const [formData, setFormData] = useState<Omit<Service, 'id' | 'storeId'>>({
         name: service?.name || '',
         category: service?.category || ServiceCategory.Kiloan,
@@ -73,6 +73,6 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             </form>
         </Modal>
     );
-};
+}
 
 export default ServiceFormModal;

@@ -10,7 +10,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { useAppContext } from '../../contexts/AppContext';
 
-const ServicesPage: React.FC = () => {
+function ServicesPage() {
     const { services, addService, updateService, deleteService } = useServices();
     const { addAuditLog } = useAuditLogs();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);

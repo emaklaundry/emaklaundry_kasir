@@ -11,7 +11,7 @@ import UserFormModal from '../../components/UserFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
-const UsersPage: React.FC = () => {
+function UsersPage() {
     const { currentUser, selectedStoreId } = useAppContext();
     const { addToast, updateToast } = useToasts();
     // Ambil data users dari Supabase (props/context/hook) sesuai implementasi fetch profiles

@@ -4,7 +4,7 @@ import { AppProvider } from './AppContext';
 import { ToastProvider } from './ToastContext';
 import { CommandPaletteProvider } from '../hooks/useCommandPalette';
 
-export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
         <ToastProvider>
             <AppProvider>
@@ -14,4 +14,4 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
             </AppProvider>
         </ToastProvider>
     );
-};
+}

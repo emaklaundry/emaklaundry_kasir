@@ -12,12 +12,14 @@ import { useToasts } from '../../contexts/ToastContext';
 import PaymentModal from '../../components/PaymentModal';
 // supabase client not used directly in this file; progress updates go through RPC helper
 
-const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({ label, value, className }) => (
-    <div className={`flex justify-between items-start py-2 ${className}`}>
-        <span className="text-base text-slate-500 dark:text-slate-400">{label}</span>
-        <span className="text-base font-semibold text-slate-800 dark:text-slate-200 text-right">{value}</span>
-    </div>
-);
+function DetailItem({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
+    return (
+        <div className={`flex justify-between items-start py-2 ${className}`}>
+            <span className="text-base text-slate-500 dark:text-slate-400">{label}</span>
+            <span className="text-base font-semibold text-slate-800 dark:text-slate-200 text-right">{value}</span>
+        </div>
+    );
+}
 
 const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
@@ -37,7 +39,7 @@ const getPaymentStatusBadge = (status: PaymentStatus) => {
     }
 };
 
-const TransactionDetailPage: React.FC = () => {
+function TransactionDetailPage() {
     const { id } = useParams<{ id: string }>();
     const { transactions } = useTransactions();
     const { customers } = useCustomers();
@@ -172,7 +174,7 @@ const TransactionDetailPage: React.FC = () => {
 
 export default TransactionDetailPage;
 
-const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) => {
+function ActionButtons({ transaction }: { transaction: Transaction }) {
     const { currentUser } = useAppContext();
     const { addToast, updateToast } = useToasts();
     const { updateTransaction } = useTransactions();
@@ -264,4 +266,4 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
             />
         </div>
     );
-};
+}

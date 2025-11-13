@@ -7,7 +7,7 @@ interface MaintenanceHistoryModalProps {
     onClose: () => void
 }
 
-const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ asset, onClose }) => {
+function MaintenanceHistoryModal({ asset, onClose }: MaintenanceHistoryModalProps) {
     return (
         <Modal isOpen={true} onClose={onClose} title={`Riwayat Pemeliharaan: ${asset.name}`} footer={<><button onClick={onClose} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Tutup</button></>}>
             {asset.maintenanceHistory.length > 0 ? (
@@ -23,6 +23,6 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ asset
             ) : (<p className="text-base text-slate-500 dark:text-slate-400">Tidak ada riwayat pemeliharaan.</p>)}
         </Modal>
     );
-};
+}
 
 export default MaintenanceHistoryModal;

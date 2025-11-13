@@ -10,7 +10,7 @@ interface UserFormModalProps {
     stores: Store[];
 }
 
-const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, stores }) => {
+function UserFormModal({ user, onClose, onSave, stores }: UserFormModalProps) {
     const [formData, setFormData] = useState<Omit<User, 'id'>>({
         name: user?.name || '',
         role: user?.role || UserRole.Cashier,
@@ -121,6 +121,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
             </form>
         </Modal>
     );
-};
+}
 
 export default UserFormModal;

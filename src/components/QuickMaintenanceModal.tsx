@@ -13,7 +13,7 @@ interface QuickMaintenanceModalProps {
   onClose: () => void;
 }
 
-const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, onClose }) => {
+function QuickMaintenanceModal({ isOpen, onClose }: QuickMaintenanceModalProps) {
     const { assets, updateAsset } = useAssets();
     const { addAuditLog } = useAuditLogs();
     const { addToast, updateToast } = useToasts();
@@ -124,6 +124,6 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             </form>
         </Modal>
     );
-};
+}
 
 export default QuickMaintenanceModal;

@@ -10,7 +10,7 @@ interface CustomerFormModalProps {
     disabled?: boolean;
 }
 
-const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ customer, onClose, onSave, disabled }) => {
+function CustomerFormModal({ customer, onClose, onSave, disabled }: CustomerFormModalProps) {
     const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId'>>({
         name: customer?.name || '',
         phone: customer?.phone || '',

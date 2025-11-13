@@ -11,7 +11,7 @@ interface ExpenseFormModalProps {
     onSave: (expense: Omit<Expense, 'id' | 'storeId'>) => void;
 }
 
-const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, onClose, onSave }) => {
+function ExpenseFormModal({ expense, isOpen, onClose, onSave }: ExpenseFormModalProps) {
     const [formData, setFormData] = useState({
         // store date as YYYY-MM-DD string to avoid timezone issues
         date: new Date().toISOString().split('T')[0],

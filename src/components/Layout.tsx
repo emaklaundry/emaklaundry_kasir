@@ -42,7 +42,7 @@ const getPageTitle = (pathname: string, params: any, customers: Customer[]): str
 };
 
 
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
     const params = useParams();
     const { customers } = useCustomers();
@@ -63,6 +63,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <ToastContainer />
         </div>
     );
-};
+}
 
 export default Layout;

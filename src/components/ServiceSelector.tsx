@@ -7,7 +7,7 @@ interface ServiceSelectorProps {
   onAddService: (service: Service) => void;
 }
 
-const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddService }) => {
+function ServiceSelector({ services, onAddService }: ServiceSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredServices = services.filter(s =>
@@ -53,6 +53,6 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
       </div>
     </div>
   );
-};
+}
 
 export default ServiceSelector;

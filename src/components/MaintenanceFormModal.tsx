@@ -9,7 +9,7 @@ interface MaintenanceFormModalProps {
     onSave: (log: Omit<MaintenanceLog, 'id'>) => void
 }
 
-const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({ assetName, onClose, onSave }) => {
+function MaintenanceFormModal({ assetName, onClose, onSave }: MaintenanceFormModalProps) {
     const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>({
         date: new Date(),
         description: '',
@@ -53,6 +53,6 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({ assetName, 
             </form>
         </Modal>
     );
-};
+}
 
 export default MaintenanceFormModal;

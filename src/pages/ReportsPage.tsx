@@ -9,7 +9,13 @@ import { useUsers } from '../contexts/UserContext';
 import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
 
-const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, value: string | number, color: string }> = ({ icon: Icon, title, value, color }) => (
+type StatCardProps = {
+    icon: (props: { className?: string }) => JSX.Element;
+    title: string;
+    value: string | number;
+    color: string;
+};
+const StatCard = ({ icon: Icon, title, value, color }: StatCardProps) => (
     // TAMBAHKAN: kelas 'print-stat-card' dan 'print-hide' pada ikon
     <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}>
         <Icon className="w-10 h-10 text-slate-500 print-hide" />
@@ -20,7 +26,10 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
     </div>
 );
 
-const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, expenses: number, profit: number }[] }> = ({ data }) => {
+type YearlySummaryChartProps = {
+    data: { month: string; revenue: number; expenses: number; profit: number }[];
+};
+const YearlySummaryChart = ({ data }: YearlySummaryChartProps) => {
     const [tooltip, setTooltip] = useState<{ visible: boolean, content: string, x: number, y: number }>({ visible: false, content: '', x: 0, y: 0 });
 
     const maxValue = useMemo(() => {
@@ -132,7 +141,7 @@ const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, exp
     );
 };
 
-const ReportsPage: React.FC = () => {
+const ReportsPage = () => {
     const { transactions: allStoreTransactions } = useTransactions();
     const { customers } = useCustomers();
     const { expenses: allStoreExpenses } = useExpenses();

@@ -5,7 +5,7 @@ import { UsersIcon, ShoppingCartIcon, DollarSignIcon, ChevronLeftIcon, HistoryIc
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 
-const CustomerDetailPage: React.FC = () => {
+function CustomerDetailPage() {
     const { id } = useParams<{ id: string }>();
     const { customers } = useCustomers();
     const { transactions } = useTransactions();

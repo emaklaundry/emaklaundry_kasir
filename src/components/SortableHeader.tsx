@@ -9,7 +9,7 @@ interface SortableHeaderProps {
   children?: React.ReactNode;
 }
 
-const SortableHeader: React.FC<SortableHeaderProps> = ({ label, sortKey, sortConfig, onSort, className = '', children }) => {
+function SortableHeader({ label, sortKey, sortConfig, onSort, className = '', children }: SortableHeaderProps) {
   const isActive = sortConfig?.key === sortKey;
   return (
     <button
@@ -28,6 +28,6 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({ label, sortKey, sortCon
       {children}
     </button>
   );
-};
+}
 
 export default SortableHeader;

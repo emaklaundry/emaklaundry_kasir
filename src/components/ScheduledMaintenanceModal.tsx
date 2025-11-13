@@ -18,7 +18,7 @@ interface ScheduledMaintenanceModalProps {
 import { calculateNextDueDate } from '@/utils/formatting';
 
 
-const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ asset, isOpen, onClose }) => {
+function ScheduledMaintenanceModal({ asset, isOpen, onClose }: ScheduledMaintenanceModalProps) {
     const { scheduledMaintenances, addScheduledMaintenance, updateScheduledMaintenance, deleteScheduledMaintenance } = useScheduledMaintenances();
     const { updateAsset } = useAssets();
     const { addAuditLog } = useAuditLogs();
@@ -166,6 +166,6 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({ a
             )}
         </>
     );
-};
+}
 
 export default ScheduledMaintenanceModal;

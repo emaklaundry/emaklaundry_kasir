@@ -15,7 +15,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 
-const StoresPage: React.FC = () => {
+function StoresPage() {
     const { stores, addStore, updateStore, deleteStore } = useStores();
     const { selectedStoreId } = useAppContext();
     const { customers } = useCustomers();

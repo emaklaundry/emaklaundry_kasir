@@ -15,7 +15,7 @@ interface SuccessModalProps {
   actions: ActionButton[];
 }
 
-const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, title, message, actions }) => {
+function SuccessModal({ isOpen, onClose, title, message, actions }: SuccessModalProps) {
   return (
     <Modal
       isOpen={isOpen}
@@ -51,6 +51,6 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, title, mes
       </div>
     </Modal>
   );
-};
+}
 
 export default SuccessModal;

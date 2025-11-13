@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 
-const LoginPage: React.FC = () => {
+function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +59,6 @@ const LoginPage: React.FC = () => {
       </form>
     </div>
   );
-};
+}
 
 export default LoginPage;

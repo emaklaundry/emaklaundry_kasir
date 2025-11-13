@@ -8,7 +8,7 @@ import { useSortableData } from '../hooks/useSortableData';
 import { usePagination } from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 
-const AuditLogPage: React.FC = () => {
+function AuditLogPage() {
     const { logs: allLogs } = useAuditLogs();
     const { currentUser, selectedStoreId, stores } = useAppContext();
     const logs = useStoreFilteredData(allLogs);
@@ -149,6 +149,6 @@ const AuditLogPage: React.FC = () => {
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
         </div>
     );
-};
+}
 
 export default AuditLogPage;

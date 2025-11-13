@@ -25,18 +25,22 @@ const ReceiptPage = lazy(() => import('@/pages/transactions/ReceiptPage'));
 const TransactionDetailPage = lazy(() => import('@/pages/transactions/TransactionDetailPage'));
 const StoresPage = lazy(() => import('@/pages/management/StoresPage'));
 
-const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+
+type AdminRouteProps = {
+    children: React.ReactNode;
+};
+const AdminRoute = ({ children }: AdminRouteProps) => {
     const { currentUser } = useAppContext();
     const isAdmin = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.Admin;
     return isAdmin ? <>{children}</> : <Navigate to="/" />;
 };
 
-const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser } = useAppContext();
-        return currentUser.role === UserRole.SuperAdmin ? <>{children}</> : <Navigate to="/" />;
+const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
+    const { currentUser } = useAppContext();
+    return currentUser.role === UserRole.SuperAdmin ? <>{children}</> : <Navigate to="/" />;
 };
 
-const PageLoader: React.FC = () => (
+const PageLoader = () => (
     <div className="flex justify-center items-center w-full h-96">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-brand-blue-500" role="status">
             <span className="sr-only">Loading...</span>
@@ -46,7 +50,7 @@ const PageLoader: React.FC = () => (
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 
-const AppRoutes: React.FC = () => {
+const AppRoutes = () => {
     const { currentUser } = useAppContext();
     if (currentUser === null) {
         return (
@@ -88,15 +92,15 @@ const AppRoutes: React.FC = () => {
     );
 };
 
-const App: React.FC = () => {
-  useTheme(); // Initialize and apply theme
-  return (
-    <AppProviders>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <AppRoutes />
-        </BrowserRouter>
-    </AppProviders>
-  );
+const App = () => {
+    useTheme(); // Initialize and apply theme
+    return (
+        <AppProviders>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <AppRoutes />
+            </BrowserRouter>
+        </AppProviders>
+    );
 };
 
 export default App;

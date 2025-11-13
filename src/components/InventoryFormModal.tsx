@@ -8,7 +8,7 @@ interface InventoryFormModalProps {
     onSave: (item: Omit<InventoryItem, 'id'| 'storeId'>) => void
 }
 
-const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, onSave }) => {
+function InventoryFormModal({ item, onClose, onSave }: InventoryFormModalProps) {
     const [formData, setFormData] = useState({
         name: item?.name || '',
         stock: item?.stock || 0,
@@ -61,6 +61,6 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
             </form>
         </Modal>
     );
-};
+}
 
 export default InventoryFormModal;

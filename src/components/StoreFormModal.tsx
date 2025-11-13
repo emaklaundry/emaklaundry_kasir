@@ -8,7 +8,7 @@ interface StoreFormModalProps {
     onSave: (store: Omit<Store, 'id' | 'isActive'>) => void
 }
 
-const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave }) => {
+function StoreFormModal({ store, onClose, onSave }: StoreFormModalProps) {
     const [formData, setFormData] = useState({
         name: store?.name || '',
         address: store?.address || '',
@@ -48,6 +48,6 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
             </form>
         </Modal>
     );
-};
+}
 
 export default StoreFormModal;

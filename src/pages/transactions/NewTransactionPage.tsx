@@ -19,7 +19,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 
-const NewTransactionPage: React.FC = () => {
+function NewTransactionPage() {
     // --- SEMUA HOOK HARUS DI ATAS SINI ---
     const navigate = useNavigate();
     const { settings, isLoading: isLoadingSettings } = useSettings();
