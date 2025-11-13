@@ -1,5 +1,8 @@
 
 -- === ENUM DEFINITIONS (PASTIKAN INI DI PALING ATAS) ===
+-- Hapus tipe lama jika ada (hati-hati jika sudah ada data!)
+DROP TYPE IF EXISTS public.order_status;
+DROP TYPE IF EXISTS public.payment_method;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
