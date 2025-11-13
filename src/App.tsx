@@ -27,7 +27,6 @@ const StoresPage = lazy(() => import('@/pages/management/StoresPage'));
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { currentUser } = useAppContext();
-    // Perbaikan: gunakan UserRole.Admin agar sesuai dengan role di database
     const isAdmin = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.BranchAdmin;
     return isAdmin ? <>{children}</> : <Navigate to="/" />;
 };
