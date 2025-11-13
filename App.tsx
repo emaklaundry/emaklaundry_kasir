@@ -45,7 +45,7 @@ const PageLoader: React.FC = () => (
     </div>
 );
 
-const LoginPage = lazy(() => import('./pages/LoginPage'));
+const LoginPage = lazy(() => import('./src/pages/LoginPage'));
 
 const AppRoutes: React.FC = () => {
     const { currentUser } = useAppContext();
