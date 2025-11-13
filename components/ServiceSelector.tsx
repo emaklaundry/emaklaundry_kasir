@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Service, ServiceCategory } from '../types';
 import { SearchIcon } from './icons';
 
 interface ServiceSelectorProps {
     services: Service[];
-    favoriteServices: Service[];
     onSelectService: (service: Service) => void;
 }
 
-const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, favoriteServices, onSelectService }) => {
+const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onSelectService }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeIndex, setActiveIndex] = useState(-1);
     const serviceButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -19,14 +18,13 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, favoriteSer
 
     const allVisibleServices = useMemo(() => {
         if (searchTerm) return filteredServices;
-        return [...favoriteServices, ...services.filter(s => !favoriteServices.find(fs => fs.id === s.id))];
-    }, [searchTerm, filteredServices, favoriteServices, services]);
-
+        return services;
+    }, [searchTerm, filteredServices, services]);
 
     useEffect(() => {
         setActiveIndex(-1); // Reset active index when search term changes
         serviceButtonRefs.current = []; // Reset refs
-    }, [searchTerm, favoriteServices]);
+    }, [searchTerm]);
     
     useEffect(() => {
         if (activeIndex !== -1 && serviceButtonRefs.current[activeIndex]) {
@@ -50,13 +48,13 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, favoriteSer
         }
     };
 
-
     const groupedServices = useMemo(() => {
-        return filteredServices.reduce((acc, service) => {
+        const servicesToGroup = searchTerm ? filteredServices : services;
+        return servicesToGroup.reduce((acc, service) => {
             (acc[service.category] = acc[service.category] || []).push(service);
             return acc;
         }, {} as Record<string, Service[]>);
-    }, [filteredServices]);
+    }, [filteredServices, services, searchTerm]);
 
     const categoryOrder = Object.values(ServiceCategory);
 
@@ -81,8 +79,6 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, favoriteSer
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Rp {service.price.toLocaleString('id-ID')}</p>
         </button>
     );
-    
-    let currentIndex = 0;
 
     return (
         <div className="space-y-4">
@@ -100,21 +96,20 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, favoriteSer
             </div>
 
             <div className="max-h-[45vh] overflow-y-auto space-y-4 pr-2 -mr-2" onMouseLeave={() => setActiveIndex(-1)}>
-                {favoriteServices.length > 0 && !searchTerm && (
-                    <div>
-                        <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2 sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-1 z-10">Sering Dipesan</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                            {favoriteServices.map(service => <ServiceButton key={service.id} service={service} index={currentIndex++} />)}
-                        </div>
-                    </div>
-                )}
-                
                 {sortedCategories.length > 0 ? (
                     sortedCategories.map(category => (
                         <div key={category}>
                             <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2 sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-1 z-10">{category}</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                {groupedServices[category].map(service => <ServiceButton key={service.id} service={service} index={searchTerm ? filteredServices.indexOf(service) : allVisibleServices.indexOf(service)} />)}
+                                {groupedServices[category]
+                                    .map(service => 
+                                        <ServiceButton 
+                                            key={service.id} 
+                                            service={service} 
+                                            index={allVisibleServices.indexOf(service)} 
+                                        />
+                                    )
+                                }
                             </div>
                         </div>
                     ))

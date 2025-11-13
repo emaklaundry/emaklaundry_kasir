@@ -59,20 +59,7 @@ const NewTransactionPage: React.FC = () => {
     // Semua hook turunannya juga harus dipanggil di level atas
     // (dipindahkan dari bawah) agar Rules of Hooks tidak dilanggar.
 
-    const favoriteServices = useMemo(() => {
-        const serviceCounts = transactions.reduce((acc, transaction) => {
-            transaction.items.forEach(item => {
-                acc[item.serviceId] = (acc[item.serviceId] || 0) + 1;
-            });
-            return acc;
-        }, {} as Record<string, number>);
 
-        return Object.entries(serviceCounts)
-            .sort((a, b) => (b[1] as number) - (a[1] as number))
-            .slice(0, 5)
-            .map(([serviceId]) => services.find(s => s.id === serviceId))
-            .filter((s): s is Service => s !== undefined);
-    }, [transactions, services]);
 
     const subtotal = useMemo(() => {
         return items.reduce((sum, item) => sum + item.subtotal, 0);
@@ -416,7 +403,6 @@ const NewTransactionPage: React.FC = () => {
                             <ServiceSelector 
                                 services={services} 
                                 onSelectService={handleAddService}
-                                favoriteServices={favoriteServices}
                             />
                         </div>
 
