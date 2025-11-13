@@ -38,6 +38,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             await supabase.auth.signOut();
             setCurrentUser(null);
           } else {
+            // Tambahkan log login jika transisi dari logout ke login
+            if (currentUser === null) {
+              const newLog = {
+                timestamp: new Date(),
+                user: data.name,
+                action: 'Melakukan login.',
+                storeId: data.store_id || null
+              };
+              supabase.from('audit_logs').insert([newLog]).then();
+            }
             setCurrentUser({
               id: data.id,
               name: data.name,
@@ -62,9 +72,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, [addToast]);
+  }, [addToast, currentUser]);
 
   const signOut = async () => {
+    // Tambahkan log logout sebelum currentUser dihapus
+    if (currentUser) {
+      const newLog = {
+        timestamp: new Date(),
+        user: currentUser.name,
+        action: 'Melakukan logout.',
+        storeId: currentUser.storeId || null
+      };
+      supabase.from('audit_logs').insert([newLog]).then();
+    }
     await supabase.auth.signOut();
     setCurrentUser(null);
   };

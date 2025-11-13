@@ -309,9 +309,9 @@ CREATE POLICY "Allow INSERT for all logged-in users" ON public.audit_logs
 -- --- Tabel: settings ---
 CREATE POLICY "Allow all read access" ON public.settings
   FOR SELECT USING (true);
-CREATE POLICY "Allow ALL for Super Admin only" ON public.settings
-  FOR ALL USING (public.get_my_role() = 'Super Admin')
-  WITH CHECK (public.get_my_role() = 'Super Admin');
+CREATE POLICY "Allow ALL for Admins" ON public.settings
+  FOR ALL USING (public.get_my_role() IN ('Super Admin', 'Admin'))
+  WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
 
 
 -- === 5. DATA CONTOH (SAMPLE DATA) ===

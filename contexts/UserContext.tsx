@@ -71,7 +71,7 @@ export function useUsers() {
 
   return {
     users,
-    updateUser: updateUser.mutateAsync,
+    updateUser: (id: string, data: Partial<User>) => updateUser.mutateAsync({ id, data }),
     createUser: createUser.mutateAsync,
     deleteUser: deleteUser.mutateAsync,
     ...query
