@@ -5,7 +5,7 @@ import { useAppContext } from './src/contexts/AppContext';
 import { UserRole } from '@/types';
 import Layout from './src/components/Layout';
 
-import { useTheme } from './src/hooks/useTheme';
+import useTheme from './src/hooks/useTheme';
 import { AppProviders } from './src/contexts/AppProviders';
 import CommandPalette from './src/components/CommandPalette';
 import QuickActionsPage from './src/pages/QuickActionsPage';
@@ -60,6 +60,7 @@ const AppRoutes: React.FC = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/settings" element={<Navigate to="/management/settings" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
@@ -155,6 +156,14 @@ const AppRoutes: React.FC = () => {
             element={
               <AdminRoute>
                 <ReportsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/audit-log"
+            element={
+              <AdminRoute>
+                <AuditLogPage />
               </AdminRoute>
             }
           />

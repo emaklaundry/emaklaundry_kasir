@@ -7,7 +7,7 @@ interface SortConfig<T> {
   direction: SortDirection;
 }
 
-export const useSortableData = <T extends object>(
+const useSortableData = <T extends object>(
   items: T[],
   initialConfig: SortConfig<T> | null = null,
 ) => {
@@ -63,3 +63,6 @@ export const useSortableData = <T extends object>(
 
   return { items: sortedItems, requestSort, sortConfig };
 };
+
+export default useSortableData;
+export { useSortableData };

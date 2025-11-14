@@ -1,4 +1,107 @@
+import WhatsAppModal from '../../components/WhatsAppModal';
+import React, { useMemo, useEffect, useCallback, useState } from 'react';
+import Modal from '../../components/Modal';
+import SuccessModal from '../../components/SuccessModal';
+import ItemNotesModal from '../../components/ItemNotesModal';
+import KiloanTaggingModal from '../../components/KiloanTaggingModal';
+import ServiceSelector from '../../components/ServiceSelector';
+import { useToasts } from '../../contexts/ToastContext';
+import { SpinnerIcon } from '../../components/icons';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useAppContext } from '../../contexts/AppContext';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
+import {
+  UserRole,
+  PaymentStatus,
+  PaymentMethod,
+  ServiceCategory,
+  Service,
+  TransactionItem,
+  Settings,
+} from '@/types';
+
 function NewTransactionPage() {
+  // Handler for form submission
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // TODO: Implement transaction submission logic here
+    addToast('Transaksi berhasil disimpan (dummy handler).', 'success');
+  }
+  const [newlyCreatedTransaction, setNewlyCreatedTransaction] = useState<any>(null);
+  // Tutup modal WhatsApp
+  function handleCloseWhatsAppModal() {
+    setIsWhatsAppModalOpen(false);
+  }
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  // Simpan tag item kiloan untuk item tertentu
+  function handleSaveKiloanTags(tags: any) {
+    if (editingItemIndex === null) return;
+    setItems((prevItems) => {
+      const updatedItems = [...prevItems];
+      if (!updatedItems[editingItemIndex]) return updatedItems;
+      updatedItems[editingItemIndex].taggedItems = tags;
+      return updatedItems;
+    });
+    setIsKiloanTaggingModalOpen(false);
+    setEditingItemIndex(null);
+  }
+  const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
+  // Simpan catatan untuk item tertentu
+  function handleSaveNotes(note: string) {
+    if (editingItemIndex === null) return;
+    setItems((prevItems) => {
+      const updatedItems = [...prevItems];
+      if (!updatedItems[editingItemIndex]) return updatedItems;
+      // Asumsikan setiap item punya properti itemDetails: { note: string }[]
+      if (!updatedItems[editingItemIndex].itemDetails) {
+        updatedItems[editingItemIndex].itemDetails = [];
+      }
+      // Update note pada itemDetails[0] (atau sesuai kebutuhan)
+      updatedItems[editingItemIndex].itemDetails[0] = {
+        ...(updatedItems[editingItemIndex].itemDetails[0] || {}),
+        note,
+      };
+      return updatedItems;
+    });
+    setIsNotesModalOpen(false);
+    setEditingItemIndex(null);
+  }
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  // Reset form untuk membuat transaksi baru lagi
+  function handleNewTransaction() {
+    setItems([]);
+    setSelectedCustomer(null);
+    setDiscountValue(0);
+    setDiscountType('percent');
+    setIsPayingNow(false);
+    setAmountPaidStr('');
+    setTenderedAmountStr('');
+    setPaymentMethod(PaymentMethod.Cash);
+    setIsSuccessModalOpen(false);
+    // Tambahkan reset state lain jika diperlukan
+  }
+  // Navigasi ke daftar transaksi setelah transaksi berhasil
+  function handleViewTransactions() {
+    // Ganti dengan navigasi React Router jika tersedia
+    window.location.href = '/transactions';
+  }
+  const { addToast } = useToasts();
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const { selectedStoreId } = useAppContext();
+  const [items, setItems] = useState<TransactionItem[]>([]);
+  const [discountValue, setDiscountValue] = useState<number>(0);
+  const [discountType, setDiscountType] = useState<'percent' | 'amount'>('percent');
+  const { settings, isLoading: isLoadingSettings, error: settingsError } = useSettings();
+  const [isPayingNow, setIsPayingNow] = useState(false);
+  const [amountPaidStr, setAmountPaidStr] = useState('');
+  const [tenderedAmountStr, setTenderedAmountStr] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
+  const [services, setServices] = useState<Service[]>([]);
+  const { currentUser } = useAppContext();
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   // Komponen internal untuk detail keranjang (reusable di desktop & modal mobile)
   const CartDetails = () => (
     <>
