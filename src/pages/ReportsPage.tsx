@@ -108,7 +108,7 @@ const YearlySummaryChart = ({ data }: YearlySummaryChartProps) => {
         })}
 
         {/* Bars and X-Axis Labels */}
-        {data.map((d, i) => {
+        {(data || []).map((d, i) => {
           const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
           const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
           const expensesHeight = (d.expenses / maxValue) * (chartHeight - 30);
@@ -176,7 +176,7 @@ const YearlySummaryChart = ({ data }: YearlySummaryChartProps) => {
           </tr>
         </thead>
         <tbody>
-          {data.map((d) => (
+          {(data || []).map((d) => (
             <tr key={d.month} className="print-only-row border-b dark:border-slate-700">
               <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">
                 {d.month}
@@ -347,7 +347,7 @@ const ReportsPage = () => {
   }, [filteredData.transactions, serviceMap]);
 
   const maxRevenueByCategory = useMemo(
-    () => Math.max(...revenueByCategory.map((item) => item.revenue), 0),
+    () => Math.max(...(revenueByCategory || []).map((item) => item.revenue), 0),
     [revenueByCategory],
   );
 
@@ -543,7 +543,7 @@ const ReportsPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topServices.map((s) => (
+                    {(topServices || []).map((s) => (
                       <tr key={s.name} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {s.name}
@@ -571,7 +571,7 @@ const ReportsPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topCustomers.map((c) => (
+                    {(topCustomers || []).map((c) => (
                       <tr key={c.name} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {c.name}
@@ -595,7 +595,7 @@ const ReportsPage = () => {
             {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan bagan visual saat cetak */}
             <div className="space-y-3 print-chart-hide">
               {revenueByCategory.length > 0 ? (
-                revenueByCategory.map((c) => (
+                (revenueByCategory || []).map((c) => (
                   <div key={c.category}>
                     <div className="flex justify-between mb-1">
                       <span className="text-base font-medium text-slate-700 dark:text-slate-300">
@@ -632,7 +632,7 @@ const ReportsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {revenueByCategory.map((c) => (
+                {(revenueByCategory || []).map((c) => (
                   <tr key={c.category} className="print-only-row border-b dark:border-slate-700">
                     <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">
                       {c.category}
@@ -664,7 +664,7 @@ const ReportsPage = () => {
                 </thead>
                 <tbody>
                   {cashierPerformance.length > 0 ? (
-                    cashierPerformance.map((c) => (
+                    (cashierPerformance || []).map((c) => (
                       <tr key={c.name} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {c.name}
@@ -713,7 +713,7 @@ const ReportsPage = () => {
                 </thead>
                 <tbody>
                   {detailedExpenses.length > 0 ? (
-                    detailedExpenses.map((e) => (
+                    (detailedExpenses || []).map((e) => (
                       <tr key={e.id} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2">
                           {new Date(e.date).toLocaleDateString('id-ID')}
