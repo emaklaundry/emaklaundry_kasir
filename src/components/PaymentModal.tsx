@@ -1,4 +1,4 @@
-/* global setTimeout */
+// ...existing code...
 import React, { useState, useMemo, useEffect } from 'react';
 import Modal from './Modal';
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
@@ -27,22 +27,14 @@ function PaymentModal({ isOpen, onClose, transaction, onSave, disabled }: Paymen
   }, [transaction]);
 
   useEffect(() => {
-    if (transaction) {
-      if (typeof setTimeout !== 'undefined') {
-        setTimeout(() => {
-          setMethod(transaction.paymentMethod || PaymentMethod.Cash);
-          setAmountToPayStr(formatRupiah(remainingBalance));
-          setTenderedAmountStr('');
-        }, 0);
-      } else {
-        Promise.resolve().then(() => {
-          setMethod(transaction.paymentMethod || PaymentMethod.Cash);
-          setAmountToPayStr(formatRupiah(remainingBalance));
-          setTenderedAmountStr('');
-        });
-      }
+    if (isOpen && transaction) {
+      queueMicrotask(() => {
+        setMethod(transaction.paymentMethod || PaymentMethod.Cash);
+        setAmountToPayStr(formatRupiah(remainingBalance));
+        setTenderedAmountStr('');
+      });
     }
-  }, [transaction, remainingBalance]);
+  }, [isOpen, transaction, remainingBalance]);
 
   const amountToPay = parseRupiah(amountToPayStr);
   const tenderedAmount = parseRupiah(tenderedAmountStr);

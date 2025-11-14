@@ -1,4 +1,4 @@
-/* global setTimeout */
+// ...existing code...
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { TransactionItem } from '@/types';
@@ -14,16 +14,10 @@ function KiloanTaggingModal({ isOpen, onClose, item, onSave }: KiloanTaggingModa
   const [tags, setTags] = useState('');
 
   useEffect(() => {
-    if (item) {
-      if (typeof setTimeout !== 'undefined') {
-        setTimeout(() => {
-          setTags(item.taggedItems || '');
-        }, 0);
-      } else {
-        Promise.resolve().then(() => setTags(item.taggedItems || ''));
-      }
+    if (isOpen && item) {
+      queueMicrotask(() => setTags(item.taggedItems || ''));
     }
-  }, [item]);
+  }, [isOpen, item]);
 
   const handleSave = () => {
     onSave(tags);

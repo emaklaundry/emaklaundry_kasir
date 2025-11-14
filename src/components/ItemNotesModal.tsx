@@ -1,4 +1,4 @@
-/* global setTimeout */
+// ...existing code...
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { TransactionItem } from '@/types';
@@ -15,22 +15,16 @@ function ItemNotesModal({ isOpen, onClose, item, onSave }: ItemNotesModalProps) 
   const [notes, setNotes] = useState<{ note: string }[]>([]);
 
   useEffect(() => {
-    if (item) {
-      // Use all notes from itemDetails, but only show up to quantity
+    if (isOpen && item) {
+      // Reset notes only when modal is opened
       const allNotes = item.itemDetails || [];
       const initialNotes = Array.from(
         { length: item.quantity },
         (_, i) => allNotes[i] || { note: '' },
       );
-      if (typeof setTimeout !== 'undefined') {
-        setTimeout(() => {
-          setNotes(initialNotes);
-        }, 0);
-      } else {
-        Promise.resolve().then(() => setNotes(initialNotes));
-      }
+      queueMicrotask(() => setNotes(initialNotes));
     }
-  }, [item]);
+  }, [isOpen, item]);
 
   const handleNoteChange = (index: number, value: string) => {
     const newNotes = [...notes];

@@ -31,24 +31,18 @@ function CustomerSelector({
 
   useEffect(() => {
     if (selectedCustomer) {
-      if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
-        window.setTimeout(() => {
-          setSearchTerm(selectedCustomer.name);
-          setIsDropdownOpen(false);
-        }, 0);
-      }
+      queueMicrotask(() => {
+        setSearchTerm(selectedCustomer.name);
+        setIsDropdownOpen(false);
+      });
     } else {
       // Only clear the search term if the input isn't focused (i.e., user isn't typing)
-      // This handles external resets, like from the main form's "reset" button.
       if (
         typeof window !== 'undefined' &&
         typeof window.document !== 'undefined' &&
-        window.document.activeElement !== inputRef.current &&
-        typeof window.setTimeout === 'function'
+        window.document.activeElement !== inputRef.current
       ) {
-        window.setTimeout(() => {
-          setSearchTerm('');
-        }, 0);
+        queueMicrotask(() => setSearchTerm(''));
       }
     }
   }, [selectedCustomer]);
@@ -94,9 +88,7 @@ function CustomerSelector({
             onChange={handleInputChange}
             onFocus={() => setIsDropdownOpen(true)}
             onBlur={() => {
-              if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
-                window.setTimeout(() => setIsDropdownOpen(false), 150);
-              }
+              setTimeout(() => setIsDropdownOpen(false), 150);
             }}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             placeholder="Cari nama atau no. HP"

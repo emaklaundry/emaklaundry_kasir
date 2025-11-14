@@ -141,24 +141,17 @@ const CommandPalette = () => {
   }, [filteredCommands]);
 
   useEffect(() => {
-    if (isOpen && typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
-      window.setTimeout(() => {
-        setQuery((prev) => (prev !== '' ? '' : prev));
-        setActiveIndex((prev) => (prev !== 0 ? 0 : prev));
+    if (isOpen) {
+      queueMicrotask(() => {
+        setQuery('');
+        setActiveIndex(0);
         if (inputRef.current) inputRef.current.focus();
-      }, 0);
+      });
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.setTimeout(() => {
-        setActiveIndex((prev) => (prev !== 0 ? 0 : prev));
-      }, 0);
-    } else {
-      // SSR fallback: use microtask
-      Promise.resolve().then(() => setActiveIndex((prev) => (prev !== 0 ? 0 : prev)));
-    }
+    queueMicrotask(() => setActiveIndex(0));
   }, [query]);
 
   useEffect(() => {

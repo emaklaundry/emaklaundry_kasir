@@ -1,4 +1,4 @@
-/* global window */
+// ...existing code...
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { Expense } from '@/types';
@@ -21,9 +21,8 @@ function ExpenseFormModal({ expense, isOpen, onClose, onSave }: ExpenseFormModal
   });
 
   useEffect(() => {
-    // Hindari cascading render: update state async
-    if (typeof window !== 'undefined' && typeof window.setTimeout === 'function') {
-      window.setTimeout(() => {
+    if (isOpen) {
+      queueMicrotask(() => {
         setFormData({
           date: expense?.date
             ? String(expense.date).split('T')[0]
@@ -32,9 +31,9 @@ function ExpenseFormModal({ expense, isOpen, onClose, onSave }: ExpenseFormModal
           category: expense?.category || 'Operasional',
           amount: expense?.amount || 0,
         });
-      }, 0);
+      });
     }
-  }, [expense, isOpen]);
+  }, [isOpen, expense]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
