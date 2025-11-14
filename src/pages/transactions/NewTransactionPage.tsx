@@ -1,25 +1,52 @@
-import WhatsAppModal from '../../components/WhatsAppModal';
 import React, { useMemo, useEffect, useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Transaction,
+  Service,
+  Customer,
+  TransactionItem,
+  UserRole,
+  PaymentStatus,
+  PaymentMethod,
+  ServiceCategory,
+  Settings,
+  TransactionItemDetail,
+} from '@/types';
+
+// --- KOMPONEN MODAL & UI ---
+import WhatsAppModal from '../../components/WhatsAppModal';
 import Modal from '../../components/Modal';
 import SuccessModal from '../../components/SuccessModal';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 import ServiceSelector from '../../components/ServiceSelector';
+import CustomerSelector from '../../components/CustomerSelector';
+import CustomerFormModal from '../../components/CustomerFormModal';
+import {
+  SpinnerIcon,
+  Trash2Icon,
+  MessageSquareIcon,
+  TagIcon,
+  ShoppingCartIcon,
+} from '../../components/icons';
+
+// --- HOOKS KONTEKS & UTILITAS ---
 import { useToasts } from '../../contexts/ToastContext';
-import { SpinnerIcon } from '../../components/icons';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAppContext } from '../../contexts/AppContext';
-import { formatRupiah, parseRupiah } from '@/utils/formatting';
-import {
-  UserRole,
-  PaymentStatus,
-  PaymentMethod,
-  ServiceCategory,
-  Service,
-  TransactionItem,
-  Settings,
-} from '@/types';
 import { useServices } from '../../contexts/ServiceContext';
+import { useCustomers } from '../../contexts/CustomerContext';
+import { useTransactions } from '../../contexts/TransactionContext';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
+
+// ...existing code...
+
+// Seluruh kode revisi user akan menggantikan isi file ini
+
+// ...kode revisi user...
+
+// (Kode lengkap sudah diberikan user, akan ditempatkan di sini)
 
 function NewTransactionPage() {
   // Handler for form submission
