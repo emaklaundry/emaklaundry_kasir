@@ -1,242 +1,871 @@
 import React, { useMemo, useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Transaction,
-  Service,
-  Customer,
-  TransactionItem,
-  UserRole,
-  PaymentStatus,
-  PaymentMethod,
-  ServiceCategory,
-  Settings,
-  TransactionItemDetail,
-} from '@/types';
+      const [tenderedAmountStr, setTenderedAmountStr] = useState('');
+      const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
+      const [notes, setNotes] = useState('');
 
-// --- KOMPONEN MODAL & UI ---
-import WhatsAppModal from '../../components/WhatsAppModal';
-import Modal from '../../components/Modal';
-import SuccessModal from '../../components/SuccessModal';
-import ItemNotesModal from '../../components/ItemNotesModal';
-import KiloanTaggingModal from '../../components/KiloanTaggingModal';
-import ServiceSelector from '../../components/ServiceSelector';
-import CustomerSelector from '../../components/CustomerSelector';
-import CustomerFormModal from '../../components/CustomerFormModal';
-import {
-  SpinnerIcon,
-  Trash2Icon,
-  MessageSquareIcon,
-  TagIcon,
-  ShoppingCartIcon,
-} from '../../components/icons';
-import EmptyState from '../../components/EmptyState';
+      // --- State Modal ---
+      const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+      const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+      const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+      const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
+      const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+      const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+      const [newlyCreatedTransaction, setNewlyCreatedTransaction] = useState<Transaction | null>(null);
 
-// --- HOOKS KONTEKS & UTILITAS ---
-import { useToasts } from '../../contexts/ToastContext';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useAppContext } from '../../contexts/AppContext';
-import { useServices } from '../../contexts/ServiceContext';
-import { useCustomers } from '../../contexts/CustomerContext';
-import { useTransactions } from '../../contexts/TransactionContext';
-import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { formatRupiah, parseRupiah } from '@/utils/formatting';
+      // --- Logika Turunan (Memoized) ---
 
-// ...existing code...
+      const currentStoreId = useMemo(() => {
+        return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
+      }, [currentUser, selectedStoreId]);
 
-// Seluruh kode revisi user akan menggantikan isi file ini
+      const canApplyDiscount = useMemo(() => {
+        if (!currentUser) return false;
+        if (currentUser.role === UserRole.SuperAdmin) return true;
+        if (currentUser.role === UserRole.Admin || currentUser.role === UserRole.Cashier) {
+          if (currentUser.canGiveDiscount) return true;
+          if (selectedCustomer?.defaultDiscount && selectedCustomer.defaultDiscount > 0) return true;
+        }
+        return false;
+      }, [currentUser, selectedCustomer]);
 
-// ...kode revisi user...
+      const subtotal = useMemo(() => {
+        return items.reduce((sum, item) => sum + item.subtotal, 0);
+      }, [items]);
 
-// (Kode lengkap sudah diberikan user, akan ditempatkan di sini)
+      const discountAmount = useMemo(() => {
+        let val = 0;
+        let type = discountType;
 
-function NewTransactionPage() {
-  // Handler for form submission
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    // TODO: Implement transaction submission logic here
-    addToast('Transaksi berhasil disimpan (dummy handler).', 'success');
-  }
-  const [newlyCreatedTransaction, setNewlyCreatedTransaction] = useState<any>(null);
-  // Tutup modal WhatsApp
-  function handleCloseWhatsAppModal() {
-    setIsWhatsAppModalOpen(false);
-  }
-  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
-  // Simpan tag item kiloan untuk item tertentu
-  function handleSaveKiloanTags(tags: any) {
-    if (editingItemIndex === null) return;
-    setItems((prevItems) => {
-      const updatedItems = [...prevItems];
-      if (!updatedItems[editingItemIndex]) return updatedItems;
-      updatedItems[editingItemIndex].taggedItems = tags;
-      return updatedItems;
-    });
-    setIsKiloanTaggingModalOpen(false);
-    setEditingItemIndex(null);
-  }
-  const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
-  // Simpan catatan untuk item tertentu
-  function handleSaveNotes(note: string) {
-    if (editingItemIndex === null) return;
-    setItems((prevItems) => {
-      const updatedItems = [...prevItems];
-      if (!updatedItems[editingItemIndex]) return updatedItems;
-      // Asumsikan setiap item punya properti itemDetails: { note: string }[]
-      if (!updatedItems[editingItemIndex].itemDetails) {
-        updatedItems[editingItemIndex].itemDetails = [];
-      }
-      // Update note pada itemDetails[0] (atau sesuai kebutuhan)
-      updatedItems[editingItemIndex].itemDetails[0] = {
-        ...(updatedItems[editingItemIndex].itemDetails[0] || {}),
-        note,
+        if (!canApplyDiscount) {
+          val = settings?.discountRate ?? 0;
+          type = 'percent';
+        } else {
+          val = Number(discountValue) || 0;
+        }
+
+        if (type === 'percent') {
+          return subtotal * (val / 100);
+        }
+        return Math.min(val, subtotal);
+      }, [subtotal, discountValue, discountType, canApplyDiscount, settings?.discountRate]);
+
+      const taxAmount = useMemo(() => {
+        const taxableAmount = subtotal - discountAmount;
+        return taxableAmount * ((settings?.taxRate ?? 0) / 100);
+      }, [subtotal, discountAmount, settings?.taxRate]);
+
+      const grandTotal = useMemo(() => {
+        return subtotal - discountAmount + taxAmount;
+      }, [subtotal, discountAmount, taxAmount]);
+
+      // --- Efek Samping (Side Effects) ---
+
+      useEffect(() => {
+        if (!canApplyDiscount) {
+          setDiscountType('percent');
+          setDiscountValue(settings?.discountRate ?? 0);
+          return;
+        }
+
+        if (selectedCustomer?.defaultDiscount && selectedCustomer.defaultDiscount > 0) {
+          setDiscountType('percent');
+          setDiscountValue(selectedCustomer.defaultDiscount);
+          const timerId = setTimeout(() => {
+            addToast(
+              `Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`,
+              'info',
+            );
+          }, 0);
+          return () => clearTimeout(timerId);
+        } else {
+          setDiscountType('percent');
+          setDiscountValue(settings?.discountRate ?? 0);
+        }
+      }, [selectedCustomer, settings?.discountRate, canApplyDiscount, addToast]);
+
+      useEffect(() => {
+        if (isPayingNow) {
+          setAmountPaidStr(formatRupiah(grandTotal));
+        }
+      }, [grandTotal, isPayingNow]);
+
+      // --- Kalkulasi Pembayaran ---
+      const amountToPay = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
+      const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
+
+      const changeAmount = useMemo(() => {
+        if (!isPayingNow || paymentMethod !== PaymentMethod.Cash || tenderedAmount < amountToPay) {
+          return 0;
+        }
+        return tenderedAmount - amountToPay;
+      }, [isPayingNow, paymentMethod, tenderedAmount, amountToPay]);
+
+      const actualAmountPaid = useMemo(() => {
+        if (!isPayingNow) return 0;
+        return amountToPay;
+      }, [isPayingNow, amountToPay]);
+
+      const paymentStatus = useMemo(() => {
+        if (!isPayingNow) return PaymentStatus.Unpaid;
+        if (grandTotal <= 0) return PaymentStatus.Paid;
+        if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
+        if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
+        return PaymentStatus.Unpaid;
+      }, [isPayingNow, actualAmountPaid, grandTotal]);
+
+      const estimatedCompletionDate = useMemo(() => {
+        if (items.length === 0) {
+          const today = new Date();
+          today.setDate(today.getDate() + 1);
+          return today;
+        }
+        const maxDuration = Math.max(
+          ...items.map((item) => services.find((s) => s.id === item.serviceId)?.durationDays || 0),
+        );
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + maxDuration);
+        return completionDate;
+      }, [items, services]);
+
+      // --- Handler Aksi ---
+
+      const handleAddService = useCallback(
+        (service: Service) => {
+          const existingItemIndex = items.findIndex((item) => item.serviceId === service.id);
+          const isKiloan = service.category === ServiceCategory.Kiloan;
+
+          if (existingItemIndex > -1) {
+            if (isKiloan) {
+              addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+              return;
+            }
+            setItems((currentItems) => {
+              const updatedItems = [...currentItems];
+              const currentItem = updatedItems[existingItemIndex];
+              currentItem.quantity += 1;
+              currentItem.subtotal = currentItem.price * currentItem.quantity;
+              return updatedItems;
+            });
+          } else {
+            const newItem: TransactionItem = {
+              serviceId: service.id,
+              serviceName: service.name,
+              price: service.price,
+              unit: service.unit,
+              quantity: 1,
+              subtotal: service.price * 1,
+              itemDetails:
+                service.category === ServiceCategory.Satuan ? [{ note: '' }] : undefined,
+              taggedItems:
+                service.category === ServiceCategory.Kiloan ? '' : undefined,
+            };
+            setItems((currentItems) => [...currentItems, newItem]);
+          }
+        },
+        [items, addToast],
+      );
+
+      const handleItemChange = (index: number, field: 'quantity', value: number) => {
+        setItems((prevItems) => {
+          const updatedItems = [...prevItems];
+          const item = updatedItems[index];
+          if (!item) return prevItems;
+
+          if (field === 'quantity') {
+            item.quantity = value;
+            item.subtotal = item.price * value;
+            if (item.itemDetails) {
+              const newDetails: TransactionItemDetail[] =
+                item.itemDetails.slice(0, value) || [];
+              while (newDetails.length < value) {
+                newDetails.push({ note: '' });
+              }
+              item.itemDetails = newDetails;
+            }
+          }
+          return updatedItems;
+        });
       };
-      return updatedItems;
-    });
-    setIsNotesModalOpen(false);
-    setEditingItemIndex(null);
-  }
-  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
-  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-  // Reset form untuk membuat transaksi baru lagi
-  function handleNewTransaction() {
-    setItems([]);
-    setSelectedCustomer(null);
-    setDiscountValue(0);
-    setDiscountType('percent');
-    setIsPayingNow(false);
-    setAmountPaidStr('');
-    setTenderedAmountStr('');
-    setPaymentMethod(PaymentMethod.Cash);
-    setIsSuccessModalOpen(false);
-    // Tambahkan reset state lain jika diperlukan
-  }
-  // Navigasi ke daftar transaksi setelah transaksi berhasil
-  function handleViewTransactions() {
-    // Ganti dengan navigasi React Router jika tersedia
-    window.location.href = '/transactions';
-  }
-  const { addToast } = useToasts();
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const { selectedStoreId } = useAppContext();
-  const [items, setItems] = useState<TransactionItem[]>([]);
-  const [discountValue, setDiscountValue] = useState<number>(0);
-  const [discountType, setDiscountType] = useState<'percent' | 'amount'>('percent');
-  const { settings, isLoading: isLoadingSettings, error: settingsError } = useSettings();
-  const [isPayingNow, setIsPayingNow] = useState(false);
-  const [amountPaidStr, setAmountPaidStr] = useState('');
-  const [tenderedAmountStr, setTenderedAmountStr] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
-  const { services, isLoading: isLoadingServices, error: servicesError } = useServices();
-  // Jangan return early, handle loading/error di variabel content
-  const { currentUser } = useAppContext();
-  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  // Komponen internal untuk detail keranjang (reusable di desktop & modal mobile)
-  const CartDetails = () => (
-    <div className="w-full max-w-md mx-auto bg-slate-50 dark:bg-slate-800 rounded-lg p-6 shadow-md overflow-x-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Detail Pesanan</h2>
-        {isMobileCartOpen && (
-          <button
-            onClick={() => setIsMobileCartOpen(false)}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold px-2 focus:outline-none"
-            aria-label="Tutup"
+
+      const handleRemoveItem = (index: number) => {
+        setItems((prevItems) => prevItems.filter((_, i) => i !== index));
+      };
+
+      const handleOpenNotesModal = (index: number) => {
+        setEditingItemIndex(index);
+        setIsNotesModalOpen(true);
+      };
+
+      const handleSaveNotes = (notes: { note: string }[]) => {
+        if (editingItemIndex === null) return;
+        setItems((prevItems) => {
+          const updatedItems = [...prevItems];
+          if (!updatedItems[editingItemIndex]) return updatedItems;
+          updatedItems[editingItemIndex].itemDetails = notes;
+          return updatedItems;
+        });
+        setIsNotesModalOpen(false);
+        setEditingItemIndex(null);
+      };
+
+      const handleOpenKiloanTaggingModal = (index: number) => {
+        setEditingItemIndex(index);
+        setIsKiloanTaggingModalOpen(true);
+      };
+
+      const handleSaveKiloanTags = (tags: string) => {
+        if (editingItemIndex === null) return;
+        setItems((prevItems) => {
+          const updatedItems = [...prevItems];
+          if (!updatedItems[editingItemIndex]) return updatedItems;
+          updatedItems[editingItemIndex].taggedItems = tags;
+          return updatedItems;
+        });
+        setIsKiloanTaggingModalOpen(false);
+        setEditingItemIndex(null);
+      };
+
+      const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
+        if (!currentStoreId || currentStoreId === 'all') {
+          addToast('Silakan pilih cabang spesifik untuk menambah pelanggan.', 'warning');
+          return;
+        }
+        try {
+          const newCustomer = await addCustomer({ ...customerData, storeId: currentStoreId });
+          if (newCustomer) {
+            setSelectedCustomer(newCustomer);
+            addAuditLog(`Menambahkan pelanggan baru: "${newCustomer.name}".`, currentStoreId);
+            addToast('Pelanggan baru berhasil ditambahkan!', 'success');
+            setIsCustomerModalOpen(false);
+          }
+        } catch (error: any) {
+          addToast(`Gagal menyimpan pelanggan: ${error.message}`, 'error');
+        }
+      };
+
+      const resetForm = () => {
+        setItems([]);
+        setSelectedCustomer(null);
+        setDiscountValue(settings?.discountRate ?? 0);
+        setDiscountType('percent');
+        setIsPayingNow(false);
+        setAmountPaidStr('');
+        setTenderedAmountStr('');
+        setPaymentMethod(PaymentMethod.Cash);
+        setNotes('');
+        setNewlyCreatedTransaction(null);
+        setIsSuccessModalOpen(false);
+      };
+
+      const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (!selectedCustomer) {
+          addToast('Pelanggan harus dipilih.', 'error');
+          return;
+        }
+        if (items.length === 0) {
+          addToast('Keranjang tidak boleh kosong.', 'error');
+          return;
+        }
+        if (!currentStoreId || currentStoreId === 'all') {
+          addToast('Tidak dapat membuat transaksi. Cabang tidak valid.', 'error');
+          return;
+        }
+        if (isPayingNow && amountToPay < grandTotal) {
+          addToast(
+            'Jumlah bayar kurang dari total tagihan. Nonaktifkan "Bayar Sekarang" untuk utang.',
+            'warning',
+          );
+          return;
+        }
+        if (
+          isPayingNow &&
+          paymentMethod === PaymentMethod.Cash &&
+          tenderedAmount < amountToPay
+        ) {
+          addToast('Uang diterima kurang dari jumlah bayar.', 'warning');
+          return;
+        }
+
+        const newTransaction: Omit<Transaction, 'id'> = {
+          customerId: selectedCustomer.id,
+          items,
+          subtotal,
+          discount: discountAmount,
+          tax: taxAmount,
+          total: grandTotal,
+          paymentStatus,
+          orderStatus: OrderStatus.Processing,
+          createdAt: new Date(),
+          estimatedCompletionDate,
+          amountPaid: actualAmountPaid,
+          change: changeAmount,
+          paymentMethod: isPayingNow ? paymentMethod : undefined,
+          createdByUserId: currentUser.id,
+          storeId: currentStoreId,
+          notes: notes || undefined,
+        };
+
+        try {
+          const created = await addTransaction(newTransaction);
+          if (created) {
+            addAuditLog(
+              `Membuat transaksi baru ${created.id} untuk ${selectedCustomer.name}.`,
+              currentStoreId,
+            );
+            setNewlyCreatedTransaction(created);
+            setIsSuccessModalOpen(true);
+            if (paymentStatus === PaymentStatus.Paid) {
+              setIsWhatsAppModalOpen(true);
+            }
+          }
+        } catch (error: any) {
+          addToast(`Gagal menyimpan transaksi: ${error.message}`, 'error');
+        }
+      };
+
+      // --- Render ---
+
+      if (isLoadingServices || isLoadingSettings) {
+        return (
+          <div className="flex justify-center items-center w-full h-96">
+            <SpinnerIcon className="w-16 h-16" />
+            <span className="sr-only">Memuat data...</span>
+          </div>
+        );
+      }
+
+      if (!settings) {
+        return (
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+            <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">
+              Gagal Memuat Pengaturan
+            </h2>
+            <p className="text-lg text-slate-700 dark:text-slate-300">
+              Pengaturan aplikasi (pajak/diskon) tidak ditemukan.
+            </p>
+          </div>
+        );
+      }
+
+      return (
+        <>
+          <form
+            id="new-transaction-form"
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
           >
-            ×
-          </button>
-        )}
-      </div>
-      <div className="space-y-3 pr-2 overflow-y-auto max-h-[60vh]">
-        {items.length === 0 ? (
-          <EmptyState
-            icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
-            title="Keranjang kosong"
-            description="Silakan pilih layanan untuk menambah item."
-          />
-        ) : (
-          <>
-            <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {items.map((item, index) => (
-                <div key={index} className="flex justify-between items-center py-2">
-                  <div>
-                    <div className="font-semibold text-slate-800 dark:text-slate-100">
-                      {item.serviceName}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {item.quantity} x Rp {item.price.toLocaleString('id-ID')} / {item.unit}
-                    </div>
-                  </div>
-                  <div className="font-semibold text-right text-slate-700 dark:text-slate-200 min-w-[90px]">
-                    Rp {item.subtotal.toLocaleString('id-ID')}
-                  </div>
+            {/* --- Kolom Kiri: Layanan & Item --- */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+                  Pilih Layanan
+                </h2>
+                <ServiceSelector services={services} onAddService={handleAddService} />
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
+                  Item Transaksi
+                </h2>
+
+                {/* Tampilan Tabel Desktop */}
+                <div className="overflow-x-auto hidden md:block">
+                  <table className="w-full text-lg text-left text-slate-500 dark:text-slate-400">
+                    <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3">Layanan</th>
+                        <th className="px-4 py-3">Jumlah</th>
+                        <th className="px-4 py-3 text-center">Aksi</th>
+                        <th className="px-4 py-3 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.length > 0 ? (
+                        items.map((item, index) => {
+                          const service = services.find((s) => s.id === item.serviceId);
+                          const isSatuan = service?.category === ServiceCategory.Satuan;
+                          const isKiloan = service?.category === ServiceCategory.Kiloan;
+                          return (
+                            <tr key={index} className="border-b dark:border-slate-700">
+                              <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
+                                {item.serviceName}
+                              </td>
+                              <td className="px-4 py-2">
+                                <div className="flex items-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step={item.unit === 'kg' ? '0.01' : '1'}
+                                    value={item.quantity}
+                                    onChange={(e) =>
+                                      handleItemChange(
+                                        index,
+                                        'quantity',
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                    }
+                                    className="w-24 bg-white border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                  />
+                                  <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
+                                    {item.unit}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 text-center">
+                                <div className="flex items-center justify-center">
+                                  {isSatuan && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenNotesModal(index)}
+                                      title="Catatan per Item"
+                                      className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                                    >
+                                      <MessageSquareIcon className="w-6 h-6" />
+                                      {item.itemDetails
+                                        ?.slice(0, item.quantity)
+                                        .some((d) => d.note) && (
+                                        <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
+                                      )}
+                                    </button>
+                                  )}
+                                  {isKiloan && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenKiloanTaggingModal(index)}
+                                      title="Tag Item Kiloan"
+                                      className="p-2 text-purple-600 hover:text-purple-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                                    >
+                                      <TagIcon className="w-6 h-6" />
+                                      {item.taggedItems && (
+                                        <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
+                                      )}
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveItem(index)}
+                                    title="Hapus Item"
+                                    className="p-2 text-red-600 hover:text-red-900 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                                  >
+                                    <Trash2Icon className="w-6 h-6" />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                Rp {item.subtotal.toLocaleString('id-ID')}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="text-center py-4 text-slate-500 dark:text-slate-400"
+                          >
+                            Belum ada layanan yang ditambahkan.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
-            </div>
-            <div className="border-t border-slate-200 dark:border-slate-700 mt-4 pt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>Rp {subtotal.toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Diskon</span>
-                <span>- Rp {discountAmount.toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Pajak</span>
-                <span>+ Rp {taxAmount.toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between font-bold text-base border-t border-slate-200 dark:border-slate-700 pt-2">
-                <span>Total</span>
-                <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between text-xs mt-2">
-                <span>Status Pembayaran</span>
-                <span
-                  className={
-                    paymentStatus === PaymentStatus.Paid
-                      ? 'text-green-600 font-semibold'
-                      : 'text-red-600 font-semibold'
-                  }
-                >
-                  {paymentStatus === PaymentStatus.Paid ? 'Lunas' : 'Belum Lunas'}
-                </span>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
 
-  // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
-  let content: React.ReactNode = null;
-  if (isLoadingServices) {
-    content = (
-      <div className="flex justify-center items-center w-full h-96">
-        <SpinnerIcon className="w-16 h-16" />
-        <span className="sr-only">Memuat layanan...</span>
-      </div>
-    );
-  } else if (servicesError) {
-    content = (
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
-        <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">
-          Gagal Memuat Data Layanan
-        </h2>
-        <p className="text-lg text-slate-700 dark:text-slate-300">
-          Tidak dapat memuat daftar layanan. Pastikan koneksi internet dan database Supabase Anda
-          aktif.
-        </p>
-      </div>
-    );
-  }
+                {/* Tampilan Kartu Mobile */}
+                <div className="md:hidden space-y-4">
+                  {items.length > 0 ? (
+                    items.map((item, index) => {
+                      const service = services.find((s) => s.id === item.serviceId);
+                      const isSatuan = service?.category === ServiceCategory.Satuan;
+                      const isKiloan = service?.category === ServiceCategory.Kiloan;
+                      return (
+                        <div
+                          key={index}
+                          className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
+                        >
+                          <div className="flex justify-between items-start">
+                            <span className="font-semibold text-slate-800 dark:text-slate-100">
+                              {item.serviceName}
+                            </span>
+                            <span className="font-semibold text-right text-slate-700 dark:text-slate-200">
+                              Rp {item.subtotal.toLocaleString('id-ID')}
+                            </span>
+                          </div>
 
-  const canApplyDiscount = useMemo(() => {
-    if (!currentUser) return false;
-    if (currentUser.role === UserRole.SuperAdmin) return true;
-    if (currentUser.role === UserRole.Admin || currentUser.role === UserRole.Cashier) {
-      if (currentUser.canGiveDiscount) return true;
+                          <div className="flex justify-between items-center mt-4">
+                            <div className="flex items-center">
+                              <input
+                                type="number"
+                                min="0"
+                                step={item.unit === 'kg' ? '0.01' : '1'}
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleItemChange(
+                                    index,
+                                    'quantity',
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="w-24 bg-white border border-slate-300 text-slate-900 text-base rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                              />
+                              <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
+                                {item.unit}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-end">
+                              {isSatuan && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenNotesModal(index)}
+                                  title="Catatan"
+                                  className="p-2 text-blue-600 relative rounded-md"
+                                >
+                                  <MessageSquareIcon className="w-6 h-6" />
+                                  {item.itemDetails
+                                    ?.slice(0, item.quantity)
+                                    .some((d) => d.note) && (
+                                    <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-700/50"></span>
+                                  )}
+                                </button>
+                              )}
+                              {isKiloan && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenKiloanTaggingModal(index)}
+                                  title="Tag Item"
+                                  className="p-2 text-purple-600 relative rounded-md"
+                                >
+                                  <TagIcon className="w-6 h-6" />
+                                  {item.taggedItems && (
+                                    <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-700/50"></span>
+                                  )}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(index)}
+                                title="Hapus"
+                                className="p-2 text-red-600 rounded-md"
+                              >
+                                <Trash2Icon className="w-6 h-6" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <EmptyState
+                      icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                      title="Keranjang kosong"
+                      description="Silakan pilih layanan untuk menambah item."
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* --- Kolom Kanan: Detail & Total (Sticky) --- */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md lg:sticky lg:top-24 h-fit">
+                <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
+                  Detail & Total
+                </h2>
+                <div className="space-y-4">
+                  {/* 1. Pelanggan */}
+                  <CustomerSelector
+                    customers={customers}
+                    selectedCustomer={selectedCustomer}
+                    onSelectCustomer={setSelectedCustomer}
+                    onAddNewCustomer={() => setIsCustomerModalOpen(true)}
+                  />
+
+                  {/* 2. Catatan */}
+                  <div>
+                    <label
+                      htmlFor="notes"
+                      className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+                    >
+                      Catatan (Opsional)
+                    </label>
+                    <textarea
+                      id="notes"
+                      rows={2}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      placeholder="Contoh: Jangan disetrika terlalu panas"
+                    />
+                  </div>
+
+                  {/* 3. Rincian Total */}
+                  <div className="space-y-3 pt-4 border-t dark:border-slate-700">
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="text-slate-600 dark:text-slate-300">Subtotal:</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200">
+                        Rp {subtotal.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+
+                    <div
+                      className="flex justify-between items-center text-lg"
+                      title={
+                        !canApplyDiscount
+                          ? `Diskon ${settings?.discountRate}% otomatis. Hanya admin yang bisa mengubah.`
+                          : ''
+                      }
+                    >
+                      <label
+                        htmlFor="discountValue"
+                        className="text-slate-600 dark:text-slate-300"
+                      >
+                        Diskon:
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={discountType}
+                          onChange={(e) => setDiscountType(e.target.value as 'percent' | 'amount')}
+                          disabled={!canApplyDiscount}
+                          className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg p-1.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600"
+                        >
+                          <option value="percent">%</option>
+                          <option value="amount">Rp</option>
+                        </select>
+                        <input
+                          id="discountValue"
+                          type="number"
+                          min="0"
+                          value={discountValue}
+                          onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                          disabled={!canApplyDiscount}
+                          className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600"
+                        />
+                      </div>
+                    </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between items-center text-lg">
+                        <span></span>
+                        <span className="font-medium text-red-600 dark:text-red-400">
+                          - Rp {discountAmount.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Pajak ({settings?.taxRate ?? 0}%):
+                      </span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200">
+                        + Rp {taxAmount.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
+                      <span>Grand Total:</span>
+                      <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+
+                  {/* 4. Opsi Pembayaran */}
+                  <div>
+                    <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+                      Opsi Pembayaran
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsPayingNow(false)}
+                        className={`p-3 rounded-lg text-base border-2 ${
+                          !isPayingNow
+                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50'
+                            : 'border-slate-300 dark:border-slate-600'
+                        }`}
+                      >
+                        Bayar Nanti
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsPayingNow(true)}
+                        className={`p-3 rounded-lg text-base border-2 ${
+                          isPayingNow
+                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50'
+                            : 'border-slate-300 dark:border-slate-600'
+                        }`}
+                      >
+                        Bayar Sekarang
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 5. Detail Pembayaran (Kondisional) */}
+                  {isPayingNow && (
+                    <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <div>
+                        <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+                          Metode Pembayaran
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {Object.values(PaymentMethod).map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => setPaymentMethod(m)}
+                              className={`p-2 rounded-lg text-sm border-2 ${paymentMethod === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
+                            >
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="amountPaid"
+                          className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+                        >
+                          Jumlah Bayar (Rp)
+                        </label>
+                        <input
+                          type="text"
+                          id="amountPaid"
+                          value={amountPaidStr}
+                          onChange={(e) =>
+                            setAmountPaidStr(formatRupiah(parseRupiah(e.target.value)))
+                          }
+                          className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                        />
+                      </div>
+                      {paymentMethod === PaymentMethod.Cash && (
+                        <div>
+                          <label
+                            htmlFor="tenderedAmount"
+                            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+                          >
+                            Uang Diterima (Rp)
+                          </label>
+                          <input
+                            type="text"
+                            id="tenderedAmount"
+                            value={tenderedAmountStr}
+                            onChange={(e) =>
+                              setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))
+                            }
+                            className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          />
+                        </div>
+                      )}
+                      {changeAmount > 0 && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/50 rounded-lg flex justify-between items-center text-xl font-bold text-green-800 dark:text-green-300">
+                          <span>Kembalian:</span>
+                          <span>Rp {formatRupiah(changeAmount)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 6. Tombol Simpan */}
+                  <button
+                    type="submit"
+                    disabled={
+                      isSavingTransaction ||
+                      !selectedCustomer ||
+                      items.length === 0 ||
+                      !currentStoreId ||
+                      currentStoreId === 'all'
+                    }
+                    className="w-full flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                  >
+                    {isSavingTransaction ? <SpinnerIcon className="w-6 h-6" /> : 'Simpan Transaksi'}
+                  </button>
+                  {(!currentStoreId || currentStoreId === 'all') && (
+                    <p className="text-center text-sm text-yellow-600 dark:text-yellow-400">
+                      Pilih cabang spesifik di header untuk membuat transaksi.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* --- Bar Bawah Mobile (Sticky) --- */}
+            {/* Konten ini sekarang kosong karena logikanya ada di dalam Modal Mobile */}
+            {/* Namun, kita perlu tombol pemicu jika item > 0 */}
+            {items.length > 0 && (
+              <div
+                className="lg:hidden fixed bottom-16 sm:bottom-0 left-0 right-0 z-40 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 shadow-lg-top"
+                onClick={() => {
+                  /* Pemicu modal tidak lagi ada di sini, ini hanya placeholder */
+                  /* Seharusnya ini tidak lagi diperlukan karena kolom kanan sticky */
+                  /* Mari kita hapus ini */
+                }}
+              >
+                {/* ... Konten bar mobile ... */}
+                {/* Sebenarnya, dengan layout baru ini, bar mobile tidak diperlukan lagi
+                    karena kolom kanan akan menjadi 'fixed' di bawah 640px.
+                    Mari kita sesuaikan itu.
+                */}
+              </div>
+            )}
+          </form>
+
+          {/* --- Kumpulan Modal --- */}
+          {/* HAPUS Modal Mobile, karena kolom kanan sekarang sticky */}
+
+          {/* Modal Tambah Pelanggan */}
+          {isCustomerModalOpen && (
+            <CustomerFormModal
+              customer={null}
+              onClose={() => setIsCustomerModalOpen(false)}
+              onSave={handleSaveCustomer}
+            />
+          )}
+
+          {/* Modal Sukses */}
+          <SuccessModal
+            isOpen={isSuccessModalOpen}
+            onClose={() => {
+              setIsSuccessModalOpen(false);
+              resetForm();
+            }}
+            title="Transaksi Berhasil!"
+            message="Transaksi baru telah berhasil dibuat."
+            actions={[
+              { text: 'Buat Transaksi Baru', onClick: resetForm, type: 'primary' },
+              {
+                text: 'Lihat Daftar Transaksi',
+                onClick: () => navigate('/transactions'),
+                type: 'secondary',
+              },
+            ]}
+          />
+
+          {/* Modal Catatan Item */}
+          <ItemNotesModal
+            isOpen={isNotesModalOpen}
+            onClose={() => setIsNotesModalOpen(false)}
+            item={editingItemIndex !== null ? items[editingItemIndex] : null!}
+            onSave={handleSaveNotes}
+          />
+
+          {/* Modal Tag Kiloan */}
+          <KiloanTaggingModal
+            isOpen={isKiloanTaggingModalOpen}
+            onClose={() => setIsKiloanTaggingModalOpen(false)}
+            item={editingItemIndex !== null ? items[editingItemIndex] : null!}
+            onSave={handleSaveKiloanTags}
+          />
+
+          {/* Modal WhatsApp */}
+          <WhatsAppModal
+            isOpen={isWhatsAppModalOpen}
+            onClose={() => setIsWhatsAppModalOpen(false)}
+            transaction={newlyCreatedTransaction}
+            customer={selectedCustomer}
+          />
+        </>
+      );
+    }
+
       if (
         selectedCustomer &&
         selectedCustomer.defaultDiscount &&
@@ -453,10 +1082,10 @@ function NewTransactionPage() {
     content = (
       <>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex lg:flex-row h-screen overflow-hidden">
-            {/* Bagian Kiri: Daftar Layanan & Item */}
-            <div className="w-full lg:w-3/5 xl:w-2/3 p-4 overflow-y-auto pb-32 lg:pb-4">
-              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-screen overflow-hidden">
+            {/* Kolom 1-2: Pilih Layanan & Item Transaksi */}
+            <div className="lg:col-span-2 flex flex-col gap-6 p-4 overflow-y-auto pb-32 lg:pb-4">
+              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md mb-0">
                 <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                   Pilih Layanan
                 </h2>
@@ -570,15 +1199,24 @@ function NewTransactionPage() {
               </div>
             </div>
 
-            {/* Bagian Kanan: Cart/Detail - Sticky di mobile, normal di desktop */}
-            <div className="w-full lg:w-2/5 xl:w-1/3 bg-gray-50 p-4 shadow-lg overflow-y-auto lg:relative fixed bottom-0 left-0 right-0 z-40 border-t lg:border-t-0">
-              {/* Desktop: detail lengkap */}
-              <div className="hidden lg:block">
-                <CartDetails />
+            {/* Kolom 3: Cart/Detail - Sticky di desktop, bottom sheet di mobile */}
+            <div className="lg:col-span-1 flex flex-col">
+              {/* Desktop: sticky sidebar */}
+              <div className="hidden lg:block h-full">
+                <div className="sticky top-6">
+                  <CartDetails
+                    items={items}
+                    subtotal={subtotal}
+                    discountAmount={discountAmount}
+                    taxAmount={taxAmount}
+                    grandTotal={grandTotal}
+                    paymentStatus={paymentStatus}
+                  />
+                </div>
               </div>
               {/* Mobile: sticky ringkasan & tombol (trigger modal) */}
               <div
-                className="lg:hidden flex justify-between items-center cursor-pointer"
+                className="lg:hidden flex justify-between items-center cursor-pointer bg-slate-50 dark:bg-slate-800 p-4 rounded-lg shadow-md border-t fixed bottom-0 left-0 right-0 z-40"
                 onClick={() => setIsMobileCartOpen(true)}
               >
                 <div>
@@ -595,7 +1233,16 @@ function NewTransactionPage() {
               title="Detail Pesanan"
             >
               <div className="w-full max-w-sm mx-auto p-4">
-                <CartDetails />
+                <CartDetails
+                  items={items}
+                  subtotal={subtotal}
+                  discountAmount={discountAmount}
+                  taxAmount={taxAmount}
+                  grandTotal={grandTotal}
+                  paymentStatus={paymentStatus}
+                  isMobileCartOpen={isMobileCartOpen}
+                  onCloseMobileCart={() => setIsMobileCartOpen(false)}
+                />
               </div>
             </Modal>
           </div>
