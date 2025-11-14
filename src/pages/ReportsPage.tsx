@@ -459,23 +459,22 @@ const ReportsPage: React.FC = () => {
                 </div>
                 </>
             ) : (
-                                {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-                                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-                                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
-                                    <div className="h-80 w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={dummyYearlyData}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="month" />
-                                                <YAxis tickFormatter={(tick) => `Rp ${(tick / 1000000).toFixed(1)}M`} />
-                                                <Tooltip formatter={(value) => `Rp ${Number(value).toLocaleString()}`} />
-                                                <Legend />
-                                                <Bar dataKey="income" fill="#8884d8" name="Pemasukan" maxBarSize={30} />
-                                                <Bar dataKey="expense" fill="#82ca9d" name="Pengeluaran" maxBarSize={30} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
+                    <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={dummyYearlyData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis tickFormatter={(tick) => `Rp ${(tick / 1000000).toFixed(1)}M`} />
+                                <Tooltip formatter={(value) => `Rp ${Number(value).toLocaleString()}`} />
+                                <Legend />
+                                <Bar dataKey="income" fill="#8884d8" name="Pemasukan" maxBarSize={30} />
+                                <Bar dataKey="expense" fill="#82ca9d" name="Pengeluaran" maxBarSize={30} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             )}
         </div>
     );
