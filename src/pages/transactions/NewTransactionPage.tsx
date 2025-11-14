@@ -6,9 +6,12 @@ import { useUsers } from '@/contexts/UserContext';
 import CustomerSelector from '@/components/CustomerSelector';
 import ServiceSelector from '@/components/ServiceSelector';
 import CustomerFormModal from '@/components/CustomerFormModal';
+
 import { useTransactionForm } from '@/hooks/useTransactionForm';
 import { Trash2Icon } from '@/components/icons';
 import { useToasts } from '@/contexts/ToastContext';
+import { useState as useReactState } from 'react';
+import { createNewTransaction } from '@/utils/createNewTransaction';
 
 const NewTransactionPage: React.FC = () => {
   const { customers, addCustomer } = useCustomers();
@@ -24,10 +27,11 @@ const NewTransactionPage: React.FC = () => {
   // State for add customer modal
   const [isAddCustomerOpen, setAddCustomerOpen] = useState(false);
   const [isAddingCustomer, setIsAddingCustomer] = useState(false);
+  const [isSaving, setIsSaving] = useReactState(false);
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Transaksi Baru</h1>
-      <div className="bg-white rounded-xl border border-slate-200 shadow p-4 md:p-6 space-y-6">
+      <div className="bg-gradient-to-br from-blue-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-xl border border-blue-200 dark:border-slate-700 shadow-lg p-4 md:p-6 space-y-6">
         {/* Pilih Pelanggan */}
         <CustomerSelector
           customers={customers}
@@ -86,17 +90,20 @@ const NewTransactionPage: React.FC = () => {
         {/* Daftar Item Transaksi */}
         {form.items.length > 0 && (
           <div>
-            <h2 className="font-semibold mb-2">Item Transaksi</h2>
+            <h2 className="font-semibold mb-2 text-blue-700 dark:text-blue-300">Item Transaksi</h2>
             <ul className="divide-y">
               {form.items.map((item, idx) => (
-                <li key={idx} className="py-2 flex items-center justify-between gap-2 group">
+                <li
+                  key={idx}
+                  className="py-2 flex items-center justify-between gap-2 group hover:bg-blue-50 dark:hover:bg-slate-800/60 rounded transition"
+                >
                   <div className="flex-1">
                     <span className="font-medium">{item.serviceName}</span>
                     <span className="ml-2 text-slate-500">
                       x{item.quantity} ({item.unit})
                     </span>
                   </div>
-                  <span className="w-32 text-right tabular-nums">
+                  <span className="w-32 text-right tabular-nums font-semibold text-blue-700 dark:text-blue-200">
                     Rp {item.subtotal.toLocaleString('id-ID')}
                   </span>
                   <button
@@ -124,7 +131,7 @@ const NewTransactionPage: React.FC = () => {
         )}
 
         {/* Ringkasan Transaksi */}
-        <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 md:p-6 space-y-2 shadow-sm">
+        <div className="bg-blue-50 dark:bg-slate-800 rounded-lg border border-blue-200 dark:border-slate-700 p-4 md:p-6 space-y-2 shadow-sm">
           <div className="flex justify-between">
             <span>Subtotal</span>
             <span className="tabular-nums">Rp {form.subtotal.toLocaleString('id-ID')}</span>
@@ -141,7 +148,7 @@ const NewTransactionPage: React.FC = () => {
               + Rp {form.taxAmount.toLocaleString('id-ID')}
             </span>
           </div>
-          <div className="flex justify-between font-bold text-lg border-t pt-2">
+          <div className="flex justify-between font-bold text-lg border-t pt-2 text-blue-800 dark:text-blue-200">
             <span>Total</span>
             <span className="tabular-nums">Rp {form.grandTotal.toLocaleString('id-ID')}</span>
           </div>
@@ -149,15 +156,53 @@ const NewTransactionPage: React.FC = () => {
 
         {/* Tombol Simpan (dummy) */}
         <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-4 transition disabled:opacity-60"
-          onClick={() => {
-            addToast({
-              type: 'info',
-              message: 'Fitur simpan transaksi belum diimplementasikan',
-            });
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-bold py-3 rounded-lg mt-4 shadow-lg transition disabled:opacity-60"
+          disabled={isSaving}
+          onClick={async () => {
+            if (!form.selectedCustomer) {
+              addToast('Pilih pelanggan terlebih dahulu.', 'warning');
+              return;
+            }
+            if (form.items.length === 0) {
+              addToast('Tambahkan minimal 1 layanan.', 'warning');
+              return;
+            }
+            setIsSaving(true);
+            try {
+              await createNewTransaction({
+                customerId: form.selectedCustomer.id,
+                items: form.items.map((item) => ({
+                  serviceId: item.serviceId,
+                  quantity: item.quantity,
+                  note: item.itemDetails?.[0]?.note || '',
+                })),
+                createdByUserId: currentUser.id,
+                storeId: currentUser.storeId,
+                notes: form.notes,
+                paymentMethod: form.paymentMethod,
+                isPayingNow: form.isPayingNow,
+                discountType: form.discountType,
+                discountValue: form.discountValue,
+              });
+              addToast('Transaksi berhasil disimpan!', 'success');
+              // Reset form
+              form.setSelectedCustomer(null);
+              form.setItems([]);
+              form.setNotes('');
+              form.setDiscountType('percent');
+              form.setDiscountValue(0);
+              form.setIsPayingNow(false);
+              form.setPaymentMethod(undefined);
+              form.setAmountPaidStr('0');
+              form.setTenderedAmountStr('');
+            } catch (err: any) {
+              addToast(err?.message || 'Gagal menyimpan transaksi', 'error');
+            } finally {
+              setIsSaving(false);
+            }
           }}
         >
-          Simpan Transaksi
+          {isSaving ? 'Menyimpan...' : 'Simpan Transaksi'}
         </button>
       </div>
     </div>

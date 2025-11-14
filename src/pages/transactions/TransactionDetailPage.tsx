@@ -279,7 +279,8 @@ function ActionButtons({ transaction }: { transaction: Transaction }) {
       });
       updateToast(toastId, 'Status pembayaran diperbarui', 'success');
     } catch (err: unknown) {
-      updateToast(toastId, err?.message ?? 'Gagal memperbarui status pembayaran', 'error');
+      const errMsg = err instanceof Error ? err.message : String(err);
+      updateToast(toastId, errMsg || 'Gagal memperbarui status pembayaran', 'error');
       throw err;
     } finally {
       setLoading(false);
@@ -294,7 +295,8 @@ function ActionButtons({ transaction }: { transaction: Transaction }) {
       await updateTransaction(transaction.id, { orderStatus: OrderStatus.Ready });
       updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
     } catch (err: unknown) {
-      updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
+      const errMsg = err instanceof Error ? err.message : String(err);
+      updateToast(toastId, errMsg || 'Gagal memperbarui status pesanan', 'error');
     } finally {
       setLoading(false);
     }
@@ -307,7 +309,8 @@ function ActionButtons({ transaction }: { transaction: Transaction }) {
       await updateTransaction(transaction.id, { orderStatus: OrderStatus.Completed });
       updateToast(toastId, 'Status pesanan diperbarui: Selesai', 'success');
     } catch (err: unknown) {
-      updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
+      const errMsg = err instanceof Error ? err.message : String(err);
+      updateToast(toastId, errMsg || 'Gagal memperbarui status pesanan', 'error');
     } finally {
       setLoading(false);
     }

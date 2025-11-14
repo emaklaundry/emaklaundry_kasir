@@ -1,5 +1,9 @@
 // Komponen WeeklyRevenueChart
-const WeeklyRevenueChart = ({ data }: { data: Array<{ day: string; revenue: number; date?: Date }> }) => {
+const WeeklyRevenueChart = ({
+  data,
+}: {
+  data: Array<{ day: string; revenue: number; date?: Date }>;
+}) => {
   // Cari revenue maksimum untuk proporsi tinggi bar
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
   // Hari ini
@@ -14,36 +18,47 @@ const WeeklyRevenueChart = ({ data }: { data: Array<{ day: string; revenue: numb
       );
     });
   })();
+  const isEmpty = data.every((d) => d.revenue === 0);
   return (
-    <div className="h-40 flex items-end gap-3 w-full">
-      {data
-        .slice()
-        .reverse()
-        .map((d, idx, arr) => {
-          const isToday = arr.length - 1 - idx === todayIdx;
-          const barHeight = Math.max(12, (d.revenue / maxRevenue) * 112); // px, min 12, max ~112px
-          return (
-            <div key={d.day} className="flex flex-col items-center w-8">
-              <span className="text-xs mb-1 text-slate-700 dark:text-slate-200 select-none">
-                {d.revenue > 0 ? `Rp${d.revenue.toLocaleString('id-ID')}` : ''}
-              </span>
-              <div
-                className={`w-5 rounded-t-md transition-all duration-300 ${
-                  isToday
-                    ? 'bg-blue-600 shadow-lg border-2 border-blue-400'
-                    : 'bg-blue-400/80 hover:bg-blue-500'
-                }`}
-                style={{ height: `${barHeight}px` }}
-                title={`Rp ${d.revenue.toLocaleString('id-ID')}`}
-              />
-              <span
-                className={`text-xs mt-1 select-none ${isToday ? 'font-bold text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
-              >
-                {d.day}
-              </span>
-            </div>
-          );
-        })}
+    <div className="h-48 flex flex-col justify-end w-full">
+      {isEmpty ? (
+        <div className="flex flex-1 items-center justify-center text-slate-400 dark:text-slate-500 text-lg h-full">
+          Tidak ada transaksi minggu ini
+        </div>
+      ) : (
+        <div className="flex items-end gap-4 w-full h-40">
+          {data
+            .slice()
+            .reverse()
+            .map((d, idx, arr) => {
+              const isToday = arr.length - 1 - idx === todayIdx;
+              const barHeight = Math.max(16, (d.revenue / maxRevenue) * 112); // px, min 16, max ~112px
+              return (
+                <div key={d.day} className="flex flex-col items-center w-10">
+                  <span className={`text-xs mb-1 select-none ${d.revenue > 0 ? 'text-blue-700 dark:text-blue-200 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>
+                    {d.revenue > 0 ? `Rp${d.revenue.toLocaleString('id-ID')}` : ''}
+                  </span>
+                  <div
+                    className={`w-6 rounded-t-lg transition-all duration-300 flex items-end justify-center ${
+                      isToday
+                        ? 'bg-gradient-to-t from-blue-500 to-blue-300 dark:from-blue-700 dark:to-blue-400 shadow-lg border-2 border-blue-400'
+                        : d.revenue > 0
+                        ? 'bg-blue-400/80 hover:bg-blue-500 dark:bg-blue-600/80 dark:hover:bg-blue-500'
+                        : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                    style={{ height: `${barHeight}px` }}
+                    title={`Rp ${d.revenue.toLocaleString('id-ID')}`}
+                  />
+                  <span
+                    className={`text-xs mt-1 select-none ${isToday ? 'font-bold text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
+                  >
+                    {d.day}
+                  </span>
+                </div>
+              );
+            })}
+        </div>
+      )}
     </div>
   );
 };

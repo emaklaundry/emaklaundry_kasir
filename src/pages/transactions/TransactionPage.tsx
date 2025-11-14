@@ -185,7 +185,7 @@ function TransactionPage() {
       }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      updateToast(toastId, `Gagal memperbarui status: ${errMsg}`, 'error');
+      updateToast(toastId, `Gagal memperbarui status: ${errMsg || 'Terjadi error'}`, 'error');
     }
   };
 
@@ -223,7 +223,7 @@ function TransactionPage() {
       }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      updateToast(toastId, `Gagal memperbarui pembayaran: ${errMsg}`, 'error');
+      updateToast(toastId, `Gagal memperbarui pembayaran: ${errMsg || 'Terjadi error'}`, 'error');
     } finally {
       setIsSavingPayment(false);
     }
