@@ -19,8 +19,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer 
       role="dialog"
     >
       <div 
-        className="relative w-full max-w-lg p-2 sm:p-4 mx-0 sm:mx-4 bg-white rounded-t-2xl sm:rounded-lg shadow-lg dark:bg-slate-800"
-        style={{ maxHeight: '95vh', overflowY: 'auto' }}
+        className="relative w-full max-w-lg p-2 sm:p-4 mx-0 sm:mx-4 bg-white rounded-t-2xl sm:rounded-lg shadow-lg dark:bg-slate-800 flex flex-col"
+        style={{ maxHeight: '95vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between p-2 border-b rounded-t dark:border-slate-700">
@@ -38,7 +38,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer 
             <span className="sr-only">Close modal</span>
           </button>
         </div>
-        <div className="p-4 sm:p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto" style={{ maxHeight: '60vh' }}>
           {children}
         </div>
         {footer && (
