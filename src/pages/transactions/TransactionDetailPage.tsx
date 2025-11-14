@@ -182,13 +182,13 @@ function TransactionDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {transaction.items.map((item, index) => (
+              {(transaction.items || []).map((item, index) => (
                 <tr key={index} className="border-b dark:border-slate-700">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {item.serviceName}
                     {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
                       <div className="pl-4 mt-1 space-y-0.5">
-                        {item.itemDetails?.slice(0, item.quantity).map(
+                        {(item.itemDetails?.slice(0, item.quantity) || []).map(
                           (detail, detailIndex) =>
                             detail.note && (
                               <p

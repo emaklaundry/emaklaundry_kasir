@@ -63,7 +63,7 @@ function ReceiptPage() {
       </div>
 
       <div className="space-y-2 mb-4">
-        {transaction.items.map((item, index) => (
+        {(transaction.items || []).map((item, index) => (
           <div key={index} className="flex flex-col text-base py-1">
             <div className="flex justify-between">
               <div>
@@ -80,7 +80,7 @@ function ReceiptPage() {
             </div>
             {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
               <div className="pl-4 mt-1 space-y-0.5">
-                {item.itemDetails?.slice(0, item.quantity).map(
+                {(item.itemDetails?.slice(0, item.quantity) || []).map(
                   (detail, detailIndex) =>
                     detail.note && (
                       <p key={detailIndex} className="text-sm text-slate-500 dark:text-slate-400">

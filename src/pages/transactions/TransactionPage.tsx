@@ -67,7 +67,7 @@ function TransactionPage() {
   }, [searchParams]);
 
   const transactionsWithCustomer = useMemo(() => {
-    return transactions.map((t) => {
+    return (transactions || []).map((t) => {
       const customer = customers.find((c) => c.id === t.customerId);
       return {
         ...t,
@@ -275,7 +275,7 @@ function TransactionPage() {
   // Bulk Action Handlers
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(new Set(sortedTransactions.map((t) => t.id)));
+      setSelectedIds(new Set((sortedTransactions || []).map((t) => t.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -317,7 +317,7 @@ function TransactionPage() {
     setIsBulkProcessing(true);
     const toastId = addToast('Memproses aksi massal...', 'info');
     try {
-      const updatePromises = transactionsToUpdate.map((t) =>
+      const updatePromises = (transactionsToUpdate || []).map((t) =>
         updateTransaction(t.id, { orderStatus: bulkActionStatus }),
       );
       await Promise.all(updatePromises);
@@ -403,7 +403,7 @@ function TransactionPage() {
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             >
               <option value="all">Semua Pelanggan</option>
-              {customers.map((c) => (
+              {(customers || []).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -438,7 +438,7 @@ function TransactionPage() {
         <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-base text-slate-600 dark:text-slate-300">Status Pesanan:</span>
-            {statusOptions.map((status) => (
+            {(statusOptions || []).map((status) => (
               <button
                 key={status}
                 onClick={() => handleStatusFilterChange(status)}
@@ -553,7 +553,7 @@ function TransactionPage() {
             </thead>
             <tbody>
               {paginatedTransactions.length > 0 ? (
-                paginatedTransactions.map((t) => (
+                (paginatedTransactions || []).map((t) => (
                   <tr
                     key={t.id}
                     className={`border-b dark:border-slate-700 ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
@@ -674,7 +674,7 @@ function TransactionPage() {
 
         <div className="md:hidden space-y-4">
           {paginatedTransactions.length > 0 ? (
-            paginatedTransactions.map((t) => (
+            (paginatedTransactions || []).map((t) => (
               <div
                 key={t.id}
                 className={`p-4 rounded-lg shadow-md text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-800/70 ring-2 ring-blue-500' : 'bg-slate-800'}`}
