@@ -8,7 +8,6 @@ export enum ServiceCategory {
 export enum PaymentStatus {
   Paid = 'Lunas',
   Unpaid = 'Belum Lunas',
-  PartiallyPaid = 'Bayar Sebagian',
 }
 
 export enum OrderStatus {
@@ -60,7 +59,7 @@ export interface Service {
 }
 
 export interface TransactionItemDetail {
-    note: string;
+  note: string;
 }
 
 export interface TransactionItem {
@@ -156,11 +155,11 @@ export interface Settings {
 }
 
 export interface ScheduledMaintenance {
-    id: string;
-    assetId: string;
-    description: string;
-    frequencyValue: number;
-    frequencyUnit: 'days' | 'weeks' | 'months' | 'years';
-    nextDueDate: Date;
-    lastCompletedDate: Date | null;
+  id: string;
+  assetId: string;
+  description: string;
+  frequencyValue: number;
+  frequencyUnit: 'days' | 'weeks' | 'months' | 'years';
+  nextDueDate: Date;
+  lastCompletedDate: Date | null;
 }

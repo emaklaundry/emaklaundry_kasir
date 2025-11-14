@@ -136,7 +136,9 @@ const NewTransactionPage: React.FC = () => {
     if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
     if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
     // Bayar sebagian hanya jika amountPaid > 0 dan < grandTotal
-    if (actualAmountPaid > 0 && actualAmountPaid < grandTotal) return PaymentStatus.PartiallyPaid;
+    // Jika jumlah bayar sama atau lebih besar dari total, Lunas.
+    if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
+    // Jika kurang, dianggap Belum Lunas (Unpaid).
     return PaymentStatus.Unpaid;
   }, [isPayingNow, actualAmountPaid, grandTotal]);
 
