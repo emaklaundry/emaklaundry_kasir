@@ -9,7 +9,7 @@ interface SortConfig<T> {
 
 export const useSortableData = <T extends object>(
   items: T[],
-  initialConfig: SortConfig<T> | null = null
+  initialConfig: SortConfig<T> | null = null,
 ) => {
   const [sortConfig, setSortConfig] = useState<SortConfig<T> | null>(initialConfig);
 
@@ -27,19 +27,21 @@ export const useSortableData = <T extends object>(
 
         // Handle different data types
         if (aValue instanceof Date && bValue instanceof Date) {
-            if (aValue.getTime() < bValue.getTime()) return sortConfig.direction === 'ascending' ? -1 : 1;
-            if (aValue.getTime() > bValue.getTime()) return sortConfig.direction === 'ascending' ? 1 : -1;
-            return 0;
+          if (aValue.getTime() < bValue.getTime())
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+          if (aValue.getTime() > bValue.getTime())
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+          return 0;
         }
         if (typeof aValue === 'number' && typeof bValue === 'number') {
-            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-            return 0;
+          if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+          if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+          return 0;
         }
         if (typeof aValue === 'string' && typeof bValue === 'string') {
-            return sortConfig.direction === 'ascending'
-                ? aValue.localeCompare(bValue)
-                : bValue.localeCompare(aValue);
+          return sortConfig.direction === 'ascending'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
         }
 
         // Fallback for other types (like boolean)

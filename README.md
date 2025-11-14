@@ -1,4 +1,5 @@
 git push origin main
+
 <div align="center">
   <img width="800" alt="Laundry Management System" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
@@ -41,9 +42,11 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 ## 🚀 Instalasi & Menjalankan Proyek
 
 ### Prasyarat
+
 - Node.js (disarankan versi terbaru LTS)
 
 ### Langkah Instalasi
+
 1. **Clone repository**
    ```bash
    git clone https://github.com/mhmdnvn18/emaklaundry_kasir.git
@@ -85,7 +88,6 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 - **Kasir**: Input transaksi, update status, akses terbatas
 
 ---
-
 
 ## 📝 Catatan Pengembangan & Perubahan Terbaru
 

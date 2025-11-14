@@ -27,4 +27,3 @@ export function sanitizeTransactionUpdate(data: Partial<Transaction>): Record<st
 
   return payload;
 }
-
