@@ -75,7 +75,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selected
                         autoComplete="off"
                     />
                     {isDropdownOpen && filteredCustomers.length > 0 && (
-                        <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg dark:bg-slate-700 border dark:border-slate-600 max-h-60 overflow-auto">
+                        <div className="absolute z-40 w-full mt-1 bg-white rounded-md shadow-lg dark:bg-slate-700 border dark:border-slate-600 max-h-60 overflow-auto">
                             <ul>
                                 {filteredCustomers.map(customer => (
                                     <li 
