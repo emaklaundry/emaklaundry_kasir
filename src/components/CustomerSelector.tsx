@@ -81,7 +81,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({ customers, selected
                                     <li 
                                         key={customer.id} 
                                         className="px-4 py-2 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
-                                        onMouseDown={() => handleSelectCustomer(customer)}
+                                        onClick={() => handleSelectCustomer(customer)}
                                     >
                                         <p className="font-semibold">{customer.name}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">{customer.phone}</p>
