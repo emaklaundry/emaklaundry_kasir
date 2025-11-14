@@ -1,3 +1,4 @@
+// ...existing code...
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppContext } from './src/contexts/AppContext';
@@ -59,7 +60,6 @@ const AppRoutes: React.FC = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/quick-actions" element={<QuickActionsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
@@ -70,7 +70,9 @@ const AppRoutes: React.FC = () => {
     <Layout>
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/login" element={<Navigate to="/" />} />
           <Route path="/" element={<Dashboard />} />
+          <Route path="/quick-actions" element={<QuickActionsPage />} />
           <Route path="/transactions" element={<TransactionPage />} />
           <Route path="/transactions/new" element={<NewTransactionPage />} />
           <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
@@ -93,10 +95,10 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
-            path="/management/services"
+            path="/management/assets"
             element={
               <AdminRoute>
-                <ServicesPage />
+                <AssetsPage />
               </AdminRoute>
             }
           />
@@ -109,10 +111,10 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
-            path="/management/assets"
+            path="/management/services"
             element={
               <AdminRoute>
-                <AssetsPage />
+                <ServicesPage />
               </AdminRoute>
             }
           />
@@ -125,10 +127,26 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
+            path="/management/stores"
+            element={
+              <AdminRoute>
+                <StoresPage />
+              </AdminRoute>
+            }
+          />
+          <Route
             path="/management/users"
             element={
               <AdminRoute>
                 <UsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/management/settings"
+            element={
+              <AdminRoute>
+                <SettingsPage />
               </AdminRoute>
             }
           />
@@ -140,32 +158,6 @@ const AppRoutes: React.FC = () => {
               </AdminRoute>
             }
           />
-          <Route
-            path="/audit-log"
-            element={
-              <AdminRoute>
-                <AuditLogPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <AdminRoute>
-                <SettingsPage />
-              </AdminRoute>
-            }
-          />
-          {/* Super Admin Routes */}
-          <Route
-            path="/management/stores"
-            element={
-              <SuperAdminRoute>
-                <StoresPage />
-              </SuperAdminRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
       <CommandPalette />

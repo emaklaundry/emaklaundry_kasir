@@ -14,7 +14,10 @@ export const CommandPaletteProvider: React.FC<{ children: ReactNode }> = ({ chil
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || e.key === 'K' && (e.metaKey || e.ctrlKey)) {
+      if (
+        (e.key === 'k' && (e.metaKey || e.ctrlKey)) ||
+        (e.key === 'K' && (e.metaKey || e.ctrlKey))
+      ) {
         e.preventDefault();
         setIsOpen((open) => !open);
       }
@@ -23,13 +26,13 @@ export const CommandPaletteProvider: React.FC<{ children: ReactNode }> = ({ chil
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, []);
-  
+
   const value = {
-      isOpen,
-      open: () => setIsOpen(true),
-      close: () => setIsOpen(false),
-      toggle: () => setIsOpen(prev => !prev),
-  }
+    isOpen,
+    open: () => setIsOpen(true),
+    close: () => setIsOpen(false),
+    toggle: () => setIsOpen((prev) => !prev),
+  };
 
   return React.createElement(CommandPaletteContext.Provider, { value: value }, children);
 };

@@ -24,20 +24,20 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addToast = useCallback((message: string, type: ToastType) => {
     // Gunakan kombinasi Date.now() dan Math.random() untuk ID yang jauh lebih unik
     const id = Date.now() + Math.random();
-    setToasts(prevToasts => [...prevToasts, { id, message, type }]);
+    setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
-      setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+      setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
     }, 5000);
     return id;
   }, []);
 
   const updateToast = useCallback((id: number, message: string, type: ToastType) => {
-    setToasts(prevToasts => prevToasts.map(t => t.id === id ? { ...t, message, type } : t));
+    setToasts((prevToasts) => prevToasts.map((t) => (t.id === id ? { ...t, message, type } : t)));
   }, []);
 
   const removeToast = useCallback((id: number) => {
-    setToasts(prevToasts => prevToasts.filter(t => t.id !== id));
+    setToasts((prevToasts) => prevToasts.filter((t) => t.id !== id));
   }, []);
 
   return (

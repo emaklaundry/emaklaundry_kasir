@@ -9,7 +9,12 @@ interface KiloanTaggingModalProps {
   onSave: (tags: string) => void;
 }
 
-const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({ isOpen, onClose, item, onSave }) => {
+const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({
+  isOpen,
+  onClose,
+  item,
+  onSave,
+}) => {
   const [tags, setTags] = useState('');
 
   useEffect(() => {
@@ -32,13 +37,26 @@ const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({ isOpen, onClose
       title={`Tag Item untuk ${item.serviceName}`}
       footer={
         <>
-          <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-          <button onClick={handleSave} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan Tag</button>
+          <button
+            onClick={onClose}
+            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleSave}
+            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
+          >
+            Simpan Tag
+          </button>
         </>
       }
     >
       <div>
-        <label htmlFor="kiloan-tags" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+        <label
+          htmlFor="kiloan-tags"
+          className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+        >
           Rincian Item (Opsional)
         </label>
         <textarea
@@ -50,7 +68,8 @@ const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({ isOpen, onClose
           placeholder="Contoh:&#10;3 Kemeja Lengan Panjang&#10;2 Celana Jeans&#10;1 Jaket"
         />
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          Catat jumlah dan jenis pakaian untuk memudahkan pelacakan. Ini tidak akan mempengaruhi harga.
+          Catat jumlah dan jenis pakaian untuk memudahkan pelacakan. Ini tidak akan mempengaruhi
+          harga.
         </p>
       </div>
     </Modal>
