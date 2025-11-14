@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppContext } from './src/contexts/AppContext';
 import { UserRole } from './src/types';
 import Layout from './src/components/Layout';
@@ -100,9 +100,9 @@ const App: React.FC = () => {
   useTheme(); // Initialize and apply theme
   return (
     <AppProviders>
-        <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AppRoutes />
-        </HashRouter>
+        </BrowserRouter>
     </AppProviders>
   );
 };

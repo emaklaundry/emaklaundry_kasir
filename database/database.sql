@@ -15,7 +15,7 @@ CREATE TABLE public.stores (
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL,
-  role text NOT NULL, -- 'Super Admin', 'Admin', 'Kasir'
+  role public.user_role NOT NULL, -- 'Super Admin', 'Admin', 'Kasir'
   store_id uuid REFERENCES stores(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
   created_at timestamp WITH TIME ZONE DEFAULT NOW(),
   "isActive" boolean DEFAULT true,
@@ -34,11 +34,20 @@ CREATE TABLE public.customers (
 );
 
 
+
 -- ENUM for service category
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
     CREATE TYPE public.service_category AS ENUM ('Kiloan','Satuan','Sepatu','Karpet');
+  END IF;
+END$$;
+
+-- ENUM for user role
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE public.user_role AS ENUM ('Super Admin', 'Admin', 'Kasir');
   END IF;
 END$$;
 
@@ -155,7 +164,7 @@ ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 -- Menambahkan fungsi ini membuat RLS lebih bersih dan lebih cepat
 
 CREATE OR REPLACE FUNCTION public.get_my_role()
-RETURNS text
+RETURNS public.user_role
 LANGUAGE sql
 STABLE
 SECURITY DEFINER -- DIPERLUKAN: Menjalankan fungsi sebagai pembuat (bukan pemanggil) untuk bypass RLS
