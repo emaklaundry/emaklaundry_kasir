@@ -1,20 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCustomers } from '@/contexts/CustomerContext';
 import { useServices } from '@/contexts/ServiceContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUsers } from '@/contexts/UserContext';
 import CustomerSelector from '@/components/CustomerSelector';
 import ServiceSelector from '@/components/ServiceSelector';
+import CustomerFormModal from '@/components/CustomerFormModal';
 import { useTransactionForm } from '@/hooks/useTransactionForm';
 
 const NewTransactionPage: React.FC = () => {
-  const { customers } = useCustomers();
+  const { customers, addCustomer } = useCustomers();
   const { services } = useServices();
   const { settings } = useSettings();
   const { users } = useUsers();
+
   // Asumsi: user pertama sebagai currentUser (ganti sesuai auth sebenarnya)
   const currentUser = users[0] || {};
   const form = useTransactionForm({ currentUser, settings, services });
+
+  // State for add customer modal
+  const [isAddCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [isAddingCustomer, setIsAddingCustomer] = useState(false);
 
   return (
     <div className="p-4 max-w-3xl mx-auto">
@@ -25,8 +31,37 @@ const NewTransactionPage: React.FC = () => {
           customers={customers}
           selectedCustomer={form.selectedCustomer}
           onSelectCustomer={form.setSelectedCustomer}
-          onAddNewCustomer={() => alert('Fitur tambah pelanggan belum diimplementasikan')}
+          onAddNewCustomer={() => setAddCustomerOpen(true)}
         />
+
+        {/* Modal Tambah Pelanggan */}
+        {isAddCustomerOpen && (
+          <CustomerFormModal
+            customer={null}
+            onClose={() => setAddCustomerOpen(false)}
+            onSave={async (data) => {
+              setIsAddingCustomer(true);
+              try {
+                const newCustomer = await addCustomer({
+                  ...data,
+                  storeId: currentUser.storeId,
+                  createdAt: new Date(),
+                });
+                setAddCustomerOpen(false);
+                // Pilih customer baru setelah tambah
+                if (newCustomer) {
+                  form.setSelectedCustomer(newCustomer);
+                }
+              } catch {
+                // TODO: tampilkan error toast/modal
+                alert('Gagal menambah pelanggan');
+              } finally {
+                setIsAddingCustomer(false);
+              }
+            }}
+            disabled={isAddingCustomer}
+          />
+        )}
 
         {/* Pilih Layanan */}
         <ServiceSelector
