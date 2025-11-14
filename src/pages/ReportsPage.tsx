@@ -29,6 +29,7 @@ const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, exp
     }, [data]);
     
     const chartHeight = 300;
+    // chartWidth akan mengikuti parent (responsive), default 800 jika tidak ada parent width
     const chartWidth = 800;
     const barWidth = 20;
     const barMargin = 15;
@@ -44,8 +45,8 @@ const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, exp
     const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
 
     return (
-        <div className="relative overflow-x-auto">
-             {tooltip.visible && (
+        <div className="relative w-full overflow-x-auto">
+            {tooltip.visible && (
                 <div
                     style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%) translateY(-100%)' }}
                     className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
@@ -53,8 +54,13 @@ const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, exp
                 >
                 </div>
             )}
-            {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan SVG saat cetak */}
-            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
+            {/* Responsive SVG: width 100%, min-width 400px, max-width 1000px, aspect ratio 8:3 */}
+            <svg
+                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                className="w-full max-w-[1000px] min-w-[400px] h-auto print-chart-hide"
+                style={{ aspectRatio: `${chartWidth} / ${chartHeight}` }}
+                preserveAspectRatio="xMinYMin meet"
+            >
                 {/* Y-Axis Grid Lines and Labels */}
                 {Array.from({ length: yAxisLabels }).map((_, i) => {
                     const y = chartHeight - 20 - (i * (chartHeight - 30) / (yAxisLabels - 1));
@@ -430,7 +436,9 @@ const ReportsPage: React.FC = () => {
                 // TAMBAHKAN: 'report-section' untuk menghindari page-break
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
-                    <YearlySummaryChart data={monthlySummary} />
+                    <div className="w-full flex justify-center">
+                        <YearlySummaryChart data={monthlySummary} />
+                    </div>
                 </div>
             )}
         </div>

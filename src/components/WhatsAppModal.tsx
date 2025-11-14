@@ -20,14 +20,13 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
             let defaultMessage = '';
             const itemsList = transaction.items.map(item => `- ${item.quantity} ${item.unit} ${item.serviceName}`).join('\n');
             const remainingBalance = transaction.total - transaction.amountPaid;
-            const shortId = transaction.id.slice(-6).toUpperCase();
 
             if (transaction.orderStatus === OrderStatus.Processing) {
-                defaultMessage = `Halo ${customer.name},\n\nTerima kasih telah menggunakan layanan kami. Berikut adalah rincian transaksi Anda:\n\nID Transaksi: ${shortId}\nTanggal: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n\nItem:\n${itemsList}\n\nTotal: Rp ${transaction.total.toLocaleString('id-ID')}\nStatus Bayar: ${transaction.paymentStatus}\nEstimasi Selesai: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n\nKami akan memberitahu Anda lagi ketika pesanan Anda sudah siap diambil.\n\nTerima kasih!`;
+                 defaultMessage = `Halo ${customer.name},\n\nTerima kasih telah menggunakan layanan kami. Berikut adalah rincian transaksi Anda:\n\nID Transaksi: ${transaction.id}\nTanggal: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n\nItem:\n${itemsList}\n\nTotal: Rp ${transaction.total.toLocaleString('id-ID')}\nStatus Bayar: ${transaction.paymentStatus}\nEstimasi Selesai: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n\nKami akan memberitahu Anda lagi ketika pesanan Anda sudah siap diambil.\n\nTerima kasih!`;
             } else if (transaction.orderStatus === OrderStatus.Ready) {
-                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${shortId} sudah SIAP DIAMBIL.\n\nTotal Tagihan: Rp ${transaction.total.toLocaleString('id-ID')}\nSisa Tagihan: Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}\n\nSilakan datang ke toko kami untuk mengambilnya.\n\nTerima kasih!`;
+                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SIAP DIAMBIL.\n\nTotal Tagihan: Rp ${transaction.total.toLocaleString('id-ID')}\nSisa Tagihan: Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}\n\nSilakan datang ke toko kami untuk mengambilnya.\n\nTerima kasih!`;
             } else { // Assumes the only other case is Completed
-                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${shortId} sudah SELESAI dan LUNAS.\n\nPesanan sudah bisa diambil di toko kami. Mohon tunjukkan struk ini saat pengambilan.\n\nTerima kasih!`;
+                defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${transaction.id} sudah SELESAI dan LUNAS.\n\nPesanan sudah bisa diambil di toko kami. Mohon tunjukkan struk ini saat pengambilan.\n\nTerima kasih!`;
             }
             setMessage(defaultMessage);
         }
@@ -38,15 +37,15 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({ isOpen, onClose, transact
             addToast('Nomor telepon pelanggan tidak ditemukan.', 'error');
             return;
         }
+        
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        let phone = customer.phone.replace(/\D/g, '');
-        if (phone.startsWith('0')) {
-            phone = '62' + phone.substring(1);
-        }
+        const phone = customer.phone.replace(/\D/g, '');
         const encodedMessage = encodeURIComponent(message);
+        
         const whatsappUrl = isMobile 
             ? `https://wa.me/${phone}?text=${encodedMessage}`
             : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+
         window.open(whatsappUrl, '_blank');
         onClose();
     };
