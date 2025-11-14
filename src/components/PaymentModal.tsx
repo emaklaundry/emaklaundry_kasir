@@ -87,7 +87,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     if (newAmountPaid >= transaction.total) {
       newStatus = PaymentStatus.Paid;
     } else if (newAmountPaid > 0) {
-      newStatus = PaymentStatus.PartiallyPaid;
+      newStatus = PaymentStatus.Unpaid;
     }
     const finalChange = newStatus === PaymentStatus.Paid ? change : 0;
 
