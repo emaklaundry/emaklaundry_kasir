@@ -7,7 +7,7 @@ import CustomerSelector from '@/components/CustomerSelector';
 import ServiceSelector from '@/components/ServiceSelector';
 import CustomerFormModal from '@/components/CustomerFormModal';
 import { useTransactionForm } from '@/hooks/useTransactionForm';
-import { XCircleIcon } from '@/components/icons';
+import { Trash2Icon } from '@/components/icons';
 import { useToasts } from '@/contexts/ToastContext';
 
 const NewTransactionPage: React.FC = () => {
@@ -106,7 +106,7 @@ const NewTransactionPage: React.FC = () => {
                       form.setItems(form.items.filter((_, i) => i !== idx));
                     }}
                   >
-                    <XCircleIcon className="w-5 h-5" />
+                    <Trash2Icon className="w-5 h-5" />
                   </button>
                   {/*
                   <button
