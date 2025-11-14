@@ -1,5 +1,31 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
+// Dummy data untuk chart
+const dummyDailyData = [
+    { date: '2023-10-01', income: 1500000, expense: 500000 },
+    { date: '2023-10-02', income: 1700000, expense: 600000 },
+    { date: '2023-10-03', income: 1600000, expense: 550000 },
+    { date: '2023-10-04', income: 1800000, expense: 700000 },
+    { date: '2023-10-05', income: 2000000, expense: 800000 },
+    { date: '2023-10-06', income: 1900000, expense: 750000 },
+    { date: '2023-10-07', income: 2100000, expense: 850000 },
+];
+
+const dummyYearlyData = [
+    { month: 'Jan', income: 10000000, expense: 8000000 },
+    { month: 'Feb', income: 10000000, expense: 8000000 },
+    { month: 'Mar', income: 10000000, expense: 8000000 },
+    { month: 'Apr', income: 10000000, expense: 8000000 },
+    { month: 'May', income: 10000000, expense: 8000000 },
+    { month: 'Jun', income: 10000000, expense: 8000000 },
+    { month: 'Jul', income: 10000000, expense: 8000000 },
+    { month: 'Aug', income: 10000000, expense: 8000000 },
+    { month: 'Sep', income: 10000000, expense: 8000000 },
+    { month: 'Oct', income: 10000000, expense: 8000000 },
+    { month: 'Nov', income: 10000000, expense: 8000000 },
+    { month: 'Dec', income: 10000000, expense: 8000000 },
+];
 import { Transaction, UserRole, Service, User, ServiceCategory } from '../../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
@@ -433,13 +459,23 @@ const ReportsPage: React.FC = () => {
                 </div>
                 </>
             ) : (
-                // TAMBAHKAN: 'report-section' untuk menghindari page-break
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
-                    <div className="w-full flex justify-center">
-                        <YearlySummaryChart data={monthlySummary} />
-                    </div>
-                </div>
+                                {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
+                                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+                                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
+                                    <div className="h-80 w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={dummyYearlyData}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="month" />
+                                                <YAxis tickFormatter={(tick) => `Rp ${(tick / 1000000).toFixed(1)}M`} />
+                                                <Tooltip formatter={(value) => `Rp ${Number(value).toLocaleString()}`} />
+                                                <Legend />
+                                                <Bar dataKey="income" fill="#8884d8" name="Pemasukan" maxBarSize={30} />
+                                                <Bar dataKey="expense" fill="#82ca9d" name="Pengeluaran" maxBarSize={30} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
             )}
         </div>
     );

@@ -23,6 +23,8 @@ const CustomersPage = lazy(() => import('./src/pages/management/CustomersPage'))
 const CustomerDetailPage = lazy(() => import('./src/pages/management/CustomerDetailPage'));
 const ReceiptPage = lazy(() => import('./src/pages/transactions/ReceiptPage'));
 const TransactionDetailPage = lazy(() => import('./src/pages/transactions/TransactionDetailPage'));
+
+const CashierActionsPage = lazy(() => import('./src/pages/CashierActionsPage'));
 const StoresPage = lazy(() => import('./src/pages/management/StoresPage'));
 
 
@@ -70,6 +72,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/transactions/new" element={<NewTransactionPage />} />
                     <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
                     <Route path="/transactions/:id/details" element={<TransactionDetailPage />} />
+                    {/* Halaman Aksi Kasir */}
+                    <Route path="/actions" element={<CashierActionsPage />} />
                     {/* Admin Routes */}
                     <Route path="/management/customers" element={<AdminRoute><CustomersPage /></AdminRoute>} />
                     <Route path="/management/customers/:id" element={<AdminRoute><CustomerDetailPage /></AdminRoute>} />

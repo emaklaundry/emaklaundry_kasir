@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, UsersIcon, ShoppingCartIcon, PlusCircleIcon } from './icons';
+import { HomeIcon, ShoppingCartIcon, PlusCircleIcon, CommandIcon } from './icons';
 
 const NavItem: React.FC<{ to: string, icon: React.FC<{className?: string}>, label: string }> = ({ to, icon: Icon, label }) => (
     <NavLink
@@ -20,9 +20,10 @@ const NavItem: React.FC<{ to: string, icon: React.FC<{className?: string}>, labe
 const BottomNavBar: React.FC = () => {
     return (
         <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden">
-            <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
+            <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
                  <NavItem to="/" icon={HomeIcon} label="Dashboard" />
                  <NavItem to="/transactions" icon={ShoppingCartIcon} label="Transaksi" />
+                 <NavItem to="/actions" icon={CommandIcon} label="Aksi" />
                  <NavItem to="/transactions/new" icon={PlusCircleIcon} label="Tambah" />
             </div>
         </div>
