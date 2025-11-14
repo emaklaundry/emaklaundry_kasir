@@ -394,7 +394,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Weekly Chart - Admin View */}
-                <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}>
+                <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md block`}>
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pendapatan 7 Hari Terakhir</h2>
                     <WeeklyRevenueChart data={weeklyRevenueData} />
                 </div>
