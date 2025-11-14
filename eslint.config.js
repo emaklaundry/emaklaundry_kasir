@@ -1,6 +1,7 @@
 import eslintPluginReact from 'eslint-plugin-react';
 import eslintPluginReactHooks from 'eslint-plugin-react-hooks';
 import eslintPluginImport from 'eslint-plugin-import';
+import importResolverTypescript from 'eslint-import-resolver-typescript';
 
 /** @type {import('eslint').Linter.FlatConfig} */
 export default [
@@ -31,6 +32,13 @@ export default [
     settings: {
       react: {
         version: 'detect',
+      },
+      'import/resolver': {
+        typescript: {
+          ...importResolverTypescript,
+          alwaysTryTypes: true,
+          project: './tsconfig.json',
+        },
       },
     },
   },
