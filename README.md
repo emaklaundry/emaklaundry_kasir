@@ -17,10 +17,10 @@
 - Dukungan multi-role (Super Admin, Admin, Kasir)
 - Siap di-deploy ke layanan modern (Vercel, Netlify, dsb)
 
-- ✅ Lint: Bersih tanpa error/warning (`npm run lint`)
-- ✅ Format: Sudah terformat (`npm run format`)
-- ✅ Test: Semua unit test lulus (`npm test`)
-- 📅 Update terakhir: 14 November 2025
+✅ Lint: Bersih tanpa error/warning (`npm run lint`)
+✅ Format: Sudah terformat (`npm run format`)
+ℹ️ Saat ini tidak ada file test/unit test di project. Menjalankan `npm test` akan menampilkan pesan "No test files found" (ini expected).
+📅 Update terakhir: 14 November 2025
 ---
 
 # Laundry Management System (Web Kasir)
@@ -88,13 +88,15 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 
 ---
 
+
 ## 📁 Struktur Direktori
 
 - `src/` : Source code utama (komponen, halaman, context, hooks, utils)
 - `public/` : Aset publik (favicon, manifest, dll)
 - `database/` : Skrip SQL dan dokumentasi deployment database
-- `tests/` : Unit test
 - `index.html`, `index.tsx`, `App.tsx` : Entry point aplikasi
+
+> **Catatan:** Direktori/unit test (`tests/`) sudah tidak ada. Jika ingin menambah test, buat file `*.test.ts(x)` di `src/`.
 
 ---
 

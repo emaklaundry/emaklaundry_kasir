@@ -1,18 +1,49 @@
 // Komponen WeeklyRevenueChart
-const WeeklyRevenueChart = ({ data }: { data: Array<{ day: string; revenue: number }> }) => {
-  // Placeholder chart, silakan ganti dengan chart sebenarnya jika ada
+const WeeklyRevenueChart = ({ data }: { data: Array<{ day: string; revenue: number; date?: Date }> }) => {
+  // Cari revenue maksimum untuk proporsi tinggi bar
+  const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
+  // Hari ini
+  const todayIdx = (() => {
+    const now = new Date();
+    return data.findIndex((d) => {
+      if (!d.date) return false;
+      return (
+        d.date.getDate() === now.getDate() &&
+        d.date.getMonth() === now.getMonth() &&
+        d.date.getFullYear() === now.getFullYear()
+      );
+    });
+  })();
   return (
-    <div className="h-32 flex items-end gap-2">
-      {data.map((d) => (
-        <div key={d.day} className="flex flex-col items-center">
-          <div
-            className="bg-blue-500 w-4"
-            style={{ height: `${Math.max(8, d.revenue / 1000)}px` }}
-            title={`Rp ${d.revenue.toLocaleString('id-ID')}`}
-          />
-          <span className="text-xs mt-1">{d.day}</span>
-        </div>
-      ))}
+    <div className="h-40 flex items-end gap-3 w-full">
+      {data
+        .slice()
+        .reverse()
+        .map((d, idx, arr) => {
+          const isToday = arr.length - 1 - idx === todayIdx;
+          const barHeight = Math.max(12, (d.revenue / maxRevenue) * 112); // px, min 12, max ~112px
+          return (
+            <div key={d.day} className="flex flex-col items-center w-8">
+              <span className="text-xs mb-1 text-slate-700 dark:text-slate-200 select-none">
+                {d.revenue > 0 ? `Rp${d.revenue.toLocaleString('id-ID')}` : ''}
+              </span>
+              <div
+                className={`w-5 rounded-t-md transition-all duration-300 ${
+                  isToday
+                    ? 'bg-blue-600 shadow-lg border-2 border-blue-400'
+                    : 'bg-blue-400/80 hover:bg-blue-500'
+                }`}
+                style={{ height: `${barHeight}px` }}
+                title={`Rp ${d.revenue.toLocaleString('id-ID')}`}
+              />
+              <span
+                className={`text-xs mt-1 select-none ${isToday ? 'font-bold text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
+              >
+                {d.day}
+              </span>
+            </div>
+          );
+        })}
     </div>
   );
 };
