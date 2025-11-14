@@ -59,7 +59,13 @@ CREATE TABLE IF NOT EXISTS public.user_credentials (
   password_hash text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
+
 ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
+-- RLS Policy dasar untuk user_credentials
+CREATE POLICY "Allow owner to SELECT/UPDATE/DELETE their credentials" ON public.user_credentials
+  FOR ALL USING (profile_id = auth.uid());
+CREATE POLICY "Allow INSERT for authenticated users" ON public.user_credentials
+  FOR INSERT WITH CHECK (profile_id = auth.uid());
 
 CREATE TABLE public.inventory_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
