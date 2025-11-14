@@ -110,7 +110,7 @@ function InventoryPage() {
 
   const inventoryWithStore = useMemo(
     () =>
-      inventory.map((item) => ({
+      (inventory || []).map((item) => ({
         ...item,
         storeName: stores.find((s) => s.id === item.storeId)?.name || 'N/A',
       })),
@@ -268,7 +268,7 @@ function InventoryPage() {
           </thead>
           <tbody>
             {sortedInventory.length > 0 ? (
-              sortedInventory.map((item) => {
+              (sortedInventory || []).map((item) => {
                 const isLowStock = item.stock <= item.lowStockThreshold;
                 return (
                   <tr key={item.id} className="border-b dark:border-slate-700">
@@ -338,7 +338,7 @@ function InventoryPage() {
 
       <div className="md:hidden space-y-4">
         {sortedInventory.length > 0 ? (
-          sortedInventory.map((item) => {
+          (sortedInventory || []).map((item) => {
             const isLowStock = item.stock <= item.lowStockThreshold;
             return (
               <div

@@ -147,7 +147,7 @@ function AssetsPage() {
 
   const assetsWithStore = useMemo(
     () =>
-      assets.map((asset) => ({
+      (assets || []).map((asset) => ({
         ...asset,
         storeName: stores.find((s) => s.id === asset.storeId)?.name || 'N/A',
       })),
@@ -161,7 +161,7 @@ function AssetsPage() {
     const now = new Date();
     now.setHours(23, 59, 59, 999);
     return new Set(
-      scheduledMaintenances.filter((sm) => new Date(sm.nextDueDate) <= now).map((sm) => sm.assetId),
+      (scheduledMaintenances || []).filter((sm) => new Date(sm.nextDueDate) <= now).map((sm) => sm.assetId),
     );
   }, [scheduledMaintenances, maintenanceFilter]);
 
@@ -332,7 +332,7 @@ function AssetsPage() {
           </thead>
           <tbody>
             {sortedAssets.length > 0 ? (
-              sortedAssets.map((asset) => (
+              (sortedAssets || []).map((asset) => (
                 <tr key={asset.id} className="border-b dark:border-slate-700">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {asset.name}
@@ -422,7 +422,7 @@ function AssetsPage() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {sortedAssets.length > 0 ? (
-          sortedAssets.map((asset) => (
+          (sortedAssets || []).map((asset) => (
             <div
               key={asset.id}
               className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"

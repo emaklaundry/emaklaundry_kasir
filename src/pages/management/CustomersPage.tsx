@@ -50,7 +50,7 @@ function CustomersPage() {
       }
     });
 
-    return customers.map((customer) => {
+    return (customers || []).map((customer) => {
       const store = stores.find((s) => s.id === customer.storeId);
       return {
         ...customer,
@@ -292,7 +292,7 @@ function CustomersPage() {
           </thead>
           <tbody>
             {paginatedCustomers.length > 0 ? (
-              paginatedCustomers.map((customer) => (
+              (paginatedCustomers || []).map((customer) => (
                 <tr key={customer.id} className="border-b dark:border-slate-700">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     <Link
@@ -343,7 +343,7 @@ function CustomersPage() {
 
       <div className="md:hidden space-y-4">
         {paginatedCustomers.length > 0 ? (
-          paginatedCustomers.map((customer) => (
+          (paginatedCustomers || []).map((customer) => (
             <div
               key={customer.id}
               className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"

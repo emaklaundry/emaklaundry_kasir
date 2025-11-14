@@ -226,7 +226,7 @@ function StoresPage() {
           </thead>
           <tbody>
             {sortedStores.length > 0 ? (
-              sortedStores.map((store) => (
+              (sortedStores || []).map((store) => (
                 <tr key={store.id} className="border-b dark:border-slate-700">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {store.name}
@@ -282,7 +282,7 @@ function StoresPage() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {sortedStores.length > 0 ? (
-          sortedStores.map((store) => (
+          (sortedStores || []).map((store) => (
             <div
               key={store.id}
               className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"

@@ -210,7 +210,7 @@ function ServicesPage() {
           </thead>
           <tbody>
             {sortedServices.length > 0 ? (
-              sortedServices.map((service) => (
+              (sortedServices || []).map((service) => (
                 <tr key={service.id} className="border-b dark:border-slate-700">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {service.name}

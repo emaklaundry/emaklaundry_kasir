@@ -124,7 +124,7 @@ function UsersPage() {
   };
   const usersWithStore = useMemo(
     () =>
-      users.map((user) => ({
+      (users || []).map((user) => ({
         ...user,
         storeName: stores.find((s) => s.id === user.storeId)?.name || 'N/A',
       })),
@@ -250,7 +250,7 @@ function UsersPage() {
           </thead>
           <tbody>
             {sortedUsers.length > 0 ? (
-              sortedUsers.map((user) => {
+              (sortedUsers || []).map((user) => {
                 const isSuperAdmin = user.role === UserRole.SuperAdmin;
                 return (
                   <tr key={user.id} className="border-b dark:border-slate-700">
@@ -322,7 +322,7 @@ function UsersPage() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {sortedUsers.length > 0 ? (
-          sortedUsers.map((user) => {
+          (sortedUsers || []).map((user) => {
             const isSuperAdmin = user.role === UserRole.SuperAdmin;
             return (
               <div

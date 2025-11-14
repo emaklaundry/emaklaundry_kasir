@@ -175,7 +175,7 @@ function CustomerDetailPage() {
             </thead>
             <tbody>
               {customerTransactions.length > 0 ? (
-                sortedTransactions.map((t) => (
+                (sortedTransactions || []).map((t) => (
                   <tr key={t.id} className="border-b dark:border-slate-700">
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.id}</td>
                     <td className="px-4 py-3">

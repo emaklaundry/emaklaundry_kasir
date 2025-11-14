@@ -1,18 +1,21 @@
 /* global document */
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useCustomers } from '../contexts/CustomerContext';
+import { Customer } from '../types';
 
 interface CommandPaletteContextType {
   isOpen: boolean;
   open: () => void;
   close: () => void;
   toggle: () => void;
+  customers: Customer[];
 }
 
 const CommandPaletteContext = createContext<CommandPaletteContextType | undefined>(undefined);
 
-type CommandPaletteProviderProps = { children: ReactNode };
 export const CommandPaletteProvider = ({ children }: CommandPaletteProviderProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { customers } = useCustomers();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -37,6 +40,7 @@ export const CommandPaletteProvider = ({ children }: CommandPaletteProviderProps
     open: () => setIsOpen(true),
     close: () => setIsOpen(false),
     toggle: () => setIsOpen((prev) => !prev),
+    customers: customers || [],
   };
 
   return React.createElement(CommandPaletteContext.Provider, { value: value }, children);

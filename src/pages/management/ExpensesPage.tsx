@@ -98,7 +98,7 @@ function ExpensesPage() {
 
   const expensesWithStore = useMemo(
     () =>
-      expenses.map((expense) => ({
+      (expenses || []).map((expense) => ({
         ...expense,
         storeName: stores.find((s) => s.id === expense.storeId)?.name || 'N/A',
       })),
@@ -237,7 +237,7 @@ function ExpensesPage() {
           </thead>
           <tbody>
             {sortedExpenses.length > 0 ? (
-              sortedExpenses.map((expense) => (
+              (sortedExpenses || []).map((expense) => (
                 <tr key={expense.id} className="border-b dark:border-slate-700">
                   <td className="px-4 py-3">
                     {new Date(expense.date).toLocaleDateString('id-ID')}
@@ -294,7 +294,7 @@ function ExpensesPage() {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {sortedExpenses.length > 0 ? (
-          sortedExpenses.map((expense) => (
+          (sortedExpenses || []).map((expense) => (
             <div
               key={expense.id}
               className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
