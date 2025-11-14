@@ -1,24 +1,28 @@
 import * as React from 'react';
+// @ts-ignore
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, UsersIcon, ShoppingCartIcon, PlusCircleIcon } from './icons';
-import { BarChartIcon } from './icons';
-import { BoltIcon } from './icons';
+import { useAppContext } from '../contexts/AppContext';
+import { HomeIcon, UsersIcon, ShoppingCartIcon, BarChartIcon, BoltIcon } from './icons';
+import { UserRole } from '../types';
 
-const NavItem: React.FC<{ to: string; icon: React.FC<{ className?: string }>; label: string }> = ({
-  to,
-  icon: Icon,
-  label,
-}) => (
+const NavItem: React.FC<{
+  to: string;
+  icon: React.FC<{ className?: string }>;
+  label: string;
+  disabled?: boolean;
+}> = ({ to, icon: Icon, label, disabled = false }) => (
   <NavLink
     to={to}
     end
-    className={({ isActive }) =>
+    className={({ isActive }: { isActive: boolean }) =>
       `flex flex-col items-center justify-center w-full h-full text-center transition-colors duration-200 ${
         isActive
           ? 'text-brand-blue-600 dark:text-brand-blue-300'
           : 'text-slate-500 dark:text-slate-400 hover:text-brand-blue-500 dark:hover:text-brand-blue-400'
-      }`
+      } ${disabled ? 'opacity-50 pointer-events-none' : ''}`
     }
+    tabIndex={disabled ? -1 : 0}
+    aria-disabled={disabled}
   >
     <Icon className="w-6 h-6" />
     <span className="text-xs font-medium tracking-tight">{label}</span>
@@ -26,13 +30,31 @@ const NavItem: React.FC<{ to: string; icon: React.FC<{ className?: string }>; la
 );
 
 const BottomNavBar: React.FC = () => {
+  const { currentUser } = useAppContext();
+  // Robust role check (case-insensitive)
+  const isCashier = currentUser && currentUser.role === UserRole.Cashier;
+
+  // Hanya menu yang boleh diakses kasir
+  if (isCashier) {
+    return (
+      <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden">
+        <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
+          <NavItem to="/" icon={HomeIcon} label="Dashboard" />
+          <NavItem to="/quick-actions" icon={BoltIcon} label="Aksi Cepat" />
+          <NavItem to="/transactions" icon={ShoppingCartIcon} label="Transaksi" />
+        </div>
+      </div>
+    );
+  }
+
+  // Menu untuk admin/superadmin
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden">
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         <NavItem to="/" icon={HomeIcon} label="Dashboard" />
         <NavItem to="/quick-actions" icon={BoltIcon} label="Aksi Cepat" />
         <NavItem to="/transactions" icon={ShoppingCartIcon} label="Transaksi" />
-        <NavItem to="/customers" icon={UsersIcon} label="Pelanggan" />
+        <NavItem to="/management/customers" icon={UsersIcon} label="Pelanggan" />
         <NavItem to="/reports" icon={BarChartIcon} label="Laporan" />
       </div>
     </div>

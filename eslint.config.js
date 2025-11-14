@@ -1,14 +1,27 @@
 import eslintPluginReact from 'eslint-plugin-react';
 import eslintPluginReactHooks from 'eslint-plugin-react-hooks';
 import eslintPluginImport from 'eslint-plugin-import';
-import importResolverTypescript from 'eslint-import-resolver-typescript';
+import parser from '@typescript-eslint/parser';
 
 /** @type {import('eslint').Linter.FlatConfig} */
 export default [
+  // Allow Vite virtual modules
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    files: ['index.tsx'],
+    rules: {
+      'import/no-unresolved': [
+        'error',
+        {
+          ignore: ['virtual:pwa-register'],
+        },
+      ],
+    },
+  },
+  // TypeScript project files only (with project reference)
+  {
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
-      parser: '@typescript-eslint/parser',
+      parser,
       parserOptions: {
         ecmaVersion: 2020,
         sourceType: 'module',
@@ -16,6 +29,22 @@ export default [
         project: './tsconfig.json',
       },
     },
+  },
+  // Other TS/JS/JSX files (no project reference)
+  {
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    ignores: ['src/**/*.{ts,tsx}'],
+    languageOptions: {
+      parser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
+      },
+    },
+  },
+  // Shared config
+  {
     plugins: {
       react: eslintPluginReact,
       'react-hooks': eslintPluginReactHooks,
@@ -35,11 +64,11 @@ export default [
       },
       'import/resolver': {
         typescript: {
-          ...importResolverTypescript,
           alwaysTryTypes: true,
           project: './tsconfig.json',
         },
       },
     },
+    ignores: ['node_modules', 'dist', 'build', 'public'],
   },
 ];
