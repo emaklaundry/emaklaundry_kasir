@@ -152,8 +152,8 @@ ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 
 -- === 3. HELPER FUNCTIONS UNTUK RLS ===
--- Menambahkan fungsi ini membuat RLS lebih bersih dan lebih cepat
 
+DROP FUNCTION IF EXISTS public.get_my_role();
 CREATE OR REPLACE FUNCTION public.get_my_role()
 RETURNS text
 LANGUAGE sql
@@ -164,6 +164,7 @@ AS $$
   SELECT role FROM public.profiles WHERE id = auth.uid()
 $$;
 
+DROP FUNCTION IF EXISTS public.get_my_store_id();
 CREATE OR REPLACE FUNCTION public.get_my_store_id()
 RETURNS uuid
 LANGUAGE sql

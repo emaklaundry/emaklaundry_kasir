@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '@/types';
 import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
-import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
+// import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
 // Pagination-aware fetchTransactions
 export interface TransactionFilter {
