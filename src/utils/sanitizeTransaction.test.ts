@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 import { describe, it, expect } from 'vitest';
-import { sanitizeTransactionUpdate } from '../utils/sanitizeTransaction';
+import { sanitizeTransactionUpdate } from './sanitizeTransaction';
 
 describe('sanitizeTransactionUpdate', () => {
   it('removes derived/unknown fields and keeps allowed columns', () => {

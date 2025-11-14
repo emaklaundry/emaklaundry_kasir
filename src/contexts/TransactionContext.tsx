@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '@/types';
-import { supabase, updateTransactionProgress } from '../../utils/supabaseClient';
+import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
 import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
-
 
 // Pagination-aware fetchTransactions
 export interface TransactionFilter {
@@ -14,7 +13,9 @@ export interface TransactionFilter {
   orderStatus?: string;
 }
 
-const fetchTransactions = async (filter: TransactionFilter = {}): Promise<{ data: Transaction[]; count: number }> => {
+const fetchTransactions = async (
+  filter: TransactionFilter = {},
+): Promise<{ data: Transaction[]; count: number }> => {
   const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
   let query = supabase.from('transactions').select('*', { count: 'exact' });
   if (dateRange) {
@@ -37,16 +38,12 @@ const fetchTransactions = async (filter: TransactionFilter = {}): Promise<{ data
   return { data: data || [], count: count || 0 };
 };
 
-
 export function useTransactions(filter: TransactionFilter = {}) {
   const queryClient = useQueryClient();
-  const {
-    data: result,
-    ...query
-  } = useQuery({
+  const { data: result, ...query } = useQuery({
     queryKey: ['transactions', filter],
     queryFn: () => fetchTransactions(filter),
-    keepPreviousData: true
+    keepPreviousData: true,
   });
   const transactions = result?.data || [];
   const totalCount = result?.count || 0;
@@ -57,9 +54,8 @@ export function useTransactions(filter: TransactionFilter = {}) {
       if (error) throw error;
       return data?.[0] || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
-
 
   const updateTransaction = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Transaction> }) => {
@@ -83,14 +79,15 @@ export function useTransactions(filter: TransactionFilter = {}) {
       });
       return updated || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 
   return {
     transactions,
     totalCount,
     addTransaction: addTransaction.mutateAsync,
-    updateTransaction: (id: string, data: Partial<Transaction>) => updateTransaction.mutateAsync({ id, data }),
-    ...query
+    updateTransaction: (id: string, data: Partial<Transaction>) =>
+      updateTransaction.mutateAsync({ id, data }),
+    ...query,
   };
 }
