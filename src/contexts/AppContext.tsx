@@ -141,11 +141,17 @@ const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                   };
               }, [currentUser, resetTimer]);
               // --- AKHIR LOGIKA AUTO LOGOUT ---
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
+  return (
+    <AppContext.Provider value={{
+      currentUser,
+      signOut,
+      stores,
+      selectedStoreId,
+      setSelectedStoreId
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
 };
 
 export { AppProvider };

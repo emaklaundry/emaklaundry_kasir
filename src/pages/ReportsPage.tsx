@@ -1,31 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-// Dummy data untuk chart
-const dummyDailyData = [
-    { date: '2023-10-01', income: 1500000, expense: 500000 },
-    { date: '2023-10-02', income: 1700000, expense: 600000 },
-    { date: '2023-10-03', income: 1600000, expense: 550000 },
-    { date: '2023-10-04', income: 1800000, expense: 700000 },
-    { date: '2023-10-05', income: 2000000, expense: 800000 },
-    { date: '2023-10-06', income: 1900000, expense: 750000 },
-    { date: '2023-10-07', income: 2100000, expense: 850000 },
-];
-
-const dummyYearlyData = [
-    { month: 'Jan', income: 10000000, expense: 8000000 },
-    { month: 'Feb', income: 10000000, expense: 8000000 },
-    { month: 'Mar', income: 10000000, expense: 8000000 },
-    { month: 'Apr', income: 10000000, expense: 8000000 },
-    { month: 'May', income: 10000000, expense: 8000000 },
-    { month: 'Jun', income: 10000000, expense: 8000000 },
-    { month: 'Jul', income: 10000000, expense: 8000000 },
-    { month: 'Aug', income: 10000000, expense: 8000000 },
-    { month: 'Sep', income: 10000000, expense: 8000000 },
-    { month: 'Oct', income: 10000000, expense: 8000000 },
-    { month: 'Nov', income: 10000000, expense: 8000000 },
-    { month: 'Dec', income: 10000000, expense: 8000000 },
-];
 import { Transaction, UserRole, Service, User, ServiceCategory } from '../../types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
@@ -46,123 +20,6 @@ const StatCard: React.FC<{ icon: React.FC<{className?: string}>, title: string, 
     </div>
 );
 
-const YearlySummaryChart: React.FC<{ data: { month: string, revenue: number, expenses: number, profit: number }[] }> = ({ data }) => {
-    const [tooltip, setTooltip] = useState<{ visible: boolean, content: string, x: number, y: number }>({ visible: false, content: '', x: 0, y: 0 });
-
-    const maxValue = useMemo(() => {
-        const maxVal = Math.max(...data.flatMap(d => [d.revenue, d.expenses]));
-        return Math.ceil(maxVal / 100000) * 100000; // Round up to nearest 100k
-    }, [data]);
-    
-    const chartHeight = 300;
-    // chartWidth akan mengikuti parent (responsive), default 800 jika tidak ada parent width
-    const chartWidth = 800;
-    const barWidth = 20;
-    const barMargin = 15;
-    const groupMargin = 40;
-    const yAxisLabels = 6;
-    const yAxisWidth = 80;
-
-    const showTooltip = (content: string, event: React.MouseEvent) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        setTooltip({ visible: true, content, x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY - 10 });
-    };
-
-    const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
-
-    return (
-        <div className="relative w-full overflow-x-auto">
-            {tooltip.visible && (
-                <div
-                    style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%) translateY(-100%)' }}
-                    className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
-                    dangerouslySetInnerHTML={{ __html: tooltip.content }}
-                >
-                </div>
-            )}
-            {/* Responsive SVG: width 100%, min-width 400px, max-width 1000px, aspect ratio 8:3 */}
-            <svg
-                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                className="w-full max-w-[1000px] min-w-[400px] h-auto print-chart-hide"
-                style={{ aspectRatio: `${chartWidth} / ${chartHeight}` }}
-                preserveAspectRatio="xMinYMin meet"
-            >
-                {/* Y-Axis Grid Lines and Labels */}
-                {Array.from({ length: yAxisLabels }).map((_, i) => {
-                    const y = chartHeight - 20 - (i * (chartHeight - 30) / (yAxisLabels - 1));
-                    const value = (i * maxValue / (yAxisLabels - 1));
-                    return (
-                        <g key={i}>
-                            <line x1={yAxisWidth} y1={y} x2={chartWidth} y2={y} stroke="currentColor" className="text-slate-200 dark:text-slate-700" />
-                            <text x={yAxisWidth - 10} y={y + 5} textAnchor="end" className="text-xs fill-current text-slate-500 dark:text-slate-400">
-                                {`${(value / 1000000).toFixed(1)}jt`}
-                            </text>
-                        </g>
-                    );
-                })}
-
-                {/* Bars and X-Axis Labels */}
-                {data.map((d, i) => {
-                    const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
-                    const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
-                    const expensesHeight = (d.expenses / maxValue) * (chartHeight - 30);
-                    const tooltipContent = `<b>${d.month}</b><br/>Pendapatan: Rp ${d.revenue.toLocaleString('id-ID')}<br/>Pengeluaran: Rp ${d.expenses.toLocaleString('id-ID')}`;
-
-                    return (
-                        <g key={i}>
-                            <rect
-                                x={x - barMargin / 2}
-                                y={chartHeight - 20 - revenueHeight}
-                                width={barWidth}
-                                height={revenueHeight}
-                                className="fill-current text-green-500 hover:opacity-80"
-                                onMouseMove={(e) => showTooltip(tooltipContent, e)}
-                                onMouseLeave={hideTooltip}
-                            />
-                            <rect
-                                x={x + barWidth - barMargin / 2}
-                                y={chartHeight - 20 - expensesHeight}
-                                width={barWidth}
-                                height={expensesHeight}
-                                className="fill-current text-red-500 hover:opacity-80"
-                                onMouseMove={(e) => showTooltip(tooltipContent, e)}
-                                onMouseLeave={hideTooltip}
-                            />
-                            <text x={x} y={chartHeight - 5} textAnchor="middle" className="text-xs fill-current text-slate-500 dark:text-slate-400">{d.month}</text>
-                        </g>
-                    );
-                })}
-
-                {/* Axis Lines */}
-                <line x1={yAxisWidth} y1={10} x2={yAxisWidth} y2={chartHeight - 20} stroke="currentColor" className="text-slate-300 dark:text-slate-600" />
-                <line x1={yAxisWidth} y1={chartHeight - 20} x2={chartWidth} y2={chartHeight - 20} stroke="currentColor" className="text-slate-300 dark:text-slate-600" />
-            </svg>
-            
-            {/* --- TAMBAHKAN: Tabel ini HANYA akan muncul saat dicetak --- */}
-            <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
-                <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-                    <tr className="print-only-row">
-                        <th className="print-only-cell px-4 py-3">Bulan</th>
-                        <th className="print-only-cell px-4 py-3 text-right">Pendapatan</th>
-                        <th className="print-only-cell px-4 py-3 text-right">Pengeluaran</th>
-                        <th className="print-only-cell px-4 py-3 text-right">Laba</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.map((d) => (
-                        <tr key={d.month} className="print-only-row border-b dark:border-slate-700">
-                            <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">{d.month}</td>
-                            <td className="print-only-cell px-4 py-3 text-right">Rp {d.revenue.toLocaleString('id-ID')}</td>
-                            <td className="print-only-cell px-4 py-3 text-right">Rp {d.expenses.toLocaleString('id-ID')}</td>
-                            <td className="print-only-cell px-4 py-3 text-right font-semibold">Rp {d.profit.toLocaleString('id-ID')}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            {/* --- AKHIR BLOK CETAK --- */}
-        </div>
-    );
-};
 
 const ReportsPage: React.FC = () => {
     const { transactions: allStoreTransactions } = useTransactions();
@@ -173,7 +30,6 @@ const ReportsPage: React.FC = () => {
     const { addToast } = useToasts();
     const { users: allUsers } = useUsers();
     
-    const [reportType, setReportType] = useState<'range' | 'yearlySummary'>('range');
     const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
 
     const today = new Date();
@@ -293,13 +149,8 @@ const ReportsPage: React.FC = () => {
         return `Laporan - ${stores.find(s => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal'}`;
     };
 
-    const isRangeReport = reportType === 'range';
-
     // --- TAMBAHAN: Teks header untuk laporan cetak ---
     const printHeaderTitle = useMemo(() => {
-        if (reportType === 'yearlySummary') {
-            return `Ringkasan Tahunan ${new Date().getFullYear()}`;
-        }
         // Untuk 'range'
         const startStr = startDate.toLocaleDateString('id-ID');
         const endStr = endDate.toLocaleDateString('id-ID');
@@ -307,7 +158,7 @@ const ReportsPage: React.FC = () => {
             return `Laporan Kustom (${startStr} - ${endStr})`;
         }
         return `Laporan ${rangeType === 'weekly' ? 'Mingguan' : 'Bulanan'} (Hingga ${endStr})`;
-    }, [reportType, rangeType, startDate, endDate]);
+    }, [rangeType, startDate, endDate]);
 
     return (
         <div className="space-y-6">
@@ -322,11 +173,6 @@ const ReportsPage: React.FC = () => {
 
             {/* TAMBAHKAN: 'print-hide' untuk menyembunyikan seluruh baris filter ini saat cetak */}
             <div className="flex justify-between items-center flex-wrap gap-4 print-hide">
-                 <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-                    <button onClick={() => setReportType('range')} className={`px-4 py-2 text-base font-medium rounded-md ${isRangeReport ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Rentang Waktu</button>
-                    <button onClick={() => setReportType('yearlySummary')} className={`px-4 py-2 text-base font-medium rounded-md ${!isRangeReport ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Ringkasan Tahunan</button>
-                </div>
-                 {isRangeReport && (
                     <div className="flex items-center gap-2 flex-wrap">
                         <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                             <button onClick={() => setRangeType('weekly')} className={`px-3 py-1.5 text-base font-medium rounded-md ${rangeType === 'weekly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Minggu Ini</button>
@@ -341,12 +187,12 @@ const ReportsPage: React.FC = () => {
                             </div>
                         )}
                     </div>
-                )}
+
                 <button onClick={() => window.print()} className="print-hide flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3">Cetak Laporan</button>
             </div>
 
-            {isRangeReport ? (
-                <>
+            {/* Hanya tampilkan laporan range, hapus ringkasan tahunan */}
+            <>
                 {/* TAMBAHKAN: 'print-stat-card-container' untuk styling pembungkus saat cetak */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print-stat-card-container">
                     <StatCard icon={DollarSignIcon} title="Total Pendapatan" value={`Rp ${totalRevenue.toLocaleString('id-ID')}`} color="border-green-500" />
@@ -356,9 +202,9 @@ const ReportsPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Layanan Terlaris</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Layanan</th><th className="px-4 py-2 text-right">Pendapatan</th></tr></thead><tbody>{topServices.map(s => (<tr key={s.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{s.name}</td><td className="px-4 py-2 text-right">Rp {s.revenue.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Layanan Terlaris</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Layanan</th><th className="px-4 py-2 text-right">Pendapatan</th></tr></thead><tbody>{topServices.map((s, i) => (<tr key={s.name + '-' + i} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{s.name}</td><td className="px-4 py-2 text-right">Rp {s.revenue.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
                     {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pelanggan Teratas</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Pelanggan</th><th className="px-4 py-2 text-right">Total Belanja</th></tr></thead><tbody>{topCustomers.map(c => (<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-right">Rp {c.total.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Pelanggan Teratas</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Pelanggan</th><th className="px-4 py-2 text-right">Total Belanja</th></tr></thead><tbody>{topCustomers.map((c, i) => (<tr key={c.name + '-' + i} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-right">Rp {c.total.toLocaleString('id-ID')}</td></tr>))}</tbody></table></div></div>
                 </div>
                 {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
@@ -407,7 +253,7 @@ const ReportsPage: React.FC = () => {
                     {/* --- AKHIR BLOK CETAK --- */}
                 </div>
                 {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />Performa Kasir</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Kasir</th><th className="px-4 py-2 text-center">Total Transaksi</th><th className="px-4 py-2 text-right">Total Pendapatan</th><th className="px-4 py-2 text-right">Total Diskon</th></tr></thead><tbody>{cashierPerformance.length>0?cashierPerformance.map(c=>(<tr key={c.name} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-center">{c.transactionCount}</td><td className="px-4 py-2 text-right">Rp {c.totalRevenue.toLocaleString('id-ID')}</td><td className="px-4 py-2 text-right">Rp {c.totalDiscount.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={4} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data performa.</td></tr>)}</tbody></table></div></div>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section"><h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center"><UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />Performa Kasir</h2><div className="overflow-x-auto"><table className="w-full text-base text-left text-slate-500 dark:text-slate-400"><thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400"><tr><th className="px-4 py-2">Nama Kasir</th><th className="px-4 py-2 text-center">Total Transaksi</th><th className="px-4 py-2 text-right">Total Pendapatan</th><th className="px-4 py-2 text-right">Total Diskon</th></tr></thead><tbody>{cashierPerformance.length>0?cashierPerformance.map((c, i)=>(<tr key={c.name + '-' + i} className="border-b dark:border-slate-700"><td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{c.name}</td><td className="px-4 py-2 text-center">{c.transactionCount}</td><td className="px-4 py-2 text-right">Rp {c.totalRevenue.toLocaleString('id-ID')}</td><td className="px-4 py-2 text-right">Rp {c.totalDiscount.toLocaleString('id-ID')}</td></tr>)):(<tr><td colSpan={4} className="text-center py-6 text-slate-500 dark:text-slate-400">Tidak ada data performa.</td></tr>)}</tbody></table></div></div>
                 {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
                     <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
@@ -458,24 +304,7 @@ const ReportsPage: React.FC = () => {
                     </div>
                 </div>
                 </>
-            ) : (
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Ringkasan Bulanan {new Date().getFullYear()}</h2>
-                    <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={dummyYearlyData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis tickFormatter={(tick) => `Rp ${(tick / 1000000).toFixed(1)}M`} />
-                                <Tooltip formatter={(value) => `Rp ${Number(value).toLocaleString()}`} />
-                                <Legend />
-                                <Bar dataKey="income" fill="#8884d8" name="Pemasukan" maxBarSize={30} />
-                                <Bar dataKey="expense" fill="#82ca9d" name="Pengeluaran" maxBarSize={30} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            )}
+            {/* END: hanya laporan range */}
         </div>
     );
 };

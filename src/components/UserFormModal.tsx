@@ -47,7 +47,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
         onSave(finalData);
     };
     
-    const showStoreSelector = formData.role === UserRole.BranchAdmin || formData.role === UserRole.Cashier;
+    const showStoreSelector = formData.role === UserRole.Admin || formData.role === UserRole.Cashier;
 
     return (
         <Modal
@@ -76,7 +76,9 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
                         disabled={isEditingSuperAdmin}
                     >
-                        {Object.values(UserRole).map(role => <option key={role} value={role}>{role}</option>)}
+                        <option value={UserRole.SuperAdmin}>{UserRole.SuperAdmin}</option>
+                        <option value={UserRole.Admin}>{UserRole.Admin}</option>
+                        <option value={UserRole.Cashier}>{UserRole.Cashier}</option>
                     </select>
                 </div>
                 {showStoreSelector && (

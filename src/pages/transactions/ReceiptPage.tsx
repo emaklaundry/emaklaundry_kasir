@@ -30,14 +30,14 @@ const ReceiptPage: React.FC = () => {
 
     const remainingBalance = transaction.total - transaction.amountPaid;
 
-    return (
-        <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg">
-            <div className="text-center mb-8">
+        return (
+            <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg print:bg-white print:shadow-none print:rounded-none print:p-0 print:max-w-full print-main-content">
+            <div className="text-center mb-8 print:mb-4">
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h1>
                 <p className="text-base text-slate-500 dark:text-slate-400">Struk Transaksi</p>
             </div>
 
-            <div className="border-b-2 border-dashed border-slate-300 dark:border-slate-600 pb-4 mb-4">
+            <div className="border-b-2 border-dashed border-slate-300 dark:border-slate-600 pb-4 mb-4 print:pb-2 print:mb-2">
                 <div className="flex justify-between text-base">
                     <span className="text-slate-500 dark:text-slate-400">No. Invoice</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">{transaction.id}</span>
@@ -56,7 +56,7 @@ const ReceiptPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2 mb-4 print:mb-2">
                 {transaction.items.map((item, index) => (
                     <div key={index} className="flex flex-col text-base py-1">
                         <div className="flex justify-between">
@@ -86,7 +86,7 @@ const ReceiptPage: React.FC = () => {
                 ))}
             </div>
 
-            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2">
+            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2 print:pt-2 print:mt-2">
                 <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
                     <span>Subtotal</span>
                     <span>Rp {transaction.subtotal.toLocaleString('id-ID')}</span>
@@ -109,7 +109,7 @@ const ReceiptPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2">
+            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2 print:pt-2 print:mt-2">
                  <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
                     <span>Metode Bayar</span>
                     <span>{transaction.paymentMethod || '-'}</span>
@@ -130,17 +130,17 @@ const ReceiptPage: React.FC = () => {
                 </div>
             </div>
             
-            <div className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
+            <div className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400 print:mt-4">
                 <p>Estimasi Selesai: {new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}</p>
                 <p className="mt-2">{settings?.receiptMessage ?? 'Terima kasih telah menggunakan layanan kami.'}</p>
             </div>
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4 print-hide">
-                 <Link to="/transactions" className="flex-1 flex items-center justify-center text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3.5 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">
+                 <Link to="/transactions" className="flex-1 flex items-center justify-center text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3.5 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 print-hide">
                     <ChevronLeftIcon className="w-5 h-5 mr-2" />
                     Kembali
                 </Link>
-                <button onClick={() => window.print()} className="flex-1 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5">
+                <button onClick={() => window.print()} className="flex-1 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 print-hide">
                     <PrinterIcon className="w-5 h-5 mr-2" />
                     Cetak
                 </button>

@@ -7,6 +7,7 @@ import { formatRupiah, parseRupiah } from '../../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useToasts } from '../contexts/ToastContext';
 import { useEffect } from 'react';
+import { useAppContext } from '../contexts/AppContext';
 
 interface QuickMaintenanceModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     const { assets, updateAsset } = useAssets();
     const { addAuditLog } = useAuditLogs();
     const { addToast, updateToast } = useToasts();
+    const { currentUser, selectedStoreId } = useAppContext();
+    const isActionDisabled = currentUser?.role === 'Super Admin' && selectedStoreId === 'all';
     const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id || '');
     const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>(() => ({
         date: new Date(),
@@ -49,12 +52,16 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     };
 
     const handleSave = async () => {
+        if (isActionDisabled) {
+            addToast('Pilih cabang spesifik untuk melakukan aksi cepat.', 'warning');
+            return;
+        }
         if (!selectedAssetId || !formData.description) {
             addToast("Silakan pilih aset dan isi deskripsi kerusakan.", 'warning');
             return;
         }
 
-    const newLog: MaintenanceLog = { ...formData, id: Date.now().toString() };
+        const newLog: MaintenanceLog = { ...formData, id: Date.now().toString() };
         const assetToUpdate = assets.find(asset => asset.id === selectedAssetId);
 
         if (!assetToUpdate) {
@@ -92,16 +99,21 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             footer={
               <>
                 <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                                <button 
-                                    onClick={handleSave} 
-                                    className={`text-white font-medium rounded-lg text-lg px-6 py-3 ${(!selectedAssetId || !formData.description) ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-800'}`}
-                                    disabled={!selectedAssetId || !formData.description}
-                                >
-                                    Simpan Laporan
-                                </button>
+                <button 
+                    onClick={handleSave} 
+                    className={`text-white font-medium rounded-lg text-lg px-6 py-3 ${(!selectedAssetId || !formData.description || isActionDisabled) ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-800'}`}
+                    disabled={!selectedAssetId || !formData.description || isActionDisabled}
+                >
+                    Simpan Laporan
+                </button>
               </>
             }
         >
+            {isActionDisabled && (
+                <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-3">
+                    Pilih cabang spesifik untuk melakukan aksi cepat.
+                </p>
+            )}
             <form className="space-y-4" onSubmit={e => e.preventDefault()}>
                 <div>
                     <label htmlFor="asset" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Pilih Aset</label>

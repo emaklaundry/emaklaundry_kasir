@@ -19,6 +19,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, on
         category: 'Operasional',
         amount: 0,
     });
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setFormData({
@@ -41,8 +42,21 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, on
         }
     };
 
+    const validate = () => {
+        if (!formData.description.trim()) return 'Deskripsi wajib diisi.';
+        if (!formData.category.trim()) return 'Kategori wajib diisi.';
+        if (!formData.amount || isNaN(formData.amount) || formData.amount <= 0) return 'Jumlah harus lebih dari 0.';
+        return null;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const validationError = validate();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+        setError(null);
         // convert YYYY-MM-DD to ISO at local midnight to avoid timezone shift
         const [y, m, d] = (formData.date || '').split('-').map(Number);
         const iso = isNaN(y) ? new Date().toISOString() : new Date(y, (m || 1) - 1, d || 1).toISOString();
@@ -57,11 +71,14 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({ expense, isOpen, on
             footer={
                 <>
                     <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600">Batal</button>
-                    <button onClick={handleSubmit} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3">Simpan</button>
+                    <button onClick={handleSubmit} className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3" disabled={!!validate()}>
+                        Simpan
+                    </button>
                 </>
             }
         >
             <form className="space-y-4" onSubmit={handleSubmit}>
+                {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
                 <div>
                     <label htmlFor="description" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">Deskripsi</label>
                     <input type="text" name="description" id="description" value={formData.description} onChange={handleChange} className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white" required />
