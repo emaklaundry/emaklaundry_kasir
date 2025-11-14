@@ -236,7 +236,7 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
     }
 
     return (
-        <div className="mt-6 flex gap-3 relative">
+        <div className="mt-6 flex gap-3 relative flex-wrap">
             {loading && (
                 <div className="absolute inset-0 z-50 bg-white/60 dark:bg-black/50 rounded-md flex items-center justify-center">
                     <div className="flex items-center gap-3">

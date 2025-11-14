@@ -20,11 +20,10 @@ const NavItem: React.FC<{ to: string, icon: React.FC<{className?: string}>, labe
 const BottomNavBar: React.FC = () => {
     return (
         <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden">
-            <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
+            <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
                  <NavItem to="/" icon={HomeIcon} label="Dashboard" />
                  <NavItem to="/transactions" icon={ShoppingCartIcon} label="Transaksi" />
                  <NavItem to="/transactions/new" icon={PlusCircleIcon} label="Tambah" />
-                 <NavItem to="/management/customers" icon={UsersIcon} label="Pelanggan" />
             </div>
         </div>
     );
