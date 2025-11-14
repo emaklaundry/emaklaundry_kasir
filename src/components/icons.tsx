@@ -1,3 +1,11 @@
+export const ReceiptIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <rect x="4" y="2" width="16" height="20" rx="2" />
+    <line x1="8" y1="6" x2="16" y2="6" />
+    <line x1="8" y1="10" x2="16" y2="10" />
+    <line x1="8" y1="14" x2="12" y2="14" />
+  </Icon>
+);
 export const BoltIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Icon className={className}>
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
