@@ -32,7 +32,7 @@ const NewTransactionPage: React.FC = () => {
     const [items, setItems] = useState<TransactionItem[]>([]);
     const [notes, setNotes] = useState('');
     const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
-    const [discountValue, setDiscountValue] = useState(0);
+    const [discountValue, setDiscountValue] = useState<number | ''>(0);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -43,7 +43,7 @@ const NewTransactionPage: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isPayingNow, setIsPayingNow] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
-    const [amountPaidStr, setAmountPaidStr] = useState('0');
+    const [amountPaidStr, setAmountPaidStr] = useState('');
     const [tenderedAmountStr, setTenderedAmountStr] = useState('');
 
     // Semua useMemo, useEffect, useCallback juga di sini
@@ -67,10 +67,11 @@ const NewTransactionPage: React.FC = () => {
 
     const discountAmount = useMemo(() => {
         if (!canApplyDiscount) return 0;
+        const val = Number(discountValue) || 0;
         if (discountType === 'percent') {
-            return subtotal * (discountValue / 100);
+            return subtotal * (val / 100);
         }
-        return Math.min(discountValue, subtotal);
+        return Math.min(val, subtotal);
     }, [subtotal, discountValue, discountType, canApplyDiscount]);
 
     const taxAmount = useMemo(() => {
@@ -228,7 +229,7 @@ const NewTransactionPage: React.FC = () => {
         setDiscountValue(settings?.discountRate ?? 0);
         setDiscountType('percent');
         setPaymentMethod(undefined);
-        setAmountPaidStr('0');
+        setAmountPaidStr('');
         setTenderedAmountStr('');
         setIsPayingNow(false);
         setNewlyCreatedTransaction(null);
@@ -400,7 +401,7 @@ const NewTransactionPage: React.FC = () => {
         if (paying) {
             setAmountPaidStr(formatRupiah(grandTotal));
         } else {
-            setAmountPaidStr('0');
+            setAmountPaidStr('');
             setPaymentMethod(undefined);
             setTenderedAmountStr('');
         }
@@ -408,6 +409,10 @@ const NewTransactionPage: React.FC = () => {
 
     const handleAmountToPayChange = (valueStr: string) => {
         const rawValue = parseRupiah(valueStr);
+        if (valueStr === '' || rawValue === 0) {
+            setAmountPaidStr('');
+            return;
+        }
         const cappedValue = rawValue > grandTotal ? grandTotal : rawValue;
         setAmountPaidStr(formatRupiah(cappedValue));
     };
@@ -453,7 +458,7 @@ const NewTransactionPage: React.FC = () => {
                                                             <input 
                                                                 type="number" 
                                                                 min="0" 
-                                                                step={item.unit === 'kg' ? "0.1" : "1"}
+                                                                step={item.unit === 'kg' ? "0.01" : "1"}
                                                                 value={item.quantity} 
                                                                 onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)} 
                                                                 className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
@@ -528,7 +533,7 @@ const NewTransactionPage: React.FC = () => {
                                                 id="discountValue"
                                                 min="0"
                                                 value={discountValue}
-                                                onChange={(e) => setDiscountValue(Math.max(0, parseFloat(e.target.value) || 0))}
+                                                onChange={(e) => setDiscountValue(e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0))}
                                                 className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600" 
                                                 disabled={!canApplyDiscount}
                                             />
@@ -604,7 +609,7 @@ const NewTransactionPage: React.FC = () => {
                                                 type="text" 
                                                 id="tenderedAmount" 
                                                 value={tenderedAmountStr}
-                                                onChange={e => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
+                                                onChange={e => { const val = parseRupiah(e.target.value); setTenderedAmountStr(val === 0 ? '' : formatRupiah(val)); }}
                                                 className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                                 placeholder="0"
                                             />
