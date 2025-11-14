@@ -162,6 +162,17 @@ const TransactionPage: React.FC = () => {
     const targetTransaction = transactions.find((t) => t.id === id);
     if (!targetTransaction) return;
 
+    // --- TAMBAHAN GUARD CLAUSE ---
+    if (
+      newStatus === OrderStatus.Completed &&
+      targetTransaction.paymentStatus !== PaymentStatus.Paid
+    ) {
+      addToast('Pesanan tidak dapat diselesaikan karena belum lunas.', 'error');
+      // Reset visual dropdown kembali ke nilai lama (opsional, tergantung implementasi UI)
+      return;
+    }
+    // --- AKHIR TAMBAHAN ---
+
     const updatedTransaction = { ...targetTransaction, orderStatus: newStatus };
     const shouldShowWhatsAppModal =
       newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
@@ -336,7 +347,7 @@ const TransactionPage: React.FC = () => {
 
   return (
     <>
-      <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
         {(isSavingPayment || isBulkProcessing) && (
           <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
             <div className="flex items-center gap-3">
@@ -669,7 +680,7 @@ const TransactionPage: React.FC = () => {
             paginatedTransactions.map((t) => (
               <div
                 key={t.id}
-                className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-white dark:bg-slate-800'}`}
+                className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-slate-50 dark:bg-slate-800'}`}
               >
                 <div className="absolute top-3 left-2">
                   <input

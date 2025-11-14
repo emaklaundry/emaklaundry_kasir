@@ -4,7 +4,13 @@ import { Link } from 'react-router-dom';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { OrderStatus, PaymentStatus, Transaction } from '@/types';
-import { ChevronLeftIcon, PrinterIcon, UsersIcon, ShoppingCartIcon } from '../../components/icons';
+import {
+  ChevronLeftIcon,
+  PrinterIcon,
+  UsersIcon,
+  ShoppingCartIcon,
+  DollarSignIcon, // Ditambahkan untuk PaymentModal
+} from '../../components/icons';
 // import { updateTransactionProgress } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';
 import { useAppContext } from '../../contexts/AppContext';
@@ -83,7 +89,7 @@ const TransactionDetailPage: React.FC = () => {
         Kembali ke Daftar Transaksi
       </Link>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
@@ -142,10 +148,7 @@ const TransactionDetailPage: React.FC = () => {
               }
             />
             <DetailItem label="Metode Bayar" value={transaction.paymentMethod || '-'} />
-            <DetailItem
-              label="Sisa Tagihan"
-              value={`Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}`}
-            />
+            {/* Sisa Tagihan dihapus dari sini karena sudah ada di bagian total */}
           </div>
         </div>
         {transaction.notes && (
@@ -161,9 +164,10 @@ const TransactionDetailPage: React.FC = () => {
         <ActionButtons transaction={transaction} />
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
-        <div className="overflow-x-auto">
+        {/* Tampilan Tabel Desktop */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
             <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
@@ -214,6 +218,47 @@ const TransactionDetailPage: React.FC = () => {
           </table>
         </div>
 
+        {/* Tampilan Kartu Mobile */}
+        <div className="md:hidden space-y-3">
+          {transaction.items.map((item, index) => (
+            <div key={index} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
+              <div className="flex justify-between items-start">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {item.serviceName}
+                </span>
+                <span className="font-semibold text-right text-slate-700 dark:text-slate-200">
+                  Rp {item.subtotal.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                {item.quantity} {item.unit} @ Rp {item.price.toLocaleString('id-ID')}
+              </p>
+              {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
+                <div className="pl-2 mt-2 space-y-0.5 border-l-2 border-slate-300 dark:border-slate-600">
+                  {item.itemDetails?.slice(0, item.quantity).map(
+                    (detail, detailIndex) =>
+                      detail.note && (
+                        <p
+                          key={detailIndex}
+                          className="text-sm font-normal text-slate-500 dark:text-slate-400"
+                        >
+                          - Item #{detailIndex + 1}: {detail.note}
+                        </p>
+                      ),
+                  )}
+                </div>
+              )}
+              {item.taggedItems && (
+                <div className="pl-2 mt-2 border-l-2 border-slate-300 dark:border-slate-600">
+                  <p className="text-sm font-normal text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                    Rincian: {item.taggedItems}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
         <div className="w-full md:w-1/2 lg:w-1/3 ml-auto mt-6 space-y-2">
           <DetailItem
             label="Subtotal"
@@ -233,6 +278,15 @@ const TransactionDetailPage: React.FC = () => {
             label="Grand Total"
             value={`Rp ${transaction.total.toLocaleString('id-ID')}`}
             className="text-xl font-bold border-t dark:border-slate-700 pt-3 !text-slate-900 dark:!text-white"
+          />
+          <DetailItem
+            label="Sudah Dibayar"
+            value={`Rp ${transaction.amountPaid.toLocaleString('id-ID')}`}
+          />
+          <DetailItem
+            label="Sisa Tagihan"
+            value={`Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}`}
+            className="text-lg font-bold !text-slate-900 dark:!text-white"
           />
         </div>
       </div>
@@ -338,34 +392,41 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
         </div>
       )}
       <button
-        disabled={loading}
+        disabled={loading || transaction.paymentStatus === PaymentStatus.Paid}
         onClick={handleOpenPaymentModal}
-        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md disabled:bg-green-300 disabled:cursor-not-allowed"
       >
         Bayar
       </button>
       <button
-        disabled={loading}
+        disabled={
+          loading ||
+          transaction.orderStatus === OrderStatus.Ready ||
+          transaction.orderStatus === OrderStatus.Completed
+        }
         onClick={handleMarkReady}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md"
+        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md disabled:bg-yellow-300 disabled:cursor-not-allowed"
       >
         Tandai Siap Ambil
       </button>
       <button
-        disabled={loading}
+        disabled={
+          loading ||
+          transaction.orderStatus === OrderStatus.Completed ||
+          transaction.paymentStatus !== PaymentStatus.Paid
+        }
         onClick={handleMarkCompleted}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:bg-blue-300 disabled:cursor-not-allowed"
+        title={
+          transaction.paymentStatus !== PaymentStatus.Paid
+            ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
+            : ''
+        }
       >
         Tandai Selesai
       </button>
-      {isAdmin && (
-        <Link
-          to={`/transactions/${transaction.id}/edit`}
-          className="ml-auto inline-block text-sm text-slate-700 dark:text-slate-200 hover:underline"
-        >
-          Edit Items
-        </Link>
-      )}
+
+      {/* Tautan 'Edit Items' yang rusak telah dihapus */}
 
       <PaymentModal
         isOpen={isPaymentOpen}

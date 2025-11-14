@@ -77,7 +77,7 @@ const CustomerDetailPage: React.FC = () => {
         Kembali ke Daftar Pelanggan
       </Link>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="flex-shrink-0 w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
             <UsersIcon className="w-10 h-10 text-slate-500 dark:text-slate-400" />
@@ -97,7 +97,7 @@ const CustomerDetailPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
           <DollarSignIcon className="w-8 h-8 text-green-500" />
           <div>
             <p className="text-base text-slate-500 dark:text-slate-400">Total Belanja</p>

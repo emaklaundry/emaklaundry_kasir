@@ -32,7 +32,7 @@ const ReceiptPage: React.FC = () => {
   const remainingBalance = transaction.total - transaction.amountPaid;
 
   return (
-    <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg">
+    <div className="max-w-md mx-auto bg-slate-50 dark:bg-slate-800 p-8 rounded-lg shadow-lg">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h1>
         <p className="text-base text-slate-500 dark:text-slate-400">Struk Transaksi</p>

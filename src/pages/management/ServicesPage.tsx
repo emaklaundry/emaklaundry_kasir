@@ -116,7 +116,7 @@ const ServicesPage: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
       {isSavingService && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">

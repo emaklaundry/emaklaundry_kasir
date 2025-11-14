@@ -362,6 +362,12 @@ const Dashboard: React.FC = () => {
       if (transaction.orderStatus === OrderStatus.Processing) {
         nextStatus = OrderStatus.Ready;
       } else if (transaction.orderStatus === OrderStatus.Ready) {
+        // --- TAMBAHAN GUARD CLAUSE ---
+        if (transaction.paymentStatus !== PaymentStatus.Paid) {
+          addToast('Pesanan tidak dapat diselesaikan karena belum lunas.', 'error');
+          return;
+        }
+        // --- AKHIR TAMBAHAN ---
         nextStatus = OrderStatus.Completed;
       } else {
         return; // No next status from 'Completed'
@@ -379,7 +385,7 @@ const Dashboard: React.FC = () => {
         setIsWhatsAppModalOpen(true);
       }
     },
-    [transactions, updateTransaction, addAuditLog],
+    [transactions, updateTransaction, addAuditLog, addToast],
   );
 
   const handleMarkMaintenanceAsComplete = useCallback(

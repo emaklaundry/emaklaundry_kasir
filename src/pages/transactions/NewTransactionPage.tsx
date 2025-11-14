@@ -29,6 +29,7 @@ import {
   TagIcon,
   ShoppingCartIcon,
 } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 
 // --- HOOKS KONTEKS & UTILITAS ---
 import { useToasts } from '../../contexts/ToastContext';
@@ -133,7 +134,7 @@ function NewTransactionPage() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   // Komponen internal untuk detail keranjang (reusable di desktop & modal mobile)
   const CartDetails = () => (
-    <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-800 rounded-lg p-6 shadow-md overflow-x-auto">
+    <div className="w-full max-w-md mx-auto bg-slate-50 dark:bg-slate-800 rounded-lg p-6 shadow-md overflow-x-auto">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Detail Pesanan</h2>
         {isMobileCartOpen && (
@@ -148,24 +149,11 @@ function NewTransactionPage() {
       </div>
       <div className="space-y-3 pr-2 overflow-y-auto max-h-[60vh]">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-12 h-12 mb-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 3h18M9 3v18m6-18v18M3 21h18"
-              />
-            </svg>
-            <p className="font-semibold text-lg">Keranjang kosong</p>
-            <p className="text-sm">Silakan pilih layanan untuk menambah item ke keranjang.</p>
-          </div>
+          <EmptyState
+            icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
+            title="Keranjang kosong"
+            description="Silakan pilih layanan untuk menambah item."
+          />
         ) : (
           <>
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -232,7 +220,7 @@ function NewTransactionPage() {
     );
   } else if (servicesError) {
     content = (
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
         <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">
           Gagal Memuat Data Layanan
         </h2>
@@ -432,7 +420,7 @@ function NewTransactionPage() {
     );
   } else if (servicesError) {
     content = (
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
         <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">
           Gagal Memuat Data Layanan
         </h2>
@@ -451,7 +439,7 @@ function NewTransactionPage() {
     );
   } else if (!settings) {
     content = (
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
         <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">
           Gagal Memuat Pengaturan Aplikasi
         </h2>
@@ -468,13 +456,13 @@ function NewTransactionPage() {
           <div className="flex lg:flex-row h-screen overflow-hidden">
             {/* Bagian Kiri: Daftar Layanan & Item */}
             <div className="w-full lg:w-3/5 xl:w-2/3 p-4 overflow-y-auto pb-32 lg:pb-4">
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6">
+              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6">
                 <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                   Pilih Layanan
                 </h2>
                 <ServiceSelector services={services} onAddService={handleAddService} />
               </div>
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
                 <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                   Item Transaksi
                 </h2>
