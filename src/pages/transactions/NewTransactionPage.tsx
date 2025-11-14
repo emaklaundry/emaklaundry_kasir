@@ -7,7 +7,7 @@ import CustomerSelector from '@/components/CustomerSelector';
 import ServiceSelector from '@/components/ServiceSelector';
 import CustomerFormModal from '@/components/CustomerFormModal';
 import { useTransactionForm } from '@/hooks/useTransactionForm';
-import { XCircleIcon, PencilIcon } from '@/components/icons';
+import { XCircleIcon } from '@/components/icons';
 import { useToasts } from '@/contexts/ToastContext';
 
 const NewTransactionPage: React.FC = () => {
@@ -24,8 +24,6 @@ const NewTransactionPage: React.FC = () => {
   // State for add customer modal
   const [isAddCustomerOpen, setAddCustomerOpen] = useState(false);
   const [isAddingCustomer, setIsAddingCustomer] = useState(false);
-  const [editIdx, setEditIdx] = useState<number | null>(null);
-
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Transaksi Baru</h1>
@@ -94,9 +92,13 @@ const NewTransactionPage: React.FC = () => {
                 <li key={idx} className="py-2 flex items-center justify-between gap-2 group">
                   <div className="flex-1">
                     <span className="font-medium">{item.serviceName}</span>
-                    <span className="ml-2 text-slate-500">x{item.quantity} ({item.unit})</span>
+                    <span className="ml-2 text-slate-500">
+                      x{item.quantity} ({item.unit})
+                    </span>
                   </div>
-                  <span className="w-32 text-right tabular-nums">Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                  <span className="w-32 text-right tabular-nums">
+                    Rp {item.subtotal.toLocaleString('id-ID')}
+                  </span>
                   <button
                     className="ml-2 text-red-500 hover:text-red-700 opacity-80 hover:opacity-100"
                     title="Hapus item"
@@ -129,11 +131,15 @@ const NewTransactionPage: React.FC = () => {
           </div>
           <div className="flex justify-between">
             <span>Diskon</span>
-            <span className="tabular-nums text-green-600">- Rp {form.discountAmount.toLocaleString('id-ID')}</span>
+            <span className="tabular-nums text-green-600">
+              - Rp {form.discountAmount.toLocaleString('id-ID')}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>Pajak</span>
-            <span className="tabular-nums text-orange-600">+ Rp {form.taxAmount.toLocaleString('id-ID')}</span>
+            <span className="tabular-nums text-orange-600">
+              + Rp {form.taxAmount.toLocaleString('id-ID')}
+            </span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-2">
             <span>Total</span>
