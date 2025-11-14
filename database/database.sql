@@ -1,45 +1,7 @@
+
 -- === RPC: complete_scheduled_maintenance ===
 -- Tandai perawatan terjadwal selesai dan update log asset secara atomik
-CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
-  p_schedule_id uuid,
-  p_asset_id uuid,
-  p_log_description text,
-  p_frequency_value integer,
-  p_frequency_unit text
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_asset_row public.assets%ROWTYPE;
-  v_new_log jsonb;
-  v_next_due_date date;
-BEGIN
-  -- Ambil data asset
-  SELECT * INTO v_asset_row FROM public.assets WHERE id = p_asset_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Asset tidak ditemukan';
-  END IF;
-  -- Buat log baru
-  v_new_log := jsonb_build_object(
-    'id', 'LOG_' || gen_random_uuid(),
-    'date', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-    'description', p_log_description,
-    'cost', 0
-  );
-  -- Update maintenanceHistory asset
-  UPDATE public.assets
-  SET "maintenanceHistory" = COALESCE("maintenanceHistory", '[]'::jsonb) || v_new_log
-  WHERE id = p_asset_id;
-  -- Hitung nextDueDate
-  v_next_due_date := (now() + (p_frequency_value || ' ' || p_frequency_unit)::interval)::date;
-  -- Update scheduled_maintenances
-  UPDATE public.scheduled_maintenances
-  SET "lastCompletedDate" = now(), "nextDueDate" = v_next_due_date
-  WHERE id = p_schedule_id;
-END;
-$$;
+-- (Function moved to end of file to ensure all tables exist)
 -- === RPC: bulk_update_order_status ===
 -- Update status banyak transaksi sekaligus secara atomik
 CREATE OR REPLACE FUNCTION public.bulk_update_order_status(
@@ -66,9 +28,8 @@ END;
 $$;
 
 -- === ENUM DEFINITIONS (PASTIKAN INI DI PALING ATAS) ===
--- Hapus tipe lama jika ada (hati-hati jika sudah ada data!)
-DROP TYPE IF EXISTS public.order_status;
-DROP TYPE IF EXISTS public.payment_method;
+-- DROP TYPE IF EXISTS public.order_status; -- Dihapus/disable agar tidak error jika ada fungsi yang tergantung
+-- DROP TYPE IF EXISTS public.payment_method; -- Dihapus/disable agar tidak error jika ada fungsi yang tergantung
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
@@ -694,3 +655,47 @@ $$;
 -- === 7. PENGATURAN AWAL (Initial Settings) ===
 
 INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0);
+
+
+-- === RPC: complete_scheduled_maintenance ===
+-- Tandai perawatan terjadwal selesai dan update log asset secara atomik
+CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
+  p_schedule_id uuid,
+  p_asset_id uuid,
+  p_log_description text,
+  p_frequency_value integer,
+  p_frequency_unit text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_asset_row public.assets%ROWTYPE;
+  v_new_log jsonb;
+  v_next_due_date date;
+BEGIN
+  -- Ambil data asset
+  SELECT * INTO v_asset_row FROM public.assets WHERE id = p_asset_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Asset tidak ditemukan';
+  END IF;
+  -- Buat log baru
+  v_new_log := jsonb_build_object(
+    'id', 'LOG_' || gen_random_uuid(),
+    'date', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+    'description', p_log_description,
+    'cost', 0
+  );
+  -- Update maintenanceHistory asset
+  UPDATE public.assets
+  SET "maintenanceHistory" = COALESCE("maintenanceHistory", '[]'::jsonb) || v_new_log
+  WHERE id = p_asset_id;
+  -- Hitung nextDueDate
+  v_next_due_date := (now() + (p_frequency_value || ' ' || p_frequency_unit)::interval)::date;
+  -- Update scheduled_maintenances
+  UPDATE public.scheduled_maintenances
+  SET "lastCompletedDate" = now(), "nextDueDate" = v_next_due_date
+  WHERE id = p_schedule_id;
+END;
+$$;

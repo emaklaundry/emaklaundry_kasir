@@ -27,9 +27,10 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 
+import { bulkUpdateOrderStatus } from '@/utils/supabaseClient';
+
 function TransactionPage() {
   const { transactions, updateTransaction } = useTransactions();
-  import { bulkUpdateOrderStatus } from '@/utils/supabaseClient';
   const { customers } = useCustomers();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
