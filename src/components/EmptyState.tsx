@@ -7,7 +7,12 @@ interface EmptyStateProps {
   children?: React.ReactNode;
 }
 
-function EmptyState({ icon, title = 'Tidak Ada Data', description = 'Belum ada data untuk ditampilkan.', children }: EmptyStateProps) {
+function EmptyState({
+  icon,
+  title = 'Tidak Ada Data',
+  description = 'Belum ada data untuk ditampilkan.',
+  children,
+}: EmptyStateProps) {
   return (
     <div className="text-center py-12">
       {icon && <div className="mx-auto mb-4">{icon}</div>}

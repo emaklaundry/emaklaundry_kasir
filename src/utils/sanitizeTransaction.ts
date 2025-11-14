@@ -1,6 +1,6 @@
 import { Transaction } from '../types';
 
-export function sanitizeTransactionUpdate(data: Partial<Transaction>): Record<string, any> {
+export function sanitizeTransactionUpdate(data: Partial<Transaction>): Record<string, unknown> {
   const allowedColumns = new Set<string>([
     'customerId',
     'items',
@@ -20,11 +20,10 @@ export function sanitizeTransactionUpdate(data: Partial<Transaction>): Record<st
     'notes',
   ]);
 
-  const payload: Record<string, any> = {};
+  const payload: Record<string, unknown> = {};
   Object.entries(data || {}).forEach(([k, v]) => {
     if (allowedColumns.has(k)) payload[k] = v;
   });
 
   return payload;
 }
-

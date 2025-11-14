@@ -1,3 +1,4 @@
+/* global document */
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 interface CommandPaletteContextType {
@@ -9,27 +10,34 @@ interface CommandPaletteContextType {
 
 const CommandPaletteContext = createContext<CommandPaletteContextType | undefined>(undefined);
 
-export const CommandPaletteProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+type CommandPaletteProviderProps = { children: ReactNode };
+export const CommandPaletteProvider = ({ children }: CommandPaletteProviderProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || e.key === 'K' && (e.metaKey || e.ctrlKey)) {
+      if (
+        (e.key === 'k' && (e.metaKey || e.ctrlKey)) ||
+        (e.key === 'K' && (e.metaKey || e.ctrlKey))
+      ) {
         e.preventDefault();
         setIsOpen((open) => !open);
       }
     };
 
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', down);
+      return () => document.removeEventListener('keydown', down);
+    }
+    return undefined;
   }, []);
-  
+
   const value = {
-      isOpen,
-      open: () => setIsOpen(true),
-      close: () => setIsOpen(false),
-      toggle: () => setIsOpen(prev => !prev),
-  }
+    isOpen,
+    open: () => setIsOpen(true),
+    close: () => setIsOpen(false),
+    toggle: () => setIsOpen((prev) => !prev),
+  };
 
   return React.createElement(CommandPaletteContext.Provider, { value: value }, children);
 };

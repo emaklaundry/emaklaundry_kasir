@@ -18,17 +18,21 @@ export function useStores() {
       if (error) throw error;
       return null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] }),
   });
 
   const updateStore = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Store> }) => {
       const { id, data } = variables;
-      const { data: updated, error } = await supabase.from('stores').update(data).eq('id', id).select();
+      const { data: updated, error } = await supabase
+        .from('stores')
+        .update(data)
+        .eq('id', id)
+        .select();
       if (error) throw error;
       return updated?.[0] || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] }),
   });
 
   const deleteStore = useMutation({
@@ -37,7 +41,7 @@ export function useStores() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] }),
   });
 
   return {
@@ -45,6 +49,6 @@ export function useStores() {
     addStore: addStore.mutateAsync,
     updateStore: (id: string, data: Partial<Store>) => updateStore.mutateAsync({ id, data }),
     deleteStore: deleteStore.mutateAsync,
-    ...query
+    ...query,
   };
 }

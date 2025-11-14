@@ -9,7 +9,14 @@ interface SortableHeaderProps {
   children?: React.ReactNode;
 }
 
-function SortableHeader({ label, sortKey, sortConfig, onSort, className = '', children }: SortableHeaderProps) {
+function SortableHeader({
+  label,
+  sortKey,
+  sortConfig,
+  onSort,
+  className = '',
+  children,
+}: SortableHeaderProps) {
   const isActive = sortConfig?.key === sortKey;
   return (
     <button
@@ -18,13 +25,16 @@ function SortableHeader({ label, sortKey, sortConfig, onSort, className = '', ch
       className={`flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ${className}`}
     >
       {label}
-      {isActive && (
-        sortConfig?.direction === 'ascending' ? (
-          <span aria-label="asc" className="ml-1">▲</span>
+      {isActive &&
+        (sortConfig?.direction === 'ascending' ? (
+          <span aria-label="asc" className="ml-1">
+            ▲
+          </span>
         ) : (
-          <span aria-label="desc" className="ml-1">▼</span>
-        )
-      )}
+          <span aria-label="desc" className="ml-1">
+            ▼
+          </span>
+        ))}
       {children}
     </button>
   );

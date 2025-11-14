@@ -1,16 +1,189 @@
+
+-- === ENUM DEFINITIONS (PASTIKAN INI DI PALING ATAS) ===
+-- Hapus tipe lama jika ada (hati-hati jika sudah ada data!)
+DROP TYPE IF EXISTS public.order_status;
+DROP TYPE IF EXISTS public.payment_method;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
+    CREATE TYPE public.service_category AS ENUM ('Kiloan','Satuan','Sepatu','Karpet');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE public.user_role AS ENUM ('Super Admin','Admin','Kasir');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+    CREATE TYPE public.payment_status AS ENUM ('Lunas','Belum Lunas','Bayar Sebagian');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  -- DROP TYPE IF EXISTS public.order_status; -- Uncomment jika ingin drop lama (hati-hati data!)
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
+    CREATE TYPE public.order_status AS ENUM ('Diproses','Siap Diambil','Selesai');
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  -- DROP TYPE IF EXISTS public.payment_method; -- Uncomment jika ingin drop lama (hati-hati data!)
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
+    CREATE TYPE public.payment_method AS ENUM ('Tunai','QRIS','Transfer Bank');
+  END IF;
+END$$;
+-- === 1. MEMBUAT TABEL ===
+-- Skema tabel inti Anda sudah sangat baik.
+-- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
+
+CREATE TABLE IF NOT EXISTS public.stores (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  address text,
+  phone text,
+  "isActive" boolean DEFAULT true,
+  created_at timestamp WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  role public.user_role NOT NULL, -- DIUBAH DARI TEXT
+  store_id uuid REFERENCES stores(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
+  created_at timestamp WITH TIME ZONE DEFAULT NOW(),
+  "isActive" boolean DEFAULT true,
+  "canGiveDiscount" boolean DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS public.customers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  phone text,
+  address text,
+  notes text,
+  "defaultDiscount" integer DEFAULT 0,
+  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.services (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  category public.service_category NOT NULL,
+  price integer NOT NULL,
+  unit text NOT NULL,
+  "durationDays" integer NOT NULL,
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
+);
+
+
+-- User credentials table for local auth (if needed)
+CREATE TABLE IF NOT EXISTS public.user_credentials (
+  profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  username text UNIQUE NOT NULL,
+  password_hash text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS public.inventory_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  stock integer NOT NULL,
+  "lowStockThreshold" integer NOT NULL,
+  unit text NOT NULL,
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.assets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  "serialNumber" text,
+  "purchaseDate" date,
+  "purchaseCost" numeric,
+  status text NOT NULL,
+  "maintenanceHistory" jsonb,
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.scheduled_maintenances (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "assetId" uuid REFERENCES assets(id) ON DELETE CASCADE,
+  description text NOT NULL,
+  "frequencyValue" integer NOT NULL,
+  "frequencyUnit" text NOT NULL,
+  "nextDueDate" date NOT NULL,
+  "lastCompletedDate" date
+);
+
+CREATE TABLE IF NOT EXISTS public.expenses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  date date NOT NULL,
+  description text NOT NULL,
+  category text NOT NULL,
+  amount numeric NOT NULL,
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.transactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "customerId" uuid REFERENCES customers(id) ON DELETE SET NULL,
+  items jsonb NOT NULL,
+  subtotal numeric NOT NULL,
+  discount numeric NOT NULL,
+  tax numeric NOT NULL,
+  total numeric NOT NULL,
+"paymentStatus" public.payment_status NOT NULL, -- DIUBAH DARI TEXT
+"orderStatus" public.order_status NOT NULL, -- DIUBAH DARI TEXT
+  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
+  "estimatedCompletionDate" date,
+  "amountPaid" numeric NOT NULL,
+  change numeric NOT NULL,
+"paymentMethod" public.payment_method, -- DIUBAH DARI TEXT
+"createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
+  notes text
+);
+
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  timestamp timestamp WITH TIME ZONE DEFAULT NOW(),
+  "user" text,
+  action text,
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.settings (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  "receiptMessage" text,
+  "taxRate" numeric,
+  "discountRate" numeric
+);
+
+-- Tambahkan index pada kolom penting
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON public.customers (phone);
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON public.transactions ("createdAt" DESC);
+
 -- === RPC: create_new_transaction ===
 -- Fungsi ini menerima input minimal dari klien, melakukan kalkulasi harga, diskon, pajak, dan total di server,
 -- lalu menyisipkan transaksi ke tabel transactions secara aman.
 CREATE OR REPLACE FUNCTION public.create_new_transaction(
   p_customer_id uuid,
   p_items jsonb,
+  p_created_by_user_id uuid,
+  p_store_id uuid,
   p_notes text DEFAULT NULL,
   p_payment_method public.payment_method DEFAULT NULL,
   p_is_paying_now boolean DEFAULT false,
   p_discount_type text DEFAULT 'percent',
-  p_discount_value numeric DEFAULT 0,
-  p_created_by_user_id uuid,
-  p_store_id uuid
+  p_discount_value numeric DEFAULT 0
 )
 RETURNS SETOF public.transactions
 LANGUAGE plpgsql
@@ -108,178 +281,10 @@ BEGIN
 END;
 $$;
 
--- === ENUM DEFINITIONS (PASTIKAN INI DI PALING ATAS) ===
--- Hapus tipe lama jika ada (hati-hati jika sudah ada data!)
-DROP TYPE IF EXISTS public.order_status;
-DROP TYPE IF EXISTS public.payment_method;
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_category') THEN
-    CREATE TYPE public.service_category AS ENUM ('Kiloan','Satuan','Sepatu','Karpet');
-  END IF;
-END$$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-    CREATE TYPE public.user_role AS ENUM ('Super Admin','Admin','Kasir');
-  END IF;
-END$$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
-    CREATE TYPE public.payment_status AS ENUM ('Lunas','Belum Lunas','Bayar Sebagian');
-  END IF;
-END$$;
-
-DO $$
-BEGIN
-  -- DROP TYPE IF EXISTS public.order_status; -- Uncomment jika ingin drop lama (hati-hati data!)
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
-    CREATE TYPE public.order_status AS ENUM ('Diproses','Siap Diambil','Selesai');
-  END IF;
-END$$;
-
-DO $$
-BEGIN
-  -- DROP TYPE IF EXISTS public.payment_method; -- Uncomment jika ingin drop lama (hati-hati data!)
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
-    CREATE TYPE public.payment_method AS ENUM ('Tunai','QRIS','Transfer Bank');
-  END IF;
-END$$;
-
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
 
-CREATE TABLE public.stores (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  address text,
-  phone text,
-  "isActive" boolean DEFAULT true,
-  created_at timestamp WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE public.profiles (
-  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  name text NOT NULL,
-  role public.user_role NOT NULL, -- DIUBAH DARI TEXT
-  store_id uuid REFERENCES stores(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
-  created_at timestamp WITH TIME ZONE DEFAULT NOW(),
-  "isActive" boolean DEFAULT true,
-  "canGiveDiscount" boolean DEFAULT false
-);
-
-CREATE TABLE public.customers (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  phone text,
-  address text,
-  notes text,
-  "defaultDiscount" integer DEFAULT 0,
-  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
-);
-
-CREATE TABLE public.services (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  category public.service_category NOT NULL,
-  price integer NOT NULL,
-  unit text NOT NULL,
-  "durationDays" integer NOT NULL,
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
-);
-
-
--- User credentials table for local auth (if needed)
-CREATE TABLE IF NOT EXISTS public.user_credentials (
-  profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
-  username text UNIQUE NOT NULL,
-  password_hash text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
-
-CREATE TABLE public.inventory_items (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  stock integer NOT NULL,
-  "lowStockThreshold" integer NOT NULL,
-  unit text NOT NULL,
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
-);
-
-CREATE TABLE public.assets (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  "serialNumber" text,
-  "purchaseDate" date,
-  "purchaseCost" numeric,
-  status text NOT NULL,
-  "maintenanceHistory" jsonb,
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
-);
-
-CREATE TABLE public.scheduled_maintenances (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "assetId" uuid REFERENCES assets(id) ON DELETE CASCADE,
-  description text NOT NULL,
-  "frequencyValue" integer NOT NULL,
-  "frequencyUnit" text NOT NULL,
-  "nextDueDate" date NOT NULL,
-  "lastCompletedDate" date
-);
-
-CREATE TABLE public.expenses (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  date date NOT NULL,
-  description text NOT NULL,
-  category text NOT NULL,
-  amount numeric NOT NULL,
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
-);
-
-CREATE TABLE public.transactions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "customerId" uuid REFERENCES customers(id) ON DELETE SET NULL,
-  items jsonb NOT NULL,
-  subtotal numeric NOT NULL,
-  discount numeric NOT NULL,
-  tax numeric NOT NULL,
-  total numeric NOT NULL,
-"paymentStatus" public.payment_status NOT NULL, -- DIUBAH DARI TEXT
-"orderStatus" public.order_status NOT NULL, -- DIUBAH DARI TEXT
-  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
-  "estimatedCompletionDate" date,
-  "amountPaid" numeric NOT NULL,
-  change numeric NOT NULL,
-"paymentMethod" public.payment_method, -- DIUBAH DARI TEXT
-"createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
-  notes text
-);
-
-CREATE TABLE public.audit_logs (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  timestamp timestamp WITH TIME ZONE DEFAULT NOW(),
-  "user" text,
-  action text,
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
-);
-
-CREATE TABLE public.settings (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  "receiptMessage" text,
-  "taxRate" numeric,
-  "discountRate" numeric
-);
-
--- Tambahkan index pada kolom penting
-CREATE INDEX IF NOT EXISTS idx_customers_phone ON public.customers (phone);
-CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON public.transactions ("createdAt" DESC);
 
 -- === 2. AKTIFKAN RLS ===
 -- (Ini sama seperti skrip Anda, semua sudah benar)

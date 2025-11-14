@@ -1,10 +1,17 @@
 import { useState, useMemo, useEffect } from 'react';
-import { PaymentStatus, PaymentMethod, UserRole, Customer, TransactionItem, Service } from '@/types';
+import {
+  PaymentStatus,
+  PaymentMethod,
+  UserRole,
+  Customer,
+  TransactionItem,
+  Service,
+} from '@/types';
 import { formatRupiah, parseRupiah } from '@/utils/formatting';
 
 interface UseTransactionFormProps {
-  currentUser: any;
-  settings: any;
+  currentUser: Record<string, unknown>;
+  settings: Record<string, unknown>;
   services: Service[];
 }
 
@@ -22,9 +29,14 @@ export function useTransactionForm({ currentUser, settings, services }: UseTrans
   const canApplyDiscount = useMemo(() => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.SuperAdmin) return true;
-    if ((currentUser.role === UserRole.Admin || currentUser.role === UserRole.Kasir)) {
+    if (currentUser.role === UserRole.Admin || currentUser.role === UserRole.Kasir) {
       if (currentUser.canGiveDiscount) return true;
-      if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) return true;
+      if (
+        selectedCustomer &&
+        selectedCustomer.defaultDiscount &&
+        selectedCustomer.defaultDiscount > 0
+      )
+        return true;
     }
     return false;
   }, [currentUser, selectedCustomer]);
@@ -44,11 +56,15 @@ export function useTransactionForm({ currentUser, settings, services }: UseTrans
     return taxableAmount * ((settings?.taxRate ?? 0) / 100);
   }, [subtotal, discountAmount, settings?.taxRate]);
 
-  const grandTotal = useMemo(() => subtotal - discountAmount + taxAmount, [subtotal, discountAmount, taxAmount]);
+  const grandTotal = useMemo(
+    () => subtotal - discountAmount + taxAmount,
+    [subtotal, discountAmount, taxAmount],
+  );
 
   useEffect(() => {
     if (isPayingNow) {
-      setAmountPaidStr(formatRupiah(grandTotal));
+      // Use a microtask to avoid cascading renders
+      Promise.resolve().then(() => setAmountPaidStr(formatRupiah(grandTotal)));
     }
   }, [grandTotal, isPayingNow]);
 
@@ -81,22 +97,33 @@ export function useTransactionForm({ currentUser, settings, services }: UseTrans
       today.setDate(today.getDate() + 1);
       return today;
     }
-    const maxDuration = Math.max(...items.map(item => services.find(s => s.id === item.serviceId)?.durationDays || 0));
+    const maxDuration = Math.max(
+      ...items.map((item) => services.find((s) => s.id === item.serviceId)?.durationDays || 0),
+    );
     const completionDate = new Date();
     completionDate.setDate(completionDate.getDate() + maxDuration);
     return completionDate;
   }, [items, services]);
 
   return {
-    selectedCustomer, setSelectedCustomer,
-    items, setItems,
-    notes, setNotes,
-    discountType, setDiscountType,
-    discountValue, setDiscountValue,
-    isPayingNow, setIsPayingNow,
-    paymentMethod, setPaymentMethod,
-    amountPaidStr, setAmountPaidStr,
-    tenderedAmountStr, setTenderedAmountStr,
+    selectedCustomer,
+    setSelectedCustomer,
+    items,
+    setItems,
+    notes,
+    setNotes,
+    discountType,
+    setDiscountType,
+    discountValue,
+    setDiscountValue,
+    isPayingNow,
+    setIsPayingNow,
+    paymentMethod,
+    setPaymentMethod,
+    amountPaidStr,
+    setAmountPaidStr,
+    tenderedAmountStr,
+    setTenderedAmountStr,
     canApplyDiscount,
     subtotal,
     discountAmount,
@@ -107,6 +134,6 @@ export function useTransactionForm({ currentUser, settings, services }: UseTrans
     changeAmount,
     actualAmountPaid,
     paymentStatus,
-    estimatedCompletionDate
+    estimatedCompletionDate,
   };
 }

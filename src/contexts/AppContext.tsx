@@ -14,8 +14,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
@@ -25,7 +23,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Definisikan getProfile di dalam useEffect agar closure addToast selalu fresh
     const getProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session?.user) {
         const { data, error } = await supabase
           .from('profiles')
@@ -44,7 +44,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 timestamp: new Date(),
                 user: data.name,
                 action: 'Melakukan login.',
-                storeId: data.store_id || null
+                storeId: data.store_id || null,
               };
               supabase.from('audit_logs').insert([newLog]).then();
             }
@@ -55,7 +55,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               storeId: data.store_id,
               createdAt: data.created_at ? new Date(data.created_at) : undefined,
               isActive: data.isActive,
-              canGiveDiscount: data.canGiveDiscount
+              canGiveDiscount: data.canGiveDiscount,
             });
           }
         } else {
@@ -81,7 +81,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         timestamp: new Date(),
         user: currentUser.name,
         action: 'Melakukan logout.',
-        storeId: currentUser.storeId || null
+        storeId: currentUser.storeId || null,
       };
       supabase.from('audit_logs').insert([newLog]).then();
     }
@@ -90,11 +90,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ currentUser, signOut, stores, selectedStoreId, setSelectedStoreId }}>
+    <AppContext.Provider
+      value={{ currentUser, signOut, stores, selectedStoreId, setSelectedStoreId }}
+    >
       {children}
     </AppContext.Provider>
   );
-};
+}
 
 export const useAppContext = (): AppContextType => {
   const context = useContext(AppContext);
@@ -102,4 +104,4 @@ export const useAppContext = (): AppContextType => {
     throw new Error('useAppContext must be used within an AppProvider');
   }
   return context;
-}
+};

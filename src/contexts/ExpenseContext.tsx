@@ -10,7 +10,10 @@ const fetchExpenses = async (): Promise<Expense[]> => {
 
 export function useExpenses() {
   const queryClient = useQueryClient();
-  const { data: expenses = [], ...query } = useQuery({ queryKey: ['expenses'], queryFn: fetchExpenses });
+  const { data: expenses = [], ...query } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: fetchExpenses,
+  });
 
   const addExpense = useMutation({
     mutationFn: async (expense: Omit<Expense, 'id'>) => {
@@ -18,17 +21,21 @@ export function useExpenses() {
       if (error) throw error;
       return null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
   });
 
   const updateExpense = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Expense> }) => {
       const { id, data } = variables;
-      const { data: updated, error } = await supabase.from('expenses').update(data).eq('id', id).select();
+      const { data: updated, error } = await supabase
+        .from('expenses')
+        .update(data)
+        .eq('id', id)
+        .select();
       if (error) throw error;
       return updated?.[0] || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
   });
 
   const deleteExpense = useMutation({
@@ -37,7 +44,7 @@ export function useExpenses() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
   });
 
   return {
@@ -45,6 +52,6 @@ export function useExpenses() {
     addExpense: addExpense.mutateAsync,
     updateExpense: (id: string, data: Partial<Expense>) => updateExpense.mutateAsync({ id, data }),
     deleteExpense: deleteExpense.mutateAsync,
-    ...query
+    ...query,
   };
 }

@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '@/types';
 import { supabase, updateTransactionProgress } from '@/utils/supabaseClient';
 
-
 // Pagination-aware fetchTransactions
 export interface TransactionFilter {
   page?: number;
@@ -13,7 +12,9 @@ export interface TransactionFilter {
   orderStatus?: string;
 }
 
-const fetchTransactions = async (filter: TransactionFilter = {}): Promise<{ data: Transaction[]; count: number }> => {
+const fetchTransactions = async (
+  filter: TransactionFilter = {},
+): Promise<{ data: Transaction[]; count: number }> => {
   const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
   let query = supabase.from('transactions').select('*', { count: 'exact' });
   if (dateRange) {
@@ -36,26 +37,24 @@ const fetchTransactions = async (filter: TransactionFilter = {}): Promise<{ data
   return { data: data || [], count: count || 0 };
 };
 
-
 export function useTransactions(filter: TransactionFilter = {}) {
   const queryClient = useQueryClient();
-  const {
-    data: result,
-    ...query
-  } = useQuery({
+  const { data: result, ...query } = useQuery({
     queryKey: ['transactions', filter],
     queryFn: () => fetchTransactions(filter),
-    keepPreviousData: true
+    keepPreviousData: true,
   });
   const transactions = result?.data || [];
   const totalCount = result?.count || 0;
 
   const addTransaction = useMutation({
-    mutationFn: async (transaction: Omit<Transaction, 'id'> & {
-      discountType?: 'percent' | 'fixed';
-      discountValue?: number;
-      isPayingNow?: boolean;
-    }) => {
+    mutationFn: async (
+      transaction: Omit<Transaction, 'id'> & {
+        discountType?: 'percent' | 'fixed';
+        discountValue?: number;
+        isPayingNow?: boolean;
+      },
+    ) => {
       // Kirim hanya data minimal ke RPC
       const {
         customerId,
@@ -66,7 +65,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
         discountType = 'percent',
         discountValue = 0,
         createdByUserId,
-        storeId
+        storeId,
       } = transaction;
       const { data, error } = await supabase.rpc('create_new_transaction', {
         p_customer_id: customerId,
@@ -77,12 +76,12 @@ export function useTransactions(filter: TransactionFilter = {}) {
         p_discount_type: discountType,
         p_discount_value: discountValue,
         p_created_by_user_id: createdByUserId,
-        p_store_id: storeId
+        p_store_id: storeId,
       });
       if (error) throw error;
       return data?.[0] || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 
   const updateTransaction = useMutation({
@@ -94,19 +93,20 @@ export function useTransactions(filter: TransactionFilter = {}) {
         change: data.change,
         paymentMethod: data.paymentMethod,
         paymentStatus: data.paymentStatus,
-        orderStatus: data.orderStatus
+        orderStatus: data.orderStatus,
       };
       const updated = await updateTransactionProgress(id, progressFields);
       return updated;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 
   return {
     transactions,
     totalCount,
     addTransaction: addTransaction.mutateAsync,
-    updateTransaction: (id: string, data: Partial<Transaction>) => updateTransaction.mutateAsync({ id, data }),
-    ...query
+    updateTransaction: (id: string, data: Partial<Transaction>) =>
+      updateTransaction.mutateAsync({ id, data }),
+    ...query,
   };
 }

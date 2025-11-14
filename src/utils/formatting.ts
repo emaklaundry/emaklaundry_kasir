@@ -7,7 +7,9 @@ export function formatRupiah(amount: number): string {
     currency: 'IDR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount).replace(/\s/g, ''); // Hapus spasi jika 'Rp' terpisah
+  })
+    .format(amount)
+    .replace(/\s/g, ''); // Hapus spasi jika 'Rp' terpisah
 }
 
 /**
@@ -27,7 +29,11 @@ export function parseRupiah(rupiahStr: string): number {
  * @param unit 'days' | 'weeks' | 'months' | 'years'
  * @returns ISO string of next due date
  */
-export function calculateNextDueDate(currentDate: string | Date, value: number, unit: 'days' | 'weeks' | 'months' | 'years'): string {
+export function calculateNextDueDate(
+  currentDate: string | Date,
+  value: number,
+  unit: 'days' | 'weeks' | 'months' | 'years',
+): string {
   const date = new Date(currentDate);
   switch (unit) {
     case 'days':

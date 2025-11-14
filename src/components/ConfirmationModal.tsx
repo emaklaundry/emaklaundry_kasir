@@ -1,5 +1,3 @@
-
-
 import * as React from 'react';
 import Modal from './Modal';
 import { SpinnerIcon } from './icons';
@@ -32,7 +30,10 @@ function ConfirmationModal({
       title={title}
       footer={
         <>
-          <button onClick={onClose} className="text-slate-900 bg-white border border-slate-300 focus:outline-none hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 dark:hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-slate-900 bg-white border border-slate-300 focus:outline-none hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 dark:hover:text-white"
+          >
             Batal
           </button>
           <button
@@ -45,9 +46,7 @@ function ConfirmationModal({
         </>
       }
     >
-      <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-300">
-        {message}
-      </p>
+      <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-300">{message}</p>
     </Modal>
   );
 }

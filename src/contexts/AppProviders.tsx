@@ -5,13 +5,11 @@ import { ToastProvider } from './ToastContext';
 import { CommandPaletteProvider } from '../hooks/useCommandPalette';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-    return (
-        <ToastProvider>
-            <AppProvider>
-                <CommandPaletteProvider>
-                    {children}
-                </CommandPaletteProvider>
-            </AppProvider>
-        </ToastProvider>
-    );
+  return (
+    <ToastProvider>
+      <AppProvider>
+        <CommandPaletteProvider>{children}</CommandPaletteProvider>
+      </AppProvider>
+    </ToastProvider>
+  );
 }
