@@ -27,8 +27,9 @@ const CommandPalette = () => {
   const allCommands = useMemo(() => {
     const baseCommands: Omit<Command, 'id' | 'action'>[] = [
       { title: 'Dashboard', icon: HomeIcon, section: 'Navigasi', path: '/' },
-
-      export default CommandPalette;
+      {
+        title: 'Daftar Transaksi',
+        icon: ShoppingCartIcon,
         section: 'Navigasi',
         keywords: 'list',
         path: '/transactions',
@@ -271,5 +272,3 @@ const CommandPalette = () => {
 };
 
 export default CommandPalette;
-
-

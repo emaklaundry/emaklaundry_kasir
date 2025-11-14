@@ -45,7 +45,7 @@ function InventoryPage() {
     }
     const filterParam = searchParams.get('filter');
     setFilter(filterParam === 'low_stock' ? 'low_stock' : 'all');
-  }, [location.state, navigate, searchParams]);
+  }, [location.state, location.pathname, navigate, searchParams]);
 
   const handleOpenFormModal = (item: InventoryItem | null = null) => {
     setCurrentItem(item);

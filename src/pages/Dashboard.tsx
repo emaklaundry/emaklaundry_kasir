@@ -248,8 +248,11 @@ const Dashboard = () => {
 
   const lowStockItems = inventory.filter((i) => i.stock <= i.lowStockThreshold).length;
 
-  const now = new Date();
-  now.setHours(23, 59, 59, 999); // End of today
+  const now = useMemo(() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999); // End of today
+    return d;
+  }, []);
 
   const maintenanceDue = useMemo(() => {
     return scheduledMaintenances

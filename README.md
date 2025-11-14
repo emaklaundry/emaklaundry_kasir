@@ -1,6 +1,27 @@
+
 <div align="center">
-  <img width="800" alt="Laundry Management System" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+   <img width="800" alt="Laundry Management System" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
+
+---
+## 📊 Status Kode & Versi
+
+- **Versi Aplikasi:** 1.0.0
+---
+
+## 🗒️ Catatan Rilis v1.0.0 (14 November 2025)
+
+- Rilis stabil pertama Laundry Management System Web Kasir
+- Kode 100% lint-free, terformat, dan semua unit test lulus
+- Fitur utama: transaksi, pelanggan, layanan, inventaris, aset, pengeluaran, audit log, laporan, PWA, notifikasi, dark/light mode
+- Dukungan multi-role (Super Admin, Admin, Kasir)
+- Siap di-deploy ke layanan modern (Vercel, Netlify, dsb)
+
+- ✅ Lint: Bersih tanpa error/warning (`npm run lint`)
+- ✅ Format: Sudah terformat (`npm run format`)
+- ✅ Test: Semua unit test lulus (`npm test`)
+- 📅 Update terakhir: 14 November 2025
+---
 
 # Laundry Management System (Web Kasir)
 

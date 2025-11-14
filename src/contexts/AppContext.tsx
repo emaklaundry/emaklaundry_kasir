@@ -72,7 +72,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [addToast, currentUser]);
 
   const signOut = async () => {
     // Tambahkan log logout sebelum currentUser dihapus
