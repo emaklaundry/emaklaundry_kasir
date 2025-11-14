@@ -326,10 +326,15 @@ INSERT INTO public.stores (id, name, address, "isActive")
 VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banjar', true);
 
 -- admin: admin_banjar (cabang Kota Banjar)
--- nama: yopi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+-- nama: emaklaundry, 
 -- role: Admin
 INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+VALUES ('0bbe08f0-2cbc-40d9-b2ec-5a2d3ba99c0e', 'emaklaundry', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+
+-- kasir: yopi (cabang Kota Banjar)
+-- nama: yopi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
 -- kasir: ani (cabang Kota Banjar)
 -- nama: ani, password: 12345678 (diasumsikan dibuat di Supabase Auth)
