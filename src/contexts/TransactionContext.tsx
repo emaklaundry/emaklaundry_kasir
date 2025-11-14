@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '../../types';
-import { supabase } from '../../utils/supabaseClient';
+import { supabase, updateTransactionProgress } from '../../utils/supabaseClient';
 import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
 
@@ -60,15 +60,28 @@ export function useTransactions(filter: TransactionFilter = {}) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
   });
 
+
   const updateTransaction = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Transaction> }) => {
       const { id, data } = variables;
-      const payload = sanitizeTransactionUpdate(data);
+      // Only allow status/progress fields to be updated via RPC
+      const {
+        amountPaid = undefined,
+        change = undefined,
+        paymentMethod = undefined,
+        paymentStatus = undefined,
+        orderStatus = undefined,
+      } = data;
 
-      const { data: updated, error } = await supabase.from('transactions').update(payload).eq('id', id).select();
-
-      if (error) throw error;
-      return updated?.[0] || null;
+      // Call the secure RPC for progress/status changes
+      const updated = await updateTransactionProgress(id, {
+        amountPaid,
+        change,
+        paymentMethod,
+        paymentStatus,
+        orderStatus,
+      });
+      return updated || null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] })
   });
