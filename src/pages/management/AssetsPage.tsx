@@ -161,7 +161,9 @@ function AssetsPage() {
     const now = new Date();
     now.setHours(23, 59, 59, 999);
     return new Set(
-      (scheduledMaintenances || []).filter((sm) => new Date(sm.nextDueDate) <= now).map((sm) => sm.assetId),
+      (scheduledMaintenances || [])
+        .filter((sm) => new Date(sm.nextDueDate) <= now)
+        .map((sm) => sm.assetId),
     );
   }, [scheduledMaintenances, maintenanceFilter]);
 
