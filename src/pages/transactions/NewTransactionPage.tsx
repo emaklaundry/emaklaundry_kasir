@@ -106,25 +106,92 @@ function NewTransactionPage() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   // Komponen internal untuk detail keranjang (reusable di desktop & modal mobile)
   const CartDetails = () => (
-    <>
-      <h2 className="text-xl font-semibold mb-4">Detail Pesanan</h2>
-      <div className="space-y-3 pr-2 overflow-y-auto max-h-[40vh] lg:max-h-full">
-        {items.length === 0 ? (
-          <p className="text-gray-500">Keranjang kosong.</p>
-        ) : (
-          items.map((item, index) => (
-            <div key={index} className="flex justify-between items-center border-b py-2">
-              <div>
-                <p className="font-semibold">{item.serviceName}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <input type="number" min="0" />
-                </div>
-              </div>
-            </div>
-          ))
+    <div className="w-full max-w-md mx-auto bg-white dark:bg-slate-800 rounded-lg p-6 shadow-md overflow-x-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Detail Pesanan</h2>
+        {isMobileCartOpen && (
+          <button
+            onClick={() => setIsMobileCartOpen(false)}
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold px-2 focus:outline-none"
+            aria-label="Tutup"
+          >
+            ×
+          </button>
         )}
       </div>
-    </>
+      <div className="space-y-3 pr-2 overflow-y-auto max-h-[60vh]">
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-12 h-12 mb-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 3h18M9 3v18m6-18v18M3 21h18"
+              />
+            </svg>
+            <p className="font-semibold text-lg">Keranjang kosong</p>
+            <p className="text-sm">Silakan pilih layanan untuk menambah item ke keranjang.</p>
+          </div>
+        ) : (
+          <>
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+              {items.map((item, index) => (
+                <div key={index} className="flex justify-between items-center py-2">
+                  <div>
+                    <div className="font-semibold text-slate-800 dark:text-slate-100">
+                      {item.serviceName}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      {item.quantity} x Rp {item.price.toLocaleString('id-ID')} / {item.unit}
+                    </div>
+                  </div>
+                  <div className="font-semibold text-right text-slate-700 dark:text-slate-200 min-w-[90px]">
+                    Rp {item.subtotal.toLocaleString('id-ID')}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-slate-200 dark:border-slate-700 mt-4 pt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Diskon</span>
+                <span>- Rp {discountAmount.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Pajak</span>
+                <span>+ Rp {taxAmount.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between font-bold text-base border-t border-slate-200 dark:border-slate-700 pt-2">
+                <span>Total</span>
+                <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-xs mt-2">
+                <span>Status Pembayaran</span>
+                <span
+                  className={
+                    paymentStatus === PaymentStatus.Paid
+                      ? 'text-green-600 font-semibold'
+                      : 'text-red-600 font-semibold'
+                  }
+                >
+                  {paymentStatus === PaymentStatus.Paid ? 'Lunas' : 'Belum Lunas'}
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
@@ -143,7 +210,8 @@ function NewTransactionPage() {
           Gagal Memuat Data Layanan
         </h2>
         <p className="text-lg text-slate-700 dark:text-slate-300">
-          Tidak dapat memuat daftar layanan. Pastikan koneksi internet dan database Supabase Anda aktif.
+          Tidak dapat memuat daftar layanan. Pastikan koneksi internet dan database Supabase Anda
+          aktif.
         </p>
       </div>
     );
@@ -327,7 +395,7 @@ function NewTransactionPage() {
   );
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
-  let content: React.ReactNode = null;
+  // (Deklarasi duplikat dihapus)
   if (isLoadingServices) {
     content = (
       <div className="flex justify-center items-center w-full h-96">
@@ -342,7 +410,8 @@ function NewTransactionPage() {
           Gagal Memuat Data Layanan
         </h2>
         <p className="text-lg text-slate-700 dark:text-slate-300">
-          Tidak dapat memuat daftar layanan. Pastikan koneksi internet dan database Supabase Anda aktif.
+          Tidak dapat memuat daftar layanan. Pastikan koneksi internet dan database Supabase Anda
+          aktif.
         </p>
       </div>
     );
@@ -510,7 +579,9 @@ function NewTransactionPage() {
               onClose={() => setIsMobileCartOpen(false)}
               title="Detail Pesanan"
             >
-              <CartDetails />
+              <div className="w-full max-w-sm mx-auto p-4">
+                <CartDetails />
+              </div>
             </Modal>
           </div>
           {isCustomerModalOpen && (
