@@ -1,3 +1,38 @@
+/**
+ * Helper untuk memanggil RPC complete_scheduled_maintenance
+ */
+export async function completeScheduledMaintenance(
+  scheduleId: string,
+  assetId: string,
+  logDescription: string,
+  frequencyValue: number,
+  frequencyUnit: string,
+) {
+  const { error } = await supabase.rpc('complete_scheduled_maintenance', {
+    p_schedule_id: scheduleId,
+    p_asset_id: assetId,
+    p_log_description: logDescription,
+    p_frequency_value: frequencyValue,
+    p_frequency_unit: frequencyUnit,
+  });
+  if (error) throw error;
+}
+/**
+ * Helper untuk memanggil RPC bulk_update_order_status
+ */
+export async function bulkUpdateOrderStatus(
+  transactionIds: string[],
+  newStatus: string,
+  userId: string,
+) {
+  const { data, error } = await supabase.rpc('bulk_update_order_status', {
+    p_transaction_ids: transactionIds,
+    p_new_status: newStatus,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data;
+}
 import { createClient } from '@supabase/supabase-js';
 import type { LaundryStatus } from '@/types';
 

@@ -29,6 +29,7 @@ import Pagination from '../../components/Pagination';
 
 function TransactionPage() {
   const { transactions, updateTransaction } = useTransactions();
+  import { bulkUpdateOrderStatus } from '@/utils/supabaseClient';
   const { customers } = useCustomers();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
@@ -317,10 +318,11 @@ function TransactionPage() {
     setIsBulkProcessing(true);
     const toastId = addToast('Memproses aksi massal...', 'info');
     try {
-      const updatePromises = (transactionsToUpdate || []).map((t) =>
-        updateTransaction(t.id, { orderStatus: bulkActionStatus }),
-      );
-      await Promise.all(updatePromises);
+      // Ambil userId dari currentUser (asumsi sudah ada di context)
+      const userId = currentUser?.id;
+      if (!userId) throw new Error('User tidak ditemukan');
+      const transactionIds = transactionsToUpdate.map((t) => t.id);
+      await bulkUpdateOrderStatus(transactionIds, bulkActionStatus, userId);
       addAuditLog(
         `Mengubah status ${selectedIds.size} transaksi menjadi "${bulkActionStatus}" secara massal.`,
       );

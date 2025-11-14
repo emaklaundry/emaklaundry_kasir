@@ -1,5 +1,23 @@
+// Komponen WeeklyRevenueChart
+const WeeklyRevenueChart = ({ data }: { data: Array<{ day: string; revenue: number }> }) => {
+  // Placeholder chart, silakan ganti dengan chart sebenarnya jika ada
+  return (
+    <div className="h-32 flex items-end gap-2">
+      {data.map((d) => (
+        <div key={d.day} className="flex flex-col items-center">
+          <div
+            className="bg-blue-500 w-4"
+            style={{ height: `${Math.max(8, d.revenue / 1000)}px` }}
+            title={`Rp ${d.revenue.toLocaleString('id-ID')}`}
+          />
+          <span className="text-xs mt-1">{d.day}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 import * as React from 'react';
-/* global window, crypto */
+/* global crypto */
 import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -45,70 +63,16 @@ interface TrendData {
 }
 
 type WeeklyRevenueChartProps = {
-  data: { day: string; revenue: number }[];
-};
-const WeeklyRevenueChart = ({ data }: WeeklyRevenueChartProps) => {
-  const [tooltip, setTooltip] = useState<{
+  data: Array<{ day: string; revenue: number }>;
+  chartHeight: number;
+  maxValue: number;
+  tooltip: {
     visible: boolean;
     content: string;
     x: number;
     y: number;
-  }>({ visible: false, content: '', x: 0, y: 0 });
-
-  const maxValue = useMemo(() => {
-    const maxVal = Math.max(...data.map((d) => d.revenue));
-    return maxVal === 0 ? 100000 : Math.ceil(maxVal / 10000) * 10000;
-  }, [data]);
-
-  const chartHeight = 200;
-
-  const showTooltip = (content: string, event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltip({
-      visible: true,
-      content,
-      x: rect.left + (typeof window !== 'undefined' ? window.scrollX : 0) + rect.width / 2,
-      y: rect.top + (typeof window !== 'undefined' ? window.scrollY : 0) - 10,
-    });
   };
-
-  const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
-
-  return (
-    <div className="relative">
-      {tooltip.visible && (
-        <div
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: 'translateX(-50%) translateY(-100%)',
-          }}
-          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
-          dangerouslySetInnerHTML={{ __html: tooltip.content }}
-        ></div>
-      )}
-      <div
-        className="flex justify-between items-end h-full pt-4"
-        style={{ height: `${chartHeight}px` }}
-      >
-        {data.map((d, i) => {
-          const barHeight = (d.revenue / maxValue) * (chartHeight - 30);
-          const tooltipContent = `<b>${d.day}</b><br/>Rp ${d.revenue.toLocaleString('id-ID')}`;
-          return (
-            <div key={i} className="flex flex-col items-center w-full">
-              <div
-                className="w-4/5 bg-brand-blue-500 rounded-t-md hover:bg-brand-blue-400"
-                style={{ height: `${barHeight}px`, minHeight: '2px' }}
-                onMouseMove={(e) => showTooltip(tooltipContent, e)}
-                onMouseLeave={hideTooltip}
-              ></div>
-              <span className="text-xs mt-2 text-slate-500 dark:text-slate-400">{d.day}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  setTooltip: (tooltip: WeeklyRevenueChartProps['tooltip']) => void;
 };
 
 type StatCardProps = {

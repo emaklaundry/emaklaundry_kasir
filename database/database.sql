@@ -1,3 +1,69 @@
+-- === RPC: complete_scheduled_maintenance ===
+-- Tandai perawatan terjadwal selesai dan update log asset secara atomik
+CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
+  p_schedule_id uuid,
+  p_asset_id uuid,
+  p_log_description text,
+  p_frequency_value integer,
+  p_frequency_unit text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_asset_row public.assets%ROWTYPE;
+  v_new_log jsonb;
+  v_next_due_date date;
+BEGIN
+  -- Ambil data asset
+  SELECT * INTO v_asset_row FROM public.assets WHERE id = p_asset_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Asset tidak ditemukan';
+  END IF;
+  -- Buat log baru
+  v_new_log := jsonb_build_object(
+    'id', 'LOG_' || gen_random_uuid(),
+    'date', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+    'description', p_log_description,
+    'cost', 0
+  );
+  -- Update maintenanceHistory asset
+  UPDATE public.assets
+  SET "maintenanceHistory" = COALESCE("maintenanceHistory", '[]'::jsonb) || v_new_log
+  WHERE id = p_asset_id;
+  -- Hitung nextDueDate
+  v_next_due_date := (now() + (p_frequency_value || ' ' || p_frequency_unit)::interval)::date;
+  -- Update scheduled_maintenances
+  UPDATE public.scheduled_maintenances
+  SET "lastCompletedDate" = now(), "nextDueDate" = v_next_due_date
+  WHERE id = p_schedule_id;
+END;
+$$;
+-- === RPC: bulk_update_order_status ===
+-- Update status banyak transaksi sekaligus secara atomik
+CREATE OR REPLACE FUNCTION public.bulk_update_order_status(
+  p_transaction_ids uuid[],
+  p_new_status public.order_status,
+  p_user_id uuid
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  updated_count integer := 0;
+BEGIN
+  -- Update semua transaksi dalam satu transaksi database
+  UPDATE public.transactions
+  SET "orderStatus" = p_new_status,
+      "updatedAt" = now(),
+      "updatedByUserId" = p_user_id
+  WHERE id = ANY(p_transaction_ids);
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
+  RETURN updated_count;
+END;
+$$;
 
 -- === ENUM DEFINITIONS (PASTIKAN INI DI PALING ATAS) ===
 -- Hapus tipe lama jika ada (hati-hati jika sudah ada data!)
