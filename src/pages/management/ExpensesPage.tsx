@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Expense, UserRole } from '../../../types';
+import { Expense, UserRole } from '@/types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, DollarSignIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';

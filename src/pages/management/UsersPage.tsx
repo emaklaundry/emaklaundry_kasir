@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUsers } from '../../contexts/UserContext';
-import { User, UserRole, Store } from '../../../types';
+import { User, UserRole, Store } from '@/types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, UsersIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';

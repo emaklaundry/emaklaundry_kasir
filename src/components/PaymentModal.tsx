@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Modal from './Modal';
-import { Transaction, PaymentMethod, PaymentStatus } from '../../types';
+import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 import { formatRupiah, parseRupiah } from '../../utils/formatting';
 import { useToasts } from '../contexts/ToastContext';
 import { SpinnerIcon } from './icons';
@@ -47,6 +47,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
   const handleSave = async () => {
     if (!transaction) return;
 
+
+    // Jika total 0 (karena diskon penuh atau pajak), atau amountPaid >= total, status harus Lunas
+    if (transaction.total === 0 || transaction.amountPaid >= transaction.total) {
+      await onSave({
+        ...transaction,
+        paymentStatus: PaymentStatus.Paid,
+        amountPaid: transaction.amountPaid, // pastikan tidak berubah
+      });
+      onClose();
+      return;
+    }
+
     if (amountToPay <= 0) {
         addToast("Jumlah pembayaran harus lebih dari nol.", 'error');
         return;
@@ -63,6 +75,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
     }
 
     const newAmountPaid = transaction.amountPaid + amountToPay;
+    // Jika setelah pembayaran amountPaid >= total, status Lunas
     const isNowPaidInFull = newAmountPaid >= transaction.total;
     const newStatus = isNowPaidInFull ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
     const finalChange = isNowPaidInFull ? change : 0;

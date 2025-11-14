@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '../../../types';
+import { TransactionItem, PaymentStatus, OrderStatus, Customer, ServiceCategory, UserRole, PaymentMethod, Transaction, Service } from '@/types';
 import { Trash2Icon, MessageSquareIcon, PlusCircleIcon, TagIcon, SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -50,7 +50,7 @@ const NewTransactionPage: React.FC = () => {
     const canApplyDiscount = useMemo(() => {
         if (!currentUser) return false;
         if (currentUser.role === UserRole.SuperAdmin) return true;
-        if ((currentUser.role === UserRole.BranchAdmin || currentUser.role === UserRole.Cashier)) {
+        if ((currentUser.role === UserRole.Admin || currentUser.role === UserRole.Cashier)) {
             if (currentUser.canGiveDiscount) return true;
             if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) return true;
         }
@@ -66,13 +66,20 @@ const NewTransactionPage: React.FC = () => {
     }, [items]);
 
     const discountAmount = useMemo(() => {
-        if (!canApplyDiscount) return 0;
-        const val = Number(discountValue) || 0;
-        if (discountType === 'percent') {
+        let val = 0;
+        let type = discountType;
+        if (!canApplyDiscount) {
+            // Pakai diskon dari pengaturan jika tidak boleh diskon
+            val = settings?.discountRate ?? 0;
+            type = 'percent';
+        } else {
+            val = Number(discountValue) || 0;
+        }
+        if (type === 'percent') {
             return subtotal * (val / 100);
         }
         return Math.min(val, subtotal);
-    }, [subtotal, discountValue, discountType, canApplyDiscount]);
+    }, [subtotal, discountValue, discountType, canApplyDiscount, settings?.discountRate]);
 
     const taxAmount = useMemo(() => {
         const taxableAmount = subtotal - discountAmount;
@@ -109,7 +116,9 @@ const NewTransactionPage: React.FC = () => {
         if (grandTotal <= 0) return PaymentStatus.Paid;
         if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
         if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
-        return PaymentStatus.PartiallyPaid;
+        // Bayar sebagian hanya jika amountPaid > 0 dan < grandTotal
+        if (actualAmountPaid > 0 && actualAmountPaid < grandTotal) return PaymentStatus.PartiallyPaid;
+        return PaymentStatus.Unpaid;
     }, [isPayingNow, actualAmountPaid, grandTotal]);
 
     const estimatedCompletionDate = useMemo(() => {
@@ -130,7 +139,8 @@ const NewTransactionPage: React.FC = () => {
 
     useEffect(() => {
         if (!canApplyDiscount) {
-            setDiscountValue(0);
+            setDiscountType('percent');
+            setDiscountValue(settings?.discountRate ?? 0);
             return;
         }
         if (selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0) {

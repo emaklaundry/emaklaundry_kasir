@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Customer, UserRole } from '../../../types';
+import { Customer, UserRole } from '@/types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, SearchIcon, UsersIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';

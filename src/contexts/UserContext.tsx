@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../utils/supabaseClient';
-import { User } from '../../types';
+import { User } from '@/types';
 
 const fetchUsers = async (): Promise<User[]> => {
   const { data, error } = await supabase.from('profiles').select('*');

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Asset, MaintenanceLog, UserRole } from '../../../types';
+import { Asset, MaintenanceLog, UserRole } from '@/types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, HistoryIcon, WrenchIcon, CalendarIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';

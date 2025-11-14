@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
-import { OrderStatus, PaymentStatus, Transaction } from '../../../types';
+import { OrderStatus, PaymentStatus, Transaction } from '@/types';
 import { ChevronLeftIcon, PrinterIcon, UsersIcon, ShoppingCartIcon } from '../../components/icons';
 // import { updateTransactionProgress } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';

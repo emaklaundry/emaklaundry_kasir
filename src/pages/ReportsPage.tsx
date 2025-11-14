@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { Transaction, UserRole, Service, User, ServiceCategory } from '../../types';
+import { Transaction, UserRole, Service, User, ServiceCategory } from '@/types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
@@ -265,9 +265,6 @@ const ReportsPage: React.FC = () => {
 
     // --- TAMBAHAN: Teks header untuk laporan cetak ---
     const printHeaderTitle = useMemo(() => {
-        if (reportType === 'yearlySummary') {
-            return `Ringkasan Tahunan ${new Date().getFullYear()}`;
-        }
         // Untuk 'range'
         const startStr = startDate.toLocaleDateString('id-ID');
         const endStr = endDate.toLocaleDateString('id-ID');
@@ -275,7 +272,7 @@ const ReportsPage: React.FC = () => {
             return `Laporan Kustom (${startStr} - ${endStr})`;
         }
         return `Laporan ${rangeType === 'weekly' ? 'Mingguan' : 'Bulanan'} (Hingga ${endStr})`;
-    }, [reportType, rangeType, startDate, endDate]);
+    }, [rangeType, startDate, endDate]);
 
     return (
         <div className="space-y-6">
@@ -290,10 +287,7 @@ const ReportsPage: React.FC = () => {
 
             {/* TAMBAHKAN: 'print-hide' untuk menyembunyikan seluruh baris filter ini saat cetak */}
             <div className="flex justify-between items-center flex-wrap gap-4 print-hide">
-                 <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-                    <button onClick={() => setReportType('range')} className={`px-4 py-2 text-base font-medium rounded-md ${isRangeReport ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Rentang Waktu</button>
-                    <button onClick={() => setReportType('yearlySummary')} className={`px-4 py-2 text-base font-medium rounded-md ${!isRangeReport ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}>Ringkasan Tahunan</button>
-                </div>
+                {/* Tombol Rentang Waktu dihapus */}
                  {isRangeReport && (
                     <div className="flex items-center gap-2 flex-wrap">
                         <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">

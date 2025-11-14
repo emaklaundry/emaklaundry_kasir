@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '../../types';
+import { OrderStatus, PaymentStatus, Expense, UserRole, Customer, Transaction, ScheduledMaintenance } from '@/types';
 import { 
     ShoppingCartIcon, PackageIcon, WrenchIcon, PlusCircleIcon, DollarSignIcon, 
     CalendarIcon, ChevronRightIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon

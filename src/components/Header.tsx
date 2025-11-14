@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import { UserRole } from '../../types';
+import { UserRole } from '@/types';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { SunIcon, MoonIcon, CommandIcon } from './icons';
 import { useCommandPalette } from '../hooks/useCommandPalette';

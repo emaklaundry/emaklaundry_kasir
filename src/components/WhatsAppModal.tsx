@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { Transaction, Customer, OrderStatus } from '../../types';
+import { Transaction, Customer, OrderStatus } from '@/types';
 import { SendIcon } from './icons';
 import { useToasts } from '../contexts/ToastContext';
 

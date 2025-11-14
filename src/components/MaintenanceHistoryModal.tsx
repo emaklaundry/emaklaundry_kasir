@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Modal from './Modal';
-import { Asset } from '../../types';
+import { Asset } from '@/types';
 
 interface MaintenanceHistoryModalProps {
     asset: Asset,

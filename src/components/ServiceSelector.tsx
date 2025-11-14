@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Service } from '../../types';
+import { Service } from '@/types';
 import { SearchIcon } from './icons';
 
 interface ServiceSelectorProps {

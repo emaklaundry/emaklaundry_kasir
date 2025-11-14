@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Store } from '../../../types';
+import { Store } from '@/types';
 import { PlusCircleIcon, EditIcon, Trash2Icon, PowerIcon, TruckIcon, ArrowUpIcon, ArrowDownIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';

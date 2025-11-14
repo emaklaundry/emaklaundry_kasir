@@ -15,7 +15,7 @@ import {
   TruckIcon,
 } from './icons';
 import { useAppContext } from '../contexts/AppContext';
-import { UserRole } from '../../types';
+import { UserRole } from '@/types';
 
 interface NavItem {
   path: string;
