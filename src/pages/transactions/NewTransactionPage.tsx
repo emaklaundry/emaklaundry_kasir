@@ -495,7 +495,7 @@ const NewTransactionPage: React.FC = () => {
                     </div>
 
                     <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible">
                             <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Detail & Total</h2>
                             <div className="space-y-4">
                                 <CustomerSelector 
