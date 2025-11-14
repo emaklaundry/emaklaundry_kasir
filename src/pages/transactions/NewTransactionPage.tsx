@@ -344,9 +344,15 @@ const NewTransactionPage: React.FC = () => {
              addToast('Minimal satu layanan harus ditambahkan.', 'warning');
             return;
         }
-        if (isPayingNow && actualAmountPaid > 0 && !paymentMethod) {
-            addToast('Silakan pilih metode pembayaran.', 'warning');
-            return;
+        if (isPayingNow) {
+            if (!paymentMethod) {
+                addToast('Pilih metode pembayaran.', 'error');
+                return;
+            }
+            if (paymentMethod === PaymentMethod.Cash && tenderedAmount < grandTotal) {
+                addToast('Jumlah uang diterima tidak boleh kurang dari total tagihan.', 'error');
+                return;
+            }
         }
 
         setIsSaving(true);
@@ -423,8 +429,13 @@ const NewTransactionPage: React.FC = () => {
             setAmountPaidStr('');
             return;
         }
-        const cappedValue = rawValue > grandTotal ? grandTotal : rawValue;
-        setAmountPaidStr(formatRupiah(cappedValue));
+        // Hanya izinkan input yang sama persis dengan grandTotal
+        if (rawValue !== grandTotal) {
+            setAmountPaidStr('');
+            addToast('Jumlah bayar harus sama dengan total tagihan. Tidak boleh kurang atau lebih.', 'error');
+            return;
+        }
+        setAmountPaidStr(formatRupiah(rawValue));
     };
     
     const quickCashButtons = [50000, 100000];
@@ -610,6 +621,7 @@ const NewTransactionPage: React.FC = () => {
                                             onChange={e => handleAmountToPayChange(e.target.value)}
                                             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                             placeholder="0"
+                                            disabled={paymentMethod === PaymentMethod.QRIS || paymentMethod === PaymentMethod.Transfer || paymentMethod === PaymentMethod.Cash}
                                         />
                                     </div>
                                     {paymentMethod === PaymentMethod.Cash && (
@@ -622,17 +634,11 @@ const NewTransactionPage: React.FC = () => {
                                                 onChange={e => { const val = parseRupiah(e.target.value); setTenderedAmountStr(val === 0 ? '' : formatRupiah(val)); }}
                                                 className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                                 placeholder="0"
+                                                disabled={paymentMethod === PaymentMethod.QRIS || paymentMethod === PaymentMethod.Transfer}
                                             />
                                         </div>
                                     )}
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button type="button" onClick={() => handleAmountToPayChange(formatRupiah(grandTotal))} className="px-3 py-1.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800">Uang Pas</button>
-                                        {paymentMethod === PaymentMethod.Cash && quickCashButtons.map(amount => (
-                                            <button type="button" key={amount} onClick={() => setTenderedAmountStr(formatRupiah(amount))} className="px-3 py-1.5 text-sm font-medium text-slate-800 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500">
-                                                {formatRupiah(amount)}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    {/* Tombol uang pas & quick cash dihapus, hanya input manual */}
                                     {changeAmount > 0 && (
                                         <div className="flex justify-between items-center text-lg">
                                             <span className="text-slate-600 dark:text-slate-300">Kembalian:</span>

@@ -59,26 +59,34 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, transactio
       return;
     }
 
+
     if (amountToPay <= 0) {
-        addToast("Jumlah pembayaran harus lebih dari nol.", 'error');
-        return;
+      addToast("Jumlah pembayaran harus lebih dari nol.", 'error');
+      return;
     }
 
-    if (amountToPay > remainingBalance) {
-        addToast("Jumlah pembayaran tidak boleh melebihi sisa tagihan.", 'error');
-        return;
+    // Semua metode pembayaran: harus bayar penuh, tidak boleh kurang dari sisa tagihan
+    if (amountToPay < remainingBalance) {
+      addToast("Pembayaran harus sama dengan sisa tagihan. Tidak boleh bayar sebagian.", 'error');
+      return;
     }
-    
+    if (amountToPay > remainingBalance) {
+      addToast("Jumlah pembayaran tidak boleh melebihi sisa tagihan.", 'error');
+      return;
+    }
     if (method === PaymentMethod.Cash && tenderedAmount < amountToPay) {
-        addToast("Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.", 'error');
-        return;
+      addToast("Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.", 'error');
+      return;
     }
 
     const newAmountPaid = transaction.amountPaid + amountToPay;
-    // Jika setelah pembayaran amountPaid >= total, status Lunas
-    const isNowPaidInFull = newAmountPaid >= transaction.total;
-    const newStatus = isNowPaidInFull ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
-    const finalChange = isNowPaidInFull ? change : 0;
+    let newStatus = PaymentStatus.Unpaid;
+    if (newAmountPaid >= transaction.total) {
+      newStatus = PaymentStatus.Paid;
+    } else if (newAmountPaid > 0) {
+      newStatus = PaymentStatus.PartiallyPaid;
+    }
+    const finalChange = newStatus === PaymentStatus.Paid ? change : 0;
 
     await onSave({
       ...transaction,
