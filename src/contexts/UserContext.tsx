@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../../utils/supabaseClient';
+import { supabase } from '../utils/supabaseClient';
 import { User } from '@/types';
 
 const fetchUsers = async (): Promise<User[]> => {
@@ -32,7 +32,7 @@ export function useUsers() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
   const createUser = useMutation({
@@ -47,17 +47,19 @@ export function useUsers() {
       const { data, error } = await supabase.from('profiles').insert([payload]).select();
       if (error) throw error;
       const p = data?.[0];
-      return p ? {
-        id: p.id,
-        name: p.name,
-        role: p.role,
-        storeId: p.store_id,
-        isActive: p.isActive,
-        canGiveDiscount: p.canGiveDiscount,
-        createdAt: p.created_at ? new Date(p.created_at) : undefined,
-      } as User : null;
+      return p
+        ? ({
+            id: p.id,
+            name: p.name,
+            role: p.role,
+            storeId: p.store_id,
+            isActive: p.isActive,
+            canGiveDiscount: p.canGiveDiscount,
+            createdAt: p.created_at ? new Date(p.created_at) : undefined,
+          } as User)
+        : null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
   const deleteUser = useMutation({
@@ -66,7 +68,7 @@ export function useUsers() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
   return {
@@ -74,7 +76,7 @@ export function useUsers() {
     updateUser: (id: string, data: Partial<User>) => updateUser.mutateAsync({ id, data }),
     createUser: createUser.mutateAsync,
     deleteUser: deleteUser.mutateAsync,
-    ...query
+    ...query,
   };
 }
 

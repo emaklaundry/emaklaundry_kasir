@@ -49,4 +49,3 @@ export async function updateTransactionProgress(transactionId: string, params: {
 	if (error) throw error;
 	return data;
 }
-

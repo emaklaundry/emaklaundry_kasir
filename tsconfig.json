@@ -4,17 +4,11 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
@@ -22,20 +16,12 @@
     "jsx": "react-jsx",
     "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "strict": true
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "dist",
-    "data/mockData.ts",
-    "env.d.ts",
-    "hooks/usePersistentState.ts"
-  ]
+  "include": ["src"],
+  "exclude": ["dist", "data/mockData.ts", "env.d.ts", "hooks/usePersistentState.ts"]
 }
