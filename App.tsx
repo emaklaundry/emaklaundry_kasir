@@ -71,6 +71,7 @@ const AppRoutes: React.FC = () => {
     <Layout>
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/settings" element={<Navigate to="/management/settings" replace />} />
           <Route path="/login" element={<Navigate to="/" />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/quick-actions" element={<QuickActionsPage />} />

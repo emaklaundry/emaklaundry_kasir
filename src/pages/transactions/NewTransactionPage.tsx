@@ -19,6 +19,7 @@ import {
   TransactionItem,
   Settings,
 } from '@/types';
+import { useServices } from '../../contexts/ServiceContext';
 
 function NewTransactionPage() {
   // Handler for form submission
@@ -97,7 +98,8 @@ function NewTransactionPage() {
   const [amountPaidStr, setAmountPaidStr] = useState('');
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
-  const [services, setServices] = useState<Service[]>([]);
+  const { services, isLoading: isLoadingServices, error: servicesError } = useServices();
+  // Jangan return early, handle loading/error di variabel content
   const { currentUser } = useAppContext();
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -124,6 +126,28 @@ function NewTransactionPage() {
       </div>
     </>
   );
+
+  // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
+  let content: React.ReactNode = null;
+  if (isLoadingServices) {
+    content = (
+      <div className="flex justify-center items-center w-full h-96">
+        <SpinnerIcon className="w-16 h-16" />
+        <span className="sr-only">Memuat layanan...</span>
+      </div>
+    );
+  } else if (servicesError) {
+    content = (
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+        <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">
+          Gagal Memuat Data Layanan
+        </h2>
+        <p className="text-lg text-slate-700 dark:text-slate-300">
+          Tidak dapat memuat daftar layanan. Pastikan koneksi internet dan database Supabase Anda aktif.
+        </p>
+      </div>
+    );
+  }
 
   const canApplyDiscount = useMemo(() => {
     if (!currentUser) return false;
@@ -304,7 +328,25 @@ function NewTransactionPage() {
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   let content: React.ReactNode = null;
-  if (isLoadingSettings) {
+  if (isLoadingServices) {
+    content = (
+      <div className="flex justify-center items-center w-full h-96">
+        <SpinnerIcon className="w-16 h-16" />
+        <span className="sr-only">Memuat layanan...</span>
+      </div>
+    );
+  } else if (servicesError) {
+    content = (
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
+        <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4">
+          Gagal Memuat Data Layanan
+        </h2>
+        <p className="text-lg text-slate-700 dark:text-slate-300">
+          Tidak dapat memuat daftar layanan. Pastikan koneksi internet dan database Supabase Anda aktif.
+        </p>
+      </div>
+    );
+  } else if (isLoadingSettings) {
     content = (
       <div className="flex justify-center items-center w-full h-96">
         <SpinnerIcon className="w-16 h-16" />
