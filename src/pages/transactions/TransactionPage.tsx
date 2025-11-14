@@ -452,24 +452,28 @@ const TransactionPage: React.FC = () => {
                 <div className="md:hidden space-y-4">
                      {paginatedTransactions.length > 0 ? (
                         paginatedTransactions.map(t => (
-                            <div key={t.id} className={`p-4 rounded-lg shadow-md text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-800/70 ring-2 ring-blue-500' : 'bg-slate-800'}`}>
-                                <div className="absolute top-3 left-2"><input type="checkbox" onChange={() => handleSelectOne(t.id)} checked={selectedIds.has(t.id)} className="w-5 h-5 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500"/></div>
+                            <div key={t.id} className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-white dark:bg-slate-800'}`}>
+                                <div className="absolute top-3 left-2"><input type="checkbox" onChange={() => handleSelectOne(t.id)} checked={selectedIds.has(t.id)} className="w-5 h-5 text-blue-600 bg-slate-100 border-slate-300 dark:bg-slate-700 dark:border-slate-500 rounded focus:ring-blue-500"/></div>
                                 <div className="ml-8">
                                     <div className="flex justify-between items-center mb-1">
-                                        <p className="font-bold text-lg text-white">{t.customerName}</p>
-                                        <p className="text-sm text-slate-400">{new Date(t.createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'})}</p>
+                                        <p className="font-bold text-lg text-slate-900 dark:text-white">{t.customerName}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(t.createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'})}</p>
                                     </div>
-                                    <p className="text-sm text-slate-400 mb-4">{t.id}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.id}</p>
                                     <div className="space-y-2 mb-4">
-                                        <div className="flex justify-between items-center"><span className="text-slate-400 text-base">Total:</span><span className="font-bold text-lg text-white">Rp {t.total.toLocaleString('id-ID')}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-slate-400 text-base">Status Pesanan:</span><span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(t.orderStatus)}`}>{t.orderStatus}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-slate-400 text-base">Status Bayar:</span><span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-slate-500 dark:text-slate-400 text-base">Total:</span><span className="font-bold text-lg text-slate-900 dark:text-white">Rp {t.total.toLocaleString('id-ID')}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-slate-500 dark:text-slate-400 text-base">Status Pesanan:</span><span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(t.orderStatus)}`}>{t.orderStatus}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-slate-500 dark:text-slate-400 text-base">Status Bayar:</span><span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}>{t.paymentStatus}</span></div>
                                     </div>
-                                    <div className="flex items-center justify-start space-x-4 text-green-400">
-                                        {t.paymentStatus !== PaymentStatus.Paid && (<button onClick={() => handleOpenPaymentModal(t)} title="Proses Pembayaran" className="hover:text-green-300"><DollarSignIcon className="w-6 h-6" /></button>)}
-                                        <Link to={`/transactions/${t.id}/details`} title="Lihat Detail" className="hover:text-green-300"><EyeIcon className="w-6 h-6" /></Link>
-                                        <Link to={`/transactions/${t.id}/receipt`} title="Cetak Struk" className="hover:text-green-300"><PrinterIcon className="w-6 h-6" /></Link>
-                                        <button onClick={() => handleSendGenericWhatsApp(t)} title="Kirim Struk via WhatsApp" className="hover:text-green-300"><SendIcon className="w-6 h-6" /></button>
+                                    <div className="flex items-center justify-start space-x-4 text-slate-600 dark:text-slate-400">
+                                        {t.paymentStatus !== PaymentStatus.Paid && (
+                                            <button onClick={() => handleOpenPaymentModal(t)} title="Proses Pembayaran" className="text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-400">
+                                                <DollarSignIcon className="w-6 h-6" />
+                                            </button>
+                                        )}
+                                        <Link to={`/transactions/${t.id}/details`} title="Lihat Detail" className="hover:text-slate-900 dark:hover:text-white"><EyeIcon className="w-6 h-6" /></Link>
+                                        <Link to={`/transactions/${t.id}/receipt`} title="Cetak Struk" className="hover:text-slate-900 dark:hover:text-white"><PrinterIcon className="w-6 h-6" /></Link>
+                                        <button onClick={() => handleSendGenericWhatsApp(t)} title="Kirim Struk via WhatsApp" className="hover:text-slate-900 dark:hover:text-white"><SendIcon className="w-6 h-6" /></button>
                                     </div>
                                 </div>
                             </div>
