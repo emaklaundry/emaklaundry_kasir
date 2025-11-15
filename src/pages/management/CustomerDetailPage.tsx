@@ -11,6 +11,7 @@ import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { OrderStatus, PaymentStatus } from '@/types';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +19,6 @@ const CustomerDetailPage: React.FC = () => {
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
-  import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
   const { transactions } = useTransactions();
   const customer = customers.find((c) => c.id === id);
   const customerTransactions = transactions.filter((t) => t.customerId === id);
@@ -46,11 +46,18 @@ const CustomerDetailPage: React.FC = () => {
   );
   const mostRecentTransaction = sortedTransactions.length > 0 ? sortedTransactions[0] : null;
 
+
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case OrderStatus.Processing:
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+      // ...existing code...
+    }
+  };
 
+  return (
+    <div className="space-y-6">
+      <Link
         to="/management/customers"
         className="flex items-center text-base text-blue-600 hover:underline dark:text-blue-400 mb-2"
       >
