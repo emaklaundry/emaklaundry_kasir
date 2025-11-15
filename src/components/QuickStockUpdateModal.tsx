@@ -16,20 +16,22 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
   const { addToast, updateToast } = useToasts();
   const [isSavingStock, setIsSavingStock] = useState(false);
   const [stockUpdates, setStockUpdates] = useState<{ [key: string]: number }>({});
+  const [initialStock, setInitialStock] = useState<{ [key: string]: number }>({});
   const { addAuditLog } = useAuditLogs();
   const { currentUser, selectedStoreId } = useAppContext();
 
   useEffect(() => {
     if (isOpen) {
       // Initialize local state with current stock values from context
-      const initialStock = inventory.reduce(
+      const initial = inventory.reduce(
         (acc, item) => {
           acc[item.id] = item.stock;
           return acc;
         },
         {} as { [key: string]: number },
       );
-      setStockUpdates(initialStock);
+      setStockUpdates(initial);
+      setInitialStock(initial);
     }
   }, [isOpen, inventory]);
 
@@ -52,11 +54,13 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     for (const itemId in stockUpdates) {
       const originalItem = originalInventoryMap.get(itemId);
       const newStock = stockUpdates[itemId];
-      if (originalItem && originalItem.stock !== newStock) {
+      const originalStock = initialStock[itemId];
+      // Only update if stock changed from initial snapshot
+      if (originalItem && originalStock !== undefined && originalStock !== newStock) {
         updates.push(
           updateInventoryItem(itemId, { stock: newStock }).then(() => {
             addAuditLog(
-              `Memperbarui stok cepat untuk "${originalItem.name}" dari ${originalItem.stock} menjadi ${newStock}.`,
+              `Memperbarui stok cepat untuk '${originalItem.name}' dari ${originalStock} menjadi ${newStock}.`,
               storeId,
             );
           }),

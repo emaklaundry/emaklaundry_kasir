@@ -27,12 +27,6 @@ import Pagination from '../../components/Pagination';
 import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 
 const TransactionPage: React.FC = () => {
-  const { transactions, updateTransaction } = useTransactions();
-  const { customers } = useCustomers();
-  const { addAuditLog } = useAuditLogs();
-  const { addToast, updateToast } = useToasts();
-  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
-
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -47,6 +41,7 @@ const TransactionPage: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all');
   const [customerFilter, setCustomerFilter] = useState<string | 'all'>('all');
 
+  // Modal & selection state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
@@ -55,15 +50,27 @@ const TransactionPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<OrderStatus | null>(null);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
-  useEffect(() => {
-    const status = searchParams.get('status');
-    const validStatus =
-      status && Object.values(OrderStatus).includes(status as OrderStatus)
-        ? (status as OrderStatus)
-        : 'all';
-    setStatusFilter(validStatus);
-  }, [searchParams]);
+  // Pagination and data
+  const { customers } = useCustomers();
+  const { addAuditLog } = useAuditLogs();
+  const { addToast, updateToast } = useToasts();
+
+  // State untuk halaman
+  const [page, setPage] = useState(1);
+
+  // Proses sort dan pagination di client
+  // These hooks must be declared before any useEffect or code that references their variables
+
+  // Ambil data transaksi dari server sesuai page dan filter
+  const { transactions, updateTransaction } = useTransactions({
+    page,
+    pageSize: 10,
+    storeId: customerFilter === 'all' ? undefined : customerFilter,
+    paymentStatus: paymentFilter === 'all' ? undefined : paymentFilter,
+    orderStatus: statusFilter === 'all' ? undefined : statusFilter,
+  });
 
   const transactionsWithCustomer = useMemo(() => {
     return transactions.map((t) => {
@@ -112,6 +119,7 @@ const TransactionPage: React.FC = () => {
     customerFilter,
   ]);
 
+  // Hanya satu deklarasi useSortableData di sini
   const {
     items: sortedTransactions,
     requestSort,

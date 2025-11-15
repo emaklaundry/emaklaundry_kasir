@@ -131,9 +131,9 @@ const AppRoutes: React.FC = () => {
           <Route
             path="/management/stores"
             element={
-              <AdminRoute>
+              <SuperAdminRoute>
                 <StoresPage />
-              </AdminRoute>
+              </SuperAdminRoute>
             }
           />
           <Route
