@@ -183,9 +183,15 @@ const Dashboard: React.FC = () => {
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
-  const customers = Array.isArray(customersQuery.data)
-    ? customersQuery.data
-    : (customersQuery.data?.data ?? []);
+
+  // --- PERBAIKAN DI SINI ---
+  const customers = useMemo(() => {
+    return Array.isArray(customersQuery.data)
+      ? customersQuery.data
+      : (customersQuery.data?.data ?? []);
+  }, [customersQuery.data]);
+  // --- AKHIR PERBAIKAN ---
+
   const { expenses, addExpense } = useExpenses();
   const { scheduledMaintenances, updateScheduledMaintenance } = useScheduledMaintenances();
   const { assets, updateAsset } = useAssets();

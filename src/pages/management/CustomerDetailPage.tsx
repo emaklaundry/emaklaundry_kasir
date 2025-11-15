@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   UsersIcon,
   ShoppingCartIcon,
@@ -8,7 +9,6 @@ import {
   HistoryIcon,
 } from '../../components/icons';
 import { fetchCustomers } from '../../contexts/CustomerContext';
-import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { OrderStatus, PaymentStatus } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';

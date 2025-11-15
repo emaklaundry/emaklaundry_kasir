@@ -239,7 +239,6 @@ const NewTransactionPage: React.FC = () => {
       if (timerId) clearTimeout(timerId);
     };
   }, [canApplyDiscount, selectedCustomer, addToast, settings?.discountRate]);
-  // ...existing code...
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   if (isLoadingSettings) {

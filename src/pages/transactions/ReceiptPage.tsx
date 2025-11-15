@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { PrinterIcon, ChevronLeftIcon, ShoppingCartIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
-import { useQuery } from '@tanstack/react-query';
 
 const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

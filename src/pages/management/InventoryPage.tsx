@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -13,7 +14,6 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { fetchInventory, useInventoryMutations } from '../../contexts/InventoryContext';
-import { useQuery } from '@tanstack/react-query';
 import { useAppContext } from '../../contexts/AppContext';
 import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';

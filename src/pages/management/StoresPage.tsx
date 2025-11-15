@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -13,7 +14,6 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
-import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchInventory } from '../../contexts/InventoryContext';
 import { useAssets } from '../../contexts/AssetContext';

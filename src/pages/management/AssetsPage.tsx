@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { getStatusBadge } from '@/utils/uiHelpers';
 import { useSearchParams } from 'react-router-dom';
 import {
   PlusCircleIcon,
@@ -24,6 +23,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useScheduledMaintenances } from '../../contexts/ScheduledMaintenanceContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { getStatusBadge } from '@/utils/uiHelpers';
 import { Asset, MaintenanceLog, UserRole } from '@/types';
 
 const AssetsPage: React.FC = () => {

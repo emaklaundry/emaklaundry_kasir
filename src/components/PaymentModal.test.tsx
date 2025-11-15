@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import PaymentModal from './PaymentModal';
 import { ToastProvider } from '../contexts/ToastContext';
+import PaymentModal from './PaymentModal';
 
 // Mock props as needed for PaymentModal
 const mockTransaction = {
@@ -37,6 +37,4 @@ describe('PaymentModal', () => {
     fireEvent.click(closeButton);
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
-
-  // Tambahkan test lain sesuai interaksi dan logika PaymentModal
 });

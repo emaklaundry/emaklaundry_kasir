@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchInventory, useInventoryMutations } from '../contexts/InventoryContext';
 import { useQuery } from '@tanstack/react-query';
+import { fetchInventory, useInventoryMutations } from '../contexts/InventoryContext';
 import { useToasts } from '../contexts/ToastContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useAppContext } from '../contexts/AppContext';

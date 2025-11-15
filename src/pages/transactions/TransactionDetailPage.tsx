@@ -1,10 +1,9 @@
 import * as React from 'react';
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
-import { useQuery } from '@tanstack/react-query';
 import {
   ChevronLeftIcon,
   PrinterIcon,
@@ -17,6 +16,7 @@ import EmptyState from '../../components/EmptyState';
 import { useAppContext } from '../../contexts/AppContext';
 import { useToasts } from '../../contexts/ToastContext';
 import PaymentModal from '../../components/PaymentModal';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { OrderStatus, PaymentStatus, Transaction } from '@/types';
 // supabase client not used directly in this file; progress updates go through RPC helper
 

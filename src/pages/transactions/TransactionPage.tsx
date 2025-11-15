@@ -59,9 +59,15 @@ const TransactionPage: React.FC = () => {
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
-  const customers = Array.isArray(customersQuery.data)
-    ? customersQuery.data
-    : (customersQuery.data?.data ?? []);
+
+  // --- PERBAIKAN DI SINI ---
+  const customers = useMemo(() => {
+    return Array.isArray(customersQuery.data)
+      ? customersQuery.data
+      : (customersQuery.data?.data ?? []);
+  }, [customersQuery.data]);
+  // --- AKHIR PERBAIKAN ---
+
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
 
@@ -227,7 +233,7 @@ const TransactionPage: React.FC = () => {
 
   const handleOpenWhatsAppModal = (transaction: Transaction, customer: Customer) => {
     setTransactionForWhatsApp(transaction);
-    setCustomerForWhatsApp(customer);
+    // setCustomerForWhatsApp(customer); // 'customer' tidak terdefinisi di sini, ambil dari useMemo
     setIsWhatsAppModalOpen(true);
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -13,7 +14,6 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
-import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useAppContext } from '../../contexts/AppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';

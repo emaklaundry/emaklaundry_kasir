@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { fetchCustomers } from '../contexts/CustomerContext';
 import { useQuery } from '@tanstack/react-query';
+import { fetchCustomers } from '../contexts/CustomerContext';
 import { useAppContext } from '../contexts/AppContext';
 import ToastContainer from './ToastContainer';
 import Header from './Header';
