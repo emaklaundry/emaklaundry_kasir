@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { InventoryItem, UserRole } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -19,13 +19,22 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
+import { InventoryItem, UserRole } from '@/types';
 
 const InventoryPage: React.FC = () => {
   const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
-  const [isSavingInventory, setIsSavingInventory] = useState(false);
+  const addInventoryMutation = useMutation({
+    mutationFn: async (data: any) => addInventoryItem(data),
+  });
+  const updateInventoryMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => updateInventoryItem(id, data),
+  });
+  const deleteInventoryMutation = useMutation({
+    mutationFn: async (id: string) => deleteInventoryItem(id),
+  });
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
@@ -45,7 +54,7 @@ const InventoryPage: React.FC = () => {
     }
     const filterParam = searchParams.get('filter');
     setFilter(filterParam === 'low_stock' ? 'low_stock' : 'all');
-  }, [location.state, navigate, searchParams]);
+  }, [location.state, location.pathname, navigate, searchParams]);
 
   const handleOpenFormModal = (item: InventoryItem | null = null) => {
     setCurrentItem(item);
@@ -66,22 +75,22 @@ const InventoryPage: React.FC = () => {
       return;
     }
     const toastId = addToast('Menyimpan item inventaris...', 'info');
-    setIsSavingInventory(true);
     try {
       if (currentItem && currentItem.id) {
-        await updateInventoryItem(currentItem.id, { ...item, storeId });
+        await updateInventoryMutation.mutateAsync({
+          id: currentItem.id,
+          data: { ...item, storeId },
+        });
         addAuditLog(`Memperbarui item inventaris: "${item.name}".`, storeId);
         updateToast(toastId, 'Data inventaris berhasil diperbarui!', 'success');
       } else {
-        await addInventoryItem({ ...item, storeId });
+        await addInventoryMutation.mutateAsync({ ...item, storeId });
         addAuditLog(`Menambahkan item inventaris baru: "${item.name}".`, storeId);
         updateToast(toastId, 'Item inventaris berhasil ditambahkan!', 'success');
       }
       handleCloseFormModal();
     } catch (error: any) {
       updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
-    } finally {
-      setIsSavingInventory(false);
     }
   };
 
@@ -92,16 +101,14 @@ const InventoryPage: React.FC = () => {
   const confirmDelete = async () => {
     if (itemToDelete) {
       const toastId = addToast('Menghapus item inventaris...', 'info');
-      setIsSavingInventory(true);
       try {
-        await deleteInventoryItem(itemToDelete.id);
+        await deleteInventoryMutation.mutateAsync(itemToDelete.id);
         addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId);
         updateToast(toastId, 'Item inventaris berhasil dihapus!', 'success');
       } catch (error: any) {
         updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
       } finally {
         setItemToDelete(null);
-        setIsSavingInventory(false);
       }
     }
   };
@@ -154,8 +161,10 @@ const InventoryPage: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      {isSavingInventory && (
+    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      {(addInventoryMutation.isPending ||
+        updateInventoryMutation.isPending ||
+        deleteInventoryMutation.isPending) && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">
             <svg

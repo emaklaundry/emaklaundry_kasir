@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { useToasts } from '../contexts/ToastContext';
 import Modal from './Modal';
 import { User, UserRole, Store } from '@/types';
-import { useToasts } from '../contexts/ToastContext';
 
 interface UserFormModalProps {
   user: User | null;

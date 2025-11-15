@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Modal from './Modal';
 import { InventoryItem } from '../../types';
+import Modal from './Modal';
 
 interface InventoryFormModalProps {
   item: InventoryItem | null;

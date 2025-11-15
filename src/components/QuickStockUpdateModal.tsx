@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
 import { useInventory } from '../contexts/InventoryContext';
 import { useToasts } from '../contexts/ToastContext';
-import { InventoryItem } from '@/types';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useAppContext } from '../contexts/AppContext';
+import Modal from './Modal';
+import { InventoryItem } from '@/types';
 
 interface QuickStockUpdateModalProps {
   isOpen: boolean;

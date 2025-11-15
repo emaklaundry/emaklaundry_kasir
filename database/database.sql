@@ -444,6 +444,7 @@ DECLARE
   caller_role text;
   caller_store uuid;
   tx_store uuid;
+  tx_payment_status text; -- DITAMBAHKAN: Variabel untuk status bayar saat ini
 BEGIN
   -- Load caller profile
   SELECT role, store_id INTO caller_role, caller_store FROM public.profiles WHERE id = caller;
@@ -451,8 +452,8 @@ BEGIN
     RAISE EXCEPTION 'unauthorized';
   END IF;
 
-  -- Ensure transaction exists and get its store
-  SELECT "storeId" INTO tx_store FROM public.transactions WHERE id = transaction_id_input;
+  -- Ensure transaction exists and get its store dan payment status
+  SELECT "storeId", "paymentStatus" INTO tx_store, tx_payment_status FROM public.transactions WHERE id = transaction_id_input;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'transaction not found';
   END IF;
@@ -461,6 +462,13 @@ BEGIN
   IF caller_role <> 'Super Admin' AND tx_store IS DISTINCT FROM caller_store THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
+
+  -- DITAMBAHKAN: Pengecekan Logika Bisnis
+  -- Pesanan tidak boleh 'Selesai' jika status bayar (baik yang baru diinput atau yang sudah ada) BUKAN 'Lunas'.
+  IF p_order_status = 'Selesai' AND COALESCE(p_payment_status, tx_payment_status) <> 'Lunas' THEN
+    RAISE EXCEPTION 'Pesanan tidak dapat diselesaikan karena belum lunas.';
+  END IF;
+  -- AKHIR TAMBAHAN
 
   -- Perform update (only allowed progress fields)
   UPDATE public.transactions

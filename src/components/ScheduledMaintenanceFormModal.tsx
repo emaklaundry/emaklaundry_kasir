@@ -20,7 +20,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
   onSave,
   schedule,
 }) => {
-  const getInitialFormData = (): ScheduleFormData => {
+  const getInitialFormData = React.useCallback((): ScheduleFormData => {
     if (schedule) {
       return {
         description: schedule.description,
@@ -39,13 +39,13 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
       frequencyUnit: 'months',
       nextDueDate: tomorrow.toISOString().split('T')[0],
     };
-  };
+  }, [schedule]);
 
   const [formData, setFormData] = useState<ScheduleFormData>(getInitialFormData());
 
   useEffect(() => {
     setFormData(getInitialFormData());
-  }, [schedule, isOpen]);
+  }, [schedule, isOpen, getInitialFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -60,11 +60,8 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // convert nextDueDate YYYY-MM-DD to ISO at local midnight
-    const [y, m, d] = (formData.nextDueDate || '').split('-').map(Number);
-    const iso = isNaN(y)
-      ? new Date().toISOString()
-      : new Date(y, (m || 1) - 1, d || 1).toISOString();
+    // Gunakan helper agar DRY
+    const iso = convertLocalDateToISOString(formData.nextDueDate);
     onSave({ ...formData, nextDueDate: iso } as any);
   };
 

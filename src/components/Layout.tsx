@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import Header from './Header';
 import { useCustomers } from '../contexts/CustomerContext';
-import { Customer, UserRole } from '@/types';
-import ToastContainer from './ToastContainer';
 import { useAppContext } from '../contexts/AppContext';
+import ToastContainer from './ToastContainer';
+import Header from './Header';
+import Sidebar from './Sidebar';
 import BottomNavBar from './BottomNavBar';
+import VersionInfo from './VersionInfo';
+import { Customer, UserRole } from '@/types';
 
 const getPageTitle = (pathname: string, params: any, customers: Customer[]): string => {
   const staticTitles: { [key: string]: string } = {
@@ -50,13 +51,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isCashier = currentUser.role === UserRole.Cashier;
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-900 min-h-screen">
+    <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col">
       <Sidebar />
-      <div className="sm:ml-64">
+      <div className="sm:ml-64 flex-1 flex flex-col">
         <Header pageTitle={pageTitle} />
-        <main className={`p-4 md:p-6 ${isCashier ? 'pb-24 sm:pb-6' : ''} print-main-content`}>
+        <main
+          className={`p-4 md:p-6 flex-1 ${isCashier ? 'pb-24 sm:pb-6' : ''} print-main-content`}
+        >
           {children}
         </main>
+        <VersionInfo />
       </div>
       {isCashier && <BottomNavBar />}
       <ToastContainer />

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Store } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -22,6 +21,7 @@ import StoreFormModal from '../../components/StoreFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { Store } from '@/types';
 
 const StoresPage: React.FC = () => {
   const { stores, addStore, updateStore, deleteStore } = useStores();
@@ -150,7 +150,7 @@ const StoresPage: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
       {isSavingStore && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">

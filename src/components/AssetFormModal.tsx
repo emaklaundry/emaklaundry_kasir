@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import Modal from './Modal';
 import { Asset } from '../../types';
-import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
+import Modal from './Modal';
 
 interface AssetFormModalProps {
   asset: Asset | null;
@@ -35,12 +35,8 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Serialize purchaseDate to ISO string when sending to backend to avoid type mismatches.
-    // Convert YYYY-MM-DD -> ISO at local midnight to avoid timezone shifts
-    const [y, m, d] = (formData.purchaseDate || '').split('-').map(Number);
-    const iso = isNaN(y)
-      ? new Date().toISOString()
-      : new Date(y, (m || 1) - 1, d || 1).toISOString();
+    // Gunakan helper agar DRY
+    const iso = convertLocalDateToISOString(formData.purchaseDate);
     const payload = { ...formData, purchaseDate: iso };
     onSave(payload as any);
   };

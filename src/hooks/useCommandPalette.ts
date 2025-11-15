@@ -42,5 +42,8 @@ export const useCommandPalette = (): CommandPaletteContextType => {
   if (!context) {
     throw new Error('useCommandPalette must be used within a CommandPaletteProvider');
   }
+
   return context;
 };
+
+export default useCommandPalette;

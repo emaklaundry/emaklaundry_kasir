@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Customer, UserRole } from '@/types';
+import { useMutation } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -22,6 +22,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
+import { Customer, UserRole } from '@/types';
 
 const CustomersPage: React.FC = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
@@ -63,6 +64,13 @@ const CustomersPage: React.FC = () => {
 
   type CustomerWithStats = (typeof customerStats)[0];
 
+  const addCustomerMutation = useMutation({
+    mutationFn: async (data: any) => addCustomer(data),
+  });
+  const updateCustomerMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => updateCustomer(id, data),
+  });
+
   const filteredCustomers = useMemo(
     () =>
       customerStats.filter(
@@ -89,43 +97,44 @@ const CustomersPage: React.FC = () => {
     if (!sortConfig || sortConfig.key !== key) return null;
     if (sortConfig.direction === 'ascending')
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
-    return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
-
-  const handleOpenFormModal = (customer: Customer | null = null) => {
-    setCurrentCustomer(customer);
-    setIsFormModalOpen(true);
-  };
-
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
     setCurrentCustomer(null);
   };
 
   const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
-    const storeId =
+    // Pilih storeId sesuai role user
+    let storeId =
       currentCustomer?.storeId ||
       (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
       return;
     }
+    // Normalisasi nomor telepon
+    let phone = customerData.phone?.replace(/\D/g, '') || '';
+    if (phone.startsWith('0')) {
+      phone = '62' + phone.substring(1);
+    } else if (phone.startsWith('62')) {
+      // sudah benar
+    } else if (phone.startsWith('8')) {
+      phone = '62' + phone;
+    }
     const toastId = addToast('Menyimpan pelanggan...', 'info');
     setIsSaving(true);
     try {
       if (currentCustomer && currentCustomer.id) {
-        await updateCustomer(currentCustomer.id, { ...customerData, storeId });
+        await updateCustomer(currentCustomer.id, { ...customerData, phone, storeId });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
-        updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
       } else {
-        await addCustomer({ ...customerData, storeId });
+        await addCustomer({ ...customerData, phone, storeId });
         addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
         updateToast(toastId, 'Pelanggan baru berhasil ditambahkan!', 'success');
       }
       handleCloseFormModal();
     } catch (error: any) {
       updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
-    } finally {
       setIsSaving(false);
     }
   };
@@ -187,7 +196,7 @@ const CustomersPage: React.FC = () => {
   );
 
   return (
-    <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
       {isSaving && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">

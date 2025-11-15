@@ -1,14 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  OrderStatus,
-  PaymentStatus,
-  Expense,
-  UserRole,
-  Customer,
-  Transaction,
-  ScheduledMaintenance,
-} from '@/types';
+
+import { calculateNextDueDate } from '../utils/formatting';
 import {
   ShoppingCartIcon,
   PackageIcon,
@@ -151,7 +144,15 @@ const StatCard: React.FC<{
   return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
 };
 
-import { calculateNextDueDate } from '../utils/formatting';
+import {
+  OrderStatus,
+  PaymentStatus,
+  Expense,
+  UserRole,
+  Customer,
+  Transaction,
+  ScheduledMaintenance,
+} from '@/types';
 
 // Helper function to calculate stats for a given period
 const calculateStats = (transactions: Transaction[], startDate: Date, endDate: Date) => {
@@ -244,10 +245,9 @@ const Dashboard: React.FC = () => {
 
   const lowStockItems = inventory.filter((i) => i.stock <= i.lowStockThreshold).length;
 
-  const now = new Date();
-  now.setHours(23, 59, 59, 999); // End of today
-
   const maintenanceDue = useMemo(() => {
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // End of today
     return scheduledMaintenances
       .filter((sm) => new Date(sm.nextDueDate) <= now)
       .map((sm) => {
@@ -255,7 +255,7 @@ const Dashboard: React.FC = () => {
         return { ...sm, assetName: asset?.name || 'N/A' };
       })
       .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
-  }, [scheduledMaintenances, assets, now]);
+  }, [scheduledMaintenances, assets]);
 
   const maintenanceDueCount = maintenanceDue.length;
 
@@ -303,8 +303,6 @@ const Dashboard: React.FC = () => {
         return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
       case PaymentStatus.Unpaid:
         return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      case PaymentStatus.PartiallyPaid:
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
       default:
         return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
     }
@@ -362,6 +360,12 @@ const Dashboard: React.FC = () => {
       if (transaction.orderStatus === OrderStatus.Processing) {
         nextStatus = OrderStatus.Ready;
       } else if (transaction.orderStatus === OrderStatus.Ready) {
+        // --- TAMBAHAN GUARD CLAUSE ---
+        if (transaction.paymentStatus !== PaymentStatus.Paid) {
+          addToast('Pesanan tidak dapat diselesaikan karena belum lunas.', 'error');
+          return;
+        }
+        // --- AKHIR TAMBAHAN ---
         nextStatus = OrderStatus.Completed;
       } else {
         return; // No next status from 'Completed'
@@ -379,7 +383,7 @@ const Dashboard: React.FC = () => {
         setIsWhatsAppModalOpen(true);
       }
     },
-    [transactions, updateTransaction, addAuditLog],
+    [transactions, updateTransaction, addAuditLog, addToast],
   );
 
   const handleMarkMaintenanceAsComplete = useCallback(

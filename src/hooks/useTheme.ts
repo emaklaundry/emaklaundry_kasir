@@ -16,7 +16,7 @@ const getInitialTheme = (): Theme => {
   return 'light';
 };
 
-export const useTheme = () => {
+const useTheme = () => {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
@@ -30,3 +30,5 @@ export const useTheme = () => {
 
   return { theme, setTheme };
 };
+
+export default useTheme;

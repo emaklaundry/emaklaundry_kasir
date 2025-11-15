@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
-import { UserRole } from '@/types';
 import { useAppContext } from '../contexts/AppContext';
+import { UserRole } from '@/types';
 
 interface StoreDataItem {
   storeId?: string;
   [key: string]: any;
 }
 
-export function useStoreFilteredData<T extends StoreDataItem>(data: T[]): T[] {
+const useStoreFilteredData = function <T extends StoreDataItem>(data: T[]): T[] {
   const { currentUser, selectedStoreId } = useAppContext();
 
   return useMemo(() => {
@@ -19,4 +19,6 @@ export function useStoreFilteredData<T extends StoreDataItem>(data: T[]): T[] {
     }
     return data.filter((item) => item.storeId === currentUser.storeId);
   }, [data, currentUser, selectedStoreId]);
-}
+};
+
+export default useStoreFilteredData;

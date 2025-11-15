@@ -1,21 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import Modal from './Modal';
-import { Asset, ScheduledMaintenance } from '@/types';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
 import { useToasts } from '../contexts/ToastContext';
+import { useAuditLogs } from '../contexts/AuditLogContext';
+import { calculateNextDueDate } from '../utils/formatting';
+import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ScheduledMaintenanceFormModal from './ScheduledMaintenanceFormModal';
 import { PlusCircleIcon, EditIcon, Trash2Icon } from './icons';
-import { useAuditLogs } from '../contexts/AuditLogContext';
+import { Asset, ScheduledMaintenance } from '@/types';
 
 interface ScheduledMaintenanceModalProps {
   asset: Asset;
   isOpen: boolean;
   onClose: () => void;
 }
-
-import { calculateNextDueDate } from '../utils/formatting';
 
 const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
   asset,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Service } from '@/types';
 import { SearchIcon } from './icons';
+import { Service, ServiceCategory } from '@/types';
 
 interface ServiceSelectorProps {
   services: Service[];
@@ -13,6 +13,14 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
   const filteredServices = services.filter((s) =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  // Kelompokkan layanan berdasarkan kategori
+  const servicesByCategory = filteredServices.reduce<Record<string, Service[]>>((acc, service) => {
+    const cat = service.category || 'Lainnya';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(service);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-4">
@@ -27,28 +35,37 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
           autoComplete="off"
         />
       </div>
-      <div className="max-h-[45vh] overflow-y-auto space-y-2 pr-2 -mr-2">
+      <div className="max-h-[45vh] overflow-y-auto space-y-4 pr-2 -mr-2">
         {filteredServices.length > 0 ? (
-          filteredServices.map((service) => (
-            <div
-              key={service.id}
-              className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-slate-700/50 hover:bg-brand-blue-50 dark:hover:bg-brand-blue-900/50 border-slate-300 dark:border-slate-600"
-            >
-              <div>
-                <div className="font-semibold text-base text-slate-800 dark:text-slate-200">
-                  {service.name}
-                </div>
-                <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Rp {service.price.toLocaleString('id-ID')} / {service.unit}
-                </div>
+          Object.entries(servicesByCategory).map(([category, services]) => (
+            <div key={category}>
+              <div className="font-bold text-slate-700 dark:text-slate-200 mb-2 mt-4 text-base border-b border-slate-200 dark:border-slate-600 pb-1">
+                {category}
               </div>
-              <button
-                type="button"
-                onClick={() => onAddService(service)}
-                className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
-              >
-                Tambah
-              </button>
+              <div className="space-y-2">
+                {services.map((service) => (
+                  <div
+                    key={service.id}
+                    className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-slate-700/50 hover:bg-brand-blue-50 dark:hover:bg-brand-blue-900/50 border-slate-300 dark:border-slate-600"
+                  >
+                    <div>
+                      <div className="font-semibold text-base text-slate-800 dark:text-slate-200">
+                        {service.name}
+                      </div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Rp {service.price.toLocaleString('id-ID')} / {service.unit}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onAddService(service)}
+                      className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                    >
+                      Tambah
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           ))
         ) : (

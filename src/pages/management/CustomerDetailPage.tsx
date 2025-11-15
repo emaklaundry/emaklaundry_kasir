@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus } from '@/types';
 import {
   UsersIcon,
   ShoppingCartIcon,
@@ -10,6 +9,7 @@ import {
 } from '../../components/icons';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import { OrderStatus, PaymentStatus } from '@/types';
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,8 +60,6 @@ const CustomerDetailPage: React.FC = () => {
         return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
       case PaymentStatus.Unpaid:
         return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      case PaymentStatus.PartiallyPaid:
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
       default:
         return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
     }
@@ -77,7 +75,7 @@ const CustomerDetailPage: React.FC = () => {
         Kembali ke Daftar Pelanggan
       </Link>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="flex-shrink-0 w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
             <UsersIcon className="w-10 h-10 text-slate-500 dark:text-slate-400" />
@@ -97,7 +95,7 @@ const CustomerDetailPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
           <DollarSignIcon className="w-8 h-8 text-green-500" />
           <div>
             <p className="text-base text-slate-500 dark:text-slate-400">Total Belanja</p>

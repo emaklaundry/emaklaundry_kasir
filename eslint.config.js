@@ -19,7 +19,7 @@ export default [
   },
   // TypeScript project files only (with project reference)
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
     languageOptions: {
       parser,
       parserOptions: {
@@ -27,6 +27,17 @@ export default [
         sourceType: 'module',
         ecmaFeatures: { jsx: true },
         project: './tsconfig.json',
+      },
+    },
+  },
+  {
+    files: ['src/types/*.d.ts'],
+    languageOptions: {
+      parser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
       },
     },
   },
@@ -67,8 +78,20 @@ export default [
           alwaysTryTypes: true,
           project: './tsconfig.json',
         },
+        alias: {
+          map: [['@', './src']],
+          extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+        },
       },
     },
-    ignores: ['node_modules', 'dist', 'build', 'public'],
+    ignores: [
+      'node_modules',
+      'dist',
+      'build',
+      'public',
+      'dist/**',
+      'build/**',
+      'src/types/shims.d.ts',
+    ],
   },
 ];

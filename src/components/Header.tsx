@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import { UserRole } from '@/types';
-import { useTheme, Theme } from '../hooks/useTheme';
+import useTheme, { Theme } from '../hooks/useTheme';
+import useCommandPalette from '../hooks/useCommandPalette';
 import { SunIcon, MoonIcon, CommandIcon } from './icons';
-import { useCommandPalette } from '../hooks/useCommandPalette';
+import { UserRole } from '@/types';
 
 const ThemeToggleButton: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -35,7 +35,7 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
   const activeStores = stores.filter((s) => s.isActive);
 
   return (
-    <header className="print-hide bg-white dark:bg-slate-800 shadow-sm p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
+    <header className="print-hide bg-slate-50 dark:bg-slate-800 shadow-sm p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl md:text-3xl font-semibold text-slate-800 dark:text-white">
           {pageTitle}

@@ -1,3 +1,12 @@
+/**
+ * Konversi string tanggal lokal (YYYY-MM-DD) ke ISO string (UTC midnight)
+ * @param dateStr string tanggal lokal, misal '2023-11-15'
+ */
+export function convertLocalDateToISOString(dateStr: string): string {
+  const [y, m, d] = (dateStr || '').split('-').map(Number);
+  if (isNaN(y)) return new Date().toISOString();
+  return new Date(y, (m || 1) - 1, d || 1).toISOString();
+}
 export function calculateNextDueDate(
   currentDueDate: Date,
   value: number,

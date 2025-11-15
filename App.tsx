@@ -2,13 +2,13 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppContext } from './src/contexts/AppContext';
-import { UserRole } from '@/types';
 import Layout from './src/components/Layout';
 
-import { useTheme } from './src/hooks/useTheme';
+import useTheme from './src/hooks/useTheme';
 import { AppProviders } from './src/contexts/AppProviders';
 import CommandPalette from './src/components/CommandPalette';
 import QuickActionsPage from './src/pages/QuickActionsPage';
+import { UserRole } from '@/types';
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./src/pages/Dashboard'));
@@ -60,6 +60,7 @@ const AppRoutes: React.FC = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/settings" element={<Navigate to="/management/settings" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
@@ -70,6 +71,7 @@ const AppRoutes: React.FC = () => {
     <Layout>
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/settings" element={<Navigate to="/management/settings" replace />} />
           <Route path="/login" element={<Navigate to="/" />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/quick-actions" element={<QuickActionsPage />} />
@@ -155,6 +157,14 @@ const AppRoutes: React.FC = () => {
             element={
               <AdminRoute>
                 <ReportsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/audit-log"
+            element={
+              <AdminRoute>
+                <AuditLogPage />
               </AdminRoute>
             }
           />

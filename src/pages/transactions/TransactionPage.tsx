@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 import {
   PlusCircleIcon,
   SearchIcon,
@@ -25,6 +24,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 
 const TransactionPage: React.FC = () => {
   const { transactions, updateTransaction } = useTransactions();
@@ -162,6 +162,17 @@ const TransactionPage: React.FC = () => {
     const targetTransaction = transactions.find((t) => t.id === id);
     if (!targetTransaction) return;
 
+    // --- TAMBAHAN GUARD CLAUSE ---
+    if (
+      newStatus === OrderStatus.Completed &&
+      targetTransaction.paymentStatus !== PaymentStatus.Paid
+    ) {
+      addToast('Pesanan tidak dapat diselesaikan karena belum lunas.', 'error');
+      // Reset visual dropdown kembali ke nilai lama (opsional, tergantung implementasi UI)
+      return;
+    }
+    // --- AKHIR TAMBAHAN ---
+
     const updatedTransaction = { ...targetTransaction, orderStatus: newStatus };
     const shouldShowWhatsAppModal =
       newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
@@ -222,24 +233,10 @@ const TransactionPage: React.FC = () => {
     }
   };
 
-  const handleSendGenericWhatsApp = (transaction: (typeof filteredTransactions)[0]) => {
-    if (!transaction.customerPhone) {
-      addToast('Nomor telepon pelanggan tidak ditemukan.', 'error');
-      return;
-    }
-    const message = `Halo ${transaction.customerName},\n\nIni adalah rincian untuk transaksi Anda di Laundry POS:\n\nID Transaksi: ${transaction.id}\nTotal: Rp ${transaction.total.toLocaleString('id-ID')}\nStatus Pesanan: ${transaction.orderStatus}\nStatus Bayar: ${transaction.paymentStatus}\n\nTerima kasih!`;
-
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent,
-    );
-    const phone = transaction.customerPhone.replace(/\D/g, '');
-    const encodedMessage = encodeURIComponent(message);
-
-    const whatsappUrl = isMobile
-      ? `https://wa.me/${phone}?text=${encodedMessage}`
-      : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
-
-    window.open(whatsappUrl, '_blank');
+  const handleOpenWhatsAppModal = (transaction: Transaction, customer: Customer) => {
+    setTransactionForWhatsApp(transaction);
+    setCustomerForWhatsApp(customer);
+    setIsWhatsAppModalOpen(true);
   };
 
   const handleStatusFilterChange = (status: OrderStatus | 'all') => {
@@ -336,7 +333,7 @@ const TransactionPage: React.FC = () => {
 
   return (
     <>
-      <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
         {(isSavingPayment || isBulkProcessing) && (
           <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
             <div className="flex items-center gap-3">
@@ -624,7 +621,14 @@ const TransactionPage: React.FC = () => {
                         <PrinterIcon className="w-5 h-5" />
                       </Link>
                       <button
-                        onClick={() => handleSendGenericWhatsApp(t)}
+                        onClick={() => {
+                          const customer = customers.find((c) => c.id === t.customerId);
+                          if (customer) {
+                            handleOpenWhatsAppModal(t, customer);
+                          } else {
+                            addToast('Data pelanggan tidak ditemukan.', 'error');
+                          }
+                        }}
                         title="Kirim Struk via WhatsApp"
                         className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700"
                       >
@@ -669,7 +673,7 @@ const TransactionPage: React.FC = () => {
             paginatedTransactions.map((t) => (
               <div
                 key={t.id}
-                className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-white dark:bg-slate-800'}`}
+                className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-slate-50 dark:bg-slate-800'}`}
               >
                 <div className="absolute top-3 left-2">
                   <input
@@ -746,7 +750,14 @@ const TransactionPage: React.FC = () => {
                       <PrinterIcon className="w-6 h-6" />
                     </Link>
                     <button
-                      onClick={() => handleSendGenericWhatsApp(t)}
+                      onClick={() => {
+                        const customer = customers.find((c) => c.id === t.customerId);
+                        if (customer) {
+                          handleOpenWhatsAppModal(t, customer);
+                        } else {
+                          addToast('Data pelanggan tidak ditemukan.', 'error');
+                        }
+                      }}
                       title="Kirim Struk via WhatsApp"
                       className="hover:text-slate-900 dark:hover:text-white"
                     >

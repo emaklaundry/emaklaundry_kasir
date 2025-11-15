@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 
 const ITEMS_PER_PAGE = 15;
 
-export const usePagination = <T>(data: T[]) => {
+const usePagination = <T>(data: T[]) => {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
 
@@ -27,3 +27,6 @@ export const usePagination = <T>(data: T[]) => {
     currentData: paginatedData, // Alias for clarity
   };
 };
+
+export default usePagination;
+export { usePagination };

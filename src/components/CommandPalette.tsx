@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCommandPalette } from '@/hooks/useCommandPalette';
 import {
   HomeIcon,
   ShoppingCartIcon,
@@ -15,6 +14,7 @@ import {
   HistoryIcon,
   SearchIcon,
 } from './icons';
+import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { useCustomers } from '@/contexts/CustomerContext';
 
 interface Command {
@@ -36,95 +36,95 @@ const CommandPalette: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  const baseCommands: Omit<Command, 'id' | 'action'>[] = [
-    { title: 'Dashboard', icon: HomeIcon, section: 'Navigasi', path: '/' },
-    {
-      title: 'Daftar Transaksi',
-      icon: ShoppingCartIcon,
-      section: 'Navigasi',
-      keywords: 'list',
-      path: '/transactions',
-    },
-    {
-      title: 'Buat Transaksi Baru',
-      icon: PlusCircleIcon,
-      section: 'Navigasi',
-      keywords: 'new add',
-      path: '/transactions/new',
-    },
-    {
-      title: 'Manajemen Pelanggan',
-      icon: UsersIcon,
-      section: 'Navigasi',
-      keywords: 'customer',
-      path: '/management/customers',
-    },
-    {
-      title: 'Manajemen Layanan',
-      icon: PackageIcon,
-      section: 'Navigasi',
-      keywords: 'service',
-      path: '/management/services',
-    },
-    {
-      title: 'Manajemen Inventaris',
-      icon: WrenchIcon,
-      section: 'Navigasi',
-      keywords: 'inventory',
-      path: '/management/inventory',
-    },
-    {
-      title: 'Manajemen Aset',
-      icon: WrenchIcon,
-      section: 'Navigasi',
-      keywords: 'asset maintenance',
-      path: '/management/assets',
-    },
-    {
-      title: 'Manajemen Pengeluaran',
-      icon: DollarSignIcon,
-      section: 'Navigasi',
-      keywords: 'expense',
-      path: '/management/expenses',
-    },
-    {
-      title: 'Manajemen Pengguna',
-      icon: UsersIcon,
-      section: 'Navigasi',
-      keywords: 'user',
-      path: '/management/users',
-    },
-    {
-      title: 'Manajemen Cabang',
-      icon: TruckIcon,
-      section: 'Navigasi',
-      keywords: 'store',
-      path: '/management/stores',
-    },
-    {
-      title: 'Laporan',
-      icon: BarChartIcon,
-      section: 'Navigasi',
-      keywords: 'report',
-      path: '/reports',
-    },
-    {
-      title: 'Log Audit',
-      icon: HistoryIcon,
-      section: 'Navigasi',
-      keywords: 'audit log',
-      path: '/audit-log',
-    },
-    {
-      title: 'Pengaturan',
-      icon: SettingsIcon,
-      section: 'Navigasi',
-      keywords: 'setting',
-      path: '/settings',
-    },
-  ];
-
   const allCommands = useMemo(() => {
+    const baseCommands: Omit<Command, 'id' | 'action'>[] = [
+      { title: 'Dashboard', icon: HomeIcon, section: 'Navigasi', path: '/' },
+      {
+        title: 'Daftar Transaksi',
+        icon: ShoppingCartIcon,
+        section: 'Navigasi',
+        keywords: 'list',
+        path: '/transactions',
+      },
+      {
+        title: 'Buat Transaksi Baru',
+        icon: PlusCircleIcon,
+        section: 'Navigasi',
+        keywords: 'new add',
+        path: '/transactions/new',
+      },
+      {
+        title: 'Manajemen Pelanggan',
+        icon: UsersIcon,
+        section: 'Navigasi',
+        keywords: 'customer',
+        path: '/management/customers',
+      },
+      {
+        title: 'Manajemen Layanan',
+        icon: PackageIcon,
+        section: 'Navigasi',
+        keywords: 'service',
+        path: '/management/services',
+      },
+      {
+        title: 'Manajemen Inventaris',
+        icon: WrenchIcon,
+        section: 'Navigasi',
+        keywords: 'inventory',
+        path: '/management/inventory',
+      },
+      {
+        title: 'Manajemen Aset',
+        icon: WrenchIcon,
+        section: 'Navigasi',
+        keywords: 'asset maintenance',
+        path: '/management/assets',
+      },
+      {
+        title: 'Manajemen Pengeluaran',
+        icon: DollarSignIcon,
+        section: 'Navigasi',
+        keywords: 'expense',
+        path: '/management/expenses',
+      },
+      {
+        title: 'Manajemen Pengguna',
+        icon: UsersIcon,
+        section: 'Navigasi',
+        keywords: 'user',
+        path: '/management/users',
+      },
+      {
+        title: 'Manajemen Cabang',
+        icon: TruckIcon,
+        section: 'Navigasi',
+        keywords: 'store',
+        path: '/management/stores',
+      },
+      {
+        title: 'Laporan',
+        icon: BarChartIcon,
+        section: 'Navigasi',
+        keywords: 'report',
+        path: '/reports',
+      },
+      {
+        title: 'Log Audit',
+        icon: HistoryIcon,
+        section: 'Navigasi',
+        keywords: 'audit log',
+        path: '/audit-log',
+      },
+      {
+        title: 'Pengaturan',
+        icon: SettingsIcon,
+        section: 'Navigasi',
+        keywords: 'setting',
+        path: '/settings',
+      },
+    ];
+
     const navigationCommands: Command[] = baseCommands.map((cmd) => ({
       ...cmd,
       id: `nav-${cmd.path}`,

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUsers } from '../../contexts/UserContext';
-import { User, UserRole, Store } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -19,6 +18,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import UserFormModal from '../../components/UserFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { User, UserRole, Store } from '@/types';
 
 const UsersPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();
@@ -152,7 +152,7 @@ const UsersPage: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
       {isSavingUser && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">

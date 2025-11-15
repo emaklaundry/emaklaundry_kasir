@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { Transaction, UserRole, Service, User, ServiceCategory } from '@/types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
@@ -8,6 +7,7 @@ import { useAppContext } from '../contexts/AppContext';
 import { useUsers } from '../contexts/UserContext';
 import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
+import { Transaction, UserRole, Service, User, ServiceCategory } from '@/types';
 
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
@@ -17,7 +17,7 @@ const StatCard: React.FC<{
 }> = ({ icon: Icon, title, value, color }) => (
   // TAMBAHKAN: kelas 'print-stat-card' dan 'print-hide' pada ikon
   <div
-    className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}
+    className={`bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}
   >
     <Icon className="w-10 h-10 text-slate-500 print-hide" />
     <div>
@@ -508,7 +508,7 @@ const ReportsPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Layanan Terlaris
               </h2>
@@ -536,7 +536,7 @@ const ReportsPage: React.FC = () => {
               </div>
             </div>
             {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pelanggan Teratas
               </h2>
@@ -565,7 +565,7 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
           {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <BarChartIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Pendapatan per Kategori Layanan
@@ -625,7 +625,7 @@ const ReportsPage: React.FC = () => {
             {/* --- AKHIR BLOK CETAK --- */}
           </div>
           {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Performa Kasir
@@ -671,7 +671,7 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
           {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Rincian Pengeluaran
@@ -746,7 +746,7 @@ const ReportsPage: React.FC = () => {
         </>
       ) : (
         // TAMBAHKAN: 'report-section' untuk menghindari page-break
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+        <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
             Ringkasan Bulanan {new Date().getFullYear()}
           </h2>
