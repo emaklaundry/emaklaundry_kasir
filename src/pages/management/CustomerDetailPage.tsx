@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { OrderStatus, PaymentStatus } from '@/types';
 import {
   UsersIcon,
   ShoppingCartIcon,
@@ -10,6 +9,7 @@ import {
 } from '../../components/icons';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import { OrderStatus, PaymentStatus } from '@/types';
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

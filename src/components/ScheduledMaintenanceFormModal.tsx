@@ -20,7 +20,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
   onSave,
   schedule,
 }) => {
-  const getInitialFormData = (): ScheduleFormData => {
+  const getInitialFormData = React.useCallback((): ScheduleFormData => {
     if (schedule) {
       return {
         description: schedule.description,
@@ -39,13 +39,13 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
       frequencyUnit: 'months',
       nextDueDate: tomorrow.toISOString().split('T')[0],
     };
-  };
+  }, [schedule]);
 
   const [formData, setFormData] = useState<ScheduleFormData>(getInitialFormData());
 
   useEffect(() => {
     setFormData(getInitialFormData());
-  }, [schedule, isOpen]);
+  }, [schedule, isOpen, getInitialFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;

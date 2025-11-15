@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { Transaction, UserRole, Service, User, ServiceCategory } from '@/types';
 import { useTransactions } from '../contexts/TransactionContext';
 import { useCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
@@ -8,6 +7,7 @@ import { useAppContext } from '../contexts/AppContext';
 import { useUsers } from '../contexts/UserContext';
 import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
+import { Transaction, UserRole, Service, User, ServiceCategory } from '@/types';
 
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;

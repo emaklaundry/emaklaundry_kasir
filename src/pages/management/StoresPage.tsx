@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Store } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -22,6 +21,7 @@ import StoreFormModal from '../../components/StoreFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { Store } from '@/types';
 
 const StoresPage: React.FC = () => {
   const { stores, addStore, updateStore, deleteStore } = useStores();

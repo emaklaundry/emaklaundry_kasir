@@ -1,4 +1,13 @@
 import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
+import ExpenseFormModal from '../components/ExpenseFormModal';
+import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
+import { useAppContext } from '../contexts/AppContext';
+import { useExpenses } from '../contexts/ExpenseContext';
+import { useAuditLogs } from '../contexts/AuditLogContext';
+import { useToasts } from '../contexts/ToastContext';
+import { UserRole, Expense } from '@/types';
 import {
   PlusIcon,
   UsersIcon,
@@ -7,15 +16,6 @@ import {
   DollarSignIcon,
   PlusCircleIcon,
 } from '@/components/icons';
-import React, { useState } from 'react';
-import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
-import ExpenseFormModal from '../components/ExpenseFormModal';
-import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
-import { useAppContext } from '../contexts/AppContext';
-import { useExpenses } from '../contexts/ExpenseContext';
-import { UserRole, Expense } from '@/types';
-import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useToasts } from '../contexts/ToastContext';
 
 const QuickActionsPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();

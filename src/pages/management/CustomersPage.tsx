@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Customer, UserRole } from '@/types';
 import { useMutation } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
@@ -23,6 +22,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
+import { Customer, UserRole } from '@/types';
 
 const CustomersPage: React.FC = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
@@ -64,18 +64,20 @@ const CustomersPage: React.FC = () => {
 
   type CustomerWithStats = (typeof customerStats)[0];
 
+  const addCustomerMutation = useMutation({
+    mutationFn: async (data: any) => addCustomer(data),
+  });
+  const updateCustomerMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => updateCustomer(id, data),
+  });
+
   const filteredCustomers = useMemo(
     () =>
       customerStats.filter(
         (c) =>
           c.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
           c.phone.includes(debouncedSearchTerm),
-        const addCustomerMutation = useMutation({
-          mutationFn: async (data: any) => addCustomer(data),
-        });
-        const updateCustomerMutation = useMutation({
-          mutationFn: async ({ id, data }: { id: string; data: any }) => updateCustomer(id, data),
-        });
+      ),
     [customerStats, debouncedSearchTerm],
   );
 
@@ -96,20 +98,16 @@ const CustomersPage: React.FC = () => {
     if (sortConfig.direction === 'ascending')
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
   };
-
-              await updateCustomerMutation.mutateAsync({ id: currentCustomer.id, data: { ...customerData, phone, storeId } });
-    setCurrentCustomer(customer);
-    setIsFormModalOpen(true);
-  };
-              await addCustomerMutation.mutateAsync({ ...customerData, phone, storeId });
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
     setCurrentCustomer(null);
   };
 
   const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
-    const storeId =
-          }
+    // Pilih storeId sesuai role user
+    let storeId =
+      currentCustomer?.storeId ||
+      (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
       return;

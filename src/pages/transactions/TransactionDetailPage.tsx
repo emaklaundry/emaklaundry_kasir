@@ -3,7 +3,6 @@ import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useCustomers } from '../../contexts/CustomerContext';
-import { OrderStatus, PaymentStatus, Transaction } from '@/types';
 import {
   ChevronLeftIcon,
   PrinterIcon,
@@ -16,6 +15,7 @@ import EmptyState from '../../components/EmptyState';
 import { useAppContext } from '../../contexts/AppContext';
 import { useToasts } from '../../contexts/ToastContext';
 import PaymentModal from '../../components/PaymentModal';
+import { OrderStatus, PaymentStatus, Transaction } from '@/types';
 // supabase client not used directly in this file; progress updates go through RPC helper
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({

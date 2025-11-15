@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 import {
   PlusCircleIcon,
   SearchIcon,
@@ -25,6 +24,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 
 const TransactionPage: React.FC = () => {
   const { transactions, updateTransaction } = useTransactions();

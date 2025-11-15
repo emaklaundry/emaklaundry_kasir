@@ -1,14 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  OrderStatus,
-  PaymentStatus,
-  Expense,
-  UserRole,
-  Customer,
-  Transaction,
-  ScheduledMaintenance,
-} from '@/types';
+
+import { calculateNextDueDate } from '../utils/formatting';
 import {
   ShoppingCartIcon,
   PackageIcon,
@@ -151,7 +144,15 @@ const StatCard: React.FC<{
   return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
 };
 
-import { calculateNextDueDate } from '../utils/formatting';
+import {
+  OrderStatus,
+  PaymentStatus,
+  Expense,
+  UserRole,
+  Customer,
+  Transaction,
+  ScheduledMaintenance,
+} from '@/types';
 
 // Helper function to calculate stats for a given period
 const calculateStats = (transactions: Transaction[], startDate: Date, endDate: Date) => {
@@ -244,10 +245,9 @@ const Dashboard: React.FC = () => {
 
   const lowStockItems = inventory.filter((i) => i.stock <= i.lowStockThreshold).length;
 
-  const now = new Date();
-  now.setHours(23, 59, 59, 999); // End of today
-
   const maintenanceDue = useMemo(() => {
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // End of today
     return scheduledMaintenances
       .filter((sm) => new Date(sm.nextDueDate) <= now)
       .map((sm) => {
@@ -255,7 +255,7 @@ const Dashboard: React.FC = () => {
         return { ...sm, assetName: asset?.name || 'N/A' };
       })
       .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
-  }, [scheduledMaintenances, assets, now]);
+  }, [scheduledMaintenances, assets]);
 
   const maintenanceDueCount = maintenanceDue.length;
 

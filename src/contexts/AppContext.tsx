@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useRef } from 'react';
 import { User, Store } from '../../types';
-import { useStores } from './StoreContext';
 import { supabase } from '../utils/supabaseClient';
+import { useStores } from './StoreContext';
 import { useToasts } from './ToastContext'; // 1. IMPOR useToasts
 
 interface AppContextType {

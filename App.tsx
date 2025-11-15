@@ -2,13 +2,13 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppContext } from './src/contexts/AppContext';
-import { UserRole } from '@/types';
 import Layout from './src/components/Layout';
 
 import useTheme from './src/hooks/useTheme';
 import { AppProviders } from './src/contexts/AppProviders';
 import CommandPalette from './src/components/CommandPalette';
 import QuickActionsPage from './src/pages/QuickActionsPage';
+import { UserRole } from '@/types';
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./src/pages/Dashboard'));

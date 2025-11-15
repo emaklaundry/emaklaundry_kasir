@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUsers } from '../../contexts/UserContext';
-import { User, UserRole, Store } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -19,6 +18,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import UserFormModal from '../../components/UserFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { User, UserRole, Store } from '@/types';
 
 const UsersPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();

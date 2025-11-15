@@ -23,5 +23,11 @@
     "strict": true
   },
   "include": ["src", "vite-env.d.ts"],
-  "exclude": ["dist", "data/mockData.ts", "env.d.ts", "hooks/usePersistentState.ts"]
+  "exclude": [
+    "dist",
+    "data/mockData.ts",
+    "env.d.ts",
+    "hooks/usePersistentState.ts",
+    "src/types/shims.d.ts"
+  ]
 }

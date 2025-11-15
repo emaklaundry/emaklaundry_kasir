@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { Expense, UserRole } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -17,6 +16,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { Expense, UserRole } from '@/types';
 
 const ExpensesPage: React.FC = () => {
   const { expenses, addExpense, updateExpense, deleteExpense } = useExpenses();

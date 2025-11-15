@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useAuditLogs } from '../contexts/AuditLogContext';
-import { UserRole } from '@/types';
 import useStoreFilteredData from '../hooks/useStoreFilteredData';
 import { useAppContext } from '../contexts/AppContext';
 import { HistoryIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 import useSortableData from '../hooks/useSortableData';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
+import { UserRole } from '@/types';
 
 const AuditLogPage: React.FC = () => {
   const { logs: allLogs } = useAuditLogs();

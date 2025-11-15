@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAppContext } from '../contexts/AppContext';
 import {
   HomeIcon,
   ShoppingCartIcon,
@@ -14,7 +15,6 @@ import {
   ChevronUpIcon,
   TruckIcon,
 } from './icons';
-import { useAppContext } from '../contexts/AppContext';
 import { UserRole } from '@/types';
 
 interface NavItem {

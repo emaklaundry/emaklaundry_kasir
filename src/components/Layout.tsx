@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import Header from './Header';
 import { useCustomers } from '../contexts/CustomerContext';
-import { Customer, UserRole } from '@/types';
-import ToastContainer from './ToastContainer';
 import { useAppContext } from '../contexts/AppContext';
+import ToastContainer from './ToastContainer';
+import Header from './Header';
+import Sidebar from './Sidebar';
 import BottomNavBar from './BottomNavBar';
 import VersionInfo from './VersionInfo';
+import { Customer, UserRole } from '@/types';
 
 const getPageTitle = (pathname: string, params: any, customers: Customer[]): string => {
   const staticTitles: { [key: string]: string } = {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
 import { TransactionItem } from '../../types';
+import Modal from './Modal';
 
 interface ItemNotesModalProps {
   isOpen: boolean;

@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import { UserRole } from '@/types';
 import useTheme, { Theme } from '../hooks/useTheme';
-import { SunIcon, MoonIcon, CommandIcon } from './icons';
 import useCommandPalette from '../hooks/useCommandPalette';
+import { SunIcon, MoonIcon, CommandIcon } from './icons';
+import { UserRole } from '@/types';
 
 const ThemeToggleButton: React.FC = () => {
   const { theme, setTheme } = useTheme();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
 import { Expense } from '../../types';
 import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
+import Modal from './Modal';
 
 interface ExpenseFormModalProps {
   expense: Expense | null;

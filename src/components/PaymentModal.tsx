@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import Modal from './Modal';
-import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useToasts } from '../contexts/ToastContext';
+import Modal from './Modal';
 import { SpinnerIcon } from './icons';
+import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 
 interface PaymentModalProps {
   isOpen: boolean;

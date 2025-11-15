@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScheduledMaintenance } from '../../types';
-import { useAssets } from './AssetContext';
 import { supabase } from '../utils/supabaseClient';
+import { useAssets } from './AssetContext';
 
 const fetchScheduledMaintenances = async (): Promise<ScheduledMaintenance[]> => {
   const { data, error } = await supabase.from('scheduled_maintenances').select('*');

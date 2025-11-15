@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { formatRupiah, parseRupiah } from '../utils/formatting';
 import Modal from './Modal';
 import { Service, ServiceCategory } from '@/types';
-import { formatRupiah, parseRupiah } from '../utils/formatting';
 
 interface ServiceFormModalProps {
   service: Service | null;

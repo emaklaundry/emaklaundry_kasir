@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { InventoryItem, UserRole } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -20,6 +19,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
+import { InventoryItem, UserRole } from '@/types';
 
 const InventoryPage: React.FC = () => {
   const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
@@ -54,7 +54,7 @@ const InventoryPage: React.FC = () => {
     }
     const filterParam = searchParams.get('filter');
     setFilter(filterParam === 'low_stock' ? 'low_stock' : 'all');
-  }, [location.state, navigate, searchParams]);
+  }, [location.state, location.pathname, navigate, searchParams]);
 
   const handleOpenFormModal = (item: InventoryItem | null = null) => {
     setCurrentItem(item);

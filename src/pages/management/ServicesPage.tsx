@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { Service, ServiceCategory, UserRole } from '@/types';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -17,6 +16,7 @@ import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { useAppContext } from '../../contexts/AppContext';
+import { Service, ServiceCategory, UserRole } from '@/types';
 
 const ServicesPage: React.FC = () => {
   const { services, addService, updateService, deleteService } = useServices();

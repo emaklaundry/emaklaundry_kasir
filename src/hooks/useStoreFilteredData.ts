@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { UserRole } from '@/types';
 import { useAppContext } from '../contexts/AppContext';
+import { UserRole } from '@/types';
 
 interface StoreDataItem {
   storeId?: string;
