@@ -60,11 +60,8 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // convert nextDueDate YYYY-MM-DD to ISO at local midnight
-    const [y, m, d] = (formData.nextDueDate || '').split('-').map(Number);
-    const iso = isNaN(y)
-      ? new Date().toISOString()
-      : new Date(y, (m || 1) - 1, d || 1).toISOString();
+    // Gunakan helper agar DRY
+    const iso = convertLocalDateToISOString(formData.nextDueDate);
     onSave({ ...formData, nextDueDate: iso } as any);
   };
 

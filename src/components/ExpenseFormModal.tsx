@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { Expense } from '../../types';
-import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
 
 interface ExpenseFormModalProps {
   expense: Expense | null;
@@ -48,11 +48,8 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // convert YYYY-MM-DD to ISO at local midnight to avoid timezone shift
-    const [y, m, d] = (formData.date || '').split('-').map(Number);
-    const iso = isNaN(y)
-      ? new Date().toISOString()
-      : new Date(y, (m || 1) - 1, d || 1).toISOString();
+    // Gunakan helper agar DRY
+    const iso = convertLocalDateToISOString(formData.date);
     onSave({ ...formData, date: iso } as any);
   };
 

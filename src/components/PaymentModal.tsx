@@ -21,7 +21,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   disabled,
 }) => {
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
-  const [amountToPayStr, setAmountToPayStr] = useState('');
+  // amountToPayStr dihilangkan, diganti dengan auto value dari remainingBalance
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // No internal isSaving state
   const { addToast } = useToasts();
@@ -34,12 +34,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   useEffect(() => {
     if (transaction) {
       setMethod(transaction.paymentMethod || PaymentMethod.Cash);
-      setAmountToPayStr(formatRupiah(remainingBalance));
       setTenderedAmountStr('');
     }
-  }, [transaction, remainingBalance]);
+  }, [transaction]);
 
-  const amountToPay = parseRupiah(amountToPayStr);
+  const amountToPay = remainingBalance;
   const tenderedAmount = parseRupiah(tenderedAmountStr);
 
   const change = useMemo(() => {
@@ -169,9 +168,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <input
             type="text"
             id="amountToPay"
-            value={amountToPayStr}
-            onChange={(e) => setAmountToPayStr(formatRupiah(parseRupiah(e.target.value)))}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            value={formatRupiah(remainingBalance)}
+            readOnly
+            className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white opacity-70 cursor-not-allowed"
           />
         </div>
 

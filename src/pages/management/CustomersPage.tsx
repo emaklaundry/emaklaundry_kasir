@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Customer, UserRole } from '@/types';
+import { useMutation } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -69,7 +70,12 @@ const CustomersPage: React.FC = () => {
         (c) =>
           c.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
           c.phone.includes(debouncedSearchTerm),
-      ),
+        const addCustomerMutation = useMutation({
+          mutationFn: async (data: any) => addCustomer(data),
+        });
+        const updateCustomerMutation = useMutation({
+          mutationFn: async ({ id, data }: { id: string; data: any }) => updateCustomer(id, data),
+        });
     [customerStats, debouncedSearchTerm],
   );
 
@@ -89,14 +95,13 @@ const CustomersPage: React.FC = () => {
     if (!sortConfig || sortConfig.key !== key) return null;
     if (sortConfig.direction === 'ascending')
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
-    return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
-  const handleOpenFormModal = (customer: Customer | null = null) => {
+              await updateCustomerMutation.mutateAsync({ id: currentCustomer.id, data: { ...customerData, phone, storeId } });
     setCurrentCustomer(customer);
     setIsFormModalOpen(true);
   };
-
+              await addCustomerMutation.mutateAsync({ ...customerData, phone, storeId });
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
     setCurrentCustomer(null);
@@ -104,8 +109,7 @@ const CustomersPage: React.FC = () => {
 
   const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
     const storeId =
-      currentCustomer?.storeId ||
-      (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+          }
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
       return;
@@ -125,7 +129,6 @@ const CustomersPage: React.FC = () => {
       if (currentCustomer && currentCustomer.id) {
         await updateCustomer(currentCustomer.id, { ...customerData, phone, storeId });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
-        updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
       } else {
         await addCustomer({ ...customerData, phone, storeId });
         addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
@@ -134,7 +137,6 @@ const CustomersPage: React.FC = () => {
       handleCloseFormModal();
     } catch (error: any) {
       updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
-    } finally {
       setIsSaving(false);
     }
   };
