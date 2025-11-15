@@ -110,15 +110,24 @@ const CustomersPage: React.FC = () => {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
       return;
     }
+    // Normalisasi nomor telepon
+    let phone = customerData.phone?.replace(/\D/g, '') || '';
+    if (phone.startsWith('0')) {
+      phone = '62' + phone.substring(1);
+    } else if (phone.startsWith('62')) {
+      // sudah benar
+    } else if (phone.startsWith('8')) {
+      phone = '62' + phone;
+    }
     const toastId = addToast('Menyimpan pelanggan...', 'info');
     setIsSaving(true);
     try {
       if (currentCustomer && currentCustomer.id) {
-        await updateCustomer(currentCustomer.id, { ...customerData, storeId });
+        await updateCustomer(currentCustomer.id, { ...customerData, phone, storeId });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
         updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
       } else {
-        await addCustomer({ ...customerData, storeId });
+        await addCustomer({ ...customerData, phone, storeId });
         addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
         updateToast(toastId, 'Pelanggan baru berhasil ditambahkan!', 'success');
       }
