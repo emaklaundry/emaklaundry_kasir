@@ -60,7 +60,7 @@ const CustomerDetailPage: React.FC = () => {
         return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
       case PaymentStatus.Unpaid:
         return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      case PaymentStatus.PartiallyPaid:
+        // case PaymentStatus.PartiallyPaid: (status ini sudah dihapus)
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
       default:
         return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';

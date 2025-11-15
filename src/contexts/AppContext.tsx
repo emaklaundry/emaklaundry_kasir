@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useRef } from 'react';
 import { User, Store } from '../../types';
 import { useStores } from './StoreContext';
 import { supabase } from '../utils/supabaseClient';
@@ -20,8 +20,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { addToast } = useToasts(); // 2. INISIALISASI HOOK
 
+  const prevLoggedInRef = useRef(false);
   useEffect(() => {
-    // Definisikan getProfile di dalam useEffect agar closure addToast selalu fresh
     const getProfile = async () => {
       const {
         data: { session },
@@ -37,9 +37,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
             await supabase.auth.signOut();
             setCurrentUser(null);
+            prevLoggedInRef.current = false;
           } else {
-            // Tambahkan log login jika transisi dari logout ke login
-            if (currentUser === null) {
+            // Deteksi transisi dari logout ke login
+            if (!prevLoggedInRef.current) {
               const newLog = {
                 timestamp: new Date(),
                 user: data.name,
@@ -57,12 +58,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               isActive: data.isActive,
               canGiveDiscount: data.canGiveDiscount,
             });
+            prevLoggedInRef.current = true;
           }
         } else {
           setCurrentUser(null);
+          prevLoggedInRef.current = false;
         }
       } else {
         setCurrentUser(null);
+        prevLoggedInRef.current = false;
       }
     };
     getProfile();
