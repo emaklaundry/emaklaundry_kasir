@@ -32,6 +32,9 @@ import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../components/Pagination';
 
+// Tipe kustom untuk transaksi dengan nama pelanggan
+type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
+
 const TransactionPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,8 +92,8 @@ const TransactionPage: React.FC = () => {
   });
 
   const transactionsWithCustomer = useMemo(() => {
-    return transactions.map((t: Transaction) => {
-      const customer = customers.find((c) => c.id === t.customerId);
+    return transactions.map((t: Transaction): TransactionWithCustomer => {
+      const customer = customers.find((c: Customer) => c.id === t.customerId);
       return {
         ...t,
         customerName: customer ? customer.name : 'N/A',
@@ -98,8 +101,6 @@ const TransactionPage: React.FC = () => {
       };
     });
   }, [transactions, customers]);
-
-  type TransactionWithCustomer = (typeof transactionsWithCustomer)[0];
 
   const filteredTransactions = useMemo(() => {
     return transactionsWithCustomer.filter((t: TransactionWithCustomer) => {
@@ -259,7 +260,7 @@ const TransactionPage: React.FC = () => {
 
   const customerForWhatsApp = useMemo(() => {
     if (!transactionForWhatsApp) return null;
-    return customers.find((c) => c.id === transactionForWhatsApp.customerId);
+    return customers.find((c: Customer) => c.id === transactionForWhatsApp.customerId);
   }, [transactionForWhatsApp, customers]);
 
   // Bulk Action Handlers
@@ -308,7 +309,7 @@ const TransactionPage: React.FC = () => {
     setIsBulkProcessing(true);
     const toastId = addToast('Memproses aksi massal...', 'info');
     try {
-      const updatePromises = transactionsToUpdate.map((t) =>
+      const updatePromises = transactionsToUpdate.map((t: Transaction) =>
         updateTransaction(t.id, { orderStatus: bulkActionStatus }),
       );
       await Promise.all(updatePromises);
@@ -393,7 +394,7 @@ const TransactionPage: React.FC = () => {
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             >
               <option value="all">Semua Pelanggan</option>
-              {customers.map((c) => (
+              {customers.map((c: Customer) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -623,7 +624,7 @@ const TransactionPage: React.FC = () => {
                       </Link>
                       <button
                         onClick={() => {
-                          const customer = customers.find((c) => c.id === t.customerId);
+                          const customer = customers.find((c: Customer) => c.id === t.customerId);
                           if (customer) {
                             handleOpenWhatsAppModal(t, customer);
                           } else {
@@ -752,7 +753,7 @@ const TransactionPage: React.FC = () => {
                     </Link>
                     <button
                       onClick={() => {
-                        const customer = customers.find((c) => c.id === t.customerId);
+                        const customer = customers.find((c: Customer) => c.id === t.customerId);
                         if (customer) {
                           handleOpenWhatsAppModal(t, customer);
                         } else {

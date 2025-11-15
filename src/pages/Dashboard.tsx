@@ -2,7 +2,16 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQuery as useInventoryQuery } from '@tanstack/react-query';
 
-import { Transaction, OrderStatus, PaymentStatus, Expense, UserRole, Customer, ScheduledMaintenance } from '@/types';
+import {
+  Transaction,
+  OrderStatus,
+  PaymentStatus,
+  Expense,
+  UserRole,
+  Customer,
+  ScheduledMaintenance,
+  Asset,
+} from '@/types';
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { calculateNextDueDate } from '../utils/formatting';
 
@@ -149,6 +158,9 @@ const StatCard: React.FC<{
   return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
 };
 
+// Tipe kustom untuk order aktif
+type ActiveOrder = Transaction & { customerName: string };
+
 // Helper function to calculate stats for a given period
 const calculateStats = (transactions: Transaction[], startDate: Date, endDate: Date) => {
   const filtered = transactions.filter((t: Transaction) => {
@@ -157,7 +169,8 @@ const calculateStats = (transactions: Transaction[], startDate: Date, endDate: D
   });
   return {
     completed: filtered.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed).length,
-    processing: filtered.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing).length,
+    processing: filtered.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
+      .length,
   };
 };
 
@@ -169,7 +182,7 @@ const Dashboard: React.FC = () => {
   });
   const inventory = Array.isArray(inventoryQuery.data)
     ? inventoryQuery.data
-    : inventoryQuery.data?.data ?? [];
+    : (inventoryQuery.data?.data ?? []);
   const { transactions, updateTransaction } = useTransactions();
   const customersQuery = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -179,7 +192,7 @@ const Dashboard: React.FC = () => {
   const customers = useMemo(() => {
     return Array.isArray(customersQuery.data)
       ? customersQuery.data
-      : customersQuery.data?.data ?? [];
+      : (customersQuery.data?.data ?? []);
   }, [customersQuery.data]);
 
   const { expenses, addExpense } = useExpenses();
@@ -280,20 +293,24 @@ const Dashboard: React.FC = () => {
     );
   }, [customers]);
 
-  const activeOrders = transactions
-    .filter((t: Transaction) => t.orderStatus !== OrderStatus.Completed)
-    .map((t: Transaction) => {
-      const customer = customerMap[t.customerId];
-      return {
-        ...t,
-        customerName: customer ? customer.name : 'N/A',
-      };
-    })
-    .sort(
-      (a: { estimatedCompletionDate: string }, b: { estimatedCompletionDate: string }) =>
-        new Date(a.estimatedCompletionDate).getTime() -
-        new Date(b.estimatedCompletionDate).getTime(),
-    );
+  const activeOrders = useMemo(
+    () =>
+      transactions
+        .filter((t: Transaction) => t.orderStatus !== OrderStatus.Completed)
+        .map((t: Transaction): ActiveOrder => {
+          const customer = customerMap[t.customerId];
+          return {
+            ...t,
+            customerName: customer ? customer.name : 'N/A',
+          };
+        })
+        .sort(
+          (a: ActiveOrder, b: ActiveOrder) =>
+            new Date(a.estimatedCompletionDate).getTime() -
+            new Date(b.estimatedCompletionDate).getTime(),
+        ),
+    [transactions, customerMap],
+  );
 
   const handleSaveExpense = useCallback(
     async (expense: Omit<Expense, 'id' | 'storeId'>) => {
@@ -375,7 +392,7 @@ const Dashboard: React.FC = () => {
 
   const handleMarkMaintenanceAsComplete = useCallback(
     async (schedule: ScheduledMaintenance) => {
-      const asset = assets.find((a) => a.id === schedule.assetId);
+      const asset = assets.find((a: Asset) => a.id === schedule.assetId);
       if (!asset) return;
       const newLog = {
         id: `LOG_${crypto.randomUUID()}`,
@@ -435,7 +452,10 @@ const Dashboard: React.FC = () => {
           <StatCard
             icon={PackageIcon}
             title="Pesanan Selesai (30 hari)"
-            value={transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed).length}
+            value={
+              transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed)
+                .length
+            }
             color="border-green-500"
             to={`/transactions?status=${OrderStatus.Completed}`}
             trendData={trendStats.completed}
@@ -443,7 +463,10 @@ const Dashboard: React.FC = () => {
           <StatCard
             icon={ShoppingCartIcon}
             title="Pesanan Diproses"
-            value={transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing).length}
+            value={
+              transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
+                .length
+            }
             color="border-blue-500"
             to={`/transactions?status=${OrderStatus.Processing}`}
             trendData={trendStats.processing}
@@ -546,7 +569,7 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody>
                 {activeOrders.length > 0 ? (
-                  activeOrders.map((t: Transaction & { customerName: string }) => {
+                  activeOrders.map((t: ActiveOrder) => {
                     const isSelesaikanDisabled =
                       t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                     const nextActionText =
@@ -626,7 +649,7 @@ const Dashboard: React.FC = () => {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3">
             {activeOrders.length > 0 ? (
-              activeOrders.map((t: Transaction & { customerName: string }) => {
+              activeOrders.map((t: ActiveOrder) => {
                 const isSelesaikanDisabled =
                   t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                 const mobileNextActionText =
@@ -636,4 +659,170 @@ const Dashboard: React.FC = () => {
                 const mobileNextActionColor =
                   t.orderStatus === OrderStatus.Processing
                     ? 'bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300'
-                    : 'bg-green-600 hover:bg-green-700 disabled:bg-green-
+                    : 'bg-green-600 hover:bg-green-700 disabled:bg-green-400';
+
+                return (
+                  <div
+                    key={t.id}
+                    className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg shadow-sm"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white">{t.customerName}</p>
+                        <Link
+                          to={`/transactions/${t.id}/details`}
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {t.id}
+                        </Link>
+                      </div>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}
+                      >
+                        {t.paymentStatus}
+                      </span>
+                    </div>
+                    <div className="mt-3 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Status:</span>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(t.orderStatus)}`}
+                        >
+                          {t.orderStatus}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">
+                          Estimasi Selesai:
+                        </span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          {new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
+                      <div className="flex items-center justify-center gap-2">
+                        {t.paymentStatus !== PaymentStatus.Paid && (
+                          <button
+                            onClick={() => handleOpenPaymentModal(t)}
+                            className="flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 bg-green-600 hover:bg-green-700"
+                            title="Proses Pembayaran"
+                          >
+                            <DollarSignIcon className="w-4 h-4" />
+                            <span>Bayar</span>
+                          </button>
+                        )}
+                        {t.orderStatus !== OrderStatus.Completed && (
+                          <button
+                            onClick={() => handleNextStatus(t.id)}
+                            disabled={isSelesaikanDisabled}
+                            className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
+                            title={
+                              isSelesaikanDisabled
+                                ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                            }
+                          >
+                            {mobileNextActionText}
+                            <ChevronRightIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-4 text-slate-500 dark:text-slate-400">
+                Tidak ada pesanan aktif.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {!isCashier && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+              Jadwal Perawatan Jatuh Tempo
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3">Aset</th>
+                    <th className="px-4 py-3">Deskripsi Perawatan</th>
+                    <th className="px-4 py-3">Jatuh Tempo</th>
+                    <th className="px-4 py-3 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maintenanceDue.length > 0 ? (
+                    maintenanceDue.map((m) => (
+                      <tr key={m.id} className="border-b dark:border-slate-700">
+                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                          {m.assetName}
+                        </td>
+                        <td className="px-4 py-3">{m.description}</td>
+                        <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold">
+                          {new Date(m.nextDueDate).toLocaleDateString('id-ID')}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleMarkMaintenanceAsComplete(m)}
+                            disabled={isActionDisabled}
+                            className="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2 disabled:bg-green-400 disabled:cursor-not-allowed"
+                            title={
+                              isActionDisabled
+                                ? 'Pilih cabang spesifik untuk melakukan aksi ini.'
+                                : 'Tandai perawatan sebagai selesai'
+                            }
+                          >
+                            Tandai Selesai
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="text-center py-4 text-slate-500 dark:text-slate-400"
+                      >
+                        Tidak ada jadwal perawatan yang jatuh tempo.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+      <QuickStockUpdateModal isOpen={isStockModalOpen} onClose={() => setIsStockModalOpen(false)} />
+      <ExpenseFormModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
+        onSave={handleSaveExpense}
+        expense={null}
+      />
+      <QuickMaintenanceModal
+        isOpen={isMaintenanceModalOpen}
+        onClose={() => setIsMaintenanceModalOpen(false)}
+      />
+      <WhatsAppModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        transaction={transactionForWhatsApp}
+        customer={customerForWhatsApp}
+      />
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        transaction={transactionForPayment}
+        onSave={handleSavePayment}
+      />
+    </>
+  );
+};
+
+export default Dashboard;
