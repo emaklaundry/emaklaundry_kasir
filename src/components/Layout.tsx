@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { useCustomers } from '../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
+import { fetchCustomers } from '../contexts/CustomerContext';
 import { useAppContext } from '../contexts/AppContext';
 import ToastContainer from './ToastContainer';
 import Header from './Header';
@@ -45,7 +46,10 @@ const getPageTitle = (pathname: string, params: any, customers: Customer[]): str
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const params = useParams();
-  const { customers } = useCustomers();
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
   const { currentUser } = useAppContext();
   const pageTitle = getPageTitle(location.pathname, params, customers);
   const isCashier = currentUser.role === UserRole.Cashier;

@@ -30,12 +30,38 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       const shortId = transaction.id.slice(-6).toUpperCase();
 
       if (transaction.orderStatus === OrderStatus.Processing) {
-        defaultMessage = `Halo ${customer.name},\n\nTerima kasih telah menggunakan layanan kami. Berikut adalah rincian transaksi Anda:\n\nID Transaksi: ${shortId}\nTanggal: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n\nItem:\n${itemsList}\n\nTotal: Rp ${transaction.total.toLocaleString('id-ID')}\nStatus Bayar: ${transaction.paymentStatus}\nEstimasi Selesai: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n\nKami akan memberitahu Anda lagi ketika pesanan Anda sudah siap diambil.\n\nTerima kasih!`;
+        defaultMessage =
+          `Halo ${customer.name},\n\n` +
+          `Terima kasih telah mempercayakan laundry Anda kepada kami. Berikut adalah detail transaksi Anda:\n` +
+          `─────────────────────────────\n` +
+          `🧾 *ID Transaksi*: ${shortId}\n` +
+          `📅 *Tanggal*: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n` +
+          `─────────────────────────────\n` +
+          `*Daftar Item:*\n${itemsList}\n` +
+          `─────────────────────────────\n` +
+          `💰 *Total*: Rp ${transaction.total.toLocaleString('id-ID')}\n` +
+          `💳 *Status Bayar*: ${transaction.paymentStatus}\n` +
+          `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n` +
+          `─────────────────────────────\n` +
+          `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
+          `Salam hangat,\nTim Emak Laundry`;
       } else if (transaction.orderStatus === OrderStatus.Ready) {
-        defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${shortId} sudah SIAP DIAMBIL.\n\nTotal Tagihan: Rp ${transaction.total.toLocaleString('id-ID')}\nSisa Tagihan: Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}\n\nSilakan datang ke toko kami untuk mengambilnya.\n\nTerima kasih!`;
+        defaultMessage =
+          `Halo ${customer.name},\n\n` +
+          `Pesanan laundry Anda dengan ID *${shortId}* sudah *SIAP DIAMBIL*.\n` +
+          `─────────────────────────────\n` +
+          `💰 *Total Tagihan*: Rp ${transaction.total.toLocaleString('id-ID')}\n` +
+          `💸 *Sisa Tagihan*: Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}\n` +
+          `─────────────────────────────\n` +
+          `Silakan datang ke toko kami untuk pengambilan.\n\n` +
+          `Terima kasih atas kepercayaan Anda.\nTim Emak Laundry`;
       } else {
-        // Assumes the only other case is Completed
-        defaultMessage = `Halo ${customer.name},\n\nPesanan laundry Anda dengan ID ${shortId} sudah SELESAI dan LUNAS.\n\nPesanan sudah bisa diambil di toko kami. Mohon tunjukkan struk ini saat pengambilan.\n\nTerima kasih!`;
+        // Completed
+        defaultMessage =
+          `Halo ${customer.name},\n\n` +
+          `Pesanan laundry Anda dengan ID *${shortId}* sudah *SELESAI & LUNAS*.\n` +
+          `Pesanan sudah bisa diambil di toko kami. Mohon tunjukkan pesan ini saat pengambilan.\n\n` +
+          `Terima kasih telah menggunakan layanan kami.\nTim Emak Laundry`;
       }
       setMessage(defaultMessage);
     }

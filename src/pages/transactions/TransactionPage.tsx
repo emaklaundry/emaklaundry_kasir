@@ -1,5 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
+
+import { useSortableData } from '../../hooks/useSortableData';
+import { useDebounce } from '../../hooks/useDebounce';
+import { usePagination } from '../../hooks/usePagination';
+
+import { useTransactions } from '../../contexts/TransactionContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
+
 import {
   PlusCircleIcon,
   SearchIcon,
@@ -13,26 +27,15 @@ import {
   ChevronDownIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
-import { useTransactions } from '../../contexts/TransactionContext';
-import { useCustomers } from '../../contexts/CustomerContext';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
-import { useSortableData } from '../../hooks/useSortableData';
-import { useDebounce } from '../../hooks/useDebounce';
-import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
+
+// Tipe kustom untuk transaksi dengan nama pelanggan
+type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
 
 const TransactionPage: React.FC = () => {
-  const { transactions, updateTransaction } = useTransactions();
-  const { customers } = useCustomers();
-  const { addAuditLog } = useAuditLogs();
-  const { addToast, updateToast } = useToasts();
-  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
-
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -47,6 +50,7 @@ const TransactionPage: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all');
   const [customerFilter, setCustomerFilter] = useState<string | 'all'>('all');
 
+  // Modal & selection state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
@@ -55,19 +59,41 @@ const TransactionPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<OrderStatus | null>(null);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
-  useEffect(() => {
-    const status = searchParams.get('status');
-    const validStatus =
-      status && Object.values(OrderStatus).includes(status as OrderStatus)
-        ? (status as OrderStatus)
-        : 'all';
-    setStatusFilter(validStatus);
-  }, [searchParams]);
+  // Pagination and data
+  const customersQuery = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+
+  const customers = useMemo(() => {
+    return Array.isArray(customersQuery.data)
+      ? customersQuery.data
+      : (customersQuery.data?.data ?? []);
+  }, [customersQuery.data]);
+
+  const { addAuditLog } = useAuditLogs();
+  const { addToast, updateToast } = useToasts();
+
+  // State untuk halaman
+  const [page, setPage] = useState(1);
+
+  // Proses sort dan pagination di client
+  // These hooks must be declared before any useEffect or code that references their variables
+
+  // Ambil data transaksi dari server sesuai page dan filter
+  const { transactions, updateTransaction } = useTransactions({
+    page,
+    pageSize: 10,
+    storeId: customerFilter === 'all' ? undefined : customerFilter,
+    paymentStatus: paymentFilter === 'all' ? undefined : paymentFilter,
+    orderStatus: statusFilter === 'all' ? undefined : statusFilter,
+  });
 
   const transactionsWithCustomer = useMemo(() => {
-    return transactions.map((t) => {
-      const customer = customers.find((c) => c.id === t.customerId);
+    return transactions.map((t: Transaction): TransactionWithCustomer => {
+      const customer = customers.find((c: Customer) => c.id === t.customerId);
       return {
         ...t,
         customerName: customer ? customer.name : 'N/A',
@@ -76,10 +102,8 @@ const TransactionPage: React.FC = () => {
     });
   }, [transactions, customers]);
 
-  type TransactionWithCustomer = (typeof transactionsWithCustomer)[0];
-
   const filteredTransactions = useMemo(() => {
-    return transactionsWithCustomer.filter((t) => {
+    return transactionsWithCustomer.filter((t: TransactionWithCustomer) => {
       const transactionDate = new Date(t.createdAt);
 
       if (statusFilter !== 'all' && t.orderStatus !== statusFilter) return false;
@@ -112,6 +136,7 @@ const TransactionPage: React.FC = () => {
     customerFilter,
   ]);
 
+  // Hanya satu deklarasi useSortableData di sini
   const {
     items: sortedTransactions,
     requestSort,
@@ -134,32 +159,8 @@ const TransactionPage: React.FC = () => {
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
-  const getStatusBadge = (status: OrderStatus) => {
-    switch (status) {
-      case OrderStatus.Processing:
-        return 'bg-blue-600 text-white';
-      case OrderStatus.Ready:
-        return 'bg-yellow-500 text-white';
-      case OrderStatus.Completed:
-        return 'bg-green-600 text-white';
-      default:
-        return 'bg-slate-500 text-white';
-    }
-  };
-
-  const getPaymentStatusBadge = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.Paid:
-        return 'bg-green-600 text-white';
-      case PaymentStatus.Unpaid:
-        return 'bg-red-600 text-white';
-      default:
-        return 'bg-slate-500 text-white';
-    }
-  };
-
   const handleOrderStatusChange = async (id: string, newStatus: OrderStatus) => {
-    const targetTransaction = transactions.find((t) => t.id === id);
+    const targetTransaction = transactions.find((t: Transaction) => t.id === id);
     if (!targetTransaction) return;
 
     // --- TAMBAHAN GUARD CLAUSE ---
@@ -235,7 +236,7 @@ const TransactionPage: React.FC = () => {
 
   const handleOpenWhatsAppModal = (transaction: Transaction, customer: Customer) => {
     setTransactionForWhatsApp(transaction);
-    setCustomerForWhatsApp(customer);
+    // setCustomerForWhatsApp(customer); // Ini tidak perlu, customerForWhatsApp diambil dari useMemo
     setIsWhatsAppModalOpen(true);
   };
 
@@ -259,13 +260,13 @@ const TransactionPage: React.FC = () => {
 
   const customerForWhatsApp = useMemo(() => {
     if (!transactionForWhatsApp) return null;
-    return customers.find((c) => c.id === transactionForWhatsApp.customerId);
+    return customers.find((c: Customer) => c.id === transactionForWhatsApp.customerId);
   }, [transactionForWhatsApp, customers]);
 
   // Bulk Action Handlers
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(new Set(sortedTransactions.map((t) => t.id)));
+      setSelectedIds(new Set(sortedTransactions.map((t: TransactionWithCustomer) => t.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -289,9 +290,10 @@ const TransactionPage: React.FC = () => {
   const confirmBulkAction = async () => {
     if (!bulkActionStatus) return;
 
-    const transactionsToUpdate = transactions.filter((t) => selectedIds.has(t.id));
+    const transactionsToUpdate = transactions.filter((t: Transaction) => selectedIds.has(t.id));
     const unpaidAndNotReady = transactionsToUpdate.filter(
-      (t) => bulkActionStatus === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid,
+      (t: Transaction) =>
+        bulkActionStatus === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid,
     );
 
     if (unpaidAndNotReady.length > 0) {
@@ -307,7 +309,7 @@ const TransactionPage: React.FC = () => {
     setIsBulkProcessing(true);
     const toastId = addToast('Memproses aksi massal...', 'info');
     try {
-      const updatePromises = transactionsToUpdate.map((t) =>
+      const updatePromises = transactionsToUpdate.map((t: Transaction) =>
         updateTransaction(t.id, { orderStatus: bulkActionStatus }),
       );
       await Promise.all(updatePromises);
@@ -392,7 +394,7 @@ const TransactionPage: React.FC = () => {
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             >
               <option value="all">Semua Pelanggan</option>
-              {customers.map((c) => (
+              {customers.map((c: Customer) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -542,7 +544,7 @@ const TransactionPage: React.FC = () => {
             </thead>
             <tbody>
               {paginatedTransactions.length > 0 ? (
-                paginatedTransactions.map((t) => (
+                paginatedTransactions.map((t: TransactionWithCustomer) => (
                   <tr
                     key={t.id}
                     className={`border-b dark:border-slate-700 ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
@@ -622,7 +624,7 @@ const TransactionPage: React.FC = () => {
                       </Link>
                       <button
                         onClick={() => {
-                          const customer = customers.find((c) => c.id === t.customerId);
+                          const customer = customers.find((c: Customer) => c.id === t.customerId);
                           if (customer) {
                             handleOpenWhatsAppModal(t, customer);
                           } else {
@@ -670,7 +672,7 @@ const TransactionPage: React.FC = () => {
 
         <div className="md:hidden space-y-4">
           {paginatedTransactions.length > 0 ? (
-            paginatedTransactions.map((t) => (
+            paginatedTransactions.map((t: TransactionWithCustomer) => (
               <div
                 key={t.id}
                 className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-slate-50 dark:bg-slate-800'}`}
@@ -751,7 +753,7 @@ const TransactionPage: React.FC = () => {
                     </Link>
                     <button
                       onClick={() => {
-                        const customer = customers.find((c) => c.id === t.customerId);
+                        const customer = customers.find((c: Customer) => c.id === t.customerId);
                         if (customer) {
                           handleOpenWhatsAppModal(t, customer);
                         } else {

@@ -77,12 +77,6 @@ const QuickActionsPage: React.FC = () => {
       icon: ReceiptIcon,
       color: 'bg-green-500 hover:bg-green-600',
     },
-    {
-      label: 'Tambah Pelanggan',
-      to: '/management/customers',
-      icon: UsersIcon,
-      color: 'bg-indigo-500 hover:bg-indigo-600',
-    },
   ];
 
   return (

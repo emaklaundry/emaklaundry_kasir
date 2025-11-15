@@ -23,6 +23,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useScheduledMaintenances } from '../../contexts/ScheduledMaintenanceContext';
 import { useSortableData } from '../../hooks/useSortableData';
+import { getStatusBadge } from '@/utils/uiHelpers';
 import { Asset, MaintenanceLog, UserRole } from '@/types';
 
 const AssetsPage: React.FC = () => {
@@ -127,19 +128,6 @@ const AssetsPage: React.FC = () => {
         setAssetToDelete(null);
         setIsSavingAsset(false);
       }
-    }
-  };
-
-  const getStatusBadge = (status: Asset['status']) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      case 'Under Maintenance':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-      case 'Decommissioned':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
     }
   };
 

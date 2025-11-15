@@ -19,14 +19,17 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filteredCustomers = useMemo(
-    () =>
-      customers.filter(
-        (c) =>
-          c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm),
-      ),
-    [customers, searchTerm],
-  );
+  const filteredCustomers = useMemo(() => {
+    const arr = Array.isArray(customers)
+      ? customers
+      : customers && Array.isArray(customers.data)
+        ? customers.data
+        : [];
+    return arr.filter(
+      (c) =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm),
+    );
+  }, [customers, searchTerm]);
 
   useEffect(() => {
     if (selectedCustomer) {

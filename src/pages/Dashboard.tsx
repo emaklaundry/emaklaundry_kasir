@@ -1,7 +1,20 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery, useQuery as useInventoryQuery } from '@tanstack/react-query';
 
+import {
+  Transaction,
+  OrderStatus,
+  PaymentStatus,
+  Expense,
+  UserRole,
+  Customer,
+  ScheduledMaintenance,
+  Asset,
+} from '@/types';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { calculateNextDueDate } from '../utils/formatting';
+
 import {
   ShoppingCartIcon,
   PackageIcon,
@@ -14,18 +27,19 @@ import {
   ArrowTrendingDownIcon,
 } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
-import { useInventory } from '../contexts/InventoryContext';
+import { fetchInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
-import { useCustomers } from '../contexts/CustomerContext';
+import { fetchCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
+import { useAuditLogs } from '../contexts/AuditLogContext';
+import { useToasts } from '../contexts/ToastContext';
+
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
-import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useToasts } from '../contexts/ToastContext';
 import PaymentModal from '../components/PaymentModal';
 
 type Trend = 'up' | 'down' | 'neutral';
@@ -144,33 +158,43 @@ const StatCard: React.FC<{
   return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
 };
 
-import {
-  OrderStatus,
-  PaymentStatus,
-  Expense,
-  UserRole,
-  Customer,
-  Transaction,
-  ScheduledMaintenance,
-} from '@/types';
+// Tipe kustom untuk order aktif
+type ActiveOrder = Transaction & { customerName: string };
 
 // Helper function to calculate stats for a given period
 const calculateStats = (transactions: Transaction[], startDate: Date, endDate: Date) => {
-  const filtered = transactions.filter((t) => {
+  const filtered = transactions.filter((t: Transaction) => {
     const createdAt = new Date(t.createdAt);
     return createdAt >= startDate && createdAt <= endDate;
   });
   return {
-    completed: filtered.filter((t) => t.orderStatus === OrderStatus.Completed).length,
-    processing: filtered.filter((t) => t.orderStatus === OrderStatus.Processing).length,
+    completed: filtered.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed).length,
+    processing: filtered.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
+      .length,
   };
 };
 
 const Dashboard: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const { inventory } = useInventory();
+  const inventoryQuery = useInventoryQuery({
+    queryKey: ['inventory', { page: 1, pageSize: 1000, storeId: selectedStoreId }],
+    queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId: selectedStoreId }),
+  });
+  const inventory = Array.isArray(inventoryQuery.data)
+    ? inventoryQuery.data
+    : (inventoryQuery.data?.data ?? []);
   const { transactions, updateTransaction } = useTransactions();
-  const { customers } = useCustomers();
+  const customersQuery = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+
+  const customers = useMemo(() => {
+    return Array.isArray(customersQuery.data)
+      ? customersQuery.data
+      : (customersQuery.data?.data ?? []);
+  }, [customersQuery.data]);
+
   const { expenses, addExpense } = useExpenses();
   const { scheduledMaintenances, updateScheduledMaintenance } = useScheduledMaintenances();
   const { assets, updateAsset } = useAssets();
@@ -198,7 +222,7 @@ const Dashboard: React.FC = () => {
       };
     });
 
-    transactions.forEach((t) => {
+    transactions.forEach((t: Transaction) => {
       const transactionDate = new Date(t.createdAt);
       const dayData = data.find(
         (d) =>
@@ -261,7 +285,7 @@ const Dashboard: React.FC = () => {
 
   const customerMap = useMemo(() => {
     return customers.reduce(
-      (map, customer) => {
+      (map: Record<string, Customer>, customer: Customer) => {
         map[customer.id] = customer;
         return map;
       },
@@ -269,44 +293,24 @@ const Dashboard: React.FC = () => {
     );
   }, [customers]);
 
-  const activeOrders = transactions
-    .filter((t) => t.orderStatus !== OrderStatus.Completed)
-    .map((t) => {
-      const customer = customerMap[t.customerId];
-      return {
-        ...t,
-        customerName: customer ? customer.name : 'N/A',
-      };
-    })
-    .sort(
-      (a, b) =>
-        new Date(a.estimatedCompletionDate).getTime() -
-        new Date(b.estimatedCompletionDate).getTime(),
-    );
-
-  const getStatusBadge = (status: OrderStatus) => {
-    switch (status) {
-      case OrderStatus.Processing:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-      case OrderStatus.Ready:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-      case OrderStatus.Completed:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-    }
-  };
-
-  const getPaymentStatusBadge = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.Paid:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      case PaymentStatus.Unpaid:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-    }
-  };
+  const activeOrders = useMemo(
+    () =>
+      transactions
+        .filter((t: Transaction) => t.orderStatus !== OrderStatus.Completed)
+        .map((t: Transaction): ActiveOrder => {
+          const customer = customerMap[t.customerId];
+          return {
+            ...t,
+            customerName: customer ? customer.name : 'N/A',
+          };
+        })
+        .sort(
+          (a: ActiveOrder, b: ActiveOrder) =>
+            new Date(a.estimatedCompletionDate).getTime() -
+            new Date(b.estimatedCompletionDate).getTime(),
+        ),
+    [transactions, customerMap],
+  );
 
   const handleSaveExpense = useCallback(
     async (expense: Omit<Expense, 'id' | 'storeId'>) => {
@@ -353,7 +357,7 @@ const Dashboard: React.FC = () => {
 
   const handleNextStatus = useCallback(
     async (transactionId: string) => {
-      const transaction = transactions.find((t) => t.id === transactionId);
+      const transaction = transactions.find((t: Transaction) => t.id === transactionId);
       if (!transaction) return;
 
       let nextStatus: OrderStatus;
@@ -388,7 +392,7 @@ const Dashboard: React.FC = () => {
 
   const handleMarkMaintenanceAsComplete = useCallback(
     async (schedule: ScheduledMaintenance) => {
-      const asset = assets.find((a) => a.id === schedule.assetId);
+      const asset = assets.find((a: Asset) => a.id === schedule.assetId);
       if (!asset) return;
       const newLog = {
         id: `LOG_${crypto.randomUUID()}`,
@@ -448,7 +452,10 @@ const Dashboard: React.FC = () => {
           <StatCard
             icon={PackageIcon}
             title="Pesanan Selesai (30 hari)"
-            value={transactions.filter((t) => t.orderStatus === OrderStatus.Completed).length}
+            value={
+              transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed)
+                .length
+            }
             color="border-green-500"
             to={`/transactions?status=${OrderStatus.Completed}`}
             trendData={trendStats.completed}
@@ -456,7 +463,10 @@ const Dashboard: React.FC = () => {
           <StatCard
             icon={ShoppingCartIcon}
             title="Pesanan Diproses"
-            value={transactions.filter((t) => t.orderStatus === OrderStatus.Processing).length}
+            value={
+              transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
+                .length
+            }
             color="border-blue-500"
             to={`/transactions?status=${OrderStatus.Processing}`}
             trendData={trendStats.processing}
@@ -559,7 +569,7 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody>
                 {activeOrders.length > 0 ? (
-                  activeOrders.map((t) => {
+                  activeOrders.map((t: ActiveOrder) => {
                     const isSelesaikanDisabled =
                       t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                     const nextActionText =
@@ -639,7 +649,7 @@ const Dashboard: React.FC = () => {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3">
             {activeOrders.length > 0 ? (
-              activeOrders.map((t) => {
+              activeOrders.map((t: ActiveOrder) => {
                 const isSelesaikanDisabled =
                   t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                 const mobileNextActionText =

@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
 import {
   ChevronLeftIcon,
   PrinterIcon,
@@ -15,6 +16,7 @@ import EmptyState from '../../components/EmptyState';
 import { useAppContext } from '../../contexts/AppContext';
 import { useToasts } from '../../contexts/ToastContext';
 import PaymentModal from '../../components/PaymentModal';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { OrderStatus, PaymentStatus, Transaction } from '@/types';
 // supabase client not used directly in this file; progress updates go through RPC helper
 
@@ -31,34 +33,13 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
   </div>
 );
 
-const getStatusBadge = (status: OrderStatus) => {
-  switch (status) {
-    case OrderStatus.Processing:
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-    case OrderStatus.Ready:
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-    case OrderStatus.Completed:
-      return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-    default:
-      return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-  }
-};
-
-const getPaymentStatusBadge = (status: PaymentStatus) => {
-  switch (status) {
-    case PaymentStatus.Paid:
-      return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-    case PaymentStatus.Unpaid:
-      return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-    default:
-      return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-  }
-};
-
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { transactions } = useTransactions();
-  const { customers } = useCustomers();
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
 
   const transaction = transactions.find((t) => t.id === id);
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-// ...existing code...
-// ...existing code...
+
+import { useQuery } from '@tanstack/react-query';
 import {
   Trash2Icon,
   MessageSquareIcon,
@@ -12,7 +12,7 @@ import {
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import { useAppContext } from '../../contexts/AppContext';
@@ -42,7 +42,14 @@ const NewTransactionPage: React.FC = () => {
   const navigate = useNavigate();
   const { settings, isLoading: isLoadingSettings } = useSettings();
   const { transactions, addTransaction } = useTransactions();
-  const { customers, addCustomer } = useCustomers();
+  const { data: customersData } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+  const customers: Customer[] = Array.isArray(customersData)
+    ? customersData
+    : (customersData?.data ?? []);
+  const { addCustomer } = useCustomerMutations();
   const { services } = useServices();
   const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
@@ -112,11 +119,42 @@ const NewTransactionPage: React.FC = () => {
     return subtotal - discountAmount + taxAmount;
   }, [subtotal, discountAmount, taxAmount]);
 
+  // Place handleAddService after all hooks, before conditional rendering
+  const handleAddService = useCallback(
+    (service: Service) => {
+      const isKiloan = service.category === ServiceCategory.Kiloan;
+      setItems((currentItems) => {
+        const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
+        if (existingItemIndex > -1) {
+          if (isKiloan) {
+            addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+            return currentItems;
+          }
+          const updatedItems = [...currentItems];
+          const currentItem = updatedItems[existingItemIndex];
+          currentItem.quantity += 1;
+          currentItem.subtotal = currentItem.price * currentItem.quantity;
+          return updatedItems;
+        } else {
+          const newItem: TransactionItem = {
+            serviceId: service.id,
+            serviceName: service.name,
+            price: service.price,
+            unit: service.unit,
+            quantity: 1,
+            subtotal: service.price * 1,
+          };
+          return [...currentItems, newItem];
+        }
+      });
+    },
+    [addToast],
+  );
   useEffect(() => {
     if (isPayingNow) {
       setAmountPaidStr(formatRupiah(grandTotal));
     }
-  }, [grandTotal, isPayingNow]);
+  }, [grandTotal, isPayingNow, addToast]);
 
   const amountToPay = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
@@ -133,6 +171,23 @@ const NewTransactionPage: React.FC = () => {
     return amountToPay;
   }, [isPayingNow, amountToPay]);
 
+  const estimatedCompletionDate = useMemo(() => {
+    if (items.length === 0) {
+      const today = new Date();
+      today.setDate(today.getDate() + 1);
+      return today;
+    }
+    const maxDuration = Math.max(
+      ...items.map((item) => {
+        const service = services.find((s) => s.id === item.serviceId);
+        return service && service.durationDays ? service.durationDays : 0;
+      }),
+    );
+    const completionDate = new Date();
+    completionDate.setDate(completionDate.getDate() + maxDuration);
+    return completionDate;
+  }, [items, services]);
+
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;
@@ -145,103 +200,45 @@ const NewTransactionPage: React.FC = () => {
     return PaymentStatus.Unpaid;
   }, [isPayingNow, actualAmountPaid, grandTotal]);
 
-  const estimatedCompletionDate = useMemo(() => {
-    if (items.length === 0) {
-      const today = new Date();
-      today.setDate(today.getDate() + 1);
-      return today;
-    }
-    const maxDuration = Math.max(
-      ...items.map((item) => services.find((s) => s.id === item.serviceId)?.durationDays || 0),
-    );
-    const completionDate = new Date();
-    completionDate.setDate(completionDate.getDate() + maxDuration);
-    return completionDate;
-  }, [items, services]);
-
   const currentStoreId = useMemo(() => {
     return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
   }, [currentUser, selectedStoreId]);
 
+  // --- PERBAIKAN 1: Logika useEffect Diskon ---
   useEffect(() => {
-    if (!canApplyDiscount) {
-      setDiscountType('percent');
-      setDiscountValue(settings?.discountRate ?? 0);
-      return;
-    }
-    if (
-      selectedCustomer &&
-      selectedCustomer.defaultDiscount &&
-      selectedCustomer.defaultDiscount > 0
-    ) {
-      setDiscountType('percent');
-      setDiscountValue(selectedCustomer.defaultDiscount);
-    } else {
-      setDiscountType('percent');
-      setDiscountValue(settings?.discountRate ?? 0);
-    }
-  }, [selectedCustomer, settings?.discountRate, canApplyDiscount]);
+    let timerId: ReturnType<typeof setTimeout> | undefined;
 
-  // Efek terpisah untuk toast diskon otomatis, agar tidak menyebabkan setState saat render
-  useEffect(() => {
-    if (
-      canApplyDiscount &&
+    if (!canApplyDiscount) {
+      // 1. Kasir tidak bisa memberi diskon, pakai default
+      setDiscountType('percent');
+      setDiscountValue(settings?.discountRate ?? 0);
+    } else if (
       selectedCustomer &&
       selectedCustomer.defaultDiscount &&
       selectedCustomer.defaultDiscount > 0
     ) {
-      // Bungkus pemanggilan addToast dalam setTimeout(0)
-      // Ini akan memindahkannya ke antrian makro (macro-task queue),
-      // memastikan pemanggilan terjadi SETELAH render saat ini selesai.
-      const timerId = setTimeout(() => {
+      // 2. Kasir bisa diskon DAN pelanggan punya diskon default
+      setDiscountType('percent');
+      setDiscountValue(selectedCustomer.defaultDiscount); // Set nilai diskon
+
+      // Tampilkan toast
+      timerId = setTimeout(() => {
         addToast(
           `Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`,
           'info',
         );
       }, 0);
-
-      // Selalu bersihkan timer jika komponen unmount sebelum timeout berjalan
-      return () => clearTimeout(timerId);
+    } else {
+      // 3. Kasir bisa diskon TAPI pelanggan tidak punya diskon default (atau belum pilih pelanggan)
+      //    Kembalikan ke default settings.
+      setDiscountType('percent');
+      setDiscountValue(settings?.discountRate ?? 0);
     }
-  }, [canApplyDiscount, selectedCustomer, addToast]);
 
-  const handleAddService = useCallback(
-    (service: Service) => {
-      // 1. Baca 'items' dari scope.
-      const existingItemIndex = items.findIndex((item) => item.serviceId === service.id);
-      const isKiloan = service.category === ServiceCategory.Kiloan;
-
-      if (existingItemIndex > -1) {
-        if (isKiloan) {
-          // 2. Panggil addToast di luar 'setItems'. Ini adalah event handler biasa.
-          addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
-          // 3. Tidak perlu update state, jadi kita 'return' lebih awal.
-          return;
-        }
-
-        // Untuk item Satuan, kita update state seperti biasa.
-        setItems((currentItems) => {
-          const updatedItems = [...currentItems];
-          const currentItem = updatedItems[existingItemIndex];
-          currentItem.quantity += 1;
-          currentItem.subtotal = currentItem.price * currentItem.quantity;
-          return updatedItems;
-        });
-      } else {
-        // Untuk item baru
-        const newItem: TransactionItem = {
-          serviceId: service.id,
-          serviceName: service.name,
-          price: service.price,
-          unit: service.unit,
-          quantity: 1,
-          subtotal: service.price * 1,
-        };
-        setItems((currentItems) => [...currentItems, newItem]);
-      }
-    },
-    [items, addToast],
-  );
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [canApplyDiscount, selectedCustomer, addToast, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   if (isLoadingSettings) {
@@ -253,6 +250,7 @@ const NewTransactionPage: React.FC = () => {
     );
   }
 
+  // --- PERBAIKAN 3: Menghapus input yang tersasar ---
   if (!settings) {
     return (
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
@@ -263,27 +261,15 @@ const NewTransactionPage: React.FC = () => {
           Tidak dapat memuat data pajak, diskon, dan lainnya. Pastikan Anda memiliki koneksi dan hak
           akses yang benar untuk melihat tabel 'settings'.
         </p>
+        {/* Input yang tersasar sudah dihapus dari sini */}
       </div>
     );
   }
 
-  const resetForm = () => {
-    setSelectedCustomer(null);
-    setItems([]);
-    setNotes('');
-    setDiscountValue(settings?.discountRate ?? 0);
-    setDiscountType('percent');
-    setPaymentMethod(undefined);
-    setAmountPaidStr('');
-    setTenderedAmountStr('');
-    setIsPayingNow(false);
-    setNewlyCreatedTransaction(null);
-  };
-
   const handleItemChange = (
     index: number,
     field: 'quantity' | 'taggedItems' | 'itemDetails',
-    value: number | string | { note: string }[],
+    value: number | string | Array<{ note: string }>,
   ) => {
     const newItems = [...items];
     const item = newItems[index];
@@ -443,9 +429,26 @@ const NewTransactionPage: React.FC = () => {
     setIsSuccessModalOpen(true);
   };
 
+  // --- PERBAIKAN 2: Logika Reset Diskon ---
   const handleNewTransaction = () => {
-    resetForm();
+    // Reset all transaction-related state
+    setSelectedCustomer(null);
+    setItems([]);
+    setNotes('');
+    setDiscountType('percent');
+    setDiscountValue(settings?.discountRate ?? 0); // <-- PERBAIKAN
+    setIsCustomerModalOpen(false);
     setIsSuccessModalOpen(false);
+    setIsNotesModalOpen(false);
+    setIsKiloanTaggingModalOpen(false);
+    setEditingItemIndex(null);
+    setIsWhatsAppModalOpen(false);
+    setNewlyCreatedTransaction(null);
+    setIsSaving(false);
+    setIsPayingNow(false);
+    setPaymentMethod(undefined);
+    setAmountPaidStr('');
+    setTenderedAmountStr('');
   };
 
   const handleViewTransactions = () => {
@@ -746,7 +749,7 @@ const NewTransactionPage: React.FC = () => {
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
-                            className={`p-3 rounded-lg text-base border-2 ${paymentMethod === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
+                            className={`p-3 rounded-lg text-base border-2 ${paymentMethod === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/5Aksess' : 'border-slate-300 dark:border-slate-600'}`}
                           >
                             {m}
                           </button>
@@ -767,7 +770,7 @@ const NewTransactionPage: React.FC = () => {
                         onChange={(e) => handleAmountToPayChange(e.target.value)}
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                         placeholder="0"
-                        disabled={paymentMethod !== PaymentMethod.Cash}
+                        disabled={true}
                       />
                     </div>
                     {paymentMethod === PaymentMethod.Cash && (
@@ -788,7 +791,7 @@ const NewTransactionPage: React.FC = () => {
                           }}
                           className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                           placeholder="0"
-                          disabled={paymentMethod !== PaymentMethod.Cash}
+                          disabled={false}
                         />
                       </div>
                     )}

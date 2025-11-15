@@ -17,7 +17,12 @@ const useStoreFilteredData = function <T extends StoreDataItem>(data: T[]): T[] 
       }
       return data.filter((item) => item.storeId === selectedStoreId);
     }
-    return data.filter((item) => item.storeId === currentUser.storeId);
+    // Untuk Admin/Kasir, pastikan storeId ada
+    if (currentUser.storeId) {
+      return data.filter((item) => item.storeId === currentUser.storeId);
+    }
+    // Jika tidak ada storeId, jangan tampilkan data apa pun
+    return [];
   }, [data, currentUser, selectedStoreId]);
 };
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -12,7 +13,7 @@ import {
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useAppContext } from '../../contexts/AppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
@@ -25,38 +26,56 @@ import Pagination from '../../components/Pagination';
 import { Customer, UserRole } from '@/types';
 
 const CustomersPage: React.FC = () => {
-  const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
-  const { transactions } = useTransactions();
   const { currentUser, selectedStoreId, stores } = useAppContext();
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const {
+    data: result = { data: [], count: 0 },
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      'customers',
+      { page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId },
+    ],
+    queryFn: () =>
+      fetchCustomers({ page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId }),
+    keepPreviousData: true,
+  });
+  const customers = result.data;
+  const totalCount = result.count;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const { addCustomer, updateCustomer, deleteCustomer } = useCustomerMutations();
+  const { transactions } = useTransactions();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const customerStats = useMemo(() => {
     const stats: { [key: string]: { transactionCount: number; totalSpent: number } } = {};
-
     customers.forEach((customer) => {
       stats[customer.id] = { transactionCount: 0, totalSpent: 0 };
     });
-
     transactions.forEach((transaction) => {
       if (stats[transaction.customerId]) {
         stats[transaction.customerId].transactionCount += 1;
         stats[transaction.customerId].totalSpent += transaction.total;
       }
     });
-
     return customers.map((customer) => {
       const store = stores.find((s) => s.id === customer.storeId);
       return {
         ...customer,
-        transactionCount: stats[customer.id].transactionCount,
-        totalSpent: stats[customer.id].totalSpent,
+        transactionCount: stats[customer.id]?.transactionCount || 0,
+        totalSpent: stats[customer.id]?.totalSpent || 0,
         storeName: store ? store.name : 'N/A',
       };
     });
@@ -71,33 +90,28 @@ const CustomersPage: React.FC = () => {
     mutationFn: async ({ id, data }: { id: string; data: any }) => updateCustomer(id, data),
   });
 
-  const filteredCustomers = useMemo(
-    () =>
-      customerStats.filter(
-        (c) =>
-          c.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-          c.phone.includes(debouncedSearchTerm),
-      ),
-    [customerStats, debouncedSearchTerm],
-  );
-
   const {
     items: sortedCustomers,
     requestSort,
     sortConfig,
-  } = useSortableData<CustomerWithStats>(filteredCustomers);
-  const {
-    currentData: paginatedCustomers,
-    currentPage,
-    totalPages,
-    onPageChange,
-  } = usePagination(sortedCustomers);
+  } = useSortableData(customerStats, {
+    key: 'createdAt',
+    direction: 'descending',
+  });
+  // Pagination handled by server, so just use sortedCustomers
+  const paginatedCustomers = sortedCustomers;
 
   const getSortIcon = (key: keyof CustomerWithStats) => {
     if (!sortConfig || sortConfig.key !== key) return null;
     if (sortConfig.direction === 'ascending')
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
   };
+
+  const handleOpenFormModal = (customer?: Customer | null) => {
+    setCurrentCustomer(customer ?? null);
+    setIsFormModalOpen(true);
+  };
+
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
     setCurrentCustomer(null);
@@ -135,6 +149,7 @@ const CustomersPage: React.FC = () => {
       handleCloseFormModal();
     } catch (error: any) {
       updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } finally {
       setIsSaving(false);
     }
   };
@@ -405,7 +420,7 @@ const CustomersPage: React.FC = () => {
           <NoCustomersFound />
         )}
       </div>
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
 
       {isFormModalOpen && (
         <CustomerFormModal
