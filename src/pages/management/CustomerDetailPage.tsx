@@ -46,14 +46,6 @@ const CustomerDetailPage: React.FC = () => {
   );
   const mostRecentTransaction = sortedTransactions.length > 0 ? sortedTransactions[0] : null;
 
-  const getStatusBadge = (status: OrderStatus) => {
-    switch (status) {
-      case OrderStatus.Processing:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-      // ...existing code...
-    }
-  };
-
   return (
     <div className="space-y-6">
       <Link
