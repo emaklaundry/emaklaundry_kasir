@@ -15,7 +15,8 @@ import {
   SearchIcon,
 } from './icons';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
-import { useCustomers } from '@/contexts/CustomerContext';
+import { fetchCustomers } from '@/contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 
 interface Command {
   id: string;
@@ -30,7 +31,13 @@ interface Command {
 const CommandPalette: React.FC = () => {
   const { isOpen, close } = useCommandPalette();
   const navigate = useNavigate();
-  const { customers } = useCustomers();
+  const customersQuery = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+  const customers = Array.isArray(customersQuery.data)
+    ? customersQuery.data
+    : (customersQuery.data?.data ?? []);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);

@@ -12,7 +12,8 @@ import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import { useAppContext } from '../../contexts/AppContext';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useAssets } from '../../contexts/AssetContext';
@@ -26,7 +27,10 @@ import { Store } from '@/types';
 const StoresPage: React.FC = () => {
   const { stores, addStore, updateStore, deleteStore } = useStores();
   const { selectedStoreId } = useAppContext();
-  const { customers } = useCustomers();
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
   const { transactions } = useTransactions();
   const { inventory } = useInventory();
   const { assets } = useAssets();

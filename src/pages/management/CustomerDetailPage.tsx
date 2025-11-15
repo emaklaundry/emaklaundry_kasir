@@ -7,13 +7,18 @@ import {
   ChevronLeftIcon,
   HistoryIcon,
 } from '../../components/icons';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { OrderStatus, PaymentStatus } from '@/types';
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { customers } = useCustomers();
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+  import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
   const { transactions } = useTransactions();
   const customer = customers.find((c) => c.id === id);
   const customerTransactions = transactions.filter((t) => t.customerId === id);
@@ -45,29 +50,7 @@ const CustomerDetailPage: React.FC = () => {
     switch (status) {
       case OrderStatus.Processing:
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-      case OrderStatus.Ready:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-      case OrderStatus.Completed:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-    }
-  };
 
-  const getPaymentStatusBadge = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.Paid:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      case PaymentStatus.Unpaid:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <Link
         to="/management/customers"
         className="flex items-center text-base text-blue-600 hover:underline dark:text-blue-400 mb-2"
       >

@@ -2,25 +2,40 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { InventoryItem } from '../../types';
 import { supabase } from '../utils/supabaseClient';
 
-const fetchInventory = async (): Promise<InventoryItem[]> => {
-  const { data, error } = await supabase.from('inventory_items').select('*');
-  if (error) throw error;
-  return data || [];
-};
+export interface InventoryFilter {
+  page?: number;
+  pageSize?: number;
+  searchTerm?: string;
+  storeId?: string;
+}
 
-export function useInventory() {
+export async function fetchInventory(
+  filter: InventoryFilter = {},
+): Promise<{ data: InventoryItem[]; count: number }> {
+  const { page = 1, pageSize = 50, searchTerm, storeId } = filter;
+  let query = supabase.from('inventory_items').select('*', { count: 'exact' });
+  if (storeId && storeId !== 'all') {
+    query = query.eq('storeId', storeId);
+  }
+  if (searchTerm) {
+    query = query.ilike('name', `%${searchTerm}%`);
+  }
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { data: data || [], count: count || 0 };
+}
+
+export function useInventoryMutations() {
   const queryClient = useQueryClient();
-  const { data: inventory = [], ...query } = useQuery({
-    queryKey: ['inventory'],
-    queryFn: fetchInventory,
-  });
 
   const addInventoryItem = useMutation({
     mutationFn: async (item: Omit<InventoryItem, 'id'>) => {
-      const { error } = await supabase.from('inventory_items').insert([item]);
+      const { data, error } = await supabase.from('inventory_items').insert([item]).select();
       if (error) throw error;
-      // Caller invalidates / refetches; no need to return the created row
-      return null;
+      return data?.[0] || null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventory'] }),
   });
@@ -49,11 +64,9 @@ export function useInventory() {
   });
 
   return {
-    inventory,
     addInventoryItem: addInventoryItem.mutateAsync,
     updateInventoryItem: (id: string, data: Partial<InventoryItem>) =>
       updateInventoryItem.mutateAsync({ id, data }),
     deleteInventoryItem: deleteInventoryItem.mutateAsync,
-    ...query,
   };
 }

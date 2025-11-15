@@ -4,13 +4,17 @@ import { PrinterIcon, ChevronLeftIcon, ShoppingCartIcon } from '../../components
 import EmptyState from '../../components/EmptyState';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 
 const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { settings } = useSettings();
   const { transactions } = useTransactions();
-  const { customers } = useCustomers();
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
 
   const transaction = transactions.find((t) => t.id === id);
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;

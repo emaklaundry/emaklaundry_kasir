@@ -12,7 +12,8 @@ import {
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import { useAppContext } from '../../contexts/AppContext';
@@ -42,7 +43,11 @@ const NewTransactionPage: React.FC = () => {
   const navigate = useNavigate();
   const { settings, isLoading: isLoadingSettings } = useSettings();
   const { transactions, addTransaction } = useTransactions();
-  const { customers, addCustomer } = useCustomers();
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+  const { addCustomer } = useCustomerMutations();
   const { services } = useServices();
   const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
@@ -207,40 +212,33 @@ const NewTransactionPage: React.FC = () => {
 
   const handleAddService = useCallback(
     (service: Service) => {
-      // 1. Baca 'items' dari scope.
-      const existingItemIndex = items.findIndex((item) => item.serviceId === service.id);
       const isKiloan = service.category === ServiceCategory.Kiloan;
-
-      if (existingItemIndex > -1) {
-        if (isKiloan) {
-          // 2. Panggil addToast di luar 'setItems'. Ini adalah event handler biasa.
-          addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
-          // 3. Tidak perlu update state, jadi kita 'return' lebih awal.
-          return;
-        }
-
-        // Untuk item Satuan, kita update state seperti biasa.
-        setItems((currentItems) => {
+      setItems((currentItems) => {
+        const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
+        if (existingItemIndex > -1) {
+          if (isKiloan) {
+            addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+            return currentItems;
+          }
           const updatedItems = [...currentItems];
           const currentItem = updatedItems[existingItemIndex];
           currentItem.quantity += 1;
           currentItem.subtotal = currentItem.price * currentItem.quantity;
           return updatedItems;
-        });
-      } else {
-        // Untuk item baru
-        const newItem: TransactionItem = {
-          serviceId: service.id,
-          serviceName: service.name,
-          price: service.price,
-          unit: service.unit,
-          quantity: 1,
-          subtotal: service.price * 1,
-        };
-        setItems((currentItems) => [...currentItems, newItem]);
-      }
+        } else {
+          const newItem: TransactionItem = {
+            serviceId: service.id,
+            serviceName: service.name,
+            price: service.price,
+            unit: service.unit,
+            quantity: 1,
+            subtotal: service.price * 1,
+          };
+          return [...currentItems, newItem];
+        }
+      });
     },
-    [items, addToast],
+    [addToast],
   );
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
@@ -767,7 +765,7 @@ const NewTransactionPage: React.FC = () => {
                         onChange={(e) => handleAmountToPayChange(e.target.value)}
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                         placeholder="0"
-                        disabled={paymentMethod !== PaymentMethod.Cash}
+                        disabled={true}
                       />
                     </div>
                     {paymentMethod === PaymentMethod.Cash && (
@@ -788,7 +786,7 @@ const NewTransactionPage: React.FC = () => {
                           }}
                           className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                           placeholder="0"
-                          disabled={paymentMethod !== PaymentMethod.Cash}
+                          disabled={true}
                         />
                       </div>
                     )}

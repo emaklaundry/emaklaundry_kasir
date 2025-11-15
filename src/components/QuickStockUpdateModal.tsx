@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useInventory } from '../contexts/InventoryContext';
+import { fetchInventory, useInventoryMutations } from '../contexts/InventoryContext';
+import { useQuery } from '@tanstack/react-query';
 import { useToasts } from '../contexts/ToastContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useAppContext } from '../contexts/AppContext';
@@ -12,13 +13,17 @@ interface QuickStockUpdateModalProps {
 }
 
 const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, onClose }) => {
-  const { inventory, updateInventoryItem } = useInventory();
+  const { currentUser, selectedStoreId } = useAppContext();
+  const { data: inventory = [] } = useQuery({
+    queryKey: ['inventory', { page: 1, pageSize: 1000, storeId: selectedStoreId }],
+    queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId: selectedStoreId }),
+  });
+  const { updateInventoryItem } = useInventoryMutations();
   const { addToast, updateToast } = useToasts();
   const [isSavingStock, setIsSavingStock] = useState(false);
   const [stockUpdates, setStockUpdates] = useState<{ [key: string]: number }>({});
   const [initialStock, setInitialStock] = useState<{ [key: string]: number }>({});
   const { addAuditLog } = useAuditLogs();
-  const { currentUser, selectedStoreId } = useAppContext();
 
   useEffect(() => {
     if (isOpen) {

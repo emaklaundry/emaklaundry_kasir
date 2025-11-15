@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { Link } from 'react-router-dom';
 
 import { calculateNextDueDate } from '../utils/formatting';
@@ -14,9 +15,11 @@ import {
   ArrowTrendingDownIcon,
 } from '../components/icons';
 import { useAppContext } from '../contexts/AppContext';
-import { useInventory } from '../contexts/InventoryContext';
+import { fetchInventory } from '../contexts/InventoryContext';
+import { useQuery as useInventoryQuery } from '@tanstack/react-query';
 import { useTransactions } from '../contexts/TransactionContext';
-import { useCustomers } from '../contexts/CustomerContext';
+import { fetchCustomers } from '../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
@@ -168,9 +171,21 @@ const calculateStats = (transactions: Transaction[], startDate: Date, endDate: D
 
 const Dashboard: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const { inventory } = useInventory();
+  const inventoryQuery = useInventoryQuery({
+    queryKey: ['inventory', { page: 1, pageSize: 1000, storeId: selectedStoreId }],
+    queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId: selectedStoreId }),
+  });
+  const inventory = Array.isArray(inventoryQuery.data)
+    ? inventoryQuery.data
+    : (inventoryQuery.data?.data ?? []);
   const { transactions, updateTransaction } = useTransactions();
-  const { customers } = useCustomers();
+  const customersQuery = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+  const customers = Array.isArray(customersQuery.data)
+    ? customersQuery.data
+    : (customersQuery.data?.data ?? []);
   const { expenses, addExpense } = useExpenses();
   const { scheduledMaintenances, updateScheduledMaintenance } = useScheduledMaintenances();
   const { assets, updateAsset } = useAssets();
@@ -283,30 +298,6 @@ const Dashboard: React.FC = () => {
         new Date(a.estimatedCompletionDate).getTime() -
         new Date(b.estimatedCompletionDate).getTime(),
     );
-
-  const getStatusBadge = (status: OrderStatus) => {
-    switch (status) {
-      case OrderStatus.Processing:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-      case OrderStatus.Ready:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-      case OrderStatus.Completed:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-    }
-  };
-
-  const getPaymentStatusBadge = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.Paid:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      case PaymentStatus.Unpaid:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
-    }
-  };
 
   const handleSaveExpense = useCallback(
     async (expense: Omit<Expense, 'id' | 'storeId'>) => {

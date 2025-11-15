@@ -12,18 +12,44 @@ import {
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import { useInventory } from '../../contexts/InventoryContext';
+import { fetchInventory, useInventoryMutations } from '../../contexts/InventoryContext';
+import { useQuery } from '@tanstack/react-query';
 import { useAppContext } from '../../contexts/AppContext';
 import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useToasts } from '../../contexts/ToastContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
+
+import Pagination from '../../components/Pagination';
 import { InventoryItem, UserRole } from '@/types';
 
 const InventoryPage: React.FC = () => {
-  const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
   const { currentUser, selectedStoreId, stores } = useAppContext();
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const {
+    data: result = { data: [], count: 0 },
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      'inventory',
+      { page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId },
+    ],
+    queryFn: () =>
+      fetchInventory({ page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId }),
+    keepPreviousData: true,
+  });
+  const inventory = result.data;
+  const totalCount = result.count;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const { addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventoryMutations();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const addInventoryMutation = useMutation({
@@ -38,8 +64,6 @@ const InventoryPage: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -127,12 +151,12 @@ const InventoryPage: React.FC = () => {
   const filteredInventory = useMemo(
     () =>
       inventoryWithStore.filter((item) => {
-        if (filter === 'low_stock' && item.stock > item.lowStockThreshold) {
-          return false;
+        if (filter === 'low_stock') {
+          return item.stock <= item.lowStockThreshold;
         }
-        return item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+        return true;
       }),
-    [inventoryWithStore, debouncedSearchTerm, filter],
+    [inventoryWithStore, filter],
   );
 
   const {
@@ -140,6 +164,8 @@ const InventoryPage: React.FC = () => {
     requestSort,
     sortConfig,
   } = useSortableData<InventoryWithStore>(filteredInventory);
+  // Pagination handled by server, so just use sortedInventory
+  const paginatedInventory = sortedInventory;
 
   const getSortIcon = (key: keyof InventoryWithStore) => {
     if (!sortConfig || sortConfig.key !== key) return null;
@@ -276,7 +302,20 @@ const InventoryPage: React.FC = () => {
           <tbody>
             {sortedInventory.length > 0 ? (
               sortedInventory.map((item) => {
-                const isLowStock = item.stock <= item.lowStockThreshold;
+                let stockStatus = '';
+                let statusClass = '';
+                if (item.stock === 0) {
+                  stockStatus = 'Stok Habis';
+                  statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+                } else if (item.stock > 0 && item.stock <= item.lowStockThreshold) {
+                  stockStatus = 'Stok Rendah';
+                  statusClass =
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+                } else {
+                  stockStatus = 'Aman';
+                  statusClass =
+                    'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+                }
                 return (
                   <tr key={item.id} className="border-b dark:border-slate-700">
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
@@ -286,17 +325,15 @@ const InventoryPage: React.FC = () => {
                       <td className="px-4 py-3">{item.storeName}</td>
                     )}
                     <td
-                      className={`px-4 py-3 ${isLowStock ? 'text-red-500 font-bold' : 'text-slate-900 dark:text-white'}`}
+                      className={`px-4 py-3 ${item.stock === 0 ? 'text-red-500 font-bold' : item.stock <= item.lowStockThreshold ? 'text-yellow-600 font-bold' : 'text-slate-900 dark:text-white'}`}
                     >
                       {item.stock}
                     </td>
                     <td className="px-4 py-3">{item.lowStockThreshold}</td>
                     <td className="px-4 py-3">{item.unit}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 text-sm font-medium rounded-full ${isLowStock ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'}`}
-                      >
-                        {isLowStock ? 'Stok Rendah' : 'Aman'}
+                      <span className={`px-2 py-1 text-sm font-medium rounded-full ${statusClass}`}>
+                        {stockStatus}
                       </span>
                     </td>
                     <td className="px-4 py-3 flex items-center space-x-2">
@@ -346,7 +383,19 @@ const InventoryPage: React.FC = () => {
       <div className="md:hidden space-y-4">
         {sortedInventory.length > 0 ? (
           sortedInventory.map((item) => {
-            const isLowStock = item.stock <= item.lowStockThreshold;
+            let stockStatus = '';
+            let statusClass = '';
+            if (item.stock === 0) {
+              stockStatus = 'Stok Habis';
+              statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+            } else if (item.stock > 0 && item.stock <= item.lowStockThreshold) {
+              stockStatus = 'Stok Rendah';
+              statusClass =
+                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+            } else {
+              stockStatus = 'Aman';
+              statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+            }
             return (
               <div
                 key={item.id}
@@ -382,17 +431,15 @@ const InventoryPage: React.FC = () => {
                   <div>
                     <p className="text-slate-500 dark:text-slate-400">Stok Saat Ini</p>
                     <p
-                      className={`font-semibold text-lg ${isLowStock ? 'text-red-500' : 'text-slate-800 dark:text-slate-200'}`}
+                      className={`font-semibold text-lg ${item.stock === 0 ? 'text-red-500' : item.stock <= item.lowStockThreshold ? 'text-yellow-600' : 'text-slate-800 dark:text-slate-200'}`}
                     >
                       {item.stock} {item.unit}
                     </p>
                   </div>
                   <div>
                     <p className="text-slate-500 dark:text-slate-400">Status Stok</p>
-                    <span
-                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${isLowStock ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'}`}
-                    >
-                      {isLowStock ? 'Stok Rendah' : 'Aman'}
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusClass}`}>
+                      {stockStatus}
                     </span>
                   </div>
                 </div>
@@ -415,6 +462,8 @@ const InventoryPage: React.FC = () => {
           />
         )}
       </div>
+
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
 
       {isFormModalOpen && (
         <InventoryFormModal

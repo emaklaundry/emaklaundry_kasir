@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
 import { useTransactions } from '../contexts/TransactionContext';
-import { useCustomers } from '../contexts/CustomerContext';
+import { fetchCustomers } from '../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAppContext } from '../contexts/AppContext';
 import { useUsers } from '../contexts/UserContext';
@@ -197,7 +198,10 @@ const YearlySummaryChart: React.FC<{
 
 const ReportsPage: React.FC = () => {
   const { transactions: allStoreTransactions } = useTransactions();
-  const { customers } = useCustomers();
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
   const { expenses: allStoreExpenses } = useExpenses();
   const { services } = useServices();
   const { currentUser, selectedStoreId, stores } = useAppContext();

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   PlusCircleIcon,
@@ -14,7 +15,8 @@ import {
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { useCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useQuery } from '@tanstack/react-query';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -53,7 +55,13 @@ const TransactionPage: React.FC = () => {
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   // Pagination and data
-  const { customers } = useCustomers();
+  const customersQuery = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+  });
+  const customers = Array.isArray(customersQuery.data)
+    ? customersQuery.data
+    : (customersQuery.data?.data ?? []);
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
 
@@ -140,30 +148,6 @@ const TransactionPage: React.FC = () => {
     if (sortConfig.direction === 'ascending')
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
-  };
-
-  const getStatusBadge = (status: OrderStatus) => {
-    switch (status) {
-      case OrderStatus.Processing:
-        return 'bg-blue-600 text-white';
-      case OrderStatus.Ready:
-        return 'bg-yellow-500 text-white';
-      case OrderStatus.Completed:
-        return 'bg-green-600 text-white';
-      default:
-        return 'bg-slate-500 text-white';
-    }
-  };
-
-  const getPaymentStatusBadge = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.Paid:
-        return 'bg-green-600 text-white';
-      case PaymentStatus.Unpaid:
-        return 'bg-red-600 text-white';
-      default:
-        return 'bg-slate-500 text-white';
-    }
   };
 
   const handleOrderStatusChange = async (id: string, newStatus: OrderStatus) => {

@@ -1,20 +1,35 @@
-import { ReactNode } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Customer } from '../../types';
 import { supabase } from '../utils/supabaseClient';
 
-const fetchCustomers = async (): Promise<Customer[]> => {
-  const { data, error } = await supabase.from('customers').select('*');
-  if (error) throw error;
-  return data || [];
-};
+export interface CustomerFilter {
+  page?: number;
+  pageSize?: number;
+  searchTerm?: string;
+  storeId?: string;
+}
 
-export function useCustomers() {
+export async function fetchCustomers(
+  filter: CustomerFilter = {},
+): Promise<{ data: Customer[]; count: number }> {
+  const { page = 1, pageSize = 50, searchTerm, storeId } = filter;
+  let query = supabase.from('customers').select('*', { count: 'exact' });
+  if (storeId && storeId !== 'all') {
+    query = query.eq('storeId', storeId);
+  }
+  if (searchTerm) {
+    query = query.ilike('name', `%${searchTerm}%`);
+  }
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { data: data || [], count: count || 0 };
+}
+
+export function useCustomerMutations() {
   const queryClient = useQueryClient();
-  const { data: customers = [], ...query } = useQuery({
-    queryKey: ['customers'],
-    queryFn: fetchCustomers,
-  });
 
   const addCustomer = useMutation({
     mutationFn: async (customer: Omit<Customer, 'id'>) => {
@@ -49,11 +64,9 @@ export function useCustomers() {
   });
 
   return {
-    customers,
     addCustomer: addCustomer.mutateAsync,
     updateCustomer: (id: string, data: Partial<Customer>) =>
       updateCustomer.mutateAsync({ id, data }),
     deleteCustomer: deleteCustomer.mutateAsync,
-    ...query,
   };
 }
