@@ -149,6 +149,7 @@ const CustomersPage: React.FC = () => {
       handleCloseFormModal();
     } catch (error: any) {
       updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } finally {
       setIsSaving(false);
     }
   };
