@@ -46,7 +46,6 @@ const CustomerDetailPage: React.FC = () => {
   );
   const mostRecentTransaction = sortedTransactions.length > 0 ? sortedTransactions[0] : null;
 
-
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case OrderStatus.Processing:

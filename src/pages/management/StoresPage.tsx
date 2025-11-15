@@ -15,7 +15,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { useInventory } from '../../contexts/InventoryContext';
+import { fetchInventory } from '../../contexts/InventoryContext';
 import { useAssets } from '../../contexts/AssetContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import StoreFormModal from '../../components/StoreFormModal';
@@ -32,7 +32,11 @@ const StoresPage: React.FC = () => {
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
   const { transactions } = useTransactions();
-  const { inventory } = useInventory();
+  const { data: result = { data: [] } } = useQuery({
+    queryKey: ['inventory', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchInventory({ page: 1, pageSize: 1000 }),
+  });
+  const inventory = result.data;
   const { assets } = useAssets();
   const { expenses } = useExpenses();
   const { addAuditLog } = useAuditLogs();
