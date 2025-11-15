@@ -1,6 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
+
+import { useSortableData } from '../../hooks/useSortableData';
+import { useDebounce } from '../../hooks/useDebounce';
+import { usePagination } from '../../hooks/usePagination';
+
+import { useTransactions } from '../../contexts/TransactionContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useToasts } from '../../contexts/ToastContext';
+
 import {
   PlusCircleIcon,
   SearchIcon,
@@ -14,19 +27,10 @@ import {
   ChevronDownIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
-import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers } from '../../contexts/CustomerContext';
-import { useQuery } from '@tanstack/react-query';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
-import { useSortableData } from '../../hooks/useSortableData';
-import { useDebounce } from '../../hooks/useDebounce';
-import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 
 const TransactionPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -60,13 +64,11 @@ const TransactionPage: React.FC = () => {
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
 
-  // --- PERBAIKAN DI SINI ---
   const customers = useMemo(() => {
     return Array.isArray(customersQuery.data)
       ? customersQuery.data
       : (customersQuery.data?.data ?? []);
   }, [customersQuery.data]);
-  // --- AKHIR PERBAIKAN ---
 
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
@@ -87,7 +89,7 @@ const TransactionPage: React.FC = () => {
   });
 
   const transactionsWithCustomer = useMemo(() => {
-    return transactions.map((t) => {
+    return transactions.map((t: Transaction) => {
       const customer = customers.find((c) => c.id === t.customerId);
       return {
         ...t,
@@ -100,7 +102,7 @@ const TransactionPage: React.FC = () => {
   type TransactionWithCustomer = (typeof transactionsWithCustomer)[0];
 
   const filteredTransactions = useMemo(() => {
-    return transactionsWithCustomer.filter((t) => {
+    return transactionsWithCustomer.filter((t: TransactionWithCustomer) => {
       const transactionDate = new Date(t.createdAt);
 
       if (statusFilter !== 'all' && t.orderStatus !== statusFilter) return false;
@@ -157,7 +159,7 @@ const TransactionPage: React.FC = () => {
   };
 
   const handleOrderStatusChange = async (id: string, newStatus: OrderStatus) => {
-    const targetTransaction = transactions.find((t) => t.id === id);
+    const targetTransaction = transactions.find((t: Transaction) => t.id === id);
     if (!targetTransaction) return;
 
     // --- TAMBAHAN GUARD CLAUSE ---
@@ -233,7 +235,7 @@ const TransactionPage: React.FC = () => {
 
   const handleOpenWhatsAppModal = (transaction: Transaction, customer: Customer) => {
     setTransactionForWhatsApp(transaction);
-    // setCustomerForWhatsApp(customer); // 'customer' tidak terdefinisi di sini, ambil dari useMemo
+    // setCustomerForWhatsApp(customer); // Ini tidak perlu, customerForWhatsApp diambil dari useMemo
     setIsWhatsAppModalOpen(true);
   };
 
@@ -263,7 +265,7 @@ const TransactionPage: React.FC = () => {
   // Bulk Action Handlers
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(new Set(sortedTransactions.map((t) => t.id)));
+      setSelectedIds(new Set(sortedTransactions.map((t: TransactionWithCustomer) => t.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -287,9 +289,10 @@ const TransactionPage: React.FC = () => {
   const confirmBulkAction = async () => {
     if (!bulkActionStatus) return;
 
-    const transactionsToUpdate = transactions.filter((t) => selectedIds.has(t.id));
+    const transactionsToUpdate = transactions.filter((t: Transaction) => selectedIds.has(t.id));
     const unpaidAndNotReady = transactionsToUpdate.filter(
-      (t) => bulkActionStatus === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid,
+      (t: Transaction) =>
+        bulkActionStatus === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid,
     );
 
     if (unpaidAndNotReady.length > 0) {
@@ -540,7 +543,7 @@ const TransactionPage: React.FC = () => {
             </thead>
             <tbody>
               {paginatedTransactions.length > 0 ? (
-                paginatedTransactions.map((t) => (
+                paginatedTransactions.map((t: TransactionWithCustomer) => (
                   <tr
                     key={t.id}
                     className={`border-b dark:border-slate-700 ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
@@ -668,7 +671,7 @@ const TransactionPage: React.FC = () => {
 
         <div className="md:hidden space-y-4">
           {paginatedTransactions.length > 0 ? (
-            paginatedTransactions.map((t) => (
+            paginatedTransactions.map((t: TransactionWithCustomer) => (
               <div
                 key={t.id}
                 className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-slate-50 dark:bg-slate-800'}`}
