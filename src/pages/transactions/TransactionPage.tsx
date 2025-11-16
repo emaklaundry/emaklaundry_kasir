@@ -698,7 +698,7 @@ const TransactionPage: React.FC = () => {
                       })}
                     </p>
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.id}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.invoice_code || t.id}</p>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-500 dark:text-slate-400 text-base">Total:</span>
