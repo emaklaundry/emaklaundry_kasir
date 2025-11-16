@@ -74,7 +74,7 @@ const TransactionDetailPage: React.FC = () => {
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
-            <p className="text-lg text-slate-500 dark:text-slate-400">{transaction.id}</p>
+            <p className="text-lg text-slate-500 dark:text-slate-400">{transaction.invoice_code || transaction.id}</p>
           </div>
           <Link
             to={`/transactions/${transaction.id}/receipt`}
