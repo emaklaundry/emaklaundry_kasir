@@ -108,6 +108,7 @@ CREATE TABLE public.expenses (
 
 CREATE TABLE public.transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  invoice_code text UNIQUE, -- <-- TAMBAHKAN BARIS INI
   "customerId" uuid REFERENCES customers(id) ON DELETE SET NULL,
   items jsonb NOT NULL,
   subtotal numeric NOT NULL,
@@ -125,6 +126,65 @@ CREATE TABLE public.transactions (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
   notes text
 );
+
+-- === FUNGSI DAN TRIGGER UNTUK INVOICE_CODE ===
+
+CREATE OR REPLACE FUNCTION public.generate_invoice_code(length int DEFAULT 6)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  result text := '';
+  i int;
+BEGIN
+  FOR i IN 1..length LOOP
+    result := result || substr(chars, floor(random() * length(chars))::int + 1, 1);
+  END LOOP;
+  RETURN result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_invoice_code()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  new_code text;
+  store_prefix text := 'EM';
+  max_attempts int := 10;
+  attempt int := 0;
+BEGIN
+  IF NEW."storeId" IS NOT NULL THEN
+     SELECT upper(substr(regexp_replace(name, '[^a-zA-Z]', '', 'g'), 1, 3))
+     INTO store_prefix
+     FROM public.stores
+     WHERE id = NEW."storeId";
+     IF store_prefix IS NULL OR length(store_prefix) = 0 THEN
+        store_prefix := 'EM';
+     END IF;
+  END IF;
+
+  WHILE attempt < max_attempts LOOP
+    new_code := store_prefix || '-' || public.generate_invoice_code(6);
+    IF NOT EXISTS (SELECT 1 FROM public.transactions WHERE invoice_code = new_code) THEN
+      NEW.invoice_code := new_code;
+      RETURN NEW;
+    END IF;
+    attempt := attempt + 1;
+  END LOOP;
+
+  RAISE EXCEPTION 'Gagal membuat invoice_code unik setelah % percobaan', max_attempts;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS before_transaction_insert_set_code ON public.transactions;
+CREATE TRIGGER before_transaction_insert_set_code
+BEFORE INSERT ON public.transactions
+FOR EACH ROW
+EXECUTE FUNCTION public.set_invoice_code();
+
+-- === AKHIR BAGIAN INVOICE_CODE ===
 
 CREATE TABLE public.audit_logs (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
