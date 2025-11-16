@@ -46,10 +46,14 @@ const getPageTitle = (pathname: string, params: any, customers: Customer[]): str
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const params = useParams();
-  const { data: customers = [] } = useQuery({
+  const { data: customersRaw = [] } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
+  // Normalize customers to always be an array
+  const customers = Array.isArray(customersRaw)
+    ? customersRaw
+    : (customersRaw?.data ?? []);
   const { currentUser } = useAppContext();
   const pageTitle = getPageTitle(location.pathname, params, customers);
   const isCashier = currentUser.role === UserRole.Cashier;

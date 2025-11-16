@@ -1,3 +1,33 @@
+/* --- PRINT THERMAL PRINTER 57mm --- */
+@media print {
+  /* Untuk halaman struk (ReceiptPage), gunakan lebar 57mm (atau 80mm jika ingin lebih lebar) */
+  .receipt-print {
+    max-width: 57mm !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+  .receipt-print * {
+    font-size: 10pt !important;
+    color: black !important;
+    background: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  /* Hilangkan margin/padding ekstra pada elemen dalam struk */
+  .receipt-print h1, .receipt-print h2, .receipt-print h3, .receipt-print p, .receipt-print span, .receipt-print div {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  /* Sembunyikan tombol, navigasi, dan elemen non-struk saat print */
+  .print-hide, .sidebar, .header, .bottom-navbar, .Toastify, .VersionInfo {
+    display: none !important;
+  }
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -89,19 +89,18 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 
 ---
 
+
 ## 📝 Catatan Pengembangan & Perubahan Terbaru
 
 - Mendukung pengembangan modular dan scalable
 - Siap di-deploy ke layanan hosting modern (Vercel, Netlify, dsb)
 - PWA siap untuk instalasi di perangkat mobile
 - Kode bersih, mudah dikembangkan, dan terdokumentasi
+- **Versioning Otomatis**: Versi aplikasi akan selalu tampil di seluruh halaman utama dan halaman login, mengikuti versi di `package.json`.
 
-### Pembaruan Terbaru
+### Catatan Rilis
 
-- **Input Berat Kiloan**: Sekarang mendukung input hingga 2 angka desimal (misal: 1,25 kg).
-- **Field Diskon, Jumlah Bayar, Uang Diterima**: Dapat dikosongkan (tidak otomatis terisi 0), lebih fleksibel untuk kasir.
-- **Invoice WhatsApp**: ID invoice pada pesan WhatsApp kini otomatis dipendekkan (6 karakter terakhir, huruf besar).
-- **Format Nomor WhatsApp**: Nomor HP pelanggan otomatis diformat ke awalan 62 jika dimulai dari 0.
+Lihat detail perubahan dan pembaruan fitur pada [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
