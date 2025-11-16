@@ -27,7 +27,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         .map((item) => `- ${item.quantity} ${item.unit} ${item.serviceName}`)
         .join('\n');
       const remainingBalance = transaction.total - transaction.amountPaid;
-      const shortId = transaction.id.slice(-6).toUpperCase();
+      const shortId = transaction.invoice_code || transaction.id.slice(-6).toUpperCase();
 
       if (transaction.orderStatus === OrderStatus.Processing) {
         defaultMessage =

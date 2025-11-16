@@ -557,7 +557,7 @@ const TransactionPage: React.FC = () => {
                         className="w-5 h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.id}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.invoice_code || t.id}</td>
                     <td className="px-4 py-3">{t.customerName}</td>
                     <td className="px-4 py-3">
                       {new Date(t.createdAt).toLocaleDateString('id-ID')}

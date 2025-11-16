@@ -118,7 +118,7 @@ const CustomerDetailPage: React.FC = () => {
                 to={`/transactions/${mostRecentTransaction.id}/receipt`}
                 className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
               >
-                {mostRecentTransaction.id}
+                {mostRecentTransaction.invoice_code || mostRecentTransaction.id}
               </Link>
             </div>
             <div className="flex justify-between items-center">
@@ -156,7 +156,7 @@ const CustomerDetailPage: React.FC = () => {
               {customerTransactions.length > 0 ? (
                 sortedTransactions.map((t) => (
                   <tr key={t.id} className="border-b dark:border-slate-700">
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.id}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.invoice_code || t.id}</td>
                     <td className="px-4 py-3">
                       {new Date(t.createdAt).toLocaleDateString('id-ID')}
                     </td>

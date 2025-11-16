@@ -838,7 +838,11 @@ const NewTransactionPage: React.FC = () => {
         isOpen={isSuccessModalOpen}
         onClose={handleViewTransactions}
         title="Transaksi Berhasil!"
-        message="Transaksi baru telah berhasil dibuat."
+        message={
+          newlyCreatedTransaction?.invoice_code
+            ? `Transaksi (No. ${newlyCreatedTransaction.invoice_code}) telah berhasil dibuat.`
+            : 'Transaksi baru telah berhasil dibuat.'
+        }
         actions={[
           { text: 'Buat Transaksi Baru Lagi', onClick: handleNewTransaction, type: 'primary' },
           { text: 'Lihat Daftar Transaksi', onClick: handleViewTransactions, type: 'secondary' },

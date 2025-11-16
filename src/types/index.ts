@@ -75,6 +75,7 @@ export interface TransactionItem {
 
 export interface Transaction {
   id: string;
+  invoice_code?: string; // <-- TAMBAHKAN BARIS INI
   customerId: string;
   items: TransactionItem[];
   subtotal: number;
