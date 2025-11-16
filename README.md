@@ -4,6 +4,7 @@ git push origin main
   <img width="800" alt="Laundry Management System" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
+
 # Laundry Management System (Web Kasir)
 
 Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mendukung pengelolaan transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, dan pelaporan. Dibangun dengan teknologi modern untuk kemudahan penggunaan, keamanan, dan skalabilitas.
@@ -12,7 +13,13 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 
 ## ✨ Fitur Utama
 
-- **Manajemen Transaksi**: Pencatatan transaksi laundry (kiloan, satuan, sepatu, karpet), status pembayaran, dan cetak struk.
+- **Manajemen Transaksi**: Pencatatan transaksi laundry (kiloan, satuan, sepatu, karpet), status pembayaran, cetak struk, dan kode invoice pendek ramah pelanggan (misal: EM-AB12CD).
+### 🔑 Fitur Baru (v1.1.0)
+
+- Setiap transaksi kini memiliki kode invoice pendek (invoice_code) yang unik dan mudah diingat, otomatis dibuat oleh sistem.
+- Tampilan ID Transaksi di seluruh aplikasi kini menggunakan kode invoice pendek (jika tersedia), sehingga lebih mudah dicatat dan disebutkan pelanggan.
+- Struk cetak, detail transaksi, WhatsApp, dan riwayat pelanggan kini menampilkan kode invoice pendek.
+
 - **Manajemen Pelanggan**: Tambah, edit, dan pencarian pelanggan, riwayat transaksi, serta catatan khusus.
 - **Manajemen Layanan**: Pengelolaan jenis layanan, harga, kategori, dan durasi pengerjaan.
 - **Manajemen Inventaris**: Monitoring stok barang, notifikasi stok menipis, dan update stok cepat.
