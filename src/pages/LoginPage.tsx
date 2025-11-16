@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
+import VersionInfo from '../components/VersionInfo';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -72,6 +74,7 @@ const LoginPage: React.FC = () => {
           {loading ? 'Loading...' : 'Login'}
         </button>
       </form>
+      <VersionInfo />
     </div>
   );
 };

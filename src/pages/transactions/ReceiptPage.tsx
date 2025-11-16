@@ -11,10 +11,16 @@ const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { settings } = useSettings();
   const { transactions } = useTransactions();
-  const { data: customers = [] } = useQuery({
+
+  const { data: customersRaw = [] } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
+
+  // Normalize customers to always be an array
+  const customers = Array.isArray(customersRaw)
+    ? customersRaw
+    : (customersRaw?.data ?? []);
 
   const transaction = transactions.find((t) => t.id === id);
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
@@ -36,7 +42,7 @@ const ReceiptPage: React.FC = () => {
   const remainingBalance = transaction.total - transaction.amountPaid;
 
   return (
-    <div className="max-w-md mx-auto bg-slate-50 dark:bg-slate-800 p-8 rounded-lg shadow-lg">
+    <div className="max-w-md mx-auto bg-slate-50 dark:bg-slate-800 p-8 rounded-lg shadow-lg receipt-print">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h1>
         <p className="text-base text-slate-500 dark:text-slate-400">Struk Transaksi</p>
