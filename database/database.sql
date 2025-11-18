@@ -421,38 +421,39 @@ VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234
 
 -- === RPC: get_laundry_status ===
 -- Return a safe projection of a transaction for public/customer-facing views
-CREATE OR REPLACE FUNCTION public.get_laundry_status(
-  transaction_id_input uuid
-)
-RETURNS TABLE (
-  id text,
-  "customerName" text,
-  "createdAt" timestamp with time zone,
-  "estimatedCompletionDate" date,
-  "orderStatus" text,
-  "paymentStatus" text,
-  total numeric,
-  "amountPaid" numeric
-)
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT
-    t.id::text,
-    c.name AS "customerName",
-    t."createdAt",
-    t."estimatedCompletionDate",
-    t."orderStatus",
-    t."paymentStatus",
-    t.total,
-    t."amountPaid"
-  FROM
-    public.transactions AS t
-  JOIN
-    public.customers AS c ON t."customerId" = c.id
-  WHERE
-    t.id = transaction_id_input;
-$$;
+-- HAPUS BAGIAN INI (DUPLIKAT, VERSI LAMA)
+-- CREATE OR REPLACE FUNCTION public.get_laundry_status(
+--   transaction_id_input uuid
+-- )
+-- RETURNS TABLE (
+--   id text,
+--   "customerName" text,
+--   "createdAt" timestamp with time zone,
+--   "estimatedCompletionDate" date,
+--   "orderStatus" text,
+--   "paymentStatus" text,
+--   total numeric,
+--   "amountPaid" numeric
+-- )
+-- LANGUAGE sql
+-- SECURITY DEFINER
+-- AS $$
+--   SELECT
+--     t.id::text,
+--     c.name AS "customerName",
+--     t."createdAt",
+--     t."estimatedCompletionDate",
+--     t."orderStatus",
+--     t."paymentStatus",
+--     t.total,
+--     t."amountPaid"
+--   FROM
+--     public.transactions AS t
+--   JOIN
+--     public.customers AS c ON t."customerId" = c.id
+--   WHERE
+--     t.id = transaction_id_input;
+-- $$;
 
 -- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
 -- so it can read rows even when restrictive RLS policies exist. Keep the function
