@@ -1,17 +1,13 @@
-// Tambahkan deklarasi modul untuk virtual:pwa-register
-// Agar TypeScript tidak error pada import virtual:pwa-register
+/// <reference types="vite/client" />
 
 declare module 'virtual:pwa-register' {
-  export function registerSW(options?: {
+  export type RegisterSWOptions = {
     immediate?: boolean;
     onNeedRefresh?: () => void;
     onOfflineReady?: () => void;
-    onRegisteredSW?: (
-      swScriptUrl: string,
-      registration: ServiceWorkerRegistration | undefined,
-    ) => void;
+    onRegistered?: (registration: ServiceWorkerRegistration | undefined) => void;
     onRegisterError?: (error: any) => void;
-  }): void;
-  // Tambahkan export default agar import default tidak error
-  export default registerSW;
+  };
+
+  export function registerSW(options?: RegisterSWOptions): () => void;
 }
