@@ -72,6 +72,9 @@ const PwaStatusHandler: React.FC = () => {
   return null;
 };
 
+// Versi aplikasi
+const APP_VERSION = 'v1.2.0'; // Ganti sesuai kebutuhan
+
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAppContext();
   if (currentUser === null) {
@@ -190,6 +193,22 @@ const AppRoutes: React.FC = () => {
           </Routes>
         </Suspense>
         <CommandPalette />
+        {/* Tampilkan versi aplikasi di pojok kanan bawah */}
+        <div
+          style={{
+            position: 'fixed',
+            right: 12,
+            bottom: 8,
+            zIndex: 50,
+            fontSize: 12,
+            color: '#64748b',
+            opacity: 0.7,
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        >
+          {APP_VERSION}
+        </div>
       </Layout>
       <PwaStatusHandler />
     </>
