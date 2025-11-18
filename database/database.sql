@@ -1,4 +1,3 @@
--- ...existing code...
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
@@ -216,6 +215,15 @@ ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
+-- Tambahan: Policy SELECT untuk anon di transactions
+CREATE POLICY "Enable read access for anon users to track laundry"
+ON public.transactions
+FOR SELECT
+TO anon
+USING (
+  true
+);
+
 
 -- === 3. HELPER FUNCTIONS UNTUK RLS ===
 
@@ -422,38 +430,39 @@ VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234
 
 -- === RPC: get_laundry_status ===
 -- Return a safe projection of a transaction for public/customer-facing views
-CREATE OR REPLACE FUNCTION public.get_laundry_status(
-  transaction_id_input uuid
-)
-RETURNS TABLE (
-  id text,
-  "customerName" text,
-  "createdAt" timestamp with time zone,
-  "estimatedCompletionDate" date,
-  "orderStatus" text,
-  "paymentStatus" text,
-  total numeric,
-  "amountPaid" numeric
-)
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT
-    t.id::text,
-    c.name AS "customerName",
-    t."createdAt",
-    t."estimatedCompletionDate",
-    t."orderStatus",
-    t."paymentStatus",
-    t.total,
-    t."amountPaid"
-  FROM
-    public.transactions AS t
-  JOIN
-    public.customers AS c ON t."customerId" = c.id
-  WHERE
-    t.id = transaction_id_input;
-$$;
+-- HAPUS BAGIAN INI (DUPLIKAT, VERSI LAMA)
+-- CREATE OR REPLACE FUNCTION public.get_laundry_status(
+--   transaction_id_input uuid
+-- )
+-- RETURNS TABLE (
+--   id text,
+--   "customerName" text,
+--   "createdAt" timestamp with time zone,
+--   "estimatedCompletionDate" date,
+--   "orderStatus" text,
+--   "paymentStatus" text,
+--   total numeric,
+--   "amountPaid" numeric
+-- )
+-- LANGUAGE sql
+-- SECURITY DEFINER
+-- AS $$
+--   SELECT
+--     t.id::text,
+--     c.name AS "customerName",
+--     t."createdAt",
+--     t."estimatedCompletionDate",
+--     t."orderStatus",
+--     t."paymentStatus",
+--     t.total,
+--     t."amountPaid"
+--   FROM
+--     public.transactions AS t
+--   JOIN
+--     public.customers AS c ON t."customerId" = c.id
+--   WHERE
+--     t.id = transaction_id_input;
+-- $$;
 
 -- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
 -- so it can read rows even when restrictive RLS policies exist. Keep the function
@@ -557,3 +566,46 @@ $$;
 -- === 7. PENGATURAN AWAL (Initial Settings) ===
 
 INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0);
+
+
+-- Menghapus fungsi lama karena kita akan mengubah tipe parameternya dari UUID ke TEXT
+DROP FUNCTION IF EXISTS public.get_laundry_status(uuid);
+
+-- Membuat fungsi baru yang menerima TEXT (bisa untuk Invoice Code ATAU Transaction ID)
+CREATE OR REPLACE FUNCTION public.get_laundry_status(
+  input_identifier text
+)
+RETURNS TABLE (
+  id text,
+  "invoiceCode" text, -- Kita tambahkan ini agar bisa ditampilkan di frontend
+  "customerName" text,
+  "createdAt" timestamp with time zone,
+  "estimatedCompletionDate" date,
+  "orderStatus" text,
+  "paymentStatus" text,
+  total numeric,
+  "amountPaid" numeric
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT
+    t.id::text,
+    t.invoice_code AS "invoiceCode",
+    c.name AS "customerName",
+    t."createdAt",
+    t."estimatedCompletionDate",
+    t."orderStatus",
+    t."paymentStatus",
+    t.total,
+    t."amountPaid"
+  FROM
+    public.transactions AS t
+  JOIN
+    public.customers AS c ON t."customerId" = c.id
+  WHERE
+    -- Pencarian Utama: Berdasarkan Kode Invoice (Case Insensitive agar huruf kecil/besar tidak masalah)
+    t.invoice_code ILIKE input_identifier
+    -- Pencarian Alternatif: Berdasarkan UUID (jika input formatnya valid UUID)
+    OR (input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' AND t.id::text = input_identifier);
+$$;
