@@ -1,6 +1,33 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQuery as useInventoryQuery } from '@tanstack/react-query';
+import { useAppContext } from '../contexts/AppContext';
+import { fetchInventory } from '../contexts/InventoryContext';
+import { useTransactions } from '../contexts/TransactionContext';
+import { fetchCustomers } from '../contexts/CustomerContext';
+import { useExpenses } from '../contexts/ExpenseContext';
+import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
+import { useAssets } from '../contexts/AssetContext';
+import { useAuditLogs } from '../contexts/AuditLogContext';
+import { useToasts } from '../contexts/ToastContext';
+import usePagination from '../hooks/usePagination';
+import Pagination from '../components/Pagination';
+import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
+import ExpenseFormModal from '../components/ExpenseFormModal';
+import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
+import WhatsAppModal from '../components/WhatsAppModal';
+import PaymentModal from '../components/PaymentModal';
+import {
+  ShoppingCartIcon,
+  PackageIcon,
+  WrenchIcon,
+  PlusCircleIcon,
+  DollarSignIcon,
+  CalendarIcon,
+  ChevronRightIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+} from '../components/icons';
 
 import {
   Transaction,
@@ -14,33 +41,6 @@ import {
 } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { calculateNextDueDate } from '../utils/formatting';
-
-import {
-  ShoppingCartIcon,
-  PackageIcon,
-  WrenchIcon,
-  PlusCircleIcon,
-  DollarSignIcon,
-  CalendarIcon,
-  ChevronRightIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-} from '../components/icons';
-import { useAppContext } from '../contexts/AppContext';
-import { fetchInventory } from '../contexts/InventoryContext';
-import { useTransactions } from '../contexts/TransactionContext';
-import { fetchCustomers } from '../contexts/CustomerContext';
-import { useExpenses } from '../contexts/ExpenseContext';
-import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
-import { useAssets } from '../contexts/AssetContext';
-import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useToasts } from '../contexts/ToastContext';
-
-import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
-import ExpenseFormModal from '../components/ExpenseFormModal';
-import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
-import WhatsAppModal from '../components/WhatsAppModal';
-import PaymentModal from '../components/PaymentModal';
 
 type Trend = 'up' | 'down' | 'neutral';
 
@@ -312,6 +312,14 @@ const Dashboard: React.FC = () => {
     [transactions, customerMap],
   );
 
+  // PAGINATION FOR ACTIVE ORDERS
+  const {
+    currentData: paginatedActiveOrders,
+    currentPage: activeOrdersCurrentPage,
+    totalPages: activeOrdersTotalPages,
+    onPageChange: onActiveOrdersPageChange,
+  } = usePagination<ActiveOrder>(activeOrders);
+
   const handleSaveExpense = useCallback(
     async (expense: Omit<Expense, 'id' | 'storeId'>) => {
       const storeId =
@@ -568,8 +576,8 @@ const Dashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {activeOrders.length > 0 ? (
-                  activeOrders.map((t: ActiveOrder) => {
+                {paginatedActiveOrders.length > 0 ? (
+                  paginatedActiveOrders.map((t, idx) => {
                     const isSelesaikanDisabled =
                       t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                     const nextActionText =
@@ -583,7 +591,7 @@ const Dashboard: React.FC = () => {
                       <tr key={t.id} className="border-b dark:border-slate-700">
                         <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                           <Link to={`/transactions/${t.id}/details`} className="hover:underline">
-                            {t.id}
+                            {t.invoice_code || t.id}
                           </Link>
                         </td>
                         <td className="px-4 py-3">{t.customerName}</td>
@@ -645,11 +653,16 @@ const Dashboard: React.FC = () => {
                 )}
               </tbody>
             </table>
+            <Pagination
+              currentPage={activeOrdersCurrentPage}
+              totalPages={activeOrdersTotalPages}
+              onPageChange={onActiveOrdersPageChange}
+            />
           </div>
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3">
-            {activeOrders.length > 0 ? (
-              activeOrders.map((t: ActiveOrder) => {
+            {paginatedActiveOrders.length > 0 ? (
+              paginatedActiveOrders.map((t, idx) => {
                 const isSelesaikanDisabled =
                   t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                 const mobileNextActionText =
@@ -673,7 +686,7 @@ const Dashboard: React.FC = () => {
                           to={`/transactions/${t.id}/details`}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {t.id}
+                          {t.invoice_code || t.id}
                         </Link>
                       </div>
                       <span
@@ -737,6 +750,13 @@ const Dashboard: React.FC = () => {
                 Tidak ada pesanan aktif.
               </div>
             )}
+          </div>
+          <div className="sm:hidden">
+            <Pagination
+              currentPage={activeOrdersCurrentPage}
+              totalPages={activeOrdersTotalPages}
+              onPageChange={onActiveOrdersPageChange}
+            />
           </div>
         </div>
 

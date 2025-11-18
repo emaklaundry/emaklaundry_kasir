@@ -2,12 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // @ts-ignore
-import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 
 import './index.css'; // <-- PASTIKAN BARIS INI ADA
-
-registerSW({ onNeedRefresh() {}, onOfflineReady() {} });
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

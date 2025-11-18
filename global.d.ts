@@ -12,4 +12,6 @@ declare module 'virtual:pwa-register' {
     ) => void;
     onRegisterError?: (error: any) => void;
   }): void;
+  // Tambahkan export default agar import default tidak error
+  export default registerSW;
 }
