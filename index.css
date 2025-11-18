@@ -9,7 +9,7 @@
     background: white !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    padding: 0 !important;
+    padding: 1mm !important;
   }
   .receipt-print * {
     font-size: 10pt !important;

@@ -1,6 +1,9 @@
-// ...existing code...
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+// @ts-ignore
+import { registerSW } from 'virtual:pwa-register';
+import { useToasts } from './src/contexts/ToastContext';
+import { UserRole } from './src/types';
 import { useAppContext } from './src/contexts/AppContext';
 import Layout from './src/components/Layout';
 
@@ -8,7 +11,6 @@ import useTheme from './src/hooks/useTheme';
 import { AppProviders } from './src/contexts/AppProviders';
 import CommandPalette from './src/components/CommandPalette';
 import QuickActionsPage from './src/pages/QuickActionsPage';
-import { UserRole } from '@/types';
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./src/pages/Dashboard'));
@@ -54,6 +56,22 @@ const PageLoader: React.FC = () => (
 
 const LoginPage = lazy(() => import('./src/pages/LoginPage'));
 
+// Komponen untuk menangani pendaftaran PWA dan notifikasi
+const PwaStatusHandler: React.FC = () => {
+  const { addToast } = useToasts();
+
+  React.useEffect(() => {
+    registerSW({
+      onOfflineReady() {
+        addToast('Mode Offline Aktif: Aplikasi kini siap digunakan tanpa koneksi internet.', 'info');
+      },
+      onNeedRefresh() {},
+    });
+  }, [addToast]);
+
+  return null;
+};
+
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAppContext();
   if (currentUser === null) {
@@ -68,110 +86,113 @@ const AppRoutes: React.FC = () => {
     );
   }
   return (
-    <Layout>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/settings" element={<Navigate to="/management/settings" replace />} />
-          <Route path="/login" element={<Navigate to="/" />} />
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/quick-actions" element={<QuickActionsPage />} />
-          <Route path="/transactions" element={<TransactionPage />} />
-          <Route path="/transactions/new" element={<NewTransactionPage />} />
-          <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
-          <Route path="/transactions/:id/details" element={<TransactionDetailPage />} />
-          {/* Admin Routes */}
-          <Route
-            path="/management/customers"
-            element={
-              <AdminRoute>
-                <CustomersPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/management/customers/:id"
-            element={
-              <AdminRoute>
-                <CustomerDetailPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/management/assets"
-            element={
-              <AdminRoute>
-                <AssetsPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/management/inventory"
-            element={
-              <AdminRoute>
-                <InventoryPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/management/services"
-            element={
-              <AdminRoute>
-                <ServicesPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/management/expenses"
-            element={
-              <AdminRoute>
-                <ExpensesPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/management/stores"
-            element={
-              <SuperAdminRoute>
-                <StoresPage />
-              </SuperAdminRoute>
-            }
-          />
-          <Route
-            path="/management/users"
-            element={
-              <AdminRoute>
-                <UsersPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/management/settings"
-            element={
-              <AdminRoute>
-                <SettingsPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <AdminRoute>
-                <ReportsPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/audit-log"
-            element={
-              <AdminRoute>
-                <AuditLogPage />
-              </AdminRoute>
-            }
-          />
-        </Routes>
-      </Suspense>
-      <CommandPalette />
-    </Layout>
+    <>
+      <Layout>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/settings" element={<Navigate to="/management/settings" replace />} />
+            <Route path="/login" element={<Navigate to="/" />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/quick-actions" element={<QuickActionsPage />} />
+            <Route path="/transactions" element={<TransactionPage />} />
+            <Route path="/transactions/new" element={<NewTransactionPage />} />
+            <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
+            <Route path="/transactions/:id/details" element={<TransactionDetailPage />} />
+            {/* Admin Routes */}
+            <Route
+              path="/management/customers"
+              element={
+                <AdminRoute>
+                  <CustomersPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/customers/:id"
+              element={
+                <AdminRoute>
+                  <CustomerDetailPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/assets"
+              element={
+                <AdminRoute>
+                  <AssetsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/inventory"
+              element={
+                <AdminRoute>
+                  <InventoryPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/services"
+              element={
+                <AdminRoute>
+                  <ServicesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/expenses"
+              element={
+                <AdminRoute>
+                  <ExpensesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/stores"
+              element={
+                <SuperAdminRoute>
+                  <StoresPage />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/management/users"
+              element={
+                <AdminRoute>
+                  <UsersPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/settings"
+              element={
+                <AdminRoute>
+                  <SettingsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <AdminRoute>
+                  <ReportsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/audit-log"
+              element={
+                <AdminRoute>
+                  <AuditLogPage />
+                </AdminRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
+        <CommandPalette />
+      </Layout>
+      <PwaStatusHandler />
+    </>
   );
 };
 
@@ -179,9 +200,9 @@ const App: React.FC = () => {
   useTheme(); // Initialize and apply theme
   return (
     <AppProviders>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppRoutes />
-      </BrowserRouter>
+      </Router>
     </AppProviders>
   );
 };
