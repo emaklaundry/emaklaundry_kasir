@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// @ts-ignore
 import { registerSW } from 'virtual:pwa-register';
 import { useToasts } from './src/contexts/ToastContext';
 import { UserRole } from './src/types';
