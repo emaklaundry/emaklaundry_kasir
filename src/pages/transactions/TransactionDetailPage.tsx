@@ -1,10 +1,10 @@
-import * as React from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../../utils/supabaseClient'; // NEW: Import supabase client
+import { useTransactions } from '../../contexts/TransactionContext';
+import { supabase } from '../../utils/supabaseClient';
 import { fetchCustomers } from '../../contexts/CustomerContext';
-import { useTransactions } from '../../contexts/TransactionContext'; // Tetap diperlukan untuk ActionButtons
 import {
   ChevronLeftIcon,
   PrinterIcon,
@@ -36,13 +36,18 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
 
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  // Hapus: const { transactions } = useTransactions();
-
-  // NEW: Query untuk mengambil SATU transaksi berdasarkan ID
-  const { data: transaction, isLoading: isTransactionLoading } = useQuery({
+  const { updateTransaction } = useTransactions(); // Tetap diperlukan untuk ActionButtons
+  
+  // Query untuk mengambil SATU transaksi berdasarkan ID
+  const { 
+    data: transaction, 
+    isLoading: isTransactionLoading,
+    error: transactionError, 
+  } = useQuery<Transaction, Error>({
     queryKey: ['transaction', id],
     queryFn: async () => {
-      if (!id) return null;
+      if (!id) throw new Error('Transaction ID is missing');
+      // Menggunakan supabase untuk mengambil satu item
       const { data, error } = await supabase.from('transactions').select('*').eq('id', id).single();
       if (error) throw error;
       return data as Transaction;
@@ -50,21 +55,25 @@ const TransactionDetailPage: React.FC = () => {
     enabled: !!id,
   });
 
-  const { data: customersData } = useQuery({
+  const customersQuery = useQuery({ // Mengambil seluruh object query result
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
 
-  // Ensure customers is always an array
-  const customers = Array.isArray(customersData) ? customersData : [];
+  // Ekstrak array customer dengan aman menggunakan useMemo
+  const customers = useMemo(() => {
+    return Array.isArray(customersQuery.data)
+      ? customersQuery.data
+      : (customersQuery.data?.data ?? []);
+  }, [customersQuery.data]);
 
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
 
   if (isTransactionLoading) {
     return <div className="text-center py-12 text-slate-500 dark:text-slate-400">Memuat detail transaksi...</div>;
   }
-
-  if (!transaction || !customer) {
+  
+  if (transactionError || !transaction || !customer) {
     return (
       <EmptyState
         icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
