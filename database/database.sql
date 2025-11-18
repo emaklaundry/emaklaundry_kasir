@@ -1,4 +1,3 @@
--- ...existing code...
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
@@ -557,3 +556,46 @@ $$;
 -- === 7. PENGATURAN AWAL (Initial Settings) ===
 
 INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0);
+
+
+-- Menghapus fungsi lama karena kita akan mengubah tipe parameternya dari UUID ke TEXT
+DROP FUNCTION IF EXISTS public.get_laundry_status(uuid);
+
+-- Membuat fungsi baru yang menerima TEXT (bisa untuk Invoice Code ATAU Transaction ID)
+CREATE OR REPLACE FUNCTION public.get_laundry_status(
+  input_identifier text
+)
+RETURNS TABLE (
+  id text,
+  "invoiceCode" text, -- Kita tambahkan ini agar bisa ditampilkan di frontend
+  "customerName" text,
+  "createdAt" timestamp with time zone,
+  "estimatedCompletionDate" date,
+  "orderStatus" text,
+  "paymentStatus" text,
+  total numeric,
+  "amountPaid" numeric
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT
+    t.id::text,
+    t.invoice_code AS "invoiceCode",
+    c.name AS "customerName",
+    t."createdAt",
+    t."estimatedCompletionDate",
+    t."orderStatus",
+    t."paymentStatus",
+    t.total,
+    t."amountPaid"
+  FROM
+    public.transactions AS t
+  JOIN
+    public.customers AS c ON t."customerId" = c.id
+  WHERE
+    -- Pencarian Utama: Berdasarkan Kode Invoice (Case Insensitive agar huruf kecil/besar tidak masalah)
+    t.invoice_code ILIKE input_identifier
+    -- Pencarian Alternatif: Berdasarkan UUID (jika input formatnya valid UUID)
+    OR (input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' AND t.id::text = input_identifier);
+$$;
