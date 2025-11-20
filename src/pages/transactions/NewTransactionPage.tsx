@@ -1,14 +1,4 @@
-// Helper untuk generate UUID
-const generateUUID = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0,
-      v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
+import { generateUUID } from '../../utils';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -219,8 +209,6 @@ const NewTransactionPage: React.FC = () => {
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
   useEffect(() => {
-    let timerId: ReturnType<typeof setTimeout> | undefined;
-
     if (!canApplyDiscount) {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
@@ -231,22 +219,11 @@ const NewTransactionPage: React.FC = () => {
     ) {
       setDiscountType('percent');
       setDiscountValue(selectedCustomer.defaultDiscount);
-      // Tampilkan toast dengan delay agar tidak bentrok render
-      timerId = setTimeout(() => {
-        addToast(
-          `Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`,
-          'info',
-        );
-      }, 100);
     } else {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
     }
-
-    return () => {
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, addToast, settings?.discountRate]);
+  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   if (isLoadingSettings) {
@@ -286,7 +263,9 @@ const NewTransactionPage: React.FC = () => {
     if (field === 'quantity' && typeof value === 'number') {
       const newQuantity = value >= 0 ? value : 0;
       item.quantity = newQuantity;
-      item.subtotal = item.price * item.quantity;
+      // Pastikan item.price adalah number
+      const price = typeof item.price === 'number' ? item.price : Number(item.price) || 0;
+      item.subtotal = price * item.quantity;
 
       if (service && service.category === ServiceCategory.Satuan) {
         // Only extend itemDetails, never truncate
@@ -391,9 +370,16 @@ const NewTransactionPage: React.FC = () => {
     setIsSaving(true);
     const toastId = addToast('Menyimpan transaksi...', 'info');
     try {
+      // Sanitasi itemDetails agar tidak ada zombie notes
+      const cleanedItems = items.map(item => ({
+        ...item,
+        itemDetails: item.itemDetails
+          ? item.itemDetails.slice(0, item.quantity).map(detail => ({ note: detail.note || '' }))
+          : []
+      }));
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
-        items,
+        items: cleanedItems,
         subtotal,
         discount: discountAmount,
         tax: taxAmount,
@@ -641,6 +627,13 @@ const NewTransactionPage: React.FC = () => {
                   onSelectCustomer={setSelectedCustomer}
                   onAddNewCustomer={() => setIsCustomerModalOpen(true)}
                 />
+                {/* Banner info diskon otomatis */}
+                {selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0 && (
+                  <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
+                    <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
+                    Diskon {selectedCustomer.defaultDiscount}% otomatis diterapkan untuk {selectedCustomer.name}.
+                  </div>
+                )}
                 <div>
                   <label
                     htmlFor="notes"
