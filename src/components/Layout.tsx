@@ -31,12 +31,22 @@ const getPageTitle = (pathname: string, params: any, customers: Customer[]): str
     return staticTitles[pathname];
   }
 
-  if (pathname.startsWith('/transactions/') && pathname.endsWith('/details')) {
-    return `Detail Transaksi: ${params.id}`;
+  // Perbaikan: Tangani route detail transaksi dengan lebih robust
+  if (pathname.startsWith('/transactions/') && pathname !== '/transactions/new') {
+    // Coba ambil ID dari params, jika tidak ada (undefined), ambil dari split URL
+    // Asumsi format URL: /transactions/:id atau /transactions/:id/details
+    const segments = pathname.split('/');
+    // segments[0] = "", segments[1] = "transactions", segments[2] = ID
+    const transactionId = params.id || segments[2];
+    if (transactionId) {
+      return `Detail Transaksi: ${transactionId}`;
+    }
   }
 
   if (pathname.startsWith('/management/customers/')) {
-    const customer = customers.find((c) => c.id === params.id);
+    // Sama, fallback ke URL jika params.id undefined
+    const customerId = params.id || pathname.split('/').pop();
+    const customer = customers.find((c) => c.id === customerId);
     return customer ? `Detail Pelanggan: ${customer.name}` : 'Detail Pelanggan';
   }
 
