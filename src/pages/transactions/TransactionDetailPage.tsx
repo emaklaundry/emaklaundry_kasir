@@ -54,6 +54,7 @@ const TransactionDetailPage: React.FC = () => {
       return data as Transaction;
     },
     enabled: !!id,
+    keepPreviousData: true, // <--- TAMBAHKAN BARIS INI
   });
 
   const customersQuery = useQuery({ // Mengambil seluruh object query result

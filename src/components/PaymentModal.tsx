@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useToasts } from '../contexts/ToastContext';
 import Modal from './Modal';
-import { SpinnerIcon } from './icons';
+import { SpinnerIcon, DollarSignIcon } from './icons'; // Pastikan import icon sesuai
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 
 interface PaymentModalProps {
@@ -106,7 +106,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Pembayaran: ${transaction.id}`}
+      // PERBAIKAN: Gunakan invoice_code jika ada, jika tidak baru gunakan ID
+      title={`Pembayaran: ${transaction.invoice_code || transaction.id}`}
       footer={
         <>
           <button
@@ -151,19 +152,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 key={m}
                 onClick={() => setMethod(m)}
-                disabled={m === PaymentMethod.Transfer && /* kondisi disabled, jika ada */ false}
                 className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 gap-2
                   ${method === m
-                    ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-[1.02]'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'}
-                  ${m === PaymentMethod.Transfer ? 'bg-slate-200 text-slate-400 border-slate-300 dark:bg-slate-800 dark:text-slate-600 dark:border-slate-700 cursor-not-allowed' : ''}
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' // Style Aktif: Biru Muda
+                    : 'border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'}
                 `}
-                style={m === PaymentMethod.Transfer ? { pointerEvents: 'none' } : {}}
               >
-                <div className={method === m ? 'text-white' : 'text-blue-600'}>
-                  {/* Jika ada icon, tampilkan di sini */}
-                </div>
-                <span className="font-semibold">{m}</span>
+                <span className={`font-semibold text-center text-sm ${method === m ? 'text-blue-800 dark:text-blue-100' : ''}`}>
+                  {m}
+                </span>
               </button>
             ))}
           </div>
