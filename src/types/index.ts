@@ -92,6 +92,7 @@ export interface Transaction {
   createdByUserId: string;
   storeId: string;
   notes?: string;
+  idempotencyKey?: string;
 }
 
 export interface InventoryItem {
