@@ -120,3 +120,10 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 <div align="center">
   <b>© 2025 Laundry Management System</b>
 </div>
+### Perbaikan Bug Penting
+
+- **[20 Nov 2025]**: Memperbaiki error `TypeError: p.find is not a function` pada halaman Laporan (ReportsPage) dengan memastikan data hasil query pelanggan (`customers`) selalu dinormalisasi menjadi array sebelum digunakan dengan `.find`. Jika Anda mengalami error serupa, pastikan sudah menggunakan kode terbaru.
+- **[20 Nov 2025]**: Untuk error TypeScript `Cannot find type definition file for 'node'`, pastikan sudah menginstall dependency:
+   ```bash
+   npm install --save-dev @types/node
+   ```
