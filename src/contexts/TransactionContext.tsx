@@ -79,7 +79,13 @@ export function useTransactions(filter: TransactionFilter = {}) {
       });
       return updated || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    // Perbaikan: invalidate detail transaksi juga
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      if (variables && variables.id) {
+        queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+      }
+    },
   });
 
   return {
