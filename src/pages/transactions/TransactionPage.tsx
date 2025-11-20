@@ -577,19 +577,25 @@ const TransactionPage: React.FC = () => {
                             : ''
                         }
                       >
-                        {Object.values(OrderStatus).map((status) => (
-                          <option
-                            key={status}
-                            value={status}
-                            className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                            disabled={
-                              status === OrderStatus.Completed &&
-                              t.paymentStatus !== PaymentStatus.Paid
-                            }
-                          >
-                            {status}
-                          </option>
-                        ))}
+                        {Object.values(OrderStatus).map((status) => {
+                          // Tombol/toggle ke 'Selesai' hanya aktif jika sudah lunas DAN/ATAU sudah 'Siap Diambil'
+                          const disableCompleted =
+                            status === OrderStatus.Completed &&
+                            !(
+                              t.paymentStatus === PaymentStatus.Paid ||
+                              t.orderStatus === OrderStatus.Ready
+                            );
+                          return (
+                            <option
+                              key={status}
+                              value={status}
+                              className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                              disabled={disableCompleted}
+                            >
+                              {status}
+                            </option>
+                          );
+                        })}
                       </select>
                     </td>
                     <td className="px-4 py-3">
