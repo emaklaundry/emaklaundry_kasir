@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "types": ["node"],
+    "resolveJsonModule": true,
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
