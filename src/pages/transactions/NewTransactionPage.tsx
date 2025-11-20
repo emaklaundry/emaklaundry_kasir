@@ -222,7 +222,6 @@ const NewTransactionPage: React.FC = () => {
     let timerId: ReturnType<typeof setTimeout> | undefined;
 
     if (!canApplyDiscount) {
-      // 1. Kasir tidak bisa memberi diskon, pakai default
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
     } else if (
@@ -230,20 +229,16 @@ const NewTransactionPage: React.FC = () => {
       selectedCustomer.defaultDiscount &&
       selectedCustomer.defaultDiscount > 0
     ) {
-      // 2. Kasir bisa diskon DAN pelanggan punya diskon default
       setDiscountType('percent');
-      setDiscountValue(selectedCustomer.defaultDiscount); // Set nilai diskon
-
-      // Tampilkan toast
+      setDiscountValue(selectedCustomer.defaultDiscount);
+      // Tampilkan toast dengan delay agar tidak bentrok render
       timerId = setTimeout(() => {
         addToast(
           `Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`,
           'info',
         );
-      }, 0);
+      }, 100);
     } else {
-      // 3. Kasir bisa diskon TAPI pelanggan tidak punya diskon default (atau belum pilih pelanggan)
-      //    Kembalikan ke default settings.
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
     }
@@ -251,7 +246,7 @@ const NewTransactionPage: React.FC = () => {
     return () => {
       if (timerId) clearTimeout(timerId);
     };
-  }, [canApplyDiscount, selectedCustomer, addToast, settings?.discountRate]);
+  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, addToast, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   if (isLoadingSettings) {
@@ -770,9 +765,13 @@ const NewTransactionPage: React.FC = () => {
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
-                            className={`p-3 rounded-lg text-base border-2 ${paymentMethod === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/5Aksess' : 'border-slate-300 dark:border-slate-600'}`}
+                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 gap-2
+                              ${paymentMethod === m
+                                ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-[1.02]'
+                                : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'}
+                            `}
                           >
-                            {m}
+                            <span className="font-semibold">{m}</span>
                           </button>
                         ))}
                       </div>

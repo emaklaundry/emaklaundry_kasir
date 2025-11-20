@@ -24,9 +24,14 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     if (transaction && customer) {
       let defaultMessage = '';
       const itemsList = transaction.items
-        .map((item) => `- ${item.quantity} ${item.unit} ${item.serviceName}`)
+        .map((item) => `- ${item.quantity} ${item.unit} ${item.serviceName} @ Rp${item.price.toLocaleString('id-ID')} = Rp${item.subtotal.toLocaleString('id-ID')}`)
         .join('\n');
-      const remainingBalance = transaction.total - transaction.amountPaid;
+      const subtotal = transaction.subtotal || transaction.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+      const discount = transaction.discount || 0;
+      const tax = transaction.tax || 0;
+      const total = transaction.total || subtotal - discount + tax;
+      const amountPaid = transaction.amountPaid || 0;
+      const remainingBalance = total - amountPaid;
       const shortId = transaction.invoice_code || transaction.id.slice(-6).toUpperCase();
 
       if (transaction.orderStatus === OrderStatus.Processing) {
@@ -39,7 +44,12 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           `─────────────────────────────\n` +
           `*Daftar Item:*\n${itemsList}\n` +
           `─────────────────────────────\n` +
-          `💰 *Total*: Rp ${transaction.total.toLocaleString('id-ID')}\n` +
+          `Subtotal: Rp${subtotal.toLocaleString('id-ID')}\n` +
+          `Diskon: Rp${discount.toLocaleString('id-ID')}\n` +
+          `Pajak: Rp${tax.toLocaleString('id-ID')}\n` +
+          `Total: Rp${total.toLocaleString('id-ID')}\n` +
+          `Dibayar: Rp${amountPaid.toLocaleString('id-ID')}\n` +
+          `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
           `💳 *Status Bayar*: ${transaction.paymentStatus}\n` +
           `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n` +
           `─────────────────────────────\n` +
@@ -50,8 +60,14 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           `Halo ${customer.name},\n\n` +
           `Pesanan laundry Anda dengan ID *${shortId}* sudah *SIAP DIAMBIL*.\n` +
           `─────────────────────────────\n` +
-          `💰 *Total Tagihan*: Rp ${transaction.total.toLocaleString('id-ID')}\n` +
-          `💸 *Sisa Tagihan*: Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}\n` +
+          `*Daftar Item:*\n${itemsList}\n` +
+          `─────────────────────────────\n` +
+          `Subtotal: Rp${subtotal.toLocaleString('id-ID')}\n` +
+          `Diskon: Rp${discount.toLocaleString('id-ID')}\n` +
+          `Pajak: Rp${tax.toLocaleString('id-ID')}\n` +
+          `Total Tagihan: Rp${total.toLocaleString('id-ID')}\n` +
+          `Dibayar: Rp${amountPaid.toLocaleString('id-ID')}\n` +
+          `Sisa Tagihan: Rp${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}\n` +
           `─────────────────────────────\n` +
           `Silakan datang ke toko kami untuk pengambilan.\n\n` +
           `Terima kasih atas kepercayaan Anda.\nTim Emak Laundry`;
@@ -60,6 +76,16 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         defaultMessage =
           `Halo ${customer.name},\n\n` +
           `Pesanan laundry Anda dengan ID *${shortId}* sudah *SELESAI & LUNAS*.\n` +
+          `─────────────────────────────\n` +
+          `*Daftar Item:*\n${itemsList}\n` +
+          `─────────────────────────────\n` +
+          `Subtotal: Rp${subtotal.toLocaleString('id-ID')}\n` +
+          `Diskon: Rp${discount.toLocaleString('id-ID')}\n` +
+          `Pajak: Rp${tax.toLocaleString('id-ID')}\n` +
+          `Total: Rp${total.toLocaleString('id-ID')}\n` +
+          `Dibayar: Rp${amountPaid.toLocaleString('id-ID')}\n` +
+          `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
+          `─────────────────────────────\n` +
           `Pesanan sudah bisa diambil di toko kami. Mohon tunjukkan pesan ini saat pengambilan.\n\n` +
           `Terima kasih telah menggunakan layanan kami.\nTim Emak Laundry`;
       }

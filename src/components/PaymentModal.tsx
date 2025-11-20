@@ -118,7 +118,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={handleSave}
             disabled={disabled || amountToPay <= 0 || amountToPay > remainingBalance}
-            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 active:bg-blue-900 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            type="button"
           >
             Simpan Pembayaran
           </button>
@@ -150,9 +151,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 key={m}
                 onClick={() => setMethod(m)}
-                className={`p-3 rounded-lg text-base border-2 ${method === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
+                disabled={m === PaymentMethod.Transfer && /* kondisi disabled, jika ada */ false}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 gap-2
+                  ${method === m
+                    ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-[1.02]'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'}
+                  ${m === PaymentMethod.Transfer ? 'bg-slate-200 text-slate-400 border-slate-300 dark:bg-slate-800 dark:text-slate-600 dark:border-slate-700 cursor-not-allowed' : ''}
+                `}
+                style={m === PaymentMethod.Transfer ? { pointerEvents: 'none' } : {}}
               >
-                {m}
+                <div className={method === m ? 'text-white' : 'text-blue-600'}>
+                  {/* Jika ada icon, tampilkan di sini */}
+                </div>
+                <span className="font-semibold">{m}</span>
               </button>
             ))}
           </div>
