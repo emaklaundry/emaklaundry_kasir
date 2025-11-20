@@ -14,8 +14,18 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 ## ✨ Fitur Utama
 
 - **Manajemen Transaksi**: Pencatatan transaksi laundry (kiloan, satuan, sepatu, karpet), status pembayaran, cetak struk, dan kode invoice pendek ramah pelanggan (misal: EM-AB12CD).
-### 🔑 Fitur Baru (v1.1.0)
 
+### 🔑 Fitur Baru (v1.1.1)
+
+- [Fix] Data transaksi kini lebih aman: catatan item (notes) otomatis dibersihkan jika jumlah item dikurangi, mencegah "zombie notes".
+- [Fix] Semua tombol metode pembayaran kini konsisten secara visual dan aksesibel di seluruh aplikasi.
+- [Fix] Notifikasi diskon kini tampil sebagai info banner, bukan toast, agar tidak mengganggu kasir.
+- [Enhancement] Versi aplikasi kini diambil otomatis dari package.json.
+- [Enhancement] Utility generateUUID kini DRY dan digunakan di seluruh aplikasi.
+- [Enhancement] Perhitungan subtotal item lebih aman secara tipe data.
+- [Docs] Perbaikan dan penambahan dokumentasi fitur serta changelog.
+
+### 🔑 Fitur Sebelumnya (v1.1.0)
 - Setiap transaksi kini memiliki kode invoice pendek (invoice_code) yang unik dan mudah diingat, otomatis dibuat oleh sistem.
 - Tampilan ID Transaksi di seluruh aplikasi kini menggunakan kode invoice pendek (jika tersedia), sehingga lebih mudah dicatat dan disebutkan pelanggan.
 - Struk cetak, detail transaksi, WhatsApp, dan riwayat pelanggan kini menampilkan kode invoice pendek.
