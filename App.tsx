@@ -189,6 +189,8 @@ const AppRoutes: React.FC = () => {
                 </AdminRoute>
               }
             />
+            {/* Tambahkan catch-all route di bawah ini */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
         <CommandPalette />

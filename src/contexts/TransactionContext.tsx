@@ -4,6 +4,7 @@ import { Transaction } from '@/types';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
 // Pagination-aware fetchTransactions
+
 export interface TransactionFilter {
   page?: number;
   pageSize?: number;
@@ -11,6 +12,7 @@ export interface TransactionFilter {
   storeId?: string;
   paymentStatus?: string;
   orderStatus?: string;
+  enabled?: boolean; // Untuk optimasi query
 }
 
 const fetchTransactions = async (
@@ -38,12 +40,16 @@ const fetchTransactions = async (
   return { data: data || [], count: count || 0 };
 };
 
+
 export function useTransactions(filter: TransactionFilter = {}) {
   const queryClient = useQueryClient();
+  // Ambil enabled dari filter, default true
+  const { enabled = true, ...queryFilter } = filter;
   const { data: result, ...query } = useQuery({
-    queryKey: ['transactions', filter],
-    queryFn: () => fetchTransactions(filter),
+    queryKey: ['transactions', queryFilter], // queryKey tidak mengandung enabled
+    queryFn: () => fetchTransactions(queryFilter),
     keepPreviousData: true,
+    enabled: enabled,
   });
   const transactions = result?.data || [];
   const totalCount = result?.count || 0;

@@ -36,7 +36,8 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
 
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { updateTransaction } = useTransactions(); // Tetap diperlukan untuk ActionButtons
+  // Optimasi: matikan fetch list, hanya butuh updateTransaction
+  const { updateTransaction } = useTransactions({ enabled: false });
   
   // Query untuk mengambil SATU transaksi berdasarkan ID
   const { 
