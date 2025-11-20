@@ -151,16 +151,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             {Object.values(PaymentMethod).map((m) => (
               <button
                 key={m}
+                type="button"
                 onClick={() => setMethod(m)}
-                className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 gap-2
+                className={`flex items-center justify-center p-3 border rounded-lg gap-2 transition-all duration-200
                   ${method === m
-                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' // Style Aktif: Biru Muda
-                    : 'border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'}
+                    ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
+                    : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'}
                 `}
               >
-                <span className={`font-semibold text-center text-sm ${method === m ? 'text-blue-800 dark:text-blue-100' : ''}`}>
-                  {m}
-                </span>
+                <span className="font-medium">{m}</span>
               </button>
             ))}
           </div>

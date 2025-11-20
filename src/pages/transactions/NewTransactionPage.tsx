@@ -767,7 +767,7 @@ const NewTransactionPage: React.FC = () => {
                             onClick={() => setPaymentMethod(m)}
                             className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 gap-2
                               ${paymentMethod === m
-                                ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-[1.02]'
+                                ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-[1.02] hover:bg-blue-700'
                                 : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'}
                             `}
                           >
