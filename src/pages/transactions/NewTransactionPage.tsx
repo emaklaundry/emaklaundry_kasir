@@ -1,14 +1,4 @@
-// Helper untuk generate UUID
-const generateUUID = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0,
-      v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
+import { generateUUID } from '../../utils';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -219,10 +209,7 @@ const NewTransactionPage: React.FC = () => {
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
   useEffect(() => {
-    let timerId: ReturnType<typeof setTimeout> | undefined;
-
     if (!canApplyDiscount) {
-      // 1. Kasir tidak bisa memberi diskon, pakai default
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
     } else if (
@@ -230,28 +217,13 @@ const NewTransactionPage: React.FC = () => {
       selectedCustomer.defaultDiscount &&
       selectedCustomer.defaultDiscount > 0
     ) {
-      // 2. Kasir bisa diskon DAN pelanggan punya diskon default
       setDiscountType('percent');
-      setDiscountValue(selectedCustomer.defaultDiscount); // Set nilai diskon
-
-      // Tampilkan toast
-      timerId = setTimeout(() => {
-        addToast(
-          `Diskon ${selectedCustomer.defaultDiscount}% otomatis diterapkan untuk ${selectedCustomer.name}.`,
-          'info',
-        );
-      }, 0);
+      setDiscountValue(selectedCustomer.defaultDiscount);
     } else {
-      // 3. Kasir bisa diskon TAPI pelanggan tidak punya diskon default (atau belum pilih pelanggan)
-      //    Kembalikan ke default settings.
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
     }
-
-    return () => {
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [canApplyDiscount, selectedCustomer, addToast, settings?.discountRate]);
+  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   if (isLoadingSettings) {
@@ -291,7 +263,9 @@ const NewTransactionPage: React.FC = () => {
     if (field === 'quantity' && typeof value === 'number') {
       const newQuantity = value >= 0 ? value : 0;
       item.quantity = newQuantity;
-      item.subtotal = item.price * item.quantity;
+      // Pastikan item.price adalah number
+      const price = typeof item.price === 'number' ? item.price : Number(item.price) || 0;
+      item.subtotal = price * item.quantity;
 
       if (service && service.category === ServiceCategory.Satuan) {
         // Only extend itemDetails, never truncate
@@ -396,9 +370,16 @@ const NewTransactionPage: React.FC = () => {
     setIsSaving(true);
     const toastId = addToast('Menyimpan transaksi...', 'info');
     try {
+      // Sanitasi itemDetails agar tidak ada zombie notes
+      const cleanedItems = items.map(item => ({
+        ...item,
+        itemDetails: item.itemDetails
+          ? item.itemDetails.slice(0, item.quantity).map(detail => ({ note: detail.note || '' }))
+          : []
+      }));
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
-        items,
+        items: cleanedItems,
         subtotal,
         discount: discountAmount,
         tax: taxAmount,
@@ -646,6 +627,13 @@ const NewTransactionPage: React.FC = () => {
                   onSelectCustomer={setSelectedCustomer}
                   onAddNewCustomer={() => setIsCustomerModalOpen(true)}
                 />
+                {/* Banner info diskon otomatis */}
+                {selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0 && (
+                  <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
+                    <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
+                    Diskon {selectedCustomer.defaultDiscount}% otomatis diterapkan untuk {selectedCustomer.name}.
+                  </div>
+                )}
                 <div>
                   <label
                     htmlFor="notes"
@@ -770,7 +758,12 @@ const NewTransactionPage: React.FC = () => {
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
-                            className={`p-3 rounded-lg text-base border-2 ${paymentMethod === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/5Aksess' : 'border-slate-300 dark:border-slate-600'}`}
+                            // UPDATED: Style disamakan persis dengan tombol "Bayar Sekarang"
+                            className={`p-3 rounded-lg text-base border-2 font-semibold transition-colors duration-200
+                              ${paymentMethod === m
+                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-slate-900 dark:text-white'
+                                : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                            `}
                           >
                             {m}
                           </button>

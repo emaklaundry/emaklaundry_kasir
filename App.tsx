@@ -71,8 +71,10 @@ const PwaStatusHandler: React.FC = () => {
   return null;
 };
 
-// Versi aplikasi
-const APP_VERSION = 'v1.2.0'; // Ganti sesuai kebutuhan
+// Versi aplikasi otomatis dari package.json
+// Pastikan resolveJsonModule diaktifkan di tsconfig.json
+import pkg from './package.json';
+const APP_VERSION = `v${pkg.version}`;
 
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAppContext();
@@ -189,6 +191,8 @@ const AppRoutes: React.FC = () => {
                 </AdminRoute>
               }
             />
+            {/* Tambahkan catch-all route di bawah ini */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
         <CommandPalette />

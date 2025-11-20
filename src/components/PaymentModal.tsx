@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useToasts } from '../contexts/ToastContext';
 import Modal from './Modal';
-import { SpinnerIcon } from './icons';
+import { SpinnerIcon, DollarSignIcon } from './icons'; // Pastikan import icon sesuai
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 
 interface PaymentModalProps {
@@ -106,7 +106,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Pembayaran: ${transaction.id}`}
+      // PERBAIKAN: Gunakan invoice_code jika ada, jika tidak baru gunakan ID
+      title={`Pembayaran: ${transaction.invoice_code || transaction.id}`}
       footer={
         <>
           <button
@@ -118,7 +119,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={handleSave}
             disabled={disabled || amountToPay <= 0 || amountToPay > remainingBalance}
-            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 active:bg-blue-900 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            type="button"
           >
             Simpan Pembayaran
           </button>
@@ -149,10 +151,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             {Object.values(PaymentMethod).map((m) => (
               <button
                 key={m}
+                type="button"
                 onClick={() => setMethod(m)}
-                className={`p-3 rounded-lg text-base border-2 ${method === m ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
+                className={`flex items-center justify-center p-3 border rounded-lg gap-2 transition-all duration-200
+                  ${method === m
+                    ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
+                    : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'}
+                `}
               >
-                {m}
+                <span className="font-medium">{m}</span>
               </button>
             ))}
           </div>
