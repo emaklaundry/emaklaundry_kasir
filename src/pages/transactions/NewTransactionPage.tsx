@@ -1,3 +1,14 @@
+// Helper untuk generate UUID
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0,
+      v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -71,6 +82,8 @@ const NewTransactionPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
   const [amountPaidStr, setAmountPaidStr] = useState('');
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
+  // State untuk idempotencyKey
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
 
   // Semua useMemo, useEffect, useCallback juga di sini
   const canApplyDiscount = useMemo(() => {
@@ -400,6 +413,7 @@ const NewTransactionPage: React.FC = () => {
         paymentMethod: isPayingNow && actualAmountPaid > 0 ? paymentMethod : undefined,
         createdByUserId: currentUser.id,
         storeId: currentStoreId,
+        idempotencyKey: idempotencyKey,
       };
       const savedTransaction = await addTransaction(newTransaction);
       if (savedTransaction) {
@@ -418,7 +432,13 @@ const NewTransactionPage: React.FC = () => {
         );
       }
     } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan transaksi: ${error.message}`, 'error');
+      // Tangani error duplikat idempotencyKey
+      if (error.code === '23505' && error.message?.includes('idempotencyKey')) {
+        updateToast(toastId, 'Transaksi ini sudah tersimpan sebelumnya.', 'success');
+        handleNewTransaction();
+      } else {
+        updateToast(toastId, `Gagal menyimpan transaksi: ${error.message}`, 'error');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -436,7 +456,7 @@ const NewTransactionPage: React.FC = () => {
     setItems([]);
     setNotes('');
     setDiscountType('percent');
-    setDiscountValue(settings?.discountRate ?? 0); // <-- PERBAIKAN
+    setDiscountValue(settings?.discountRate ?? 0);
     setIsCustomerModalOpen(false);
     setIsSuccessModalOpen(false);
     setIsNotesModalOpen(false);
@@ -449,6 +469,7 @@ const NewTransactionPage: React.FC = () => {
     setPaymentMethod(undefined);
     setAmountPaidStr('');
     setTenderedAmountStr('');
+    setIdempotencyKey(generateUUID()); // Generate kunci baru untuk transaksi berikutnya
   };
 
   const handleViewTransactions = () => {
