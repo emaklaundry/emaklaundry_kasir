@@ -765,10 +765,11 @@ const NewTransactionPage: React.FC = () => {
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
+                            // UPDATED: Style disamakan persis dengan tombol "Bayar Sekarang"
                             className={`p-3 rounded-lg text-base border-2 font-semibold transition-colors duration-200
                               ${paymentMethod === m
                                 ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-slate-900 dark:text-white'
-                                : 'border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700'}
+                                : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}
                             `}
                           >
                             {m}
