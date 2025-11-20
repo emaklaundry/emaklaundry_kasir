@@ -765,13 +765,13 @@ const NewTransactionPage: React.FC = () => {
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
-                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 gap-2
+                            className={`p-3 rounded-lg text-base border-2 font-semibold transition-colors duration-200
                               ${paymentMethod === m
-                                ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-[1.02] hover:bg-blue-700'
-                                : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'}
+                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-slate-900 dark:text-white'
+                                : 'border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700'}
                             `}
                           >
-                            <span className="font-semibold">{m}</span>
+                            {m}
                           </button>
                         ))}
                       </div>
