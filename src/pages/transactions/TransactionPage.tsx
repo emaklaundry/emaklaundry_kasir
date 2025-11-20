@@ -123,6 +123,7 @@ const TransactionPage: React.FC = () => {
       const term = debouncedSearchTerm.toLowerCase();
       return (
         t.id.toLowerCase().includes(term) ||
+        (t.invoice_code && t.invoice_code.toLowerCase().includes(term)) || // <--- TAMBAHAN BARIS INI
         t.customerName.toLowerCase().includes(term) ||
         t.customerPhone.includes(term)
       );
