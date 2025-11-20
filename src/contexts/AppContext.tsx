@@ -21,6 +21,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { addToast } = useToasts(); // 2. INISIALISASI HOOK
 
   const prevLoggedInRef = useRef(false);
+
+  // Notifikasi Online/Offline
+  useEffect(() => {
+    const handleOnline = () => {
+      addToast('Koneksi internet terhubung kembali.', 'success');
+    };
+    const handleOffline = () => {
+      addToast('Koneksi internet terputus. Anda dalam mode offline.', 'error');
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [addToast]);
+
   useEffect(() => {
     const getProfile = async () => {
       const {
