@@ -190,9 +190,20 @@ const Dashboard: React.FC = () => {
   });
 
   const customers = useMemo(() => {
-    return Array.isArray(customersQuery.data)
-      ? customersQuery.data
-      : (customersQuery.data?.data ?? []);
+    const raw = customersQuery.data;
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.data)) return raw.data;
+    if (raw && typeof raw === 'object' && raw !== null) {
+      // Try to extract array from any property that is an array
+      const arr = Object.values(raw).find((v) => Array.isArray(v));
+      if (arr) return arr;
+    }
+    if (raw !== undefined && raw !== null) {
+      // Log unexpected structure for debugging
+      // eslint-disable-next-line no-console
+      console.warn('Unexpected customersQuery.data structure:', raw);
+    }
+    return [];
   }, [customersQuery.data]);
 
   const { expenses, addExpense } = useExpenses();

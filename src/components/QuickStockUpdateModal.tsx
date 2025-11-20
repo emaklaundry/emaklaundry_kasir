@@ -14,10 +14,13 @@ interface QuickStockUpdateModalProps {
 
 const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, onClose }) => {
   const { currentUser, selectedStoreId } = useAppContext();
-  const { data: inventory = [] } = useQuery({
+  const { data: inventoryRaw = [] } = useQuery({
     queryKey: ['inventory', { page: 1, pageSize: 1000, storeId: selectedStoreId }],
     queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId: selectedStoreId }),
   });
+  const inventory = Array.isArray(inventoryRaw)
+    ? inventoryRaw
+    : (inventoryRaw?.data ?? []);
   const { updateInventoryItem } = useInventoryMutations();
   const { addToast, updateToast } = useToasts();
   const [isSavingStock, setIsSavingStock] = useState(false);
