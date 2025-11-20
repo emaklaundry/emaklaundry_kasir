@@ -125,9 +125,10 @@ CREATE TABLE public.transactions (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
   notes text,
   "idempotencyKey" uuid UNIQUE
+);
+
 -- Index untuk idempotencyKey
 CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactions("idempotencyKey");
-);
 
 -- === FUNGSI DAN TRIGGER UNTUK INVOICE_CODE ===
 
