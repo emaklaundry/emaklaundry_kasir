@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQuery as useInventoryQuery } from '@tanstack/react-query';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { fetchInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
 import { fetchCustomers } from '../contexts/CustomerContext';
@@ -9,7 +9,7 @@ import { useExpenses } from '../contexts/ExpenseContext';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';

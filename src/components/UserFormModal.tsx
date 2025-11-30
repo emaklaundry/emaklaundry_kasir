@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { User, UserRole, Store } from '@/types';
 

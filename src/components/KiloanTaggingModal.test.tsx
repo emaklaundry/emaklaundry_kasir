@@ -22,9 +22,9 @@ describe('KiloanTaggingModal', () => {
     expect(screen.getByText('Simpan Tag')).toBeInTheDocument();
   });
 
-  it('shows initial tags from item', () => {
+  it('shows initial tags from item', async () => {
     render(<KiloanTaggingModal isOpen={true} onClose={vi.fn()} item={baseItem} onSave={vi.fn()} />);
-    expect(screen.getByDisplayValue('2 Kemeja, 1 Celana')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('2 Kemeja, 1 Celana')).toBeInTheDocument();
   });
 
   it('calls onClose when Batal is clicked', () => {

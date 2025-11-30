@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCustomers } from '../contexts/CustomerContext';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import ToastContainer from './ToastContainer';
 import Header from './Header';
 import Sidebar from './Sidebar';

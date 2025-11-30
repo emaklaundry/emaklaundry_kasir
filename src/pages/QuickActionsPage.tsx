@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import { UserRole, Expense } from '@/types';
 import {
   PlusIcon,

@@ -13,12 +13,12 @@ import {
   // SendIcon, // Import icon Send (unused)
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
-import { useAppContext } from '../../contexts/AppContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useAppContext from '../../contexts/useAppContext';
+import useToasts from '../../contexts/useToasts';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
-import { OrderStatus, PaymentStatus, Transaction, Customer } from '@/types';
+import { OrderStatus, PaymentStatus, PaymentMethod, Transaction, Customer } from '@/types';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({
   label,
@@ -50,7 +50,27 @@ const TransactionDetailPage: React.FC = () => {
       if (!id) throw new Error('Transaction ID is missing');
       const { data, error } = await supabase.from('transactions').select('*').eq('id', id).single();
       if (error) throw error;
-      return data as Transaction;
+      // Map Supabase result to app Transaction type
+      return {
+        ...data,
+        customerId: data.customerId ?? '',
+        createdByUserId: data.createdByUserId ?? '',
+        storeId: data.storeId ?? '',
+        notes: data.notes ?? undefined,
+        idempotencyKey: data.idempotencyKey ?? undefined,
+        items: Array.isArray(data.items)
+          ? (data.items as any[]).map((item) => ({
+              ...item,
+              itemDetails: item.itemDetails ?? [],
+            }))
+          : [],
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+        estimatedCompletionDate: data.estimatedCompletionDate ?? '',
+        invoice_code: data.invoice_code ?? undefined,
+        paymentStatus: data.paymentStatus as PaymentStatus,
+        orderStatus: data.orderStatus as OrderStatus,
+        paymentMethod: data.paymentMethod ? data.paymentMethod as PaymentMethod : undefined,
+      };
     },
     enabled: !!id,
   });

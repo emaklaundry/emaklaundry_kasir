@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import useTheme from '../hooks/useTheme';
 import useCommandPalette from '../hooks/useCommandPalette';
 import { SunIcon, MoonIcon, CommandIcon } from './icons';

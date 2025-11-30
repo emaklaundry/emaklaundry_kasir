@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { calculateNextDueDate } from '../utils/formatting';
 import Modal from './Modal';

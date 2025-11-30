@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { act } from 'react-dom/test-utils';
-import { AppProvider, useAppContext } from './AppContext';
+import { AppProvider } from './AppContext';
+import { ToastProvider } from './ToastContext';
+import useAppContext from './useAppContext';
 
 // Mock dependencies
 vi.mock('../utils/supabaseClient', () => ({
@@ -22,7 +24,7 @@ vi.mock('../utils/supabaseClient', () => ({
   },
 }));
 vi.mock('./StoreContext', () => ({ useStores: () => ({ stores: [] }) }));
-vi.mock('./ToastContext', () => ({ useToasts: () => ({ addToast: vi.fn() }) }));
+
 
 const TestComponent = () => {
   const ctx = useAppContext();
@@ -42,9 +44,11 @@ describe('AppContext', () => {
 
   it('provides default values and allows store selection', () => {
     render(
-      <AppProvider>
-        <TestComponent />
-      </AppProvider>,
+      <ToastProvider>
+        <AppProvider>
+          <TestComponent />
+        </AppProvider>
+      </ToastProvider>,
     );
     expect(screen.getByTestId('user').textContent).toBe('none');
     expect(screen.getByTestId('store').textContent).toBe('all');

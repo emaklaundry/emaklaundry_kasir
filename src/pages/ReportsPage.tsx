@@ -4,7 +4,7 @@ import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../compone
 import { useTransactions } from '../contexts/TransactionContext';
 import { fetchCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
 // import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';

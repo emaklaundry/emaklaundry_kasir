@@ -19,13 +19,13 @@ import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
-import { useAppContext } from '../../contexts/AppContext';
+import useAppContext from '../../contexts/useAppContext';
 import { formatRupiah, parseRupiah } from '../../utils/formatting';
 import CustomerSelector from '../../components/CustomerSelector';
 import ServiceSelector from '../../components/ServiceSelector';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 
 import WhatsAppModal from '../../components/WhatsAppModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
@@ -372,7 +372,17 @@ const NewTransactionPage: React.FC = () => {
     try {
       const newCustomer = await addCustomer({ ...customer, storeId: currentStoreId });
       if (newCustomer) {
-        setSelectedCustomer(newCustomer);
+        // Map Supabase customer (nullable fields) to app Customer type
+        setSelectedCustomer({
+          id: newCustomer.id,
+          name: newCustomer.name,
+          phone: newCustomer.phone ?? '',
+          address: newCustomer.address ?? '',
+          notes: newCustomer.notes ?? '',
+          storeId: newCustomer.storeId ?? '',
+          defaultDiscount: newCustomer.defaultDiscount ?? 0,
+          createdAt: newCustomer.createdAt ? new Date(newCustomer.createdAt) : new Date(),
+        });
         setIsCustomerModalOpen(false);
         updateToast(toastId, 'Pelanggan berhasil ditambahkan!', 'success');
       } else {
@@ -450,7 +460,27 @@ const NewTransactionPage: React.FC = () => {
       };
       const savedTransaction = await addTransaction(newTransaction);
       if (savedTransaction) {
-        const tx: Transaction = savedTransaction as Transaction;
+        // Map Supabase transaction (JSON fields, dates) to app Transaction type
+        const tx: Transaction = {
+          ...savedTransaction,
+          customerId: savedTransaction.customerId ?? '',
+          createdByUserId: savedTransaction.createdByUserId ?? '',
+          storeId: savedTransaction.storeId ?? '',
+          notes: savedTransaction.notes ?? undefined,
+          idempotencyKey: savedTransaction.idempotencyKey ?? undefined,
+          items: Array.isArray(savedTransaction.items)
+            ? (savedTransaction.items as any[]).map((item) => ({
+                ...item,
+                itemDetails: item.itemDetails ?? [],
+              }))
+            : [],
+          createdAt: savedTransaction.createdAt ? new Date(savedTransaction.createdAt) : new Date(),
+          estimatedCompletionDate: savedTransaction.estimatedCompletionDate ?? '',
+          invoice_code: savedTransaction.invoice_code ?? undefined,
+          paymentStatus: savedTransaction.paymentStatus as PaymentStatus,
+          orderStatus: savedTransaction.orderStatus as OrderStatus,
+          paymentMethod: savedTransaction.paymentMethod ? savedTransaction.paymentMethod as PaymentMethod : undefined,
+        };
         addAuditLog(
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
           currentStoreId,

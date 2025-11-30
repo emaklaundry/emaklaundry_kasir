@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { SendIcon } from './icons';
 import { Transaction, Customer, OrderStatus } from '@/types';

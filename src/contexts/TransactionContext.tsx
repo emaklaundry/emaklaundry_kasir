@@ -82,7 +82,38 @@ export function useTransactions(filter: TransactionFilter = {}) {
         paymentStatus,
         orderStatus,
       });
-      return updated || null;
+      // Map the result to Transaction type if present
+      let row = null;
+      if (Array.isArray(updated) && updated[0]) row = updated[0];
+      else if (updated && typeof updated === 'object') row = updated;
+      if (!row) return null;
+      // Explicitly map all required Transaction fields
+      return {
+        id: row.id ?? '',
+        invoice_code: row.invoice_code ?? undefined,
+        customerId: row.customerId ?? '',
+        items: Array.isArray(row.items)
+          ? (row.items as any[]).map((item) => ({
+              ...item,
+              itemDetails: item.itemDetails ?? [],
+            }))
+          : [],
+        subtotal: row.subtotal ?? 0,
+        discount: row.discount ?? 0,
+        tax: row.tax ?? 0,
+        total: row.total ?? 0,
+        paymentStatus: row.paymentStatus as any,
+        orderStatus: row.orderStatus as any,
+        createdAt: row.createdAt ? new Date(row.createdAt) : new Date(),
+        estimatedCompletionDate: row.estimatedCompletionDate ?? '',
+        amountPaid: row.amountPaid ?? 0,
+        change: row.change ?? 0,
+        paymentMethod: row.paymentMethod ? row.paymentMethod as any : undefined,
+        createdByUserId: row.createdByUserId ?? '',
+        storeId: row.storeId ?? '',
+        notes: row.notes ?? undefined,
+        idempotencyKey: row.idempotencyKey ?? undefined,
+      };
     },
     // Perbaikan: invalidate detail transaksi juga
     onSuccess: (_, variables) => {

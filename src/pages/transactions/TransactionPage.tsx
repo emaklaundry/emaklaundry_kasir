@@ -9,7 +9,7 @@ import { usePagination } from '../../hooks/usePagination';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 
 import {
   PlusCircleIcon,

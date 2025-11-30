@@ -27,30 +27,26 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
 
   const prevIsOpen = useRef(isOpen);
   useEffect(() => {
-    // Only run when modal transitions from closed to open, or expense changes
-    if (isOpen && !prevIsOpen.current) {
-      // Use a microtask to avoid setState-in-effect warning
-      Promise.resolve().then(() => {
-        if (expense) {
-          setFormData({
-            date: expense.date
-              ? String(expense.date).split('T')[0]
-              : new Date().toISOString().split('T')[0],
-            description: expense.description || '',
-            category: expense.category || 'Operasional',
-            amount: expense.amount || 0,
-          });
-        } else {
-          setFormData({
-            date: new Date().toISOString().split('T')[0],
-            description: '',
-            category: 'Operasional',
-            amount: 0,
-          });
-        }
-      });
+    // Jalankan setiap kali expense berubah dan modal terbuka
+    if (isOpen) {
+      if (expense) {
+        setFormData({
+          date: expense.date
+            ? String(expense.date).split('T')[0]
+            : new Date().toISOString().split('T')[0],
+          description: expense.description || '',
+          category: expense.category || 'Operasional',
+          amount: expense.amount || 0,
+        });
+      } else {
+        setFormData({
+          date: new Date().toISOString().split('T')[0],
+          description: '',
+          category: 'Operasional',
+          amount: 0,
+        });
+      }
     }
-    prevIsOpen.current = isOpen;
   }, [isOpen, expense]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

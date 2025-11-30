@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from './Dashboard';
 import { AppProviders } from '../contexts/AppProviders';
-import { AppContext } from '../contexts/AppContext';
+import AppContext from '../contexts/AppContextContext';
 import { User, UserRole } from '../types';
 import { vi } from 'vitest';
 

@@ -3,7 +3,7 @@ import NewTransactionPage from './NewTransactionPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
-import { AppContext } from '../../contexts/AppContext';
+import AppContext from '../../contexts/AppContextContext';
 import { UserRole } from '../../types';
 import { vi } from 'vitest';
 import { ToastProvider } from '../../contexts/ToastContext';

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
-import { ToastProvider, useToasts } from './ToastContext';
+import { ToastProvider } from './ToastContext';
+import useToasts from './useToasts';
 import { render } from '@testing-library/react';
 
 const TestComponent = () => {

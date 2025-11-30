@@ -1,10 +1,11 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useRef } from 'react';
+import React, { useState, ReactNode, useEffect, useRef } from 'react';
+import AppContext from './AppContextContext';
 import { User, Store } from '../types/index';
 import { supabase } from '../utils/supabaseClient';
 import { useStores } from './StoreContext';
-import { useToasts } from './ToastContext'; // 1. IMPOR useToasts
+import useToasts from './useToasts'; // 1. IMPOR useToasts
 
-interface AppContextType {
+export interface AppContextType {
   currentUser: User | null;
   signOut: () => Promise<void>;
   stores: Store[];
@@ -12,7 +13,6 @@ interface AppContextType {
   setSelectedStoreId: (storeId: string) => void;
 }
 
-export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { stores } = useStores();
@@ -62,21 +62,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             // Deteksi transisi dari logout ke login
             if (!prevLoggedInRef.current) {
               const newLog = {
-                timestamp: new Date(),
-                user: data.name,
+                timestamp: new Date().toISOString(),
+                user: data.name ?? null,
                 action: 'Melakukan login.',
-                storeId: data.store_id || null,
+                storeId: data.store_id ?? null,
               };
               supabase.from('audit_logs').insert([newLog]).then();
             }
             setCurrentUser({
               id: data.id,
               name: data.name,
-              role: data.role,
-              storeId: data.store_id,
+              role: data.role as any, // Consider mapping to UserRole if needed
+              storeId: data.store_id ?? undefined,
               createdAt: data.created_at ? new Date(data.created_at) : undefined,
-              isActive: data.isActive,
-              canGiveDiscount: data.canGiveDiscount,
+              isActive: data.isActive ?? false,
+              canGiveDiscount: data.canGiveDiscount ?? false,
             });
             prevLoggedInRef.current = true;
           }
@@ -106,10 +106,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Tambahkan log logout sebelum currentUser dihapus
     if (currentUser) {
       const newLog = {
-        timestamp: new Date(),
-        user: currentUser.name,
+        timestamp: new Date().toISOString(),
+        user: currentUser.name ?? null,
         action: 'Melakukan logout.',
-        storeId: currentUser.storeId || null,
+        storeId: currentUser.storeId ?? null,
       };
       supabase.from('audit_logs').insert([newLog]).then();
     }
@@ -126,10 +126,4 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
 };
 
-export const useAppContext = (): AppContextType => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
-};
+

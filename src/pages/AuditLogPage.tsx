@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import useStoreFilteredData from '../hooks/useStoreFilteredData';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { HistoryIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 import useSortableData from '../hooks/useSortableData';
 import usePagination from '../hooks/usePagination';

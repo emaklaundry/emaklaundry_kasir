@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ExpenseFormModal from './ExpenseFormModal';
 import React from 'react';
 import { vi } from 'vitest';
@@ -46,7 +46,7 @@ describe('ExpenseFormModal', () => {
     );
   });
 
-  it('shows initial values when editing an expense', () => {
+  it('shows initial values when editing an expense', async () => {
     const expense = {
       id: '1',
       storeId: '1',
@@ -56,9 +56,11 @@ describe('ExpenseFormModal', () => {
       amount: 20000,
     };
     render(<ExpenseFormModal {...baseProps} expense={expense} />);
-    expect(screen.getByDisplayValue('Beli deterjen')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Operasional')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('20.000')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('2025-11-29')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Beli deterjen')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Operasional')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('20.000')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('2025-11-29')).toBeInTheDocument();
+    });
   });
 });

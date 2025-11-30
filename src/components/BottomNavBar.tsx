@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { UserRole } from '../types';
 import { HomeIcon, UsersIcon, ShoppingCartIcon, BarChartIcon, BoltIcon } from './icons';
 

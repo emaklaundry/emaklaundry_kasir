@@ -31,7 +31,6 @@ export function useUsers() {
   const queryClient = useQueryClient();
   const { data: users = [], ...query } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const updateUser = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<User> }) => {
       const payload: Record<string, unknown> = {};
