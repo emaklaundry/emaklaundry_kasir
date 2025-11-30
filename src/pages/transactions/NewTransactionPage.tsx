@@ -1,8 +1,12 @@
-import { generateUUID } from '../../utils';
+// --- TAMBAHAN: Interface lokal untuk menangani P & L ---
+interface ExtendedTransactionItem extends TransactionItem {
+  length?: number;
+  width?: number;
+}
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-
-import { useQuery } from '@tanstack/react-query';
+import { generateUUID } from '../../utils';
 import {
   Trash2Icon,
   MessageSquareIcon,
@@ -43,6 +47,7 @@ const NewTransactionPage: React.FC = () => {
   const navigate = useNavigate();
   const { settings, isLoading: isLoadingSettings } = useSettings();
   const { transactions, addTransaction } = useTransactions();
+  const queryClient = useQueryClient();
   const { data: customersData } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
@@ -56,7 +61,8 @@ const NewTransactionPage: React.FC = () => {
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [items, setItems] = useState<TransactionItem[]>([]);
+  // Ganti tipe state items menjadi ExtendedTransactionItem[]
+  const [items, setItems] = useState<ExtendedTransactionItem[]>([]);
   const [notes, setNotes] = useState('');
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState<number | ''>(0);
@@ -76,6 +82,11 @@ const NewTransactionPage: React.FC = () => {
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
 
   // Semua useMemo, useEffect, useCallback juga di sini
+  const canEditDiscount = useMemo(() => {
+    if (!currentUser) return false;
+    if (currentUser.role === UserRole.SuperAdmin) return true;
+    return currentUser.canGiveDiscount === true;
+  }, [currentUser]);
   const canApplyDiscount = useMemo(() => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.SuperAdmin) return true;
@@ -124,9 +135,11 @@ const NewTransactionPage: React.FC = () => {
 
   // Place handleAddService after all hooks, before conditional rendering
   const [showKiloanToast, setShowKiloanToast] = useState(false);
+  // --- MODIFIKASI: handleAddService ---
   const handleAddService = useCallback(
     (service: Service) => {
       const isKiloan = service.category === ServiceCategory.Kiloan;
+      const isMeter = service.unit.toLowerCase() === 'm2' || service.unit.toLowerCase() === 'meter';
       let shouldShowToast = false;
       setItems((currentItems) => {
         const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
@@ -141,20 +154,22 @@ const NewTransactionPage: React.FC = () => {
           currentItem.subtotal = currentItem.price * currentItem.quantity;
           return updatedItems;
         } else {
-          const newItem: TransactionItem = {
+          const newItem: ExtendedTransactionItem = {
             serviceId: service.id,
             serviceName: service.name,
             price: service.price,
             unit: service.unit,
             quantity: 1,
             subtotal: service.price * 1,
+            length: isMeter ? 1 : undefined,
+            width: isMeter ? 1 : undefined,
           };
           return [...currentItems, newItem];
         }
       });
       if (isKiloan) setShowKiloanToast(shouldShowToast);
     },
-    [addToast],
+    [],
   );
 
   useEffect(() => {
@@ -214,7 +229,7 @@ const NewTransactionPage: React.FC = () => {
   }, [isPayingNow, actualAmountPaid, grandTotal]);
 
   const currentStoreId = useMemo(() => {
-    return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
+    return currentUser && currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId;
   }, [currentUser, selectedStoreId]);
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
@@ -234,7 +249,7 @@ const NewTransactionPage: React.FC = () => {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
     }
-  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, settings?.discountRate]);
+  }, [canApplyDiscount, selectedCustomer, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   // Show error toast if settings failed to load
@@ -270,34 +285,39 @@ const NewTransactionPage: React.FC = () => {
     );
   }
 
+  // --- MODIFIKASI: handleItemChange ---
   const handleItemChange = (
     index: number,
-    field: 'quantity' | 'taggedItems' | 'itemDetails',
+    field: 'quantity' | 'taggedItems' | 'itemDetails' | 'length' | 'width',
     value: number | string | Array<{ note: string }>,
   ) => {
     const newItems = [...items];
     const item = newItems[index];
     const service = services.find((s) => s.id === item.serviceId);
 
-    if (field === 'quantity' && typeof value === 'number') {
+    if ((field === 'length' || field === 'width') && typeof value === 'number') {
+      const val = value >= 0 ? value : 0;
+      if (field === 'length') item.length = val;
+      if (field === 'width') item.width = val;
+      const l = item.length || 0;
+      const w = item.width || 0;
+      const area = parseFloat((l * w).toFixed(2));
+      item.quantity = area;
+      item.subtotal = item.price * item.quantity;
+    } else if (field === 'quantity' && typeof value === 'number') {
       const newQuantity = value >= 0 ? value : 0;
       item.quantity = newQuantity;
-      // Pastikan item.price adalah number
       const price = typeof item.price === 'number' ? item.price : Number(item.price) || 0;
       item.subtotal = price * item.quantity;
-
       if (service && service.category === ServiceCategory.Satuan) {
-        // Only extend itemDetails, never truncate
         const currentNotes = item.itemDetails || [];
         if (currentNotes.length < newQuantity) {
-          // Add new empty notes if increasing quantity
           const newNotes = [
             ...currentNotes,
             ...Array.from({ length: newQuantity - currentNotes.length }, () => ({ note: '' })),
           ];
           item.itemDetails = newNotes;
         } else {
-          // Do not truncate, keep all notes
           item.itemDetails = currentNotes;
         }
       }
@@ -415,7 +435,7 @@ const NewTransactionPage: React.FC = () => {
         amountPaid: actualAmountPaid,
         change: changeAmount,
         paymentMethod: isPayingNow && actualAmountPaid > 0 ? paymentMethod : undefined,
-        createdByUserId: currentUser.id,
+        createdByUserId: currentUser?.id ?? '',
         storeId: currentStoreId,
         idempotencyKey: idempotencyKey,
       };
@@ -425,6 +445,7 @@ const NewTransactionPage: React.FC = () => {
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
           currentStoreId,
         );
+        await queryClient.invalidateQueries({ queryKey: ['transaction', savedTransaction.id] });
         setNewlyCreatedTransaction(savedTransaction);
         setIsWhatsAppModalOpen(true);
         updateToast(toastId, 'Transaksi berhasil disimpan.', 'success');
@@ -438,8 +459,8 @@ const NewTransactionPage: React.FC = () => {
     } catch (error: any) {
       // Tangani error duplikat idempotencyKey
       if (error.code === '23505' && error.message?.includes('idempotencyKey')) {
-        updateToast(toastId, 'Transaksi ini sudah tersimpan sebelumnya.', 'success');
-        handleNewTransaction();
+        updateToast(toastId, 'Transaksi berhasil disimpan (terdeteksi duplikat).', 'success');
+        setIsSuccessModalOpen(true);
       } else {
         updateToast(toastId, `Gagal menyimpan transaksi: ${error.message}`, 'error');
       }
@@ -503,13 +524,9 @@ const NewTransactionPage: React.FC = () => {
       setAmountPaidStr('');
       return;
     }
-    // Hanya izinkan input yang sama persis dengan grandTotal
-    if (rawValue !== grandTotal) {
+    if (rawValue > grandTotal) {
       setAmountPaidStr('');
-      addToast(
-        'Jumlah bayar harus sama dengan total tagihan. Tidak boleh kurang atau lebih.',
-        'error',
-      );
+      addToast('Jumlah pembayaran tidak boleh melebihi total tagihan.', 'error');
       return;
     }
     setAmountPaidStr(formatRupiah(rawValue));
@@ -555,26 +572,60 @@ const NewTransactionPage: React.FC = () => {
                             <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                               {item.serviceName}
                             </td>
-                            <td className="px-4 py-2">
-                              <div className="flex items-center">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step={item.unit === 'kg' ? '0.01' : '1'}
-                                  value={item.quantity}
-                                  onChange={(e) =>
-                                    handleItemChange(
-                                      index,
-                                      'quantity',
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                />
-                                <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
-                                  {item.unit}
-                                </span>
-                              </div>
+                            <td className="px-4 py-2 w-48">
+                              {item.unit.toLowerCase() === 'm2' || item.unit.toLowerCase() === 'meter' ? (
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500 w-4">P:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      placeholder="P"
+                                      value={item.length}
+                                      onChange={(e) => handleItemChange(index, 'length', parseFloat(e.target.value) || 0)}
+                                      className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    />
+                                    <span className="text-sm text-slate-500">m</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500 w-4">L:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      placeholder="L"
+                                      value={item.width}
+                                      onChange={(e) => handleItemChange(index, 'width', parseFloat(e.target.value) || 0)}
+                                      className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    />
+                                    <span className="text-sm text-slate-500">m</span>
+                                  </div>
+                                  <div className="text-sm font-bold text-blue-600 mt-1">
+                                    = {item.quantity} {item.unit}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step={item.unit === 'kg' ? '0.01' : '1'}
+                                    value={item.quantity}
+                                    onChange={(e) =>
+                                      handleItemChange(
+                                        index,
+                                        'quantity',
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                    }
+                                    className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                  />
+                                  <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
+                                    {item.unit}
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-center">
                               <div className="flex items-center justify-center">
@@ -720,7 +771,7 @@ const NewTransactionPage: React.FC = () => {
                           )
                         }
                         className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600"
-                        disabled={!canApplyDiscount}
+                        disabled={!!(!canEditDiscount)}
                       />
                     </div>
                   </div>
@@ -848,13 +899,13 @@ const NewTransactionPage: React.FC = () => {
                   type="submit"
                   disabled={
                     isSaving ||
-                    (currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all')
+                    (currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all')
                   }
                   className="w-full flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
                 >
                   {isSaving ? <SpinnerIcon className="w-7 h-7" /> : 'Simpan Transaksi'}
                 </button>
-                {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                   <p className="text-center text-sm text-yellow-600 dark:text-yellow-400">
                     Pilih cabang spesifik di header untuk membuat transaksi.
                   </p>

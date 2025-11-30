@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { supabase, updateTransactionProgress } from '../../utils/supabaseClient';
 import { fetchCustomers } from '../../contexts/CustomerContext';
@@ -40,21 +40,19 @@ const TransactionDetailPage: React.FC = () => {
   const { updateTransaction } = useTransactions({ enabled: false });
   
   // Query untuk mengambil SATU transaksi berdasarkan ID
-  const { 
-    data: transaction, 
+  const {
+    data: transaction,
     isLoading: isTransactionLoading,
-    error: transactionError, 
+    error: transactionError,
   } = useQuery<Transaction, Error>({
     queryKey: ['transaction', id],
     queryFn: async () => {
       if (!id) throw new Error('Transaction ID is missing');
-      // Menggunakan supabase untuk mengambil satu item
       const { data, error } = await supabase.from('transactions').select('*').eq('id', id).single();
       if (error) throw error;
       return data as Transaction;
     },
     enabled: !!id,
-    keepPreviousData: true, // <--- TAMBAHKAN BARIS INI
   });
 
   const customersQuery = useQuery({ // Mengambil seluruh object query result
@@ -311,6 +309,7 @@ export default TransactionDetailPage;
 const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) => {
   const { currentUser } = useAppContext();
   const { addToast, updateToast } = useToasts();
+  const queryClient = useQueryClient();
   // const { updateTransaction } = useTransactions();
   const [loading, setLoading] = React.useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false);
@@ -333,8 +332,8 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
         amountPaid: updatedTransaction.amountPaid,
         change: updatedTransaction.change,
         paymentMethod: updatedTransaction.paymentMethod ?? null,
-        // paymentStatus tidak dikirim, biarkan DB yang hitung
       });
+      await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
       updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
     } catch (err: any) {
       updateToast(toastId, err?.message ?? 'Gagal memperbarui status pembayaran', 'error');
