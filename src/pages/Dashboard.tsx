@@ -220,7 +220,7 @@ const Dashboard: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [transactionForPayment, setTransactionForPayment] = useState<Transaction | null>(null);
 
-  const isCashier = currentUser.role === UserRole.Cashier;
+  const isCashier = currentUser?.role === UserRole.Cashier;
 
   const weeklyRevenueData = useMemo(() => {
     const data = Array.from({ length: 7 }, (_, i) => {
@@ -333,6 +333,10 @@ const Dashboard: React.FC = () => {
 
   const handleSaveExpense = useCallback(
     async (expense: Omit<Expense, 'id' | 'storeId'>) => {
+      if (!currentUser) {
+        addToast('User tidak ditemukan. Silakan login ulang.', 'error');
+        return;
+      }
       const storeId =
         currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
       if (!storeId || storeId === 'all') {
@@ -344,7 +348,7 @@ const Dashboard: React.FC = () => {
       addAuditLog(`Mencatat pengeluaran cepat: "${newExpense.description}".`, storeId);
       setIsExpenseModalOpen(false);
     },
-    [currentUser.role, currentUser.storeId, selectedStoreId, addExpense, addAuditLog, addToast],
+    [currentUser, selectedStoreId, addExpense, addAuditLog, addToast],
   );
 
   const handleOpenPaymentModal = useCallback((transaction: Transaction) => {
@@ -443,14 +447,17 @@ const Dashboard: React.FC = () => {
   }, [transactionForWhatsApp, customerMap]);
 
   const getStoreName = () => {
-    if (currentUser.role === UserRole.SuperAdmin) {
+    if (currentUser?.role === UserRole.SuperAdmin) {
       if (selectedStoreId === 'all') return 'Semua Cabang';
       return stores.find((s) => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal';
     }
-    return stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
+    if (currentUser?.storeId) {
+      return stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
+    }
+    return 'Cabang Tidak Dikenal';
   };
 
-  const isActionDisabled = currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all';
+  const isActionDisabled = currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all';
 
   return (
     <>

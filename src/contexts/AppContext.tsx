@@ -12,7 +12,7 @@ interface AppContextType {
   setSelectedStoreId: (storeId: string) => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { stores } = useStores();

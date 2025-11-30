@@ -23,7 +23,12 @@
     "noEmit": true,
     "strict": true
   },
-  "include": ["src", "vite-env.d.ts"],
+  "include": [
+    "src",
+    "vite-env.d.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ],
   "exclude": [
     "dist",
     "data/mockData.ts",
