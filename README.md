@@ -1,6 +1,111 @@
 ---
 
+
+# Laundry Management System (Web Kasir)
+
+**Versi:** 1.1.6  
+**Update terakhir:** 1 Desember 2025
+
+---
+
+Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, dan backup database otomatis/manual. 
+
+---
+
+## ✨ Fitur Utama
+- Manajemen transaksi laundry (kiloan, satuan, sepatu, karpet) & invoice pendek
+- Manajemen pelanggan, layanan, inventaris, aset, pengeluaran
+- Multi-role: Super Admin, Admin, Kasir
+- Audit log, laporan, analitik
+- PWA: offline mode, installable
+- Notifikasi, dark/light mode
+- Backup database otomatis/manual (Supabase)
+- Pengujian otomatis per-file (Vitest, Testing Library)
+
+---
+
+## 🛠️ Teknologi
+- **Frontend:** React 19, TypeScript, Vite
+- **State:** React Context, React Query
+- **Styling:** Tailwind CSS
+- **Backend:** Supabase (PostgreSQL, Auth, Storage)
+- **Testing:** Vitest, Testing Library
+
+---
+
+## 🚀 Instalasi
+1. **Clone repo & install dependencies**
+   ```bash
+   git clone https://github.com/mhmdnvn18/emaklaundry_kasir.git
+   cd emaklaundry_kasir
+   npm install
+   ```
+2. **Buat file `.env.local`**
+   ```env
+   VITE_SUPABASE_URL=your-supabase-url
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+3. **Jalankan aplikasi**
+   ```bash
+   npm run dev
+   ```
+   Akses di http://localhost:3000
+
+---
+
+## 🧪 Pengujian Otomatis
+- Jalankan seluruh test:
+  ```bash
+  npm test
+  ```
+- Coverage >85%, seluruh test per-file modular, tidak ada error context/mocking
+
+---
+
+## 🔄 Backup Database Supabase
+- **Manual:**
+  ```powershell
+  supabase db dump --db-url "postgresql://[user]:[password]@[host]:5432/postgres" -f database/backup/full_backup.sql
+  ```
+- **Otomatis (GitHub Actions):**
+  1. Pastikan `.github/workflows/backup.yml` ada
+  2. Tambahkan secret `SUPABASE_DB_URL` di GitHub
+  3. Backup harian otomatis, hasil di tab Actions > Artifacts
+
+---
+
+## 📁 Struktur Direktori
+- `src/` : Source code utama
+- `public/` : Aset publik
+- `database/` : Skrip SQL & backup
+- `coverage/` : Hasil pengujian
+
+---
+
+
+## 📝 Changelog (Ringkasan)
+- **v1.1.6 (1 Des 2025):**
+  - Peningkatan stabilitas, lint & test 100% lolos, coverage >85%
+  - README dan dokumentasi diperbarui, siap CI/CD
+- **v1.1.5:**
+  - Modular context, robust test, backup otomatis
+- **v1.1.3:**
+  - Backup otomatis Supabase via GitHub Actions
+- **v1.1.0:**
+  - Kode invoice pendek, UI/UX kasir lebih ramah
+
+---
+
+## 📞 Kontak & Kontribusi
+- Email: mhmdnvn18@gmail.com
+- Issue & PR: https://github.com/mhmdnvn18/emaklaundry_kasir
+
+---
+
 # Panduan Manual Backup Database Supabase
+
+<details>
+<summary>Klik untuk panduan backup manual & detail lanjutan</summary>
 
 Dokumen ini menjelaskan cara melakukan backup database Supabase secara manual menggunakan Supabase CLI di lingkungan Windows (PowerShell). Metode ini menggunakan **Session Pooler** untuk koneksi yang lebih stabil dan mengatasi masalah DNS pada Docker.
 

@@ -51,20 +51,6 @@ CREATE TABLE public.services (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- User credentials table for local auth (if needed)
-CREATE TABLE IF NOT EXISTS public.user_credentials (
-  profile_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
-  username text UNIQUE NOT NULL,
-  password_hash text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
--- RLS Policy dasar untuk user_credentials
-CREATE POLICY "Allow owner to SELECT/UPDATE/DELETE their credentials" ON public.user_credentials
-  FOR ALL USING (profile_id = auth.uid());
-CREATE POLICY "Allow INSERT for authenticated users" ON public.user_credentials
-  FOR INSERT WITH CHECK (profile_id = auth.uid());
 
 CREATE TABLE public.inventory_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -264,8 +250,15 @@ CREATE POLICY "Admins can see profiles in their store" ON public.profiles
   FOR SELECT USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
 CREATE POLICY "Super Admins can see all profiles" ON public.profiles
   FOR SELECT USING (public.get_my_role() = 'Super Admin');
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" ON public.profiles
-  FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+  FOR UPDATE
+  USING (id = auth.uid())
+  WITH CHECK (
+    id = auth.uid()
+    AND role = (SELECT role FROM public.profiles WHERE id = auth.uid())
+    AND store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
+  );
 CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
   FOR ALL USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id())
   WITH CHECK (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
@@ -432,41 +425,6 @@ VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234
 
 
 
--- === RPC: get_laundry_status ===
--- Return a safe projection of a transaction for public/customer-facing views
--- HAPUS BAGIAN INI (DUPLIKAT, VERSI LAMA)
--- CREATE OR REPLACE FUNCTION public.get_laundry_status(
---   transaction_id_input uuid
--- )
--- RETURNS TABLE (
---   id text,
---   "customerName" text,
---   "createdAt" timestamp with time zone,
---   "estimatedCompletionDate" date,
---   "orderStatus" text,
---   "paymentStatus" text,
---   total numeric,
---   "amountPaid" numeric
--- )
--- LANGUAGE sql
--- SECURITY DEFINER
--- AS $$
---   SELECT
---     t.id::text,
---     c.name AS "customerName",
---     t."createdAt",
---     t."estimatedCompletionDate",
---     t."orderStatus",
---     t."paymentStatus",
---     t.total,
---     t."amountPaid"
---   FROM
---     public.transactions AS t
---   JOIN
---     public.customers AS c ON t."customerId" = c.id
---   WHERE
---     t.id = transaction_id_input;
--- $$;
 
 -- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
 -- so it can read rows even when restrictive RLS policies exist. Keep the function

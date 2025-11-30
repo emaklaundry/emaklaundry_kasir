@@ -21,7 +21,10 @@ const fetchTransactions = async (
   const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
   let query = supabase.from('transactions').select('*', { count: 'exact' });
   if (dateRange) {
-    query = query.gte('createdAt', dateRange.from).lte('createdAt', dateRange.to);
+    // Pastikan akhir hari tercover
+    const toDate = new Date(dateRange.to);
+    toDate.setHours(23, 59, 59, 999);
+    query = query.gte('createdAt', dateRange.from).lte('createdAt', toDate.toISOString());
   }
   if (storeId && storeId !== 'all') {
     query = query.eq('storeId', storeId);
