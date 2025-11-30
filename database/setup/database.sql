@@ -58,9 +58,6 @@ CREATE TABLE IF NOT EXISTS public.user_credentials (
   password_hash text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
-
-ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
--- RLS Policy dasar untuk user_credentials
 CREATE POLICY "Allow owner to SELECT/UPDATE/DELETE their credentials" ON public.user_credentials
   FOR ALL USING (profile_id = auth.uid());
 CREATE POLICY "Allow INSERT for authenticated users" ON public.user_credentials
@@ -91,7 +88,6 @@ CREATE TABLE public.scheduled_maintenances (
   "assetId" uuid REFERENCES assets(id) ON DELETE CASCADE,
   description text NOT NULL,
   "frequencyValue" integer NOT NULL,
-  "frequencyUnit" text NOT NULL,
   "nextDueDate" date NOT NULL,
   "lastCompletedDate" date
 );
@@ -257,7 +253,6 @@ CREATE POLICY "Admins can see profiles in their store" ON public.profiles
 CREATE POLICY "Super Admins can see all profiles" ON public.profiles
   FOR SELECT USING (public.get_my_role() = 'Super Admin');
 CREATE POLICY "Users can update their own profile" ON public.profiles
-  FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
   FOR ALL USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id())
   WITH CHECK (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
@@ -270,7 +265,6 @@ CREATE POLICY "Allow SELECT for store users" ON public.stores
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR id = public.get_my_store_id());
 CREATE POLICY "Allow INSERT/UPDATE/DELETE for Super Admins only" ON public.stores
   FOR ALL USING (public.get_my_role() = 'Super Admin')
-  WITH CHECK (public.get_my_role() = 'Super Admin');
 
 -- --- Tabel: customers ---
 CREATE POLICY "Allow SELECT for store users" ON public.customers
@@ -294,7 +288,6 @@ CREATE POLICY "Allow DELETE for Admins" ON public.services
 
 -- --- Tabel: inventory_items ---
 CREATE POLICY "Allow SELECT for store users" ON public.inventory_items
-  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.inventory_items
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow UPDATE for Admins" ON public.inventory_items
@@ -311,7 +304,6 @@ CREATE POLICY "Allow UPDATE for Admins" ON public.assets
   FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.assets
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
-
 -- --- Tabel: scheduled_maintenances ---
 CREATE POLICY "Allow SELECT for store users" ON public.scheduled_maintenances
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "assetId" IN (SELECT id FROM public.assets WHERE "storeId" = public.get_my_store_id()));
@@ -334,7 +326,6 @@ CREATE POLICY "Allow DELETE for Admins" ON public.expenses
 
 -- --- Tabel: transactions ---
 CREATE POLICY "Allow SELECT for store users" ON public.transactions
-  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.transactions
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 -- Allow Admins and Kasirs to update only progress-related fields (payment/order progress)
@@ -342,7 +333,6 @@ CREATE POLICY "Allow INSERT for store users" ON public.transactions
 -- Implementation: USING applies to the existing row (so it ensures the actor is in the same store),
 -- and WITH CHECK compares new values against the current row (via subselects) to ensure immutable
 -- columns are unchanged. Super Admin bypasses these restrictions.
-DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
 CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
   FOR UPDATE
   USING (
@@ -385,77 +375,29 @@ CREATE POLICY "Allow ALL for Admins" ON public.settings
   WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
 
 
--- === 5. DATA CONTOH (SAMPLE DATA) ===
-
--- user dengan id ini ada di auth.users
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL);
 
--- cabang: Kota Banjar
--- UUID: 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
 INSERT INTO public.stores (id, name, address, "isActive")
 VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banjar', true);
 
--- admin: admin_banjar (cabang Kota Banjar)
--- nama: emaklaundry, 
--- role: Admin
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('0bbe08f0-2cbc-40d9-b2ec-5a2d3ba99c0e', 'emaklaundry', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
--- kasir: yopi (cabang Kota Banjar)
--- nama: yopi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
--- kasir: ani (cabang Kota Banjar)
--- nama: ani, password: 12345678 (diasumsikan dibuat di Supabase Auth)
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
--- kasir: didi (cabang Kota Banjar)
--- nama: didi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
--- kasir: lilis (cabang Kota Banjar)
--- nama: lilis, password: 12345678 (diasumsikan dibuat di Supabase Auth)
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
 
 
--- === RPC: get_laundry_status ===
--- Return a safe projection of a transaction for public/customer-facing views
--- HAPUS BAGIAN INI (DUPLIKAT, VERSI LAMA)
--- CREATE OR REPLACE FUNCTION public.get_laundry_status(
---   transaction_id_input uuid
--- )
--- RETURNS TABLE (
---   id text,
---   "customerName" text,
---   "createdAt" timestamp with time zone,
---   "estimatedCompletionDate" date,
---   "orderStatus" text,
---   "paymentStatus" text,
---   total numeric,
---   "amountPaid" numeric
--- )
--- LANGUAGE sql
--- SECURITY DEFINER
--- AS $$
---   SELECT
---     t.id::text,
---     c.name AS "customerName",
---     t."createdAt",
---     t."estimatedCompletionDate",
---     t."orderStatus",
---     t."paymentStatus",
---     t.total,
---     t."amountPaid"
---   FROM
---     public.transactions AS t
---   JOIN
---     public.customers AS c ON t."customerId" = c.id
 
 -- Hapus policy lama, ganti hanya Super Admin yang boleh UPDATE langsung
 DROP POLICY IF EXISTS "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions;
