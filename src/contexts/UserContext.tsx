@@ -1,17 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../utils/supabaseClient';
-import { User } from '@/types';
 
-// Sementara, sebaiknya generate dari Supabase type generator
-interface ProfileRow {
-  id: string;
-  name: string;
-  role: string;
-  store_id: string | null;
-  isActive: boolean;
-  canGiveDiscount: boolean;
-  created_at: string;
-}
+import { User } from '@/types';
+import type { Database } from '../types/supabase';
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 const fetchUsers = async (): Promise<User[]> => {
   const { data, error } = await supabase.from('profiles').select('*');
@@ -51,19 +43,14 @@ export function useUsers() {
 
   // Admin create user: gunakan Supabase Auth Admin API
   // Anda butuh service_role key, sebaiknya lakukan di backend/Edge Function
-    const createUser = useMutation({
-    mutationFn: async () => {
-      // WARNING: Jangan expose service_role di frontend!
-      // Ini hanya contoh, implementasi produksi harus di backend/Edge Function
-      // const adminClient = createClient(supabaseUrl, serviceRoleKey);
-      // const { data, error } = await adminClient.auth.admin.createUser({
-      //   email: user.email,
-      //   password: user.password,
-      //   user_metadata: { name: user.name, role: user.role || 'Kasir', store_id: user.storeId || null },
-      // });
-      // if (error) throw error;
-      // return data.user;
-      throw new Error('Gunakan Edge Function atau backend untuk membuat user baru secara aman.');
+  const createUser = useMutation({
+    mutationFn: async (newUser: any) => {
+      // Memanggil Edge Function Supabase (create-user)
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: newUser,
+      });
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });

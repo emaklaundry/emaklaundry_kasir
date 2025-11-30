@@ -203,16 +203,7 @@ ALTER TABLE public.scheduled_maintenances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
--- Tambahan: Policy SELECT untuk anon di transactions
-CREATE POLICY "Enable read access for anon users to track laundry"
-ON public.transactions
-FOR SELECT
-TO anon
-USING (
-  true
-);
 
 
 -- === 3. HELPER FUNCTIONS UNTUK RLS ===
