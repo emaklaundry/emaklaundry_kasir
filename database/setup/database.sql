@@ -256,7 +256,9 @@ CREATE POLICY "Users can update their own profile" ON public.profiles
   USING (id = auth.uid())
   WITH CHECK (
     id = auth.uid()
+    -- Mencegah user mengubah role mereka sendiri
     AND role = (SELECT role FROM public.profiles WHERE id = auth.uid())
+    -- Mencegah user mengubah cabang mereka sendiri
     AND store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
   );
 CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
@@ -533,8 +535,6 @@ INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES
 -- Menghapus fungsi lama karena kita akan mengubah tipe parameternya dari UUID ke TEXT
 DROP FUNCTION IF EXISTS public.get_laundry_status(uuid);
 
--- Membuat fungsi baru yang menerima TEXT (bisa untuk Invoice Code ATAU Transaction ID)
-CREATE OR REPLACE FUNCTION public.get_laundry_status(
   input_identifier text
 )
 RETURNS TABLE (
