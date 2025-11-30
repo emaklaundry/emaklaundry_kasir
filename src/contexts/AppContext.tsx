@@ -72,7 +72,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setCurrentUser({
               id: data.id,
               name: data.name,
-              role: data.role as any, // Consider mapping to UserRole if needed
+              role: data.role as import('../types').UserRole,
               storeId: data.store_id ?? undefined,
               createdAt: data.created_at ? new Date(data.created_at) : undefined,
               isActive: data.isActive ?? false,

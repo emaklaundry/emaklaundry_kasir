@@ -469,7 +469,7 @@ const NewTransactionPage: React.FC = () => {
           notes: savedTransaction.notes ?? undefined,
           idempotencyKey: savedTransaction.idempotencyKey ?? undefined,
           items: Array.isArray(savedTransaction.items)
-            ? (savedTransaction.items as any[]).map((item) => ({
+            ? (savedTransaction.items as unknown as import('../../types').TransactionItem[]).map((item) => ({
                 ...item,
                 itemDetails: item.itemDetails ?? [],
               }))

@@ -18,7 +18,7 @@ import useToasts from '../../contexts/useToasts';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
-import { OrderStatus, PaymentStatus, PaymentMethod, Transaction, Customer } from '@/types';
+import { OrderStatus, PaymentStatus, Transaction, Customer, TransactionItem } from '@/types';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({
   label,
@@ -59,7 +59,7 @@ const TransactionDetailPage: React.FC = () => {
         notes: data.notes ?? undefined,
         idempotencyKey: data.idempotencyKey ?? undefined,
         items: Array.isArray(data.items)
-          ? (data.items as any[]).map((item) => ({
+          ? (data.items as unknown as TransactionItem[]).map((item) => ({
               ...item,
               itemDetails: item.itemDetails ?? [],
             }))
@@ -67,9 +67,9 @@ const TransactionDetailPage: React.FC = () => {
         createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
         estimatedCompletionDate: data.estimatedCompletionDate ?? '',
         invoice_code: data.invoice_code ?? undefined,
-        paymentStatus: data.paymentStatus as PaymentStatus,
-        orderStatus: data.orderStatus as OrderStatus,
-        paymentMethod: data.paymentMethod ? data.paymentMethod as PaymentMethod : undefined,
+         paymentStatus: data.paymentStatus as import('../../types').PaymentStatus,
+         orderStatus: data.orderStatus as import('../../types').OrderStatus,
+         paymentMethod: data.paymentMethod ? data.paymentMethod as import('../../types').PaymentMethod : undefined,
       };
     },
     enabled: !!id,

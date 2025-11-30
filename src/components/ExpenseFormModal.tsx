@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Expense } from '../../types';
 import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
 import Modal from './Modal';
@@ -17,37 +17,32 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [formData, setFormData] = useState({
-    // store date as YYYY-MM-DD string to avoid timezone issues
-    date: new Date().toISOString().split('T')[0],
-    description: '',
-    category: 'Operasional',
-    amount: 0,
-  });
-
-  const prevIsOpen = useRef(isOpen);
-  useEffect(() => {
-    // Jalankan setiap kali expense berubah dan modal terbuka
-    if (isOpen) {
-      if (expense) {
-        setFormData({
-          date: expense.date
-            ? String(expense.date).split('T')[0]
-            : new Date().toISOString().split('T')[0],
-          description: expense.description || '',
-          category: expense.category || 'Operasional',
-          amount: expense.amount || 0,
-        });
-      } else {
-        setFormData({
-          date: new Date().toISOString().split('T')[0],
-          description: '',
-          category: 'Operasional',
-          amount: 0,
-        });
-      }
+  const initialFormData = useMemo(() => {
+    if (expense) {
+      return {
+        date: expense.date
+          ? String(expense.date).split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        description: expense.description || '',
+        category: expense.category || 'Operasional',
+        amount: expense.amount || 0,
+      };
+    } else {
+      return {
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        category: 'Operasional',
+        amount: 0,
+      };
     }
-  }, [isOpen, expense]);
+  }, [expense]);
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  // Reset formData when modal is opened or expense changes
+  React.useEffect(() => {
+    setFormData(initialFormData);
+  }, [initialFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -69,6 +64,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
 
   return (
     <Modal
+      key={isOpen ? (expense ? `edit-${expense.id}` : 'new') : 'closed'}
       isOpen={isOpen}
       onClose={onClose}
       title={expense ? 'Edit Pengeluaran' : 'Tambah Pengeluaran Baru'}
@@ -81,88 +77,67 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             Batal
           </button>
           <button
-            onClick={handleSubmit}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
+            type="submit"
+            form="expense-form"
+            className="ml-2 text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-lg px-6 py-3"
           >
             Simpan
           </button>
         </>
       }
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form id="expense-form" onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label
-            htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
-            Deskripsi
-          </label>
+          <label htmlFor="date" className="block mb-1 font-medium">Tanggal</label>
           <input
-            type="text"
-            name="description"
-            id="description"
-            value={formData.description}
+            id="date"
+            type="date"
+            name="date"
+            value={formData.date}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="w-full border border-slate-300 rounded-lg px-3 py-2"
             required
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="category"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
-              Kategori
-            </label>
-            <input
-              type="text"
-              name="category"
-              id="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="amount"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
-              Jumlah (Rp)
-            </label>
-            <input
-              type="text"
-              name="amount"
-              id="amount"
-              value={formatRupiah(formData.amount)}
-              onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              required
-            />
-          </div>
+        <div>
+          <label htmlFor="description" className="block mb-1 font-medium">Deskripsi</label>
+          <input
+            id="description"
+            type="text"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+            required
+          />
         </div>
         <div>
-          <label
-            htmlFor="date"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
-            Tanggal
-          </label>
+          <label htmlFor="category" className="block mb-1 font-medium">Kategori</label>
           <input
-            type="date"
-            name="date"
-            id="date"
-            value={formData.date}
+            id="category"
+            type="text"
+            name="category"
+            value={formData.category}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="amount" className="block mb-1 font-medium">Jumlah</label>
+          <input
+            id="amount"
+            type="text"
+            name="amount"
+            value={formatRupiah(formData.amount)}
+            onChange={handleChange}
+            className="w-full border border-slate-300 rounded-lg px-3 py-2"
             required
           />
         </div>
       </form>
     </Modal>
   );
-};
+}
 
 export default ExpenseFormModal;

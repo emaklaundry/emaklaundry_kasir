@@ -93,7 +93,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
         invoice_code: row.invoice_code ?? undefined,
         customerId: row.customerId ?? '',
         items: Array.isArray(row.items)
-          ? (row.items as any[]).map((item) => ({
+          ? (row.items as import('../types').TransactionItem[]).map((item) => ({
               ...item,
               itemDetails: item.itemDetails ?? [],
             }))
@@ -102,13 +102,13 @@ export function useTransactions(filter: TransactionFilter = {}) {
         discount: row.discount ?? 0,
         tax: row.tax ?? 0,
         total: row.total ?? 0,
-        paymentStatus: row.paymentStatus as any,
-        orderStatus: row.orderStatus as any,
+        paymentStatus: row.paymentStatus as import('../types').PaymentStatus,
+        orderStatus: row.orderStatus as import('../types').OrderStatus,
         createdAt: row.createdAt ? new Date(row.createdAt) : new Date(),
         estimatedCompletionDate: row.estimatedCompletionDate ?? '',
         amountPaid: row.amountPaid ?? 0,
         change: row.change ?? 0,
-        paymentMethod: row.paymentMethod ? row.paymentMethod as any : undefined,
+        paymentMethod: row.paymentMethod ? row.paymentMethod as import('../types').PaymentMethod : undefined,
         createdByUserId: row.createdByUserId ?? '',
         storeId: row.storeId ?? '',
         notes: row.notes ?? undefined,

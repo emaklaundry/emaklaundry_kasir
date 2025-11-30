@@ -10,15 +10,6 @@ import { vi } from 'vitest';
 
 const queryClient = new QueryClient();
 
-const mockUser = {
-  id: 'test-user',
-  name: 'Test User',
-  role: UserRole.SuperAdmin,
-  storeId: 'test-store',
-  createdAt: new Date(),
-  isActive: true,
-  canGiveDiscount: false,
-};
 
 const mockStores = [{ id: 'test-store', name: 'Test Store', address: 'Jl. Test', isActive: true }];
 
