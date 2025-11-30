@@ -22,12 +22,12 @@ export function useUsers() {
 
   const updateUser = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<User> }) => {
-      const payload: any = {};
-      if ('name' in data) payload.name = (data as any).name;
-      if ('role' in data) payload.role = (data as any).role;
-      if ('storeId' in data) payload.store_id = (data as any).storeId;
-      if ('isActive' in data) payload.isActive = (data as any).isActive;
-      if ('canGiveDiscount' in data) payload.canGiveDiscount = (data as any).canGiveDiscount;
+      const payload: Record<string, unknown> = {};
+      if ('name' in data && typeof data.name === 'string') payload.name = data.name;
+      if ('role' in data && typeof data.role === 'string') payload.role = data.role;
+      if ('storeId' in data && (typeof data.storeId === 'string' || data.storeId === null)) payload.store_id = data.storeId;
+      if ('isActive' in data && typeof data.isActive === 'boolean') payload.isActive = data.isActive;
+      if ('canGiveDiscount' in data && typeof data.canGiveDiscount === 'boolean') payload.canGiveDiscount = data.canGiveDiscount;
       const { error } = await supabase.from('profiles').update(payload).eq('id', id);
       if (error) throw error;
       return id;
