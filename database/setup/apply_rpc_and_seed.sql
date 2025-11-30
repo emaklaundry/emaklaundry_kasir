@@ -9,10 +9,9 @@
 
 BEGIN;
 
--- === BAGIAN 1: SEED TOKO UTAMA ===
--- Memastikan toko 'Cabang Kota Banjar' ada.
--- Menggunakan ON CONFLICT agar tidak error jika dijalankan berulang.
-
+-- 1. Pastikan Toko "Cabang Kota Banjar" Sudah Ada
+-- Kita gunakan ID hardcoded untuk toko agar mudah direferensikan, 
+-- tapi untuk user kita IKUTI id dari Auth.
 INSERT INTO public.stores (id, name, address, "isActive")
 VALUES (
   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 
@@ -23,33 +22,34 @@ VALUES (
 ON CONFLICT (id) DO UPDATE 
 SET name = EXCLUDED.name, address = EXCLUDED.address; 
 
-
--- === BAGIAN 2: SETUP USER ROLE & STORE ===
--- Script ini mencari user di tabel profiles berdasarkan NAMA yang Anda input saat Register.
--- Pastikan ejaan nama saat register sesuai dengan yang ada di sini.
-
--- 2.1. Setup SUPER ADMIN (Tanpa Toko)
+-- 2. Setup SUPER ADMIN
+-- Mencari profile dengan nama 'Super Admin' dan menjadikannya Super Admin
 UPDATE public.profiles
 SET 
-  role = 'Super Admin',
+  role = 'Super Admin', 
   store_id = NULL
-WHERE name ILIKE 'Super Admin'; -- ILIKE = Tidak case sensitive
+WHERE name ILIKE 'Super Admin';
 
--- 2.2. Setup ADMIN TOKO (emaklaundry)
+-- 3. Setup ADMIN TOKO (emaklaundry)
+-- Mencari profile 'emaklaundry' dan menjadikannya Admin di Cabang Banjar
 UPDATE public.profiles
 SET 
-  role = 'Admin',
+  role = 'Admin', 
   store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
 WHERE name ILIKE 'emaklaundry';
 
--- 2.3. Setup KASIR (YOPI, ani, didi, lilis)
+-- 4. Setup KASIR (YOPI, ani, didi, lilis)
+-- Mencari semua nama ini dan menjadikan mereka Kasir di Cabang Banjar
 UPDATE public.profiles
 SET 
-  role = 'Kasir',
+  role = 'Kasir', 
   store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
 WHERE name IN ('YOPI', 'ani', 'didi', 'lilis');
 
+COMMIT;
 
+-- 5. Verifikasi Hasil
+SELECT name, role, store_id FROM public.profiles;
 -- === BAGIAN 3: SEED LAYANAN (SERVICES) ===
 -- Menggunakan data layanan yang Anda berikan sebelumnya.
 
@@ -141,6 +141,21 @@ ON CONFLICT (lower(name), "storeId") DO UPDATE SET
   unit = EXCLUDED.unit,
   "durationDays" = EXCLUDED."durationDays",
   category = EXCLUDED.category;
+
+
+-- === SCRIPT PERBAIKAN: ISI PROFILE YANG HILANG ===
+-- Sinkronisasi: Pastikan setiap user di auth.users punya baris di public.profiles
+INSERT INTO public.profiles (id, name, role, store_id, "isActive")
+SELECT 
+  au.id,
+  COALESCE(au.raw_user_meta_data->>'name', au.email) as name, 
+  'Kasir',
+  NULL,
+  true
+FROM auth.users au
+LEFT JOIN public.profiles pp ON au.id = pp.id
+WHERE pp.id IS NULL;
+-- === SELESAI SCRIPT PERBAIKAN ===
 
 COMMIT;
 
