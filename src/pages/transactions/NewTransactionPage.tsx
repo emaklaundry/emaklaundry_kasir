@@ -203,8 +203,7 @@ const NewTransactionPage: React.FC = () => {
     if (items.length === 0) {
       const today = new Date();
       today.setDate(today.getDate() + 1);
-      // Tidak mengubah jam, biarkan sesuai jam saat ini
-      return today;
+      return today.toISOString(); // <--- PERBAIKAN: Ubah ke string ISO
     }
     const maxDuration = Math.max(
       ...items.map((item) => {
@@ -214,8 +213,8 @@ const NewTransactionPage: React.FC = () => {
     );
     const completionDate = new Date();
     completionDate.setDate(completionDate.getDate() + maxDuration);
-    // Tidak mengubah jam, biarkan sesuai jam saat ini
-    return completionDate;
+    // Jam akan otomatis mengikuti jam sekarang (jam entry)
+    return completionDate.toISOString(); // <--- PERBAIKAN: Ubah ke string ISO
   }, [items, services]);
 
   const paymentStatus = useMemo(() => {
@@ -432,7 +431,7 @@ const NewTransactionPage: React.FC = () => {
         paymentStatus,
         orderStatus: OrderStatus.Processing,
         createdAt: new Date(),
-        estimatedCompletionDate: estimatedCompletionDate,
+        estimatedCompletionDate: new Date(estimatedCompletionDate),
         notes,
         amountPaid: actualAmountPaid,
         change: changeAmount,
