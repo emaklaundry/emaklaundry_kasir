@@ -535,6 +535,8 @@ INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES
 -- Menghapus fungsi lama karena kita akan mengubah tipe parameternya dari UUID ke TEXT
 DROP FUNCTION IF EXISTS public.get_laundry_status(uuid);
 
+-- Membuat fungsi baru yang menerima TEXT
+CREATE OR REPLACE FUNCTION public.get_laundry_status(
   input_identifier text
 )
 RETURNS TABLE (
