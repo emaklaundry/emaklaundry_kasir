@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { supabase } from '../../utils/supabaseClient';
 import { fetchCustomers } from '../../contexts/CustomerContext';
@@ -353,6 +353,7 @@ interface ActionButtonsProps {
 const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, updateTransaction }) => {
   const { currentUser } = useAppContext();
   const { addToast, updateToast } = useToasts();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   
@@ -371,12 +372,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
   async function onSavePayment(updatedTransaction: Transaction) {
     setLoading(true);
     const toastId = addToast('Menyimpan pembayaran...', 'info');
-    
-    // Cek apakah perlu menampilkan WA Modal (Lunas dan Selesai/Siap)
-    const shouldShowWhatsAppModal = 
-      updatedTransaction.paymentStatus === PaymentStatus.Paid && 
+    const shouldShowWhatsAppModal =
+      updatedTransaction.paymentStatus === PaymentStatus.Paid &&
       (updatedTransaction.orderStatus === OrderStatus.Completed || updatedTransaction.orderStatus === OrderStatus.Ready);
-
     try {
       await updateTransaction(transaction.id, {
         amountPaid: updatedTransaction.amountPaid,
@@ -384,8 +382,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
         paymentMethod: updatedTransaction.paymentMethod ?? undefined,
         paymentStatus: updatedTransaction.paymentStatus,
       });
+      await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
       updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
-      
       if (shouldShowWhatsAppModal) {
         setIsWhatsAppOpen(true);
       }
@@ -462,15 +460,18 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
           </div>
         </div>
       )}
-      
-      <button
-        disabled={loading || transaction.paymentStatus === PaymentStatus.Paid}
-        onClick={handleOpenPaymentModal}
-        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md disabled:bg-green-300 disabled:cursor-not-allowed"
-        title={transaction.paymentStatus === PaymentStatus.Paid ? 'Transaksi sudah lunas' : 'Input Pembayaran'}
-      >
-        {transaction.paymentStatus === PaymentStatus.Paid ? 'Sudah Lunas' : 'Bayar'}
-      </button>
+
+      {/* Tombol Bayar HANYA muncul jika BELUM Lunas */}
+      {transaction.paymentStatus !== PaymentStatus.Paid && (
+        <button
+          disabled={loading}
+          onClick={handleOpenPaymentModal}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md disabled:bg-green-300 disabled:cursor-not-allowed"
+          title="Input Pembayaran"
+        >
+          Bayar
+        </button>
+      )}
 
       <button
         disabled={
