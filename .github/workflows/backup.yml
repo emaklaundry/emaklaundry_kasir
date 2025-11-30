@@ -1,0 +1,27 @@
+name: Daily Supabase Backup
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Jalan setiap jam 00:00 UTC
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Backup Database
+        run: |
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -f backup_$(date +%Y-%m-%d).sql
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup
+          path: '*.sql'
+          retention-days: 7
