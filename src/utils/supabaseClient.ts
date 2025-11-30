@@ -2,10 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/supabase';
 
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 
 if (!supabaseUrl) {
   throw new Error('VITE_SUPABASE_URL is not defined. Please check your .env file.');
@@ -50,6 +48,7 @@ export async function updateTransactionProgress(
     amountPaid?: number | null;
     change?: number | null;
     paymentMethod?: string | null;
+    paymentStatus?: string | null; // PERBAIKAN: Menambahkan field paymentStatus
     orderStatus?: string | null;
   },
 ) {
@@ -57,15 +56,20 @@ export async function updateTransactionProgress(
     amountPaid = null,
     change = null,
     paymentMethod = null,
+    paymentStatus = null, // PERBAIKAN: Mengambil nilai paymentStatus
     orderStatus = null,
   } = params;
+
+  // PERBAIKAN: Mengirimkan p_payment_status ke RPC
   const { data, error } = await supabase.rpc('update_transaction_progress', {
     transaction_id_input: transactionId,
     p_amount_paid: amountPaid,
     p_change: change,
     p_payment_method: paymentMethod,
+    p_payment_status: paymentStatus, // Pastikan parameter ini dikirim
     p_order_status: orderStatus,
   });
+  
   if (error) throw error;
   return data;
 }
