@@ -10,7 +10,11 @@ import BottomNavBar from './BottomNavBar';
 import VersionInfo from './VersionInfo';
 import { Customer, UserRole } from '@/types';
 
-const getPageTitle = (pathname: string, params: Record<string, string | undefined>, customers: Customer[]): string => {
+const getPageTitle = (
+  pathname: string,
+  params: Record<string, string | undefined>,
+  customers: Customer[],
+): string => {
   const staticTitles: { [key: string]: string } = {
     '/': 'Dashboard',
     '/transactions': 'Transaksi',
@@ -61,9 +65,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
   // Normalize customers to always be an array
-  const customers = Array.isArray(customersRaw)
-    ? customersRaw
-    : (customersRaw?.data ?? []);
+  const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
   const { currentUser } = useAppContext();
   const pageTitle = getPageTitle(location.pathname, params, customers);
   const isCashier = currentUser.role === UserRole.Cashier;

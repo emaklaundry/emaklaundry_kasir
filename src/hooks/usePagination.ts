@@ -5,7 +5,7 @@ const DEFAULT_ITEMS_PER_PAGE = 15;
 
 const usePagination = <T>(data: T[], itemsPerPage: number = DEFAULT_ITEMS_PER_PAGE) => {
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Hitung total halaman berdasarkan itemsPerPage yang dinamis
   const totalPages = Math.ceil(data.length / itemsPerPage);
 

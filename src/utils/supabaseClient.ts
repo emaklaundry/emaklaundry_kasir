@@ -71,7 +71,7 @@ export async function updateTransactionProgress(
     p_payment_status: paymentStatus,
     p_order_status: orderStatus,
   });
-  
+
   if (error) throw error;
   return data;
 }

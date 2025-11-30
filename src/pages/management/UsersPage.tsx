@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useUsers } from '../../contexts/UserContext';
 import {
   PlusCircleIcon,
   EditIcon,
-  Trash2Icon,
   PowerIcon,
   UsersIcon,
   SearchIcon,
@@ -18,7 +17,7 @@ import { useToasts } from '../../contexts/ToastContext';
 import UserFormModal from '../../components/UserFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
-import { User, UserRole, Store } from '@/types';
+import { User, UserRole } from '@/types';
 
 const UsersPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();
@@ -30,7 +29,6 @@ const UsersPage: React.FC = () => {
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,9 +113,10 @@ const UsersPage: React.FC = () => {
           `Status pengguna ${userToToggleStatus.name} diubah menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`,
           'success',
         );
-      } catch (error: any) {
-        // Catatan: Penggunaan 'as any' hanya pada error object di catch block, bukan pada payload/data. Sudah aman.
-        updateToast(toastId, `Gagal mengubah status: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        // Catatan: Penggunaan 'unknown' pada error object di catch block, bukan pada payload/data. Sudah aman.
+        const errMsg = error instanceof Error ? error.message : String(error);
+        updateToast(toastId, `Gagal mengubah status: ${errMsg}`, 'error');
       } finally {
         setUserToToggleStatus(null);
         setIsSavingUser(false);

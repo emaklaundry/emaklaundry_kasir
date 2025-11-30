@@ -32,11 +32,21 @@ describe('CustomerFormModal', () => {
   it('calls onSave with form data when Simpan is clicked', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<CustomerFormModal {...baseProps} onSave={onSave} />);
-    fireEvent.change(screen.getByRole('textbox', { name: /nama pelanggan/i }), { target: { value: 'John Doe' } });
-    fireEvent.change(screen.getByRole('textbox', { name: /nomor telepon/i }), { target: { value: '08123456789' } });
-    fireEvent.change(screen.getByRole('textbox', { name: /alamat/i }), { target: { value: 'Jl. Mawar' } });
-    fireEvent.change(screen.getByRole('spinbutton', { name: /diskon standar/i }), { target: { value: '10' } });
-    fireEvent.change(screen.getByRole('textbox', { name: /catatan/i }), { target: { value: 'VIP' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /nama pelanggan/i }), {
+      target: { value: 'John Doe' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: /nomor telepon/i }), {
+      target: { value: '08123456789' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: /alamat/i }), {
+      target: { value: 'Jl. Mawar' },
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: /diskon standar/i }), {
+      target: { value: '10' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: /catatan/i }), {
+      target: { value: 'VIP' },
+    });
     fireEvent.click(screen.getByText('Simpan'));
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith(
@@ -46,7 +56,7 @@ describe('CustomerFormModal', () => {
           address: 'Jl. Mawar',
           defaultDiscount: 10,
           notes: 'VIP',
-        })
+        }),
       );
     });
   });

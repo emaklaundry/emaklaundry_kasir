@@ -5,8 +5,24 @@ import { vi } from 'vitest';
 
 describe('CustomerSelector', () => {
   const customers = [
-    { id: '1', name: 'Budi', phone: '0811111111', address: '', notes: '', defaultDiscount: 0, createdAt: new Date() },
-    { id: '2', name: 'Siti', phone: '0822222222', address: '', notes: '', defaultDiscount: 0, createdAt: new Date() },
+    {
+      id: '1',
+      name: 'Budi',
+      phone: '0811111111',
+      address: '',
+      notes: '',
+      defaultDiscount: 0,
+      createdAt: new Date(),
+    },
+    {
+      id: '2',
+      name: 'Siti',
+      phone: '0822222222',
+      address: '',
+      notes: '',
+      defaultDiscount: 0,
+      createdAt: new Date(),
+    },
   ];
 
   it('renders input, label, and add button', () => {
@@ -16,7 +32,7 @@ describe('CustomerSelector', () => {
         selectedCustomer={null}
         onSelectCustomer={vi.fn()}
         onAddNewCustomer={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByLabelText(/pelanggan/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/cari nama/i)).toBeInTheDocument();
@@ -30,7 +46,7 @@ describe('CustomerSelector', () => {
         selectedCustomer={null}
         onSelectCustomer={vi.fn()}
         onAddNewCustomer={vi.fn()}
-      />
+      />,
     );
     const input = screen.getByPlaceholderText(/cari nama/i);
     fireEvent.focus(input);
@@ -47,7 +63,7 @@ describe('CustomerSelector', () => {
         selectedCustomer={null}
         onSelectCustomer={onSelectCustomer}
         onAddNewCustomer={vi.fn()}
-      />
+      />,
     );
     const input = screen.getByPlaceholderText(/cari nama/i);
     fireEvent.focus(input);
@@ -64,7 +80,7 @@ describe('CustomerSelector', () => {
         selectedCustomer={null}
         onSelectCustomer={vi.fn()}
         onAddNewCustomer={onAddNewCustomer}
-      />
+      />,
     );
     fireEvent.click(screen.getByRole('button'));
     expect(onAddNewCustomer).toHaveBeenCalled();
@@ -77,13 +93,13 @@ describe('CustomerSelector', () => {
         selectedCustomer={customers[1]}
         onSelectCustomer={vi.fn()}
         onAddNewCustomer={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText(/terpilih/i)).toBeInTheDocument();
     expect(screen.getByText('Siti')).toBeInTheDocument();
     // Cari node yang mengandung nomor telepon meski terpisah elemen
-    const phoneNodes = screen.getAllByText((content, node) =>
-      !!node?.textContent && node.textContent.includes('0822222222')
+    const phoneNodes = screen.getAllByText(
+      (content, node) => !!node?.textContent && node.textContent.includes('0822222222'),
     );
     expect(phoneNodes.length).toBeGreaterThan(0);
   });

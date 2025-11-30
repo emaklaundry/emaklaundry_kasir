@@ -1,4 +1,3 @@
-
 import { render } from '@testing-library/react';
 import QuickActionsPage from './QuickActionsPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -21,9 +20,7 @@ const mockUser = {
   canGiveDiscount: false,
 };
 
-const mockStores = [
-  { id: 'test-store', name: 'Test Store', address: 'Jl. Test', isActive: true },
-];
+const mockStores = [{ id: 'test-store', name: 'Test Store', address: 'Jl. Test', isActive: true }];
 
 describe('QuickActionsPage', () => {
   it('renders without crashing', () => {
@@ -44,7 +41,7 @@ describe('QuickActionsPage', () => {
             </AppContext.Provider>
           </ToastProvider>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   });
 });

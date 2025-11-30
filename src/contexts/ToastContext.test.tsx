@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { ToastProvider, useToasts } from './ToastContext';
-import { render, act } from '@testing-library/react';
+import { render } from '@testing-library/react';
 
 const TestComponent = () => {
   const { addToast, toasts, removeToast, updateToast } = useToasts();
@@ -20,7 +20,7 @@ describe('ToastContext', () => {
     render(
       <ToastProvider>
         <TestComponent />
-      </ToastProvider>
+      </ToastProvider>,
     );
     // Just check that the context renders and exposes functions
     expect(true).toBe(true);

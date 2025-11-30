@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../utils/supabaseClient';
 import { User } from '@/types';
@@ -17,7 +16,7 @@ interface ProfileRow {
 const fetchUsers = async (): Promise<User[]> => {
   const { data, error } = await supabase.from('profiles').select('*');
   if (error) throw error;
-  return (data as ProfileRow[] || []).map((p) => ({
+  return ((data as ProfileRow[]) || []).map((p) => ({
     id: p.id,
     name: p.name,
     role: p.role,
@@ -32,14 +31,18 @@ export function useUsers() {
   const queryClient = useQueryClient();
   const { data: users = [], ...query } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
 
-  const updateUser = useMutation({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const updateUser = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<User> }) => {
       const payload: Record<string, unknown> = {};
       if ('name' in data && typeof data.name === 'string') payload.name = data.name;
       if ('role' in data && typeof data.role === 'string') payload.role = data.role;
-      if ('storeId' in data && (typeof data.storeId === 'string' || data.storeId === null)) payload.store_id = data.storeId;
-      if ('isActive' in data && typeof data.isActive === 'boolean') payload.isActive = data.isActive;
-      if ('canGiveDiscount' in data && typeof data.canGiveDiscount === 'boolean') payload.canGiveDiscount = data.canGiveDiscount;
+      if ('storeId' in data && (typeof data.storeId === 'string' || data.storeId === null))
+        payload.store_id = data.storeId;
+      if ('isActive' in data && typeof data.isActive === 'boolean')
+        payload.isActive = data.isActive;
+      if ('canGiveDiscount' in data && typeof data.canGiveDiscount === 'boolean')
+        payload.canGiveDiscount = data.canGiveDiscount;
       const { error } = await supabase.from('profiles').update(payload).eq('id', id);
       if (error) throw error;
       return id;
@@ -49,8 +52,8 @@ export function useUsers() {
 
   // Admin create user: gunakan Supabase Auth Admin API
   // Anda butuh service_role key, sebaiknya lakukan di backend/Edge Function
-  const createUser = useMutation({
-    mutationFn: async (user: { email: string; password: string; name: string; role?: string; storeId?: string | null }) => {
+    const createUser = useMutation({
+    mutationFn: async () => {
       // WARNING: Jangan expose service_role di frontend!
       // Ini hanya contoh, implementasi produksi harus di backend/Edge Function
       // const adminClient = createClient(supabaseUrl, serviceRoleKey);

@@ -63,7 +63,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
     e.preventDefault();
     // Gunakan helper agar DRY
     const iso = convertLocalDateToISOString(formData.nextDueDate);
-    onSave({ ...formData, nextDueDate: iso } as any);
+    onSave({ ...formData, nextDueDate: iso } as ScheduleFormData);
   };
 
   return (

@@ -40,7 +40,6 @@ const fetchTransactions = async (
   return { data: data || [], count: count || 0 };
 };
 
-
 export function useTransactions(filter: TransactionFilter = {}) {
   const queryClient = useQueryClient();
   // Ambil enabled dari filter, default true

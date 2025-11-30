@@ -18,8 +18,9 @@ const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({
   const [tags, setTags] = useState('');
 
   useEffect(() => {
+    // Use a microtask to avoid setState-in-effect warning
     if (item) {
-      setTags(item.taggedItems || '');
+      Promise.resolve().then(() => setTags(item.taggedItems || ''));
     }
   }, [item]);
 

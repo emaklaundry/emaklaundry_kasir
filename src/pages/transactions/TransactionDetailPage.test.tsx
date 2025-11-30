@@ -1,4 +1,3 @@
-
 import { render } from '@testing-library/react';
 import TransactionDetailPage from './TransactionDetailPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -16,7 +15,7 @@ describe('TransactionDetailPage', () => {
             <TransactionDetailPage />
           </AppProviders>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   });
 });

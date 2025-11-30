@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-
 
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -193,8 +192,9 @@ const TransactionPage: React.FC = () => {
         setTransactionForWhatsApp(updatedTransaction);
         setIsWhatsAppModalOpen(true);
       }
-    } catch (error: any) {
-      updateToast(toastId, `Gagal memperbarui status: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal memperbarui status: ${errMsg}`, 'error');
     }
   };
 
@@ -230,16 +230,16 @@ const TransactionPage: React.FC = () => {
         setTransactionForWhatsApp(updatedTransaction);
         setIsWhatsAppModalOpen(true);
       }
-    } catch (error: any) {
-      updateToast(toastId, `Gagal memperbarui pembayaran: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal memperbarui pembayaran: ${errMsg}`, 'error');
     } finally {
       setIsSavingPayment(false);
     }
   };
 
-  const handleOpenWhatsAppModal = (transaction: Transaction, customer: Customer) => {
+  const handleOpenWhatsAppModal = (transaction: Transaction) => {
     setTransactionForWhatsApp(transaction);
-    // setCustomerForWhatsApp(customer); // Ini tidak perlu, customerForWhatsApp diambil dari useMemo
     setIsWhatsAppModalOpen(true);
   };
 
@@ -325,8 +325,9 @@ const TransactionPage: React.FC = () => {
         `Berhasil mengubah status ${selectedIds.size} transaksi menjadi ${bulkActionStatus}.`,
         'success',
       );
-    } catch (error: any) {
-      updateToast(toastId, `Gagal memperbarui status massal: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal memperbarui status massal: ${errMsg}`, 'error');
     } finally {
       setIsBulkConfirmOpen(false);
       setBulkActionStatus(null);
@@ -560,16 +561,20 @@ const TransactionPage: React.FC = () => {
                         className="w-5 h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.invoice_code || t.id}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                      {t.invoice_code || t.id}
+                    </td>
                     <td className="px-4 py-3">{t.customerName}</td>
                     <td className="px-4 py-3">
-                      {t.estimatedCompletionDate ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : '-'}
+                      {t.estimatedCompletionDate
+                        ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '-'}
                     </td>
                     <td className="px-4 py-3 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
                     <td className="px-4 py-3">
@@ -639,9 +644,9 @@ const TransactionPage: React.FC = () => {
                       </Link>
                       <button
                         onClick={() => {
-                          const customer = customers.find((c: Customer) => c.id === t.customerId);
-                          if (customer) {
-                            handleOpenWhatsAppModal(t, customer);
+                          const foundCustomer = customers.find((c: Customer) => c.id === t.customerId);
+                          if (foundCustomer) {
+                            handleOpenWhatsAppModal(t);
                           } else {
                             addToast('Data pelanggan tidak ditemukan.', 'error');
                           }
@@ -706,16 +711,20 @@ const TransactionPage: React.FC = () => {
                       {t.customerName}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {t.estimatedCompletionDate ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : '-'}
+                      {t.estimatedCompletionDate
+                        ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '-'}
                     </p>
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.invoice_code || t.id}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                    {t.invoice_code || t.id}
+                  </p>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-500 dark:text-slate-400 text-base">Total:</span>
@@ -770,9 +779,9 @@ const TransactionPage: React.FC = () => {
                     </Link>
                     <button
                       onClick={() => {
-                        const customer = customers.find((c: Customer) => c.id === t.customerId);
-                        if (customer) {
-                          handleOpenWhatsAppModal(t, customer);
+                        const foundCustomer = customers.find((c: Customer) => c.id === t.customerId);
+                        if (foundCustomer) {
+                          handleOpenWhatsAppModal(t);
                         } else {
                           addToast('Data pelanggan tidak ditemukan.', 'error');
                         }

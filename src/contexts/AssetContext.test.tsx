@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { useAssets } from './AssetContext';
 
 vi.mock('../utils/supabaseClient', () => ({
@@ -15,13 +15,13 @@ vi.mock('../utils/supabaseClient', () => ({
 }));
 
 vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<any>('@tanstack/react-query');
+  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
   return {
     ...actual,
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),
     useQuery: vi.fn().mockReturnValue({ data: [], isLoading: false }),
     useMutation: vi.fn().mockImplementation(({ mutationFn, onSuccess }) => ({
-      mutateAsync: async (...args: any[]) => {
+      mutateAsync: async (...args: unknown[]) => {
         const result = await mutationFn(...args);
         if (onSuccess) onSuccess();
         return result;
@@ -45,7 +45,17 @@ describe('useAssets', () => {
 
   it('can add, update, and delete asset', async () => {
     const { result } = renderHook(() => useAssets());
-    await expect(result.current.addAsset({ name: 'Aset', status: 'Active', unit: 'pcs', stock: 1, lowStockThreshold: 1, storeId: '1', maintenanceHistory: [] })).resolves.toBeNull();
+    await expect(
+      result.current.addAsset({
+        name: 'Aset',
+        status: 'Active',
+        unit: 'pcs',
+        stock: 1,
+        lowStockThreshold: 1,
+        storeId: '1',
+        maintenanceHistory: [],
+      }),
+    ).resolves.toBeNull();
     await expect(result.current.updateAsset('id', { name: 'Baru' })).resolves.toBeNull();
     await expect(result.current.deleteAsset('id')).resolves.toBe('id');
   });

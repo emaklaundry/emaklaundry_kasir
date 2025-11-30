@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useToasts } from '../contexts/ToastContext';
 import Modal from './Modal';
-import { SpinnerIcon, DollarSignIcon } from './icons'; // Pastikan import icon sesuai
+// import { SpinnerIcon, DollarSignIcon } from './icons';
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 
 interface PaymentModalProps {
@@ -156,9 +156,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 type="button"
                 onClick={() => setMethod(m)}
                 className={`flex items-center justify-center p-3 border rounded-lg gap-2 transition-all duration-200
-                  ${method === m
-                    ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
-                    : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'}
+                  ${
+                    method === m
+                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
+                      : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'
+                  }
                 `}
               >
                 <span className="font-medium">{m}</span>

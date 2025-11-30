@@ -36,7 +36,8 @@ const CommandPalette: React.FC = () => {
   const debouncedQuery = useDebounce(query, 400);
   const customersQuery = useQuery({
     queryKey: ['customers', { search: debouncedQuery }],
-    queryFn: () => debouncedQuery ? fetchCustomers({ search: debouncedQuery }) : Promise.resolve([]),
+    queryFn: () =>
+      debouncedQuery ? fetchCustomers({ search: debouncedQuery }) : Promise.resolve([]),
     enabled: !!debouncedQuery,
     staleTime: 1000 * 60,
   });
@@ -261,7 +262,7 @@ const CommandPalette: React.FC = () => {
                   {section}
                 </h3>
                 <ul>
-                  {commands.map((cmd, index) => {
+                  {commands.map((cmd) => {
                     const globalIndex = filteredCommands.findIndex((fc) => fc.id === cmd.id);
                     return (
                       <li key={cmd.id} id={`command-item-${globalIndex}`}>

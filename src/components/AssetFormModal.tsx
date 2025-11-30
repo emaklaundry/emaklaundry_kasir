@@ -22,7 +22,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
   }));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     if (name === 'purchaseCost') {
       setFormData((prev) => ({ ...prev, purchaseCost: parseRupiah(value) }));
     } else if (name === 'purchaseDate') {

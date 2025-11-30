@@ -1,4 +1,3 @@
-
 import { render } from '@testing-library/react';
 import ReceiptPage from './ReceiptPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -16,7 +15,7 @@ describe('ReceiptPage', () => {
             <ReceiptPage />
           </AppProviders>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   });
 });

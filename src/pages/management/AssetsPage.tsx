@@ -123,8 +123,12 @@ const AssetsPage: React.FC = () => {
         await deleteAsset(assetToDelete.id);
         addAuditLog(`Menghapus aset: "${assetToDelete.name}".`, assetToDelete.storeId);
         updateToast(toastId, 'Aset berhasil dihapus!', 'success');
-      } catch (error: any) {
-        updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          updateToast(toastId, `Gagal menghapus: ${(error as { message: string }).message}`, 'error');
+        } else {
+          updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
+        }
       } finally {
         setAssetToDelete(null);
         setIsSavingAsset(false);

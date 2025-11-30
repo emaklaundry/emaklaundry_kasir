@@ -9,7 +9,9 @@ vi.mock('../utils/supabaseClient', () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
-      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      onAuthStateChange: vi
+        .fn()
+        .mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
       signOut: vi.fn().mockResolvedValue({}),
     },
     from: vi.fn().mockReturnThis(),
@@ -42,7 +44,7 @@ describe('AppContext', () => {
     render(
       <AppProvider>
         <TestComponent />
-      </AppProvider>
+      </AppProvider>,
     );
     expect(screen.getByTestId('user').textContent).toBe('none');
     expect(screen.getByTestId('store').textContent).toBe('all');
@@ -53,7 +55,11 @@ describe('AppContext', () => {
   });
 
   it('throws error if used outside provider', () => {
-    const call = () => useAppContext();
-    expect(call).toThrow();
+    // Must call inside a component or hook, so use a wrapper
+    function Wrapper() {
+      useAppContext();
+      return null;
+    }
+    expect(() => render(<Wrapper />)).toThrow();
   });
 });

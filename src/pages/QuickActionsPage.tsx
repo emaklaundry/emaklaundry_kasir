@@ -10,7 +10,6 @@ import { useToasts } from '../contexts/ToastContext';
 import { UserRole, Expense } from '@/types';
 import {
   PlusIcon,
-  UsersIcon,
   ReceiptIcon,
   WrenchIcon,
   DollarSignIcon,
@@ -83,7 +82,7 @@ const QuickActionsPage: React.FC = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-6">Aksi Cepat</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {actions.map((action, idx) =>
+        {actions.map((action) =>
           action.onClick ? (
             <button
               key={action.label}

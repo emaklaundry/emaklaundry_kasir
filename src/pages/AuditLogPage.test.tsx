@@ -1,4 +1,3 @@
-
 import { render } from '@testing-library/react';
 import AuditLogPage from './AuditLogPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -20,9 +19,7 @@ const mockUser = {
   canGiveDiscount: false,
 };
 
-const mockStores = [
-  { id: 'test-store', name: 'Test Store', address: 'Jl. Test', isActive: true },
-];
+const mockStores = [{ id: 'test-store', name: 'Test Store', address: 'Jl. Test', isActive: true }];
 
 describe('AuditLogPage', () => {
   it('renders without crashing', () => {
@@ -41,7 +38,7 @@ describe('AuditLogPage', () => {
             <AuditLogPage />
           </AppContext.Provider>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   });
 });

@@ -13,13 +13,13 @@ vi.mock('../utils/supabaseClient', () => ({
   },
 }));
 vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<any>('@tanstack/react-query');
+  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
   return {
     ...actual,
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),
     useQuery: vi.fn().mockReturnValue({ data: null, isLoading: false }),
     useMutation: vi.fn().mockImplementation(({ mutationFn, onSuccess }) => ({
-      mutateAsync: async (...args: any[]) => {
+      mutateAsync: async (...args: unknown[]) => {
         const result = await mutationFn(...args);
         if (onSuccess) onSuccess();
         return result;

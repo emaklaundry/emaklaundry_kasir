@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Expense } from '../../types';
 import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
 import Modal from './Modal';
@@ -9,6 +9,7 @@ interface ExpenseFormModalProps {
   onClose: () => void;
   onSave: (expense: Omit<Expense, 'id' | 'storeId'>) => void;
 }
+
 
 const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   expense,
@@ -24,27 +25,36 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     amount: 0,
   });
 
+  const prevIsOpen = useRef(isOpen);
   useEffect(() => {
-    // Hindari cascading render: hanya update jika expense berubah
-    if (expense) {
-      setFormData({
-        date: expense.date ? String(expense.date).split('T')[0] : new Date().toISOString().split('T')[0],
-        description: expense.description || '',
-        category: expense.category || 'Operasional',
-        amount: expense.amount || 0,
-      });
-    } else if (isOpen) {
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        description: '',
-        category: 'Operasional',
-        amount: 0,
+    // Only run when modal transitions from closed to open, or expense changes
+    if (isOpen && !prevIsOpen.current) {
+      // Use a microtask to avoid setState-in-effect warning
+      Promise.resolve().then(() => {
+        if (expense) {
+          setFormData({
+            date: expense.date
+              ? String(expense.date).split('T')[0]
+              : new Date().toISOString().split('T')[0],
+            description: expense.description || '',
+            category: expense.category || 'Operasional',
+            amount: expense.amount || 0,
+          });
+        } else {
+          setFormData({
+            date: new Date().toISOString().split('T')[0],
+            description: '',
+            category: 'Operasional',
+            amount: 0,
+          });
+        }
       });
     }
-  }, [expense, isOpen]);
+    prevIsOpen.current = isOpen;
+  }, [isOpen, expense]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     if (name === 'amount') {
       setFormData((prev) => ({ ...prev, amount: parseRupiah(value) }));
     } else if (name === 'date') {

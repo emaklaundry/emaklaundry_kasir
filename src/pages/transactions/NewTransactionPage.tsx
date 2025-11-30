@@ -10,7 +10,6 @@ import { generateUUID } from '../../utils';
 import {
   Trash2Icon,
   MessageSquareIcon,
-  PlusCircleIcon,
   TagIcon,
   SpinnerIcon,
 } from '../../components/icons';
@@ -46,7 +45,7 @@ const NewTransactionPage: React.FC = () => {
   // --- SEMUA HOOK HARUS DI ATAS SINI ---
   const navigate = useNavigate();
   const { settings, isLoading: isLoadingSettings } = useSettings();
-  const { transactions, addTransaction } = useTransactions();
+  const { addTransaction } = useTransactions();
   const queryClient = useQueryClient();
   const { data: customersData } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -69,6 +68,7 @@ const NewTransactionPage: React.FC = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [editingNotes, setEditingNotes] = useState<{ note: string }[]>([]);
   const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
@@ -136,41 +136,38 @@ const NewTransactionPage: React.FC = () => {
   // Place handleAddService after all hooks, before conditional rendering
   const [showKiloanToast, setShowKiloanToast] = useState(false);
   // --- MODIFIKASI: handleAddService ---
-  const handleAddService = useCallback(
-    (service: Service) => {
-      const isKiloan = service.category === ServiceCategory.Kiloan;
-      const isMeter = service.unit.toLowerCase() === 'm2' || service.unit.toLowerCase() === 'meter';
-      let shouldShowToast = false;
-      setItems((currentItems) => {
-        const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
-        if (existingItemIndex > -1) {
-          if (isKiloan) {
-            shouldShowToast = true;
-            return currentItems;
-          }
-          const updatedItems = [...currentItems];
-          const currentItem = updatedItems[existingItemIndex];
-          currentItem.quantity += 1;
-          currentItem.subtotal = currentItem.price * currentItem.quantity;
-          return updatedItems;
-        } else {
-          const newItem: ExtendedTransactionItem = {
-            serviceId: service.id,
-            serviceName: service.name,
-            price: service.price,
-            unit: service.unit,
-            quantity: 1,
-            subtotal: service.price * 1,
-            length: isMeter ? 1 : undefined,
-            width: isMeter ? 1 : undefined,
-          };
-          return [...currentItems, newItem];
+  const handleAddService = useCallback((service: Service) => {
+    const isKiloan = service.category === ServiceCategory.Kiloan;
+    const isMeter = service.unit.toLowerCase() === 'm2' || service.unit.toLowerCase() === 'meter';
+    let shouldShowToast = false;
+    setItems((currentItems) => {
+      const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
+      if (existingItemIndex > -1) {
+        if (isKiloan) {
+          shouldShowToast = true;
+          return currentItems;
         }
-      });
-      if (isKiloan) setShowKiloanToast(shouldShowToast);
-    },
-    [],
-  );
+        const updatedItems = [...currentItems];
+        const currentItem = updatedItems[existingItemIndex];
+        currentItem.quantity += 1;
+        currentItem.subtotal = currentItem.price * currentItem.quantity;
+        return updatedItems;
+      } else {
+        const newItem: ExtendedTransactionItem = {
+          serviceId: service.id,
+          serviceName: service.name,
+          price: service.price,
+          unit: service.unit,
+          quantity: 1,
+          subtotal: service.price * 1,
+          length: isMeter ? 1 : undefined,
+          width: isMeter ? 1 : undefined,
+        };
+        return [...currentItems, newItem];
+      }
+    });
+    if (isKiloan) setShowKiloanToast(shouldShowToast);
+  }, []);
 
   useEffect(() => {
     if (showKiloanToast) {
@@ -229,7 +226,9 @@ const NewTransactionPage: React.FC = () => {
   }, [isPayingNow, actualAmountPaid, grandTotal]);
 
   const currentStoreId = useMemo(() => {
-    return currentUser && currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId;
+    return currentUser && currentUser.role === UserRole.SuperAdmin
+      ? selectedStoreId
+      : currentUser?.storeId;
   }, [currentUser, selectedStoreId]);
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
@@ -257,7 +256,7 @@ const NewTransactionPage: React.FC = () => {
     if (!settings && !isLoadingSettings) {
       addToast(
         'Tidak dapat memuat data pajak, diskon, dan lainnya. Pastikan Anda memiliki koneksi dan hak akses yang benar untuk melihat tabel settings.',
-        'error'
+        'error',
       );
     }
   }, [settings, isLoadingSettings, addToast]);
@@ -331,6 +330,10 @@ const NewTransactionPage: React.FC = () => {
 
   const handleOpenNotesModal = (index: number) => {
     setEditingItemIndex(index);
+    const item = items[index];
+    const allNotes = item?.itemDetails || [];
+    const initialNotes = Array.from({ length: item.quantity }, (_, i) => allNotes[i] || { note: '' });
+    setEditingNotes(initialNotes);
     setIsNotesModalOpen(true);
   };
 
@@ -345,6 +348,7 @@ const NewTransactionPage: React.FC = () => {
     }
     setEditingItemIndex(null);
     setIsNotesModalOpen(false);
+    setEditingNotes([]);
   };
 
   const handleSaveKiloanTags = (tags: string) => {
@@ -375,9 +379,10 @@ const NewTransactionPage: React.FC = () => {
         updateToast(toastId, 'Gagal menambah pelanggan: Data tidak valid.', 'error');
       }
     } catch (error: unknown) {
-      const msg = typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string'
-        ? (error as any).message
-        : 'Unknown error';
+      let msg = 'Unknown error';
+      if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: string }).message === 'string') {
+        msg = (error as { message: string }).message;
+      }
       updateToast(toastId, `Gagal menambah pelanggan: ${msg}`, 'error');
     }
   };
@@ -388,9 +393,10 @@ const NewTransactionPage: React.FC = () => {
 
     if (!currentStoreId || currentStoreId === 'all') {
       // Perbaikan pesan agar cocok untuk semua role jika terjadi error data
-      const msg = currentUser?.role === UserRole.SuperAdmin 
-        ? 'Super Admin harus memilih cabang spesifik.' 
-        : 'Data cabang Anda tidak valid. Silakan relogin.';
+      const msg =
+        currentUser?.role === UserRole.SuperAdmin
+          ? 'Super Admin harus memilih cabang spesifik.'
+          : 'Data cabang Anda tidak valid. Silakan relogin.';
       addToast(msg, 'warning');
       return;
     }
@@ -417,11 +423,11 @@ const NewTransactionPage: React.FC = () => {
     const toastId = addToast('Menyimpan transaksi...', 'info');
     try {
       // Sanitasi itemDetails agar tidak ada zombie notes
-      const cleanedItems = items.map(item => ({
+      const cleanedItems = items.map((item) => ({
         ...item,
         itemDetails: item.itemDetails
-          ? item.itemDetails.slice(0, item.quantity).map(detail => ({ note: detail.note || '' }))
-          : []
+          ? item.itemDetails.slice(0, item.quantity).map((detail) => ({ note: detail.note || '' }))
+          : [],
       }));
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
@@ -463,20 +469,20 @@ const NewTransactionPage: React.FC = () => {
     } catch (error: unknown) {
       // Tangani error duplikat idempotencyKey
       if (
-        typeof error === 'object' &&
-        error !== null &&
+        error && typeof error === 'object' &&
         'code' in error &&
-        (error as any).code === '23505' &&
+        (error as { code?: string }).code === '23505' &&
         'message' in error &&
-        typeof (error as any).message === 'string' &&
-        (error as any).message.includes('idempotencyKey')
+        typeof (error as { message?: string }).message === 'string' &&
+        (error as { message: string }).message.includes('idempotencyKey')
       ) {
         updateToast(toastId, 'Transaksi berhasil disimpan (terdeteksi duplikat).', 'success');
         setIsSuccessModalOpen(true);
       } else {
-        const msg = typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string'
-          ? (error as any).message
-          : 'Unknown error';
+        let msg = 'Unknown error';
+        if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: string }).message === 'string') {
+          msg = (error as { message: string }).message;
+        }
         updateToast(toastId, `Gagal menyimpan transaksi: ${msg}`, 'error');
       }
     } finally {
@@ -588,7 +594,8 @@ const NewTransactionPage: React.FC = () => {
                               {item.serviceName}
                             </td>
                             <td className="px-4 py-2 w-48">
-                              {item.unit.toLowerCase() === 'm2' || item.unit.toLowerCase() === 'meter' ? (
+                              {item.unit.toLowerCase() === 'm2' ||
+                              item.unit.toLowerCase() === 'meter' ? (
                                 <div className="flex flex-col gap-2">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-slate-500 w-4">P:</span>
@@ -598,7 +605,13 @@ const NewTransactionPage: React.FC = () => {
                                       step="0.1"
                                       placeholder="P"
                                       value={item.length}
-                                      onChange={(e) => handleItemChange(index, 'length', parseFloat(e.target.value) || 0)}
+                                      onChange={(e) =>
+                                        handleItemChange(
+                                          index,
+                                          'length',
+                                          parseFloat(e.target.value) || 0,
+                                        )
+                                      }
                                       className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                     />
                                     <span className="text-sm text-slate-500">m</span>
@@ -611,7 +624,13 @@ const NewTransactionPage: React.FC = () => {
                                       step="0.1"
                                       placeholder="L"
                                       value={item.width}
-                                      onChange={(e) => handleItemChange(index, 'width', parseFloat(e.target.value) || 0)}
+                                      onChange={(e) =>
+                                        handleItemChange(
+                                          index,
+                                          'width',
+                                          parseFloat(e.target.value) || 0,
+                                        )
+                                      }
                                       className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                     />
                                     <span className="text-sm text-slate-500">m</span>
@@ -717,12 +736,15 @@ const NewTransactionPage: React.FC = () => {
                   onAddNewCustomer={() => setIsCustomerModalOpen(true)}
                 />
                 {/* Banner info diskon otomatis */}
-                {selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0 && (
-                  <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
-                    <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
-                    Diskon {selectedCustomer.defaultDiscount}% otomatis diterapkan untuk {selectedCustomer.name}.
-                  </div>
-                )}
+                {selectedCustomer &&
+                  selectedCustomer.defaultDiscount &&
+                  selectedCustomer.defaultDiscount > 0 && (
+                    <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
+                      <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
+                      Diskon {selectedCustomer.defaultDiscount}% otomatis diterapkan untuk{' '}
+                      {selectedCustomer.name}.
+                    </div>
+                  )}
                 <div>
                   <label
                     htmlFor="notes"
@@ -849,9 +871,11 @@ const NewTransactionPage: React.FC = () => {
                             onClick={() => setPaymentMethod(m)}
                             // UPDATED: Style disamakan persis dengan tombol "Bayar Sekarang"
                             className={`p-3 rounded-lg text-base border-2 font-semibold transition-colors duration-200
-                              ${paymentMethod === m
-                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-slate-900 dark:text-white'
-                                : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                              ${
+                                paymentMethod === m
+                                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-slate-900 dark:text-white'
+                                  : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }
                             `}
                           >
                             {m}
@@ -914,19 +938,23 @@ const NewTransactionPage: React.FC = () => {
                   type="submit"
                   disabled={
                     isSaving ||
-                    (currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all')
-                  ? true
-                  : undefined
+                    (currentUser &&
+                      currentUser.role === UserRole.SuperAdmin &&
+                      selectedStoreId === 'all')
+                      ? true
+                      : undefined
                   }
                   className="w-full flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
                 >
                   {isSaving ? <SpinnerIcon className="w-7 h-7" /> : 'Simpan Transaksi'}
                 </button>
-                {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                  <p className="text-center text-sm text-yellow-600 dark:text-yellow-400">
-                    Pilih cabang spesifik di header untuk membuat transaksi.
-                  </p>
-                )}
+                {currentUser &&
+                  currentUser.role === UserRole.SuperAdmin &&
+                  selectedStoreId === 'all' && (
+                    <p className="text-center text-sm text-yellow-600 dark:text-yellow-400">
+                      Pilih cabang spesifik di header untuk membuat transaksi.
+                    </p>
+                  )}
               </div>
             </div>
           </div>
@@ -955,8 +983,10 @@ const NewTransactionPage: React.FC = () => {
       />
       <ItemNotesModal
         isOpen={isNotesModalOpen}
-        onClose={() => setIsNotesModalOpen(false)}
+        onClose={() => { setIsNotesModalOpen(false); setEditingNotes([]); }}
         item={editingItemIndex !== null ? items[editingItemIndex] : null!}
+        notes={editingNotes}
+        setNotes={setEditingNotes}
         onSave={handleSaveNotes}
       />
       <KiloanTaggingModal

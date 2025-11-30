@@ -12,11 +12,15 @@ describe('ItemNotesModal', () => {
   };
 
   it('renders notes inputs for each item quantity', () => {
+    const notes = [{ note: 'Noda di lengan' }, { note: '' }];
+    const setNotes = vi.fn();
     render(
       <ItemNotesModal
         isOpen={true}
         onClose={vi.fn()}
         item={baseItem}
+        notes={notes}
+        setNotes={setNotes}
         onSave={vi.fn()}
       />
     );
@@ -29,11 +33,15 @@ describe('ItemNotesModal', () => {
 
   it('calls onClose when Batal is clicked', () => {
     const onClose = vi.fn();
+    const notes = [{ note: 'Noda di lengan' }, { note: '' }];
+    const setNotes = vi.fn();
     render(
       <ItemNotesModal
         isOpen={true}
         onClose={onClose}
         item={baseItem}
+        notes={notes}
+        setNotes={setNotes}
         onSave={vi.fn()}
       />
     );
@@ -44,20 +52,24 @@ describe('ItemNotesModal', () => {
   it('calls onSave with updated notes when Simpan Catatan is clicked', () => {
     const onSave = vi.fn();
     const onClose = vi.fn();
-    render(
-      <ItemNotesModal
-        isOpen={true}
-        onClose={onClose}
-        item={baseItem}
-        onSave={onSave}
-      />
-    );
+    // We'll use a React state to simulate controlled notes
+    function Wrapper() {
+      const [notes, setNotes] = React.useState([{ note: 'Noda di lengan' }, { note: '' }]);
+      return (
+        <ItemNotesModal
+          isOpen={true}
+          onClose={onClose}
+          item={baseItem}
+          notes={notes}
+          setNotes={setNotes}
+          onSave={onSave}
+        />
+      );
+    }
+    render(<Wrapper />);
     fireEvent.change(screen.getByLabelText('Item #2'), { target: { value: 'Ada sobek' } });
     fireEvent.click(screen.getByText(/simpan catatan/i));
-    expect(onSave).toHaveBeenCalledWith([
-      { note: 'Noda di lengan' },
-      { note: 'Ada sobek' },
-    ]);
+    expect(onSave).toHaveBeenCalledWith([{ note: 'Noda di lengan' }, { note: 'Ada sobek' }]);
     expect(onClose).toHaveBeenCalled();
   });
 });

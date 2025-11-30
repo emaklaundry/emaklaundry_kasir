@@ -113,7 +113,6 @@ const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }>
   );
 };
 
-
 function TrendIndicator({ trendData }: { trendData?: TrendData }) {
   if (!trendData || trendData.trend === 'neutral') return null;
   const isUp = trendData.trend === 'up';
@@ -198,13 +197,13 @@ const Dashboard: React.FC = () => {
     }
     if (raw !== undefined && raw !== null) {
       // Log unexpected structure for debugging
-       
+
       console.warn('Unexpected customersQuery.data structure:', raw);
     }
     return [];
   }, [customersQuery.data]);
 
-  const { expenses, addExpense } = useExpenses();
+  const { addExpense } = useExpenses();
   const { scheduledMaintenances, updateScheduledMaintenance } = useScheduledMaintenances();
   const { assets, updateAsset } = useAssets();
   const { addAuditLog } = useAuditLogs();
@@ -396,7 +395,6 @@ const Dashboard: React.FC = () => {
         return; // No next status from 'Completed'
       }
 
-      const updatedTransaction = { ...transaction, orderStatus: nextStatus };
       await updateTransaction(transaction.id, { orderStatus: nextStatus });
       addAuditLog(
         `Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`,
@@ -593,7 +591,7 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody>
                 {paginatedActiveOrders.length > 0 ? (
-                  paginatedActiveOrders.map((t, idx) => {
+                  paginatedActiveOrders.map((t) => {
                     const isSelesaikanDisabled =
                       t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                     const nextActionText =
@@ -678,7 +676,7 @@ const Dashboard: React.FC = () => {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3">
             {paginatedActiveOrders.length > 0 ? (
-              paginatedActiveOrders.map((t, idx) => {
+              paginatedActiveOrders.map((t) => {
                 const isSelesaikanDisabled =
                   t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                 const mobileNextActionText =

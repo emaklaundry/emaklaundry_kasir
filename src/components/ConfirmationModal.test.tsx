@@ -1,4 +1,3 @@
-
 import { render, screen, fireEvent } from '@testing-library/react';
 import ConfirmationModal from './ConfirmationModal';
 import React from 'react';
@@ -13,7 +12,7 @@ describe('ConfirmationModal', () => {
         onConfirm={() => {}}
         title="Test Title"
         message="Test Message"
-      />
+      />,
     );
     expect(screen.getByText('Test Title')).toBeInTheDocument();
     expect(screen.getByText('Test Message')).toBeInTheDocument();
@@ -30,7 +29,7 @@ describe('ConfirmationModal', () => {
         onConfirm={() => {}}
         title="Test Title"
         message="Test Message"
-      />
+      />,
     );
     fireEvent.click(screen.getByText('Batal'));
     expect(onClose).toHaveBeenCalled();
@@ -45,7 +44,7 @@ describe('ConfirmationModal', () => {
         onConfirm={onConfirm}
         title="Test Title"
         message="Test Message"
-      />
+      />,
     );
     fireEvent.click(screen.getByText('Hapus'));
     expect(onConfirm).toHaveBeenCalled();
@@ -60,7 +59,7 @@ describe('ConfirmationModal', () => {
         title="Test Title"
         message="Test Message"
         isConfirming={true}
-      />
+      />,
     );
     // Find the disabled confirm button (has no accessible name when spinner is shown)
     const buttons = screen.getAllByRole('button');

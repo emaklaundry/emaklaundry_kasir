@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
 import { useTransactions } from '../contexts/TransactionContext';
@@ -6,9 +6,9 @@ import { fetchCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAppContext } from '../contexts/AppContext';
 import { useUsers } from '../contexts/UserContext';
-import { useToasts } from '../contexts/ToastContext';
+// import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
-import { Transaction, UserRole, Service, User, ServiceCategory } from '@/types';
+import { UserRole, Service, User, ServiceCategory } from '@/types';
 
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
@@ -213,7 +213,7 @@ const ReportsPage: React.FC = () => {
     }
     if (raw !== undefined && raw !== null) {
       // Log unexpected structure for debugging
-       
+
       console.warn('Unexpected customersRaw.data structure:', raw);
     }
     return [];
@@ -221,10 +221,10 @@ const ReportsPage: React.FC = () => {
   const { expenses: allStoreExpenses } = useExpenses();
   const { services } = useServices();
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const { addToast } = useToasts();
+  // const { addToast } = useToasts();
   const { users: allUsers } = useUsers();
 
-  const [reportType, setReportType] = useState<'range' | 'yearlySummary'>('range');
+  const [reportType] = useState<'range' | 'yearlySummary'>('range');
   const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
 
   const today = new Date();

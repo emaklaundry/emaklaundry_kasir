@@ -84,7 +84,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           // Profil tidak ditemukan (bisa karena trigger belum jalan)
           console.warn('User login berhasil, tapi profil tidak ditemukan di database.');
           // Opsi: Logout otomatis atau biarkan null
-          // await supabase.auth.signOut(); 
+          // await supabase.auth.signOut();
           setCurrentUser(null);
           prevLoggedInRef.current = false;
         }

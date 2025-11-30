@@ -22,7 +22,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     description: '',
     cost: 0,
   }));
-  const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
+
 
   // Ensure selectedAssetId and form defaults are in sync when modal opens
   useEffect(() => {
@@ -62,7 +62,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     }
 
     const toastId = addToast('Menyimpan laporan...', 'info');
-    setIsSavingMaintenance(true);
+    // setIsSavingMaintenance(true);
     try {
       await updateAsset(selectedAssetId, {
         maintenanceHistory: [...assetToUpdate.maintenanceHistory, newLog],
@@ -79,10 +79,12 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
       setFormData({ date: new Date(), description: '', cost: 0 });
       setSelectedAssetId(assets[0]?.id || '');
       onClose();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan laporan: ${error.message}`, 'error');
-    } finally {
-      setIsSavingMaintenance(false);
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        updateToast(toastId, `Gagal menyimpan laporan: ${(error as { message: string }).message}`, 'error');
+      } else {
+        updateToast(toastId, 'Gagal menyimpan laporan: Unknown error', 'error');
+      }
     }
   };
 

@@ -62,7 +62,10 @@ const PwaStatusHandler: React.FC = () => {
   React.useEffect(() => {
     registerSW({
       onOfflineReady() {
-        addToast('Mode Offline Aktif: Aplikasi kini siap digunakan tanpa koneksi internet.', 'info');
+        addToast(
+          'Mode Offline Aktif: Aplikasi kini siap digunakan tanpa koneksi internet.',
+          'info',
+        );
       },
       onNeedRefresh() {},
     });

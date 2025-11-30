@@ -33,9 +33,6 @@ const InventoryPage: React.FC = () => {
 
   const {
     data: result = { data: [], count: 0 },
-    isLoading,
-    isError,
-    refetch,
   } = useQuery({
     queryKey: [
       'inventory',
@@ -57,7 +54,8 @@ const InventoryPage: React.FC = () => {
     mutationFn: async (data: InventoryInput) => addInventoryItem(data),
   });
   const updateInventoryMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: InventoryInput }) => updateInventoryItem(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: InventoryInput }) =>
+      updateInventoryItem(id, data),
   });
   const deleteInventoryMutation = useMutation({
     mutationFn: async (id: string) => deleteInventoryItem(id),
@@ -114,8 +112,12 @@ const InventoryPage: React.FC = () => {
         updateToast(toastId, 'Item inventaris berhasil ditambahkan!', 'success');
       }
       handleCloseFormModal();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        updateToast(toastId, `Gagal menyimpan: ${(error as { message: string }).message}`, 'error');
+      } else {
+        updateToast(toastId, 'Gagal menyimpan: Unknown error', 'error');
+      }
     }
   };
 
@@ -130,8 +132,12 @@ const InventoryPage: React.FC = () => {
         await deleteInventoryMutation.mutateAsync(itemToDelete.id);
         addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId);
         updateToast(toastId, 'Item inventaris berhasil dihapus!', 'success');
-      } catch (error: any) {
-        updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          updateToast(toastId, `Gagal menghapus: ${(error as { message: string }).message}`, 'error');
+        } else {
+          updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
+        }
       } finally {
         setItemToDelete(null);
       }
@@ -166,7 +172,6 @@ const InventoryPage: React.FC = () => {
     sortConfig,
   } = useSortableData<InventoryWithStore>(filteredInventory);
   // Pagination handled by server, so just use sortedInventory
-  const paginatedInventory = sortedInventory;
 
   const getSortIcon = (key: keyof InventoryWithStore) => {
     if (!sortConfig || sortConfig.key !== key) return null;

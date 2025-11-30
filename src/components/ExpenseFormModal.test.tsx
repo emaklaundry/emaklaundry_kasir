@@ -42,7 +42,7 @@ describe('ExpenseFormModal', () => {
         category: 'Operasional',
         amount: 10000,
         date: expect.any(String),
-      })
+      }),
     );
   });
 

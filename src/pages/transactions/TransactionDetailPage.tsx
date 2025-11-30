@@ -10,7 +10,7 @@ import {
   PrinterIcon,
   UsersIcon,
   ShoppingCartIcon,
-  SendIcon, // Import icon Send
+  // SendIcon, // Import icon Send (unused)
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import { useAppContext } from '../../contexts/AppContext';
@@ -35,7 +35,7 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
 
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  
+
   // Mengambil fungsi updateTransaction dari context
   const { updateTransaction } = useTransactions({ enabled: false });
 
@@ -114,7 +114,7 @@ const TransactionDetailPage: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-2">
-             {/* Tombol Kirim WA Manual */}
+            {/* Tombol Kirim WA Manual */}
             {/*
             <button
               onClick={() => setIsHeaderWAOpen(true)}
@@ -194,10 +194,10 @@ const TransactionDetailPage: React.FC = () => {
         )}
 
         {/* Action buttons passing updateTransaction and customer */}
-        <ActionButtons 
-          transaction={transaction} 
+        <ActionButtons
+          transaction={transaction}
           customer={customer}
-          updateTransaction={updateTransaction} 
+          updateTransaction={updateTransaction}
         />
       </div>
 
@@ -258,10 +258,7 @@ const TransactionDetailPage: React.FC = () => {
         {/* Tampilan Kartu Mobile */}
         <div className="md:hidden space-y-3">
           {transaction.items.map((item, index) => (
-            <div
-              key={index}
-              className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
-            >
+            <div key={index} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
               <div className="flex justify-between items-start">
                 <span className="font-semibold text-slate-800 dark:text-slate-100">
                   {item.serviceName}
@@ -330,7 +327,7 @@ const TransactionDetailPage: React.FC = () => {
           />
         </div>
       </div>
-      
+
       {/* WhatsApp Modal untuk tombol manual di header */}
       {/*
       {isHeaderWAOpen && (
@@ -354,13 +351,17 @@ interface ActionButtonsProps {
   updateTransaction: (id: string, data: Partial<Transaction>) => Promise<Transaction | null>;
 }
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, updateTransaction }) => {
+const ActionButtons: React.FC<ActionButtonsProps> = ({
+  transaction,
+  customer,
+  updateTransaction,
+}) => {
   const { currentUser } = useAppContext();
   const { addToast, updateToast } = useToasts();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  
+
   // State untuk WhatsApp Modal otomatis setelah aksi
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
 
@@ -378,7 +379,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
     const toastId = addToast('Menyimpan pembayaran...', 'info');
     const shouldShowWhatsAppModal =
       updatedTransaction.paymentStatus === PaymentStatus.Paid &&
-      (updatedTransaction.orderStatus === OrderStatus.Completed || updatedTransaction.orderStatus === OrderStatus.Ready);
+      (updatedTransaction.orderStatus === OrderStatus.Completed ||
+        updatedTransaction.orderStatus === OrderStatus.Ready);
     try {
       await updateTransaction(transaction.id, {
         amountPaid: updatedTransaction.amountPaid,
@@ -391,8 +393,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
       if (shouldShowWhatsAppModal) {
         setIsWhatsAppOpen(true);
       }
-    } catch (err: any) {
-      updateToast(toastId, err?.message ?? 'Gagal memperbarui status pembayaran', 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal memperbarui status pembayaran';
+      updateToast(toastId, message, 'error');
     } finally {
       setLoading(false);
       setIsPaymentOpen(false);
@@ -407,8 +410,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
       updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
       // Otomatis tawarkan kirim WA saat Ready
       setIsWhatsAppOpen(true);
-    } catch (err: any) {
-      updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal memperbarui status pesanan';
+      updateToast(toastId, message, 'error');
     } finally {
       setLoading(false);
     }
@@ -416,17 +420,21 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
 
   async function handleMarkCompleted() {
     if (transaction.paymentStatus !== PaymentStatus.Paid) {
-      addToast('Transaksi belum lunas. Harap lunasi tagihan sebelum menyelesaikan pesanan.', 'error');
+      addToast(
+        'Transaksi belum lunas. Harap lunasi tagihan sebelum menyelesaikan pesanan.',
+        'error',
+      );
       return;
     }
-    
+
     setLoading(true);
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
       await updateTransaction(transaction.id, { orderStatus: OrderStatus.Completed });
       updateToast(toastId, 'Status pesanan diperbarui: Selesai', 'success');
-    } catch (err: any) {
-      updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal memperbarui status pesanan';
+      updateToast(toastId, message, 'error');
     } finally {
       setLoading(false);
     }
@@ -513,14 +521,14 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, up
         onSave={onSavePayment}
         disabled={loading}
       />
-      
+
       {/* Modal WA Otomatis setelah aksi */}
       {isWhatsAppOpen && (
         <WhatsAppModal
-            isOpen={isWhatsAppOpen}
-            onClose={() => setIsWhatsAppOpen(false)}
-            transaction={transaction}
-            customer={customer}
+          isOpen={isWhatsAppOpen}
+          onClose={() => setIsWhatsAppOpen(false)}
+          transaction={transaction}
+          customer={customer}
         />
       )}
     </div>

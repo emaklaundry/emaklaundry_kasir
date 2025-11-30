@@ -47,7 +47,7 @@ describe('Dashboard Page', () => {
             </AppProviders>
           </MemoryRouter>
         </MockAppContextProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     // Cari heading yang benar-benar ada di Dashboard
     expect(screen.getByText(/Tampilan Data/i)).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('Dashboard Page', () => {
             </AppProviders>
           </MemoryRouter>
         </MockAppContextProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     // Cari tombol "Catat Pengeluaran" secara spesifik
     const buttons = screen.getAllByText(/Catat Pengeluaran/i);
