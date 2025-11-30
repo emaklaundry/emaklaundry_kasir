@@ -1,13 +1,21 @@
-
--- ================================================================
--- FILE: database/setup/apply_rpc_and_seed.sql
--- DESKRIPSI: Script ini untuk mengisi data awal (Seed) Toko, User Role, dan Layanan.
--- PRASYARAT: 
--- 1. File 'database.sql' harus sudah dijalankan (struktur tabel sudah ada).
--- 2. User (Super Admin, emaklaundry, YOPI, dll) harus sudah REGISTER di menu Authentication.
--- ================================================================
-
-
+-- ==========================================
+-- 5. POLICY: IZINKAN INSERT TRANSAKSI UNTUK USER YANG SAH
+-- ==========================================
+-- Pastikan policy ini sudah ada di database.sql, tapi tambahkan di sini agar pasti aktif setelah seed
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'transactions' AND policyname = 'Allow INSERT for store users'
+  ) THEN
+    EXECUTE $$
+      CREATE POLICY "Allow INSERT for store users" ON public.transactions
+        FOR INSERT WITH CHECK (
+          public.get_my_role() = 'Super Admin'
+          OR "storeId" = public.get_my_store_id()
+        );
+    $$;
+  END IF;
+END$$;
 BEGIN;
 
 -- ==========================================
@@ -27,7 +35,7 @@ SET name = EXCLUDED.name, "isActive" = true;
 -- ==========================================
 -- 2. REPAIR PROFILE (Buat profile jika belum ada)
 -- ==========================================
--- Ini mencegah error saat login jika trigger sebelumnya gagal
+-- Mencegah error foreign key saat update role di bawah
 INSERT INTO public.profiles (id, name, role, store_id, "isActive")
 SELECT 
   au.id,
@@ -76,29 +84,17 @@ AND auth.users.email IN (
   'yopi@gmail.com'
 );
 
-COMMIT;
 
 -- ==========================================
--- 4. VERIFIKASI HASIL
+-- 4. SEED LAYANAN (SERVICES)
 -- ==========================================
-SELECT 
-  u.email, 
-  p.role, 
-  s.name as nama_toko 
-FROM public.profiles p
-JOIN auth.users u ON p.id = u.id
-LEFT JOIN public.stores s ON p.store_id = s.id
-ORDER BY p.role DESC;
--- === BAGIAN 3: SEED LAYANAN (SERVICES) ===
--- Menggunakan data layanan yang Anda berikan sebelumnya.
-
--- 3.1. Index Unik untuk mencegah duplikasi layanan di toko yang sama
+-- Index Unik untuk mencegah duplikasi layanan
 CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx ON public.services (lower(name), "storeId");
 
--- 3.2. Insert Layanan
+-- Insert Layanan
 WITH target_store AS (
   SELECT id FROM public.stores
-  WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456' OR name ILIKE 'Cabang Kota Banjar'
+  WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
   LIMIT 1
 )
 INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
@@ -181,23 +177,16 @@ ON CONFLICT (lower(name), "storeId") DO UPDATE SET
   "durationDays" = EXCLUDED."durationDays",
   category = EXCLUDED.category;
 
-
--- === SCRIPT PERBAIKAN: ISI PROFILE YANG HILANG ===
--- Sinkronisasi: Pastikan setiap user di auth.users punya baris di public.profiles
-INSERT INTO public.profiles (id, name, role, store_id, "isActive")
-SELECT 
-  au.id,
-  COALESCE(au.raw_user_meta_data->>'name', au.email) as name, 
-  'Kasir',
-  NULL,
-  true
-FROM auth.users au
-LEFT JOIN public.profiles pp ON au.id = pp.id
-WHERE pp.id IS NULL;
--- === SELESAI SCRIPT PERBAIKAN ===
-
 COMMIT;
 
--- Verifikasi hasil (Opsional)
-SELECT name, role, store_id FROM public.profiles WHERE name IN ('Super Admin', 'emaklaundry', 'YOPI', 'ani', 'didi', 'lilis');
-SELECT count(*) as total_services FROM public.services;
+-- ==========================================
+-- 5. VERIFIKASI HASIL
+-- ==========================================
+SELECT 
+  u.email, 
+  p.role, 
+  s.name as nama_toko 
+FROM public.profiles p
+JOIN auth.users u ON p.id = u.id
+LEFT JOIN public.stores s ON p.store_id = s.id
+ORDER BY p.role DESC;
