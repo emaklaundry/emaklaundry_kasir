@@ -7,11 +7,12 @@
 -- 2. User (Super Admin, emaklaundry, YOPI, dll) harus sudah REGISTER di menu Authentication.
 -- ================================================================
 
+
 BEGIN;
 
--- 1. Pastikan Toko "Cabang Kota Banjar" Sudah Ada
--- Kita gunakan ID hardcoded untuk toko agar mudah direferensikan, 
--- tapi untuk user kita IKUTI id dari Auth.
+-- ==========================================
+-- 1. PASTIKAN TOKO ADA (Cabang Kota Banjar)
+-- ==========================================
 INSERT INTO public.stores (id, name, address, "isActive")
 VALUES (
   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 
@@ -20,36 +21,74 @@ VALUES (
   true
 )
 ON CONFLICT (id) DO UPDATE 
-SET name = EXCLUDED.name, address = EXCLUDED.address; 
+SET name = EXCLUDED.name, "isActive" = true;
 
--- 2. Setup SUPER ADMIN
--- Mencari profile dengan nama 'Super Admin' dan menjadikannya Super Admin
+
+-- ==========================================
+-- 2. REPAIR PROFILE (Buat profile jika belum ada)
+-- ==========================================
+-- Ini mencegah error saat login jika trigger sebelumnya gagal
+INSERT INTO public.profiles (id, name, role, store_id, "isActive")
+SELECT 
+  au.id,
+  COALESCE(au.raw_user_meta_data->>'name', au.email) as name, 
+  'Kasir', -- Default role
+  NULL,
+  true
+FROM auth.users au
+LEFT JOIN public.profiles pp ON au.id = pp.id
+WHERE pp.id IS NULL;
+
+
+-- ==========================================
+-- 3. SETUP ROLE BERDASARKAN EMAIL (Data Real)
+-- ==========================================
+
+-- A. Setup SUPER ADMIN (mhmdnvn18@gmail.com)
 UPDATE public.profiles
 SET 
   role = 'Super Admin', 
   store_id = NULL
-WHERE name ILIKE 'Super Admin';
+FROM auth.users
+WHERE public.profiles.id = auth.users.id
+AND auth.users.email = 'mhmdnvn18@gmail.com';
 
--- 3. Setup ADMIN TOKO (emaklaundry)
--- Mencari profile 'emaklaundry' dan menjadikannya Admin di Cabang Banjar
+-- B. Setup ADMIN TOKO (emaklaundry12@gmail.com)
 UPDATE public.profiles
 SET 
   role = 'Admin', 
   store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
-WHERE name ILIKE 'emaklaundry';
+FROM auth.users
+WHERE public.profiles.id = auth.users.id
+AND auth.users.email = 'emaklaundry12@gmail.com';
 
--- 4. Setup KASIR (YOPI, ani, didi, lilis)
--- Mencari semua nama ini dan menjadikan mereka Kasir di Cabang Banjar
+-- C. Setup KASIR (ani, didi, lilis, yopi)
 UPDATE public.profiles
 SET 
   role = 'Kasir', 
   store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
-WHERE name IN ('YOPI', 'ani', 'didi', 'lilis');
+FROM auth.users
+WHERE public.profiles.id = auth.users.id
+AND auth.users.email IN (
+  'ani@gmail.com',
+  'didi@gmail.com',
+  'lilis@gmail.com',
+  'yopi@gmail.com'
+);
 
 COMMIT;
 
--- 5. Verifikasi Hasil
-SELECT name, role, store_id FROM public.profiles;
+-- ==========================================
+-- 4. VERIFIKASI HASIL
+-- ==========================================
+SELECT 
+  u.email, 
+  p.role, 
+  s.name as nama_toko 
+FROM public.profiles p
+JOIN auth.users u ON p.id = u.id
+LEFT JOIN public.stores s ON p.store_id = s.id
+ORDER BY p.role DESC;
 -- === BAGIAN 3: SEED LAYANAN (SERVICES) ===
 -- Menggunakan data layanan yang Anda berikan sebelumnya.
 
