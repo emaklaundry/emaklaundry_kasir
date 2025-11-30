@@ -67,7 +67,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label
-              htmlFor="name"
+              htmlFor="customer-name"
               className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
             >
               Nama Pelanggan
@@ -85,7 +85,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
           <div>
             <label
-              htmlFor="phone"
+              htmlFor="customer-phone"
               className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
             >
               Nomor Telepon
@@ -104,7 +104,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         </div>
         <div>
           <label
-            htmlFor="address"
+            htmlFor="customer-address"
             className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
           >
             Alamat (Opsional)
@@ -121,7 +121,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         </div>
         <div>
           <label
-            htmlFor="defaultDiscount"
+            htmlFor="customer-defaultDiscount"
             className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
           >
             Diskon Standar (%)
@@ -143,7 +143,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         </div>
         <div>
           <label
-            htmlFor="notes"
+            htmlFor="customer-notes"
             className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
           >
             Catatan (Opsional)
