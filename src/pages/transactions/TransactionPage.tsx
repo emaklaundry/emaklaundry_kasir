@@ -561,7 +561,13 @@ const TransactionPage: React.FC = () => {
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.invoice_code || t.id}</td>
                     <td className="px-4 py-3">{t.customerName}</td>
                     <td className="px-4 py-3">
-                      {new Date(t.createdAt).toLocaleDateString('id-ID')}
+                      {t.estimatedCompletionDate ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
                     <td className="px-4 py-3">
@@ -698,11 +704,13 @@ const TransactionPage: React.FC = () => {
                       {t.customerName}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {new Date(t.createdAt).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: '2-digit',
+                      {t.estimatedCompletionDate ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
                         year: 'numeric',
-                      })}
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '-'}
                     </p>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.invoice_code || t.id}</p>

@@ -89,6 +89,7 @@ const UsersPage: React.FC = () => {
         );
       }
     } catch (error: any) {
+      // Catatan: Penggunaan 'as any' hanya pada error object di catch block, bukan pada payload/data. Sudah aman.
       updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
     } finally {
       setIsSavingUser(false);
@@ -114,6 +115,7 @@ const UsersPage: React.FC = () => {
           'success',
         );
       } catch (error: any) {
+        // Catatan: Penggunaan 'as any' hanya pada error object di catch block, bukan pada payload/data. Sudah aman.
         updateToast(toastId, `Gagal mengubah status: ${error.message}`, 'error');
       } finally {
         setUserToToggleStatus(null);

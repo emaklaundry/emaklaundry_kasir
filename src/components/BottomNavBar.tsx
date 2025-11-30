@@ -1,5 +1,4 @@
 import * as React from 'react';
-// @ts-ignore
 import { NavLink } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
 import { UserRole } from '../types';

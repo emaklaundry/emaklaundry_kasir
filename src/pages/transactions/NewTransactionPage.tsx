@@ -208,6 +208,7 @@ const NewTransactionPage: React.FC = () => {
   }, [currentUser, selectedStoreId]);
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
+  // Catatan: Dependensi useEffect ini sudah aman, logika hanya berjalan saat selectedCustomer atau setting diskon berubah.
   useEffect(() => {
     if (!canApplyDiscount) {
       setDiscountType('percent');

@@ -329,7 +329,7 @@ const Dashboard: React.FC = () => {
     currentPage: activeOrdersCurrentPage,
     totalPages: activeOrdersTotalPages,
     onPageChange: onActiveOrdersPageChange,
-  } = usePagination<ActiveOrder>(activeOrders);
+  } = usePagination<ActiveOrder>(activeOrders, 5);
 
   const handleSaveExpense = useCallback(
     async (expense: Omit<Expense, 'id' | 'storeId'>) => {

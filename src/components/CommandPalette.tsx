@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import useDebounce from '@/hooks/useDebounce';
 import {
   HomeIcon,
   ShoppingCartIcon,
@@ -31,20 +32,20 @@ interface Command {
 const CommandPalette: React.FC = () => {
   const { isOpen, close } = useCommandPalette();
   const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 400);
   const customersQuery = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ['customers', { search: debouncedQuery }],
+    queryFn: () => debouncedQuery ? fetchCustomers({ search: debouncedQuery }) : Promise.resolve([]),
+    enabled: !!debouncedQuery,
+    staleTime: 1000 * 60,
   });
-
-  // --- PERBAIKAN DI SINI ---
   const customers = useMemo(() => {
     return Array.isArray(customersQuery.data)
       ? customersQuery.data
       : (customersQuery.data?.data ?? []);
   }, [customersQuery.data]);
-  // --- AKHIR PERBAIKAN ---
 
-  const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
