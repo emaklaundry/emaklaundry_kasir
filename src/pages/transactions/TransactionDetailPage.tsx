@@ -69,7 +69,7 @@ const TransactionDetailPage: React.FC = () => {
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
 
   // State untuk WhatsApp manual dari header (opsional, jika ingin tombol di header)
-  const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false);
+  // const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false); // Unused
 
   if (isTransactionLoading) {
     return (
@@ -115,6 +115,7 @@ const TransactionDetailPage: React.FC = () => {
           </div>
           <div className="flex gap-2">
              {/* Tombol Kirim WA Manual */}
+            {/*
             <button
               onClick={() => setIsHeaderWAOpen(true)}
               className="flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-4 py-3"
@@ -122,6 +123,7 @@ const TransactionDetailPage: React.FC = () => {
             >
               <SendIcon className="h-5 w-5" />
             </button>
+            */}
             <Link
               to={`/transactions/${transaction.id}/receipt`}
               className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
@@ -330,6 +332,7 @@ const TransactionDetailPage: React.FC = () => {
       </div>
       
       {/* WhatsApp Modal untuk tombol manual di header */}
+      {/*
       {isHeaderWAOpen && (
         <WhatsAppModal
           isOpen={isHeaderWAOpen}
@@ -338,6 +341,7 @@ const TransactionDetailPage: React.FC = () => {
           customer={customer}
         />
       )}
+      */}
     </div>
   );
 };

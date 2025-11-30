@@ -30,7 +30,6 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
 
   useEffect(() => {
     if (isOpen) {
-      // Initialize local state with current stock values from context
       const initial = inventory.reduce(
         (acc, item) => {
           acc[item.id] = item.stock;
@@ -38,8 +37,10 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
         },
         {} as { [key: string]: number },
       );
-      setStockUpdates(initial);
-      setInitialStock(initial);
+      setTimeout(() => {
+        setStockUpdates(initial);
+        setInitialStock(initial);
+      }, 0);
     }
   }, [isOpen, inventory]);
 

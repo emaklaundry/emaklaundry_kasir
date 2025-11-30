@@ -63,8 +63,9 @@ const ExpensesPage: React.FC = () => {
         updateToast(toastId, 'Pengeluaran berhasil dicatat!', 'success');
       }
       handleCloseFormModal();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSavingExpense(false);
     }
@@ -86,8 +87,9 @@ const ExpensesPage: React.FC = () => {
         );
         setExpenseToDelete(null);
         updateToast(toastId, 'Pengeluaran berhasil dihapus!', 'success');
-      } catch (error: any) {
-        updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        updateToast(toastId, `Gagal menghapus: ${errMsg}`, 'error');
       } finally {
         setIsSavingExpense(false);
       }

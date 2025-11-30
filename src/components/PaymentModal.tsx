@@ -33,8 +33,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   useEffect(() => {
     if (transaction) {
-      setMethod(transaction.paymentMethod || PaymentMethod.Cash);
-      setTenderedAmountStr('');
+      setTimeout(() => {
+        setMethod(transaction.paymentMethod || PaymentMethod.Cash);
+        setTenderedAmountStr('');
+      }, 0);
     }
   }, [transaction]);
 

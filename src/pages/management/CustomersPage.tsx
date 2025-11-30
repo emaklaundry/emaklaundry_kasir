@@ -83,11 +83,12 @@ const CustomersPage: React.FC = () => {
 
   type CustomerWithStats = (typeof customerStats)[0];
 
+  type CustomerInput = Omit<Customer, 'id'>;
   const addCustomerMutation = useMutation({
-    mutationFn: async (data: any) => addCustomer(data),
+    mutationFn: async (data: CustomerInput) => addCustomer(data),
   });
   const updateCustomerMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => updateCustomer(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: CustomerInput }) => updateCustomer(id, data),
   });
 
   const {
@@ -119,7 +120,7 @@ const CustomersPage: React.FC = () => {
 
   const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
     // Pilih storeId sesuai role user
-    let storeId =
+    const storeId =
       currentCustomer?.storeId ||
       (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
     if (!storeId || storeId === 'all') {

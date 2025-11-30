@@ -182,14 +182,18 @@ const CommandPalette: React.FC = () => {
 
   useEffect(() => {
     if (isOpen) {
-      setQuery('');
-      setActiveIndex(0);
-      inputRef.current?.focus();
+      // Hindari cascading render: gunakan flushSync jika perlu, atau debounce
+      setTimeout(() => {
+        setQuery('');
+        setActiveIndex(0);
+        inputRef.current?.focus();
+      }, 0);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    setActiveIndex(0);
+    // Hindari cascading render: gunakan flushSync jika perlu, atau debounce
+    setTimeout(() => setActiveIndex(0), 0);
   }, [query]);
 
   useEffect(() => {

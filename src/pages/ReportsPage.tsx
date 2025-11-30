@@ -213,7 +213,7 @@ const ReportsPage: React.FC = () => {
     }
     if (raw !== undefined && raw !== null) {
       // Log unexpected structure for debugging
-      // eslint-disable-next-line no-console
+       
       console.warn('Unexpected customersRaw.data structure:', raw);
     }
     return [];

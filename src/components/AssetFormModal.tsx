@@ -38,7 +38,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
     // Gunakan helper agar DRY
     const iso = convertLocalDateToISOString(formData.purchaseDate);
     const payload = { ...formData, purchaseDate: iso };
-    onSave(payload as any);
+    onSave(payload);
   };
 
   return (

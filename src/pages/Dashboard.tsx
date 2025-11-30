@@ -113,6 +113,20 @@ const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }>
   );
 };
 
+
+function TrendIndicator({ trendData }: { trendData?: TrendData }) {
+  if (!trendData || trendData.trend === 'neutral') return null;
+  const isUp = trendData.trend === 'up';
+  const trendColor = isUp ? 'text-green-500' : 'text-red-500';
+  const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
+  return (
+    <div className={`flex items-center text-sm font-semibold mt-1 ${trendColor}`}>
+      <TrendIcon className="w-4 h-4 mr-1" />
+      <span>{trendData.percentage} vs 30 hari lalu</span>
+    </div>
+  );
+}
+
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
   title: string;
@@ -121,21 +135,6 @@ const StatCard: React.FC<{
   to?: string;
   trendData?: TrendData;
 }> = ({ icon: Icon, title, value, color, to, trendData }) => {
-  const TrendIndicator = () => {
-    if (!trendData || trendData.trend === 'neutral') return null;
-
-    const isUp = trendData.trend === 'up';
-    const trendColor = isUp ? 'text-green-500' : 'text-red-500';
-    const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
-
-    return (
-      <div className={`flex items-center text-sm font-semibold mt-1 ${trendColor}`}>
-        <TrendIcon className="w-4 h-4 mr-1" />
-        <span>{trendData.percentage} vs 30 hari lalu</span>
-      </div>
-    );
-  };
-
   const content = (
     <div
       className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors' : ''}`}
@@ -151,10 +150,9 @@ const StatCard: React.FC<{
           <Icon className={`w-7 h-7 ${color.replace('border-', 'text-')}`} />
         </div>
       </div>
-      <TrendIndicator />
+      <TrendIndicator trendData={trendData} />
     </div>
   );
-
   return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
 };
 
@@ -200,7 +198,7 @@ const Dashboard: React.FC = () => {
     }
     if (raw !== undefined && raw !== null) {
       // Log unexpected structure for debugging
-      // eslint-disable-next-line no-console
+       
       console.warn('Unexpected customersQuery.data structure:', raw);
     }
     return [];

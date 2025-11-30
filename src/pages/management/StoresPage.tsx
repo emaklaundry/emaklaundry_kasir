@@ -81,8 +81,9 @@ const StoresPage: React.FC = () => {
         updateToast(toastId, 'Cabang baru berhasil ditambahkan.', 'success');
       }
       handleCloseFormModal();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error?.message || error}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSavingStore(false);
     }

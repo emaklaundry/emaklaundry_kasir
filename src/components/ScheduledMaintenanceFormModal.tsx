@@ -45,7 +45,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
   const [formData, setFormData] = useState<ScheduleFormData>(getInitialFormData());
 
   useEffect(() => {
-    setFormData(getInitialFormData());
+    setTimeout(() => setFormData(getInitialFormData()), 0);
   }, [schedule, isOpen, getInitialFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

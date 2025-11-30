@@ -32,14 +32,15 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   }, [customers, searchTerm]);
 
   useEffect(() => {
+    // Hindari cascading render: update state async
     if (selectedCustomer) {
-      setSearchTerm(selectedCustomer.name);
-      setIsDropdownOpen(false);
+      setTimeout(() => {
+        setSearchTerm(selectedCustomer.name);
+        setIsDropdownOpen(false);
+      }, 0);
     } else {
-      // Only clear the search term if the input isn't focused (i.e., user isn't typing)
-      // This handles external resets, like from the main form's "reset" button.
       if (document.activeElement !== inputRef.current) {
-        setSearchTerm('');
+        setTimeout(() => setSearchTerm(''), 0);
       }
     }
   }, [selectedCustomer]);

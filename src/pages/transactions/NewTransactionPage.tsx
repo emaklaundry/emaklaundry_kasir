@@ -374,8 +374,11 @@ const NewTransactionPage: React.FC = () => {
       } else {
         updateToast(toastId, 'Gagal menambah pelanggan: Data tidak valid.', 'error');
       }
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menambah pelanggan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const msg = typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string'
+        ? (error as any).message
+        : 'Unknown error';
+      updateToast(toastId, `Gagal menambah pelanggan: ${msg}`, 'error');
     }
   };
 
@@ -441,12 +444,13 @@ const NewTransactionPage: React.FC = () => {
       };
       const savedTransaction = await addTransaction(newTransaction);
       if (savedTransaction) {
+        const tx: Transaction = savedTransaction as Transaction;
         addAuditLog(
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
           currentStoreId,
         );
-        await queryClient.invalidateQueries({ queryKey: ['transaction', savedTransaction.id] });
-        setNewlyCreatedTransaction(savedTransaction);
+        await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
+        setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);
         updateToast(toastId, 'Transaksi berhasil disimpan.', 'success');
       } else {
@@ -456,13 +460,24 @@ const NewTransactionPage: React.FC = () => {
           'error',
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Tangani error duplikat idempotencyKey
-      if (error.code === '23505' && error.message?.includes('idempotencyKey')) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as any).code === '23505' &&
+        'message' in error &&
+        typeof (error as any).message === 'string' &&
+        (error as any).message.includes('idempotencyKey')
+      ) {
         updateToast(toastId, 'Transaksi berhasil disimpan (terdeteksi duplikat).', 'success');
         setIsSuccessModalOpen(true);
       } else {
-        updateToast(toastId, `Gagal menyimpan transaksi: ${error.message}`, 'error');
+        const msg = typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string'
+          ? (error as any).message
+          : 'Unknown error';
+        updateToast(toastId, `Gagal menyimpan transaksi: ${msg}`, 'error');
       }
     } finally {
       setIsSaving(false);
@@ -532,7 +547,7 @@ const NewTransactionPage: React.FC = () => {
     setAmountPaidStr(formatRupiah(rawValue));
   };
 
-  const quickCashButtons = [50000, 100000];
+  // quickCashButtons removed (unused)
 
   return (
     <>
@@ -771,7 +786,7 @@ const NewTransactionPage: React.FC = () => {
                           )
                         }
                         className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600"
-                        disabled={!!(!canEditDiscount)}
+                        disabled={!canEditDiscount}
                       />
                     </div>
                   </div>

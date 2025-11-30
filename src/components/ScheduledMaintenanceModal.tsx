@@ -76,8 +76,12 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
         );
       }
       handleCloseForm();
-    } catch (error: any) {
-      addToast(`Gagal menyimpan jadwal: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        addToast(`Gagal menyimpan jadwal: ${(error as { message: string }).message}`, 'error');
+      } else {
+        addToast('Gagal menyimpan jadwal: Unknown error', 'error');
+      }
     }
   };
 
@@ -93,8 +97,12 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
           `Menghapus jadwal perawatan "${deletingSchedule.description}" dari aset "${asset.name}".`,
           asset.storeId,
         );
-      } catch (error: any) {
-        addToast(`Gagal menghapus jadwal: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          addToast(`Gagal menghapus jadwal: ${(error as { message: string }).message}`, 'error');
+        } else {
+          addToast('Gagal menghapus jadwal: Unknown error', 'error');
+        }
       } finally {
         setDeletingSchedule(null);
       }
@@ -126,8 +134,12 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
         `Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}".`,
         asset.storeId,
       );
-    } catch (error: any) {
-      addToast(`Gagal menandai selesai: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        addToast(`Gagal menandai selesai: ${(error as { message: string }).message}`, 'error');
+      } else {
+        addToast('Gagal menandai selesai: Unknown error', 'error');
+      }
     }
   };
 

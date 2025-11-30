@@ -10,7 +10,7 @@ import BottomNavBar from './BottomNavBar';
 import VersionInfo from './VersionInfo';
 import { Customer, UserRole } from '@/types';
 
-const getPageTitle = (pathname: string, params: any, customers: Customer[]): string => {
+const getPageTitle = (pathname: string, params: Record<string, string | undefined>, customers: Customer[]): string => {
   const staticTitles: { [key: string]: string } = {
     '/': 'Dashboard',
     '/transactions': 'Transaksi',

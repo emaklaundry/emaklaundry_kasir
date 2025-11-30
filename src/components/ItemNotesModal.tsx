@@ -70,15 +70,16 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, 
               htmlFor={`note-${index}`}
               className="block mb-1 text-base font-medium text-slate-900 dark:text-white"
             >
-              Item #{index + 1}
+              {`Item #${index + 1}`}
             </label>
             <input
               type="text"
               id={`note-${index}`}
+              aria-label={`Item #${index + 1}`}
               value={note.note}
               onChange={(e) => handleNoteChange(index, e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              placeholder="Contoh: Noda di kerah"
+              placeholder="Noda di kerah"
             />
           </div>
         ))}

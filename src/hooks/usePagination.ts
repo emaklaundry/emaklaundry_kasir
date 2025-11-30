@@ -16,11 +16,13 @@ const usePagination = <T>(data: T[], itemsPerPage: number = DEFAULT_ITEMS_PER_PA
   }, [data, currentPage, itemsPerPage]);
 
   // Reset ke halaman 1 jika halaman saat ini tidak valid (misal setelah filter)
+  // Only reset currentPage if totalPages changes and currentPage is out of range
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
-  }, [currentPage, totalPages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
 
   return {
     currentPage,

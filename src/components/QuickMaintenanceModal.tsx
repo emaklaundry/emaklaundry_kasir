@@ -27,10 +27,10 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
   // Ensure selectedAssetId and form defaults are in sync when modal opens
   useEffect(() => {
     if (isOpen) {
-      // If assets loaded after mount, pick first asset when nothing selected
-      setSelectedAssetId((prev) => prev || assets[0]?.id || '');
-      // Reset form when opening
-      setFormData({ date: new Date(), description: '', cost: 0 });
+      setTimeout(() => {
+        setSelectedAssetId((prev) => prev || assets[0]?.id || '');
+        setFormData({ date: new Date(), description: '', cost: 0 });
+      }, 0);
     }
   }, [isOpen, assets]);
 

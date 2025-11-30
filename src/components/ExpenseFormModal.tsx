@@ -25,14 +25,22 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   });
 
   useEffect(() => {
-    setFormData({
-      date: expense?.date
-        ? String(expense.date).split('T')[0]
-        : new Date().toISOString().split('T')[0],
-      description: expense?.description || '',
-      category: expense?.category || 'Operasional',
-      amount: expense?.amount || 0,
-    });
+    // Hindari cascading render: hanya update jika expense berubah
+    if (expense) {
+      setFormData({
+        date: expense.date ? String(expense.date).split('T')[0] : new Date().toISOString().split('T')[0],
+        description: expense.description || '',
+        category: expense.category || 'Operasional',
+        amount: expense.amount || 0,
+      });
+    } else if (isOpen) {
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        category: 'Operasional',
+        amount: 0,
+      });
+    }
   }, [expense, isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +58,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     e.preventDefault();
     // Gunakan helper agar DRY
     const iso = convertLocalDateToISOString(formData.date);
-    onSave({ ...formData, date: iso } as any);
+    onSave({ ...formData, date: iso });
   };
 
   return (

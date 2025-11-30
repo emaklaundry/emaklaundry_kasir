@@ -14,7 +14,7 @@ const useSortableData = <T extends object>(
   const [sortConfig, setSortConfig] = useState<SortConfig<T> | null>(initialConfig);
 
   const sortedItems = useMemo(() => {
-    let sortableItems = [...items];
+    const sortableItems = [...items];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         const aValue = a[sortConfig.key];

@@ -52,11 +52,12 @@ const InventoryPage: React.FC = () => {
   const { addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventoryMutations();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
+  type InventoryInput = Omit<InventoryItem, 'id'>;
   const addInventoryMutation = useMutation({
-    mutationFn: async (data: any) => addInventoryItem(data),
+    mutationFn: async (data: InventoryInput) => addInventoryItem(data),
   });
   const updateInventoryMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => updateInventoryItem(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: InventoryInput }) => updateInventoryItem(id, data),
   });
   const deleteInventoryMutation = useMutation({
     mutationFn: async (id: string) => deleteInventoryItem(id),

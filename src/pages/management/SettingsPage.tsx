@@ -37,8 +37,9 @@ const SettingsPage: React.FC = () => {
       await updateSettings(formData);
       addAuditLog('Menyimpan perubahan pada Pengaturan Aplikasi.');
       updateToast(toastId, 'Pengaturan berhasil disimpan!', 'success');
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSaving(false);
     }

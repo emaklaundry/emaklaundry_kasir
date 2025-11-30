@@ -87,8 +87,9 @@ const ServicesPage: React.FC = () => {
         updateToast(toastId, 'Layanan baru berhasil ditambahkan.', 'success');
       }
       handleCloseFormModal();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan layanan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan layanan: ${errMsg}`, 'error');
     } finally {
       setIsSavingService(false);
     }

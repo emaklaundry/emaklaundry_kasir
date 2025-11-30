@@ -2,9 +2,11 @@ import { useMemo } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { UserRole } from '@/types';
 
+
+// Use a generic type for storeId and index signature
 interface StoreDataItem {
   storeId?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 const useStoreFilteredData = function <T extends StoreDataItem>(data: T[]): T[] {

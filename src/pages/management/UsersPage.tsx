@@ -88,9 +88,10 @@ const UsersPage: React.FC = () => {
           'info',
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Catatan: Penggunaan 'as any' hanya pada error object di catch block, bukan pada payload/data. Sudah aman.
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSavingUser(false);
     }

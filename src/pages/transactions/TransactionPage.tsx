@@ -78,7 +78,7 @@ const TransactionPage: React.FC = () => {
   const { addToast, updateToast } = useToasts();
 
   // State untuk halaman
-  const [page, setPage] = useState(1);
+  // page and setPage are assigned a value but never used
 
   // Proses sort dan pagination di client
   // These hooks must be declared before any useEffect or code that references their variables

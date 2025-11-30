@@ -89,8 +89,9 @@ const AssetsPage: React.FC = () => {
       }
       setIsAssetFormModalOpen(false);
       setCurrentAsset(null);
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSavingAsset(false);
     }
