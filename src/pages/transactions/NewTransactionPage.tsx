@@ -237,6 +237,16 @@ const NewTransactionPage: React.FC = () => {
   }
 
   // --- PERBAIKAN 3: Menghapus input yang tersasar ---
+  // Show error toast if settings failed to load
+  useEffect(() => {
+    if (!settings && !isLoadingSettings) {
+      addToast(
+        'Tidak dapat memuat data pajak, diskon, dan lainnya. Pastikan Anda memiliki koneksi dan hak akses yang benar untuk melihat tabel settings.',
+        'error'
+      );
+    }
+  }, [settings, isLoadingSettings, addToast]);
+
   if (!settings) {
     return (
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
@@ -247,7 +257,6 @@ const NewTransactionPage: React.FC = () => {
           Tidak dapat memuat data pajak, diskon, dan lainnya. Pastikan Anda memiliki koneksi dan hak
           akses yang benar untuk melihat tabel 'settings'.
         </p>
-        {/* Input yang tersasar sudah dihapus dari sini */}
       </div>
     );
   }
@@ -346,7 +355,11 @@ const NewTransactionPage: React.FC = () => {
     if (isSaving) return;
 
     if (!currentStoreId || currentStoreId === 'all') {
-      addToast('Super Admin harus memilih cabang spesifik untuk membuat transaksi.', 'warning');
+      // Perbaikan pesan agar cocok untuk semua role jika terjadi error data
+      const msg = currentUser?.role === UserRole.SuperAdmin 
+        ? 'Super Admin harus memilih cabang spesifik.' 
+        : 'Data cabang Anda tidak valid. Silakan relogin.';
+      addToast(msg, 'warning');
       return;
     }
     if (!selectedCustomer) {

@@ -1,21 +1,47 @@
 -- ==========================================
--- 5. POLICY: IZINKAN INSERT TRANSAKSI UNTUK USER YANG SAH
+-- 5. RESET & RECREATE POLICY TRANSACTIONS (WAJIB)
 -- ==========================================
--- Pastikan policy ini sudah ada di database.sql, tapi tambahkan di sini agar pasti aktif setelah seed
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'transactions' AND policyname = 'Allow INSERT for store users'
-  ) THEN
-    EXECUTE $$
-      CREATE POLICY "Allow INSERT for store users" ON public.transactions
-        FOR INSERT WITH CHECK (
-          public.get_my_role() = 'Super Admin'
-          OR "storeId" = public.get_my_store_id()
-        );
-    $$;
-  END IF;
-END$$;
+BEGIN;
+ALTER TABLE public.transactions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow INSERT for store users" ON public.transactions;
+DROP POLICY IF EXISTS "Allow SELECT for store users" ON public.transactions;
+DROP POLICY IF EXISTS "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions;
+DROP POLICY IF EXISTS "Allow UPDATE for Super Admin only" ON public.transactions;
+DROP POLICY IF EXISTS "Allow DELETE for Admins" ON public.transactions;
+
+CREATE POLICY "Allow INSERT for store users" ON public.transactions
+  FOR INSERT WITH CHECK (
+    public.get_my_role() = 'Super Admin' 
+    OR "storeId" = public.get_my_store_id()
+  );
+
+CREATE POLICY "Allow SELECT for store users" ON public.transactions
+  FOR SELECT USING (
+    public.get_my_role() = 'Super Admin' 
+    OR "storeId" = public.get_my_store_id()
+  );
+
+CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
+  FOR UPDATE
+  USING (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin','Kasir')
+      AND "storeId" = public.get_my_store_id()
+    )
+  )
+  WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin','Kasir')
+      AND "storeId" = public.get_my_store_id()
+      AND total = (SELECT total FROM public.transactions t WHERE t.id = transactions.id)
+      AND items = (SELECT items FROM public.transactions t WHERE t.id = transactions.id)
+    )
+  );
+COMMIT;
 BEGIN;
 
 -- ==========================================

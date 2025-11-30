@@ -45,7 +45,6 @@ export async function updateTransactionProgress(
     amountPaid?: number | null;
     change?: number | null;
     paymentMethod?: string | null;
-    paymentStatus?: string | null;
     orderStatus?: string | null;
   },
 ) {
@@ -53,7 +52,6 @@ export async function updateTransactionProgress(
     amountPaid = null,
     change = null,
     paymentMethod = null,
-    paymentStatus = null,
     orderStatus = null,
   } = params;
   const { data, error } = await supabase.rpc('update_transaction_progress', {
@@ -61,7 +59,6 @@ export async function updateTransactionProgress(
     p_amount_paid: amountPaid,
     p_change: change,
     p_payment_method: paymentMethod,
-    p_payment_status: paymentStatus,
     p_order_status: orderStatus,
   });
   if (error) throw error;

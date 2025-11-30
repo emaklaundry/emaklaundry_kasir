@@ -330,7 +330,12 @@ CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.services
 CREATE POLICY "Allow DELETE for Admins" ON public.services
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 
-CREATE POLICY "Allow SELECT for store users" ON public.inventory_items;
+DROP POLICY IF EXISTS "Allow SELECT for store users" ON public.inventory_items;
+CREATE POLICY "Allow SELECT for store users" ON public.inventory_items
+  FOR SELECT USING (
+    public.get_my_role() = 'Super Admin'
+    OR "storeId" = public.get_my_store_id()
+  );
 CREATE POLICY "Allow INSERT for store users" ON public.inventory_items
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow UPDATE for Admins" ON public.inventory_items
