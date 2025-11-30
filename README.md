@@ -274,7 +274,13 @@ Jika muncul error terkait Docker, pastikan Docker Desktop sudah berjalan.
 ---
 
 
+
 ## 📝 Catatan Rilis (Changelog)
+
+### v1.1.4 - 30 November 2025
+- [Test] Semua komponen utama dan halaman management kini memiliki minimal 1 file test.
+- [Test] Penambahan test coverage dan .gitignore untuk folder coverage.
+- [Docs] Update README dan instruksi pengujian otomatis.
 
 ### v1.1.3 - 30 November 2025
 - [Docs] Instruksi backup otomatis database Supabase via GitHub Actions langsung di README.
@@ -326,7 +332,8 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 
 ---
 
-## 🧪 Pengujian Otomatis
+
+## 🧪 Pengujian Otomatis & Coverage
 
 Aplikasi ini dilengkapi dengan unit test menggunakan Vitest dan Testing Library. Untuk menjalankan seluruh pengujian:
 
@@ -334,11 +341,19 @@ Aplikasi ini dilengkapi dengan unit test menggunakan Vitest dan Testing Library.
 npm test
 ```
 
+Untuk menjalankan pengujian sekaligus coverage:
+
+```bash
+npx vitest run --coverage
+```
+
 - Semua file test berada di dalam folder `src/` (misal: `src/utils/*.test.ts`, `src/components/*.test.tsx`, dll).
 - Pastikan seluruh pengujian lulus sebelum melakukan deploy atau merge ke branch utama.
+- Folder `coverage/` otomatis di-ignore dari git.
 - Hasil pengujian terakhir:
-  - 13 file test dijalankan
-  - 25 pengujian (tests) semuanya lulus
+  - 68 file test dijalankan
+  - 113 pengujian (tests) semuanya lulus
+  - Coverage komponen utama >85%
 ---
 
 ## 🔄 Backup Otomatis Database Supabase (GitHub Actions)
