@@ -203,6 +203,7 @@ const NewTransactionPage: React.FC = () => {
     if (items.length === 0) {
       const today = new Date();
       today.setDate(today.getDate() + 1);
+      // Tidak mengubah jam, biarkan sesuai jam saat ini
       return today;
     }
     const maxDuration = Math.max(
@@ -213,6 +214,7 @@ const NewTransactionPage: React.FC = () => {
     );
     const completionDate = new Date();
     completionDate.setDate(completionDate.getDate() + maxDuration);
+    // Tidak mengubah jam, biarkan sesuai jam saat ini
     return completionDate;
   }, [items, services]);
 
