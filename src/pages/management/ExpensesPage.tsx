@@ -12,9 +12,9 @@ import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import ExpenseFormModal from '../../components/ExpenseFormModal';
-import { useAppContext } from '../../contexts/AppContext';
+import useAppContext from '../../contexts/useAppContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import { useSortableData } from '../../hooks/useSortableData';
 import { Expense, UserRole } from '@/types';
 

@@ -11,11 +11,11 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
-import { useAppContext } from '../../contexts/AppContext';
+import useAppContext from '../../contexts/useAppContext';
 import { Service, UserRole } from '@/types';
 
 const ServicesPage: React.FC = () => {

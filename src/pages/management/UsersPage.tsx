@@ -12,8 +12,8 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
-import { useAppContext } from '../../contexts/AppContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useAppContext from '../../contexts/useAppContext';
+import useToasts from '../../contexts/useToasts';
 import UserFormModal from '../../components/UserFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';

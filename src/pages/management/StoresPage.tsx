@@ -12,7 +12,7 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
-import { useAppContext } from '../../contexts/AppContext';
+import useAppContext from '../../contexts/useAppContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchInventory } from '../../contexts/InventoryContext';
@@ -20,7 +20,7 @@ import { useAssets } from '../../contexts/AssetContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import StoreFormModal from '../../components/StoreFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import { useSortableData } from '../../hooks/useSortableData';
 import { Store } from '@/types';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings } = useSettings();

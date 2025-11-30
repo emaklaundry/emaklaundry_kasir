@@ -14,13 +14,13 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
-import { useAppContext } from '../../contexts/AppContext';
+import useAppContext from '../../contexts/useAppContext';
 import AssetFormModal from '../../components/AssetFormModal';
 import MaintenanceFormModal from '../../components/MaintenanceFormModal';
 import MaintenanceHistoryModal from '../../components/MaintenanceHistoryModal';
 import ScheduledMaintenanceModal from '../../components/ScheduledMaintenanceModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import { useScheduledMaintenances } from '../../contexts/ScheduledMaintenanceContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { getStatusBadge } from '@/utils/uiHelpers';
