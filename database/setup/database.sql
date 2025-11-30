@@ -417,26 +417,21 @@ CREATE POLICY "Allow ALL for Admins" ON public.settings
   WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
 
 
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL);
 
-INSERT INTO public.stores (id, name, address, "isActive")
-VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banjar', true);
+-- === TRIGGER: Otomatis buat profile saat user dibuat di auth.users ===
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name, role, store_id)
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'name', 'Kasir', NULL);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('0bbe08f0-2cbc-40d9-b2ec-5a2d3ba99c0e', 'emaklaundry', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 
 

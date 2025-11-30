@@ -1,11 +1,23 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../utils/supabaseClient';
 import { User } from '@/types';
 
+// Sementara, sebaiknya generate dari Supabase type generator
+interface ProfileRow {
+  id: string;
+  name: string;
+  role: string;
+  store_id: string | null;
+  isActive: boolean;
+  canGiveDiscount: boolean;
+  created_at: string;
+}
+
 const fetchUsers = async (): Promise<User[]> => {
   const { data, error } = await supabase.from('profiles').select('*');
   if (error) throw error;
-  return (data || []).map((p: any) => ({
+  return (data as ProfileRow[] || []).map((p) => ({
     id: p.id,
     name: p.name,
     role: p.role,
@@ -35,29 +47,21 @@ export function useUsers() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
+  // Admin create user: gunakan Supabase Auth Admin API
+  // Anda butuh service_role key, sebaiknya lakukan di backend/Edge Function
   const createUser = useMutation({
-    mutationFn: async (user: Omit<User, 'id' | 'createdAt'>) => {
-      const payload: any = {
-        name: user.name,
-        role: user.role,
-        store_id: user.storeId || null,
-        isActive: user.isActive ?? true,
-        canGiveDiscount: user.canGiveDiscount ?? false,
-      };
-      const { data, error } = await supabase.from('profiles').insert([payload]).select();
-      if (error) throw error;
-      const p = data?.[0];
-      return p
-        ? ({
-            id: p.id,
-            name: p.name,
-            role: p.role,
-            storeId: p.store_id,
-            isActive: p.isActive,
-            canGiveDiscount: p.canGiveDiscount,
-            createdAt: p.created_at ? new Date(p.created_at) : undefined,
-          } as User)
-        : null;
+    mutationFn: async (user: { email: string; password: string; name: string; role?: string; storeId?: string | null }) => {
+      // WARNING: Jangan expose service_role di frontend!
+      // Ini hanya contoh, implementasi produksi harus di backend/Edge Function
+      // const adminClient = createClient(supabaseUrl, serviceRoleKey);
+      // const { data, error } = await adminClient.auth.admin.createUser({
+      //   email: user.email,
+      //   password: user.password,
+      //   user_metadata: { name: user.name, role: user.role || 'Kasir', store_id: user.storeId || null },
+      // });
+      // if (error) throw error;
+      // return data.user;
+      throw new Error('Gunakan Edge Function atau backend untuk membuat user baru secara aman.');
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });

@@ -5,8 +5,10 @@
 CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx ON public.services (lower(name), "storeId");
 
 WITH target_store AS (
+  -- Ambil toko aktif pertama, lebih universal
   SELECT id FROM public.stores
-  WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456' OR name ILIKE 'Cabang Kota Banjar'
+  WHERE "isActive" = true
+  ORDER BY created_at ASC
   LIMIT 1
 )
 INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
