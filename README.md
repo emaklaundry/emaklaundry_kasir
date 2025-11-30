@@ -1,4 +1,51 @@
+---
+
+on:
+jobs:
 git push origin main
+
+---
+
+## 🔄 Backup Otomatis Database Supabase (GitHub Actions)
+
+Mulai v1.1.3, aplikasi ini mendukung backup otomatis database Supabase menggunakan GitHub Actions. Backup berjalan harian dan hasilnya dapat diunduh dari tab Actions di GitHub.
+
+**Cara setup:**
+1. Pastikan file `.github/workflows/backup.yml` sudah ada (lihat repo ini).
+2. Di GitHub, buka Settings > Secrets and variables > Actions, lalu tambahkan secret baru:
+   - **Name:** `SUPABASE_DB_URL`
+   - **Value:** (isi dengan connection string Supabase Anda, format postgresql://...)
+3. Workflow akan berjalan otomatis setiap hari. Hasil backup dapat diunduh di tab Actions > run yang sukses > Artifacts.
+
+Contoh isi file workflow:
+```yaml
+name: Daily Supabase Backup
+on:
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Backup Database
+        run: |
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -f backup_$(date +%Y-%m-%d).sql
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup
+          path: '*.sql'
+          retention-days: 7
+```
+
+> **Tips:** Connection string bisa didapat dari dashboard Supabase > Database > Connection Pooling/Settings. Jangan bagikan secret ke publik.
+
+---
 
 <div align="center">
   <img width="800" alt="Laundry Management System" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
@@ -15,6 +62,10 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 
 - **Manajemen Transaksi**: Pencatatan transaksi laundry (kiloan, satuan, sepatu, karpet), status pembayaran, cetak struk, dan kode invoice pendek ramah pelanggan (misal: EM-AB12CD).
 
+
+
+### 🔑 Fitur Baru (v1.1.3)
+- [Docs] Instruksi backup otomatis database Supabase via GitHub Actions langsung di README.
 
 ### 🔑 Fitur Baru (v1.1.2)
 
@@ -66,6 +117,7 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 
 - Node.js (disarankan versi terbaru LTS)
 
+
 ### Langkah Instalasi
 
 1. **Clone repository**
@@ -89,6 +141,38 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
    npm run dev
    ```
    Akses di [http://localhost:3000](http://localhost:3000)
+
+---
+
+### 🔄 Backup & Restore Database (Supabase CLI)
+
+- **Supabase CLI** tidak lagi bisa diinstal global via npm. Gunakan [Scoop](https://scoop.sh/) (Windows) atau download manual dari [Supabase CLI Releases](https://github.com/supabase/cli/releases).
+- **Docker Desktop** wajib terinstal & berjalan untuk perintah database lokal/backup.
+
+**Langkah instalasi Supabase CLI di Windows:**
+1. Instal [Scoop](https://scoop.sh/) jika belum ada:
+   ```powershell
+   Set-ExecutionPolicy RemoteSigned -scope CurrentUser
+   irm get.scoop.sh | iex
+   ```
+2. Instal Supabase CLI:
+   ```powershell
+   scoop install supabase
+   ```
+3. Instal [Docker Desktop](https://docs.docker.com/desktop/windows/install/) dan pastikan statusnya "Running".
+
+
+**Backup database (manual via pg_dump):**
+```bash
+pg_dump "postgresql://postgres:[PASSWORD]@db.kxylzjjmakbhzuirvnyd.supabase.co:5432/postgres" -f backup_schema.sql
+```
+Ganti `[PASSWORD]` dengan password database Supabase Anda.
+
+**Backup database (otomatis via Supabase CLI):**
+```powershell
+supabase db dump -f backup_schema.sql
+```
+Jika muncul error terkait Docker, pastikan Docker Desktop sudah berjalan.
 
 ---
 
@@ -119,9 +203,40 @@ Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mend
 - Kode bersih, mudah dikembangkan, dan terdokumentasi
 - **Versioning Otomatis**: Versi aplikasi akan selalu tampil di seluruh halaman utama dan halaman login, mengikuti versi di `package.json`.
 
-### Catatan Rilis
 
-Lihat detail perubahan dan pembaruan fitur pada [CHANGELOG.md](./CHANGELOG.md).
+
+---
+
+
+## 📝 Catatan Rilis (Changelog)
+
+### v1.1.3 - 30 November 2025
+- [Docs] Instruksi backup otomatis database Supabase via GitHub Actions langsung di README.
+
+### v1.1.2 - 20 November 2025
+- [Enhancement] Tombol "Tandai Selesai" hanya aktif jika pembayaran sudah lunas **dan/atau** status sudah "Siap Diambil" (mencegah penyelesaian pesanan sebelum waktunya).
+
+### v1.1.1
+- [Fix] Data transaksi kini lebih aman: catatan item (notes) otomatis dibersihkan jika jumlah item dikurangi, mencegah "zombie notes".
+- [Fix] Semua tombol metode pembayaran kini konsisten secara visual dan aksesibel di seluruh aplikasi.
+- [Fix] Notifikasi diskon kini tampil sebagai info banner, bukan toast, agar tidak mengganggu kasir.
+- [Enhancement] Versi aplikasi kini diambil otomatis dari package.json.
+- [Enhancement] Utility generateUUID kini DRY dan digunakan di seluruh aplikasi.
+- [Enhancement] Perhitungan subtotal item lebih aman secara tipe data.
+- [Docs] Perbaikan dan penambahan dokumentasi fitur serta changelog.
+
+### v1.1.0 - 16 November 2025
+- Fitur kode invoice pendek (invoice_code) otomatis pada setiap transaksi
+- Tampilan ID Transaksi di seluruh aplikasi kini menggunakan kode invoice pendek (ramah pelanggan)
+- Struk, detail, WhatsApp, dan riwayat pelanggan menampilkan kode invoice pendek
+
+### v0.1.0 - 16 November 2025
+- Penambahan fitur versioning otomatis di seluruh aplikasi (tampil di layout utama dan halaman login)
+- Perbaikan bug pada ReceiptPage: normalisasi data pelanggan agar tidak error
+- Peningkatan stabilitas dan konsistensi tampilan
+
+### v0.0.0
+- Inisialisasi proyek
 
 ---
 
