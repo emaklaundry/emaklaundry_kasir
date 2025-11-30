@@ -277,6 +277,12 @@ Jika muncul error terkait Docker, pastikan Docker Desktop sudah berjalan.
 
 ## 📝 Catatan Rilis (Changelog)
 
+
+### v1.1.5 - 1 Desember 2025
+- [Release] Peningkatan versi aplikasi ke 1.1.5.
+- [Docs] Update README, status pengujian, dan coverage terbaru (Desember 2025).
+- [Test] Seluruh pengujian per-file, coverage >85%, dan tidak ada lagi error context/mocking.
+
 ### v1.1.4 - 30 November 2025
 - [Test] Semua komponen utama dan halaman management kini memiliki minimal 1 file test.
 - [Test] Penambahan test coverage dan .gitignore untuk folder coverage.
@@ -333,9 +339,10 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 ---
 
 
+
 ## 🧪 Pengujian Otomatis & Coverage
 
-Aplikasi ini dilengkapi dengan unit test menggunakan Vitest dan Testing Library. Untuk menjalankan seluruh pengujian:
+Aplikasi ini dilengkapi dengan unit test menggunakan **Vitest** dan **Testing Library**. Untuk menjalankan seluruh pengujian:
 
 ```bash
 npm test
@@ -350,10 +357,12 @@ npx vitest run --coverage
 - Semua file test berada di dalam folder `src/` (misal: `src/utils/*.test.ts`, `src/components/*.test.tsx`, dll).
 - Pastikan seluruh pengujian lulus sebelum melakukan deploy atau merge ke branch utama.
 - Folder `coverage/` otomatis di-ignore dari git.
-- Hasil pengujian terakhir:
-  - 68 file test dijalankan
-  - 113 pengujian (tests) semuanya lulus
-  - Coverage komponen utama >85%
+- Hasil pengujian terakhir (**Desember 2025**):
+  - **73 file test dijalankan**
+  - **118 pengujian (tests) semuanya lulus**
+  - **Coverage komponen utama >85%**
+  - Tidak ada lagi file master test, seluruh pengujian berjalan per-file (modular, robust, dan bebas error context/mocking)
+
 ---
 
 ## 🔄 Backup Otomatis Database Supabase (GitHub Actions)
@@ -398,7 +407,7 @@ jobs:
 
 # Laundry Management System (Web Kasir)
 
-<p align="right"><strong>Versi aplikasi: 1.1.3</strong></p>
+<p align="right"><strong>Versi aplikasi: 1.1.5</strong></p>
 
 Sistem manajemen laundry berbasis web yang dirancang untuk kasir dan admin, mendukung pengelolaan transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, dan pelaporan. Dibangun dengan teknologi modern untuk kemudahan penggunaan, keamanan, dan skalabilitas.
 
