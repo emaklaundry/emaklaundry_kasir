@@ -85,7 +85,7 @@ export interface Transaction {
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   createdAt: Date;
-  estimatedCompletionDate: Date;
+  estimatedCompletionDate: string;
   amountPaid: number;
   change: number;
   paymentMethod?: PaymentMethod;
