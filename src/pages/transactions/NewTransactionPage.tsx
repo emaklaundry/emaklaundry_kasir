@@ -123,14 +123,16 @@ const NewTransactionPage: React.FC = () => {
   }, [subtotal, discountAmount, taxAmount]);
 
   // Place handleAddService after all hooks, before conditional rendering
+  const [showKiloanToast, setShowKiloanToast] = useState(false);
   const handleAddService = useCallback(
     (service: Service) => {
       const isKiloan = service.category === ServiceCategory.Kiloan;
+      let shouldShowToast = false;
       setItems((currentItems) => {
         const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
         if (existingItemIndex > -1) {
           if (isKiloan) {
-            addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+            shouldShowToast = true;
             return currentItems;
           }
           const updatedItems = [...currentItems];
@@ -150,9 +152,17 @@ const NewTransactionPage: React.FC = () => {
           return [...currentItems, newItem];
         }
       });
+      if (isKiloan) setShowKiloanToast(shouldShowToast);
     },
     [addToast],
   );
+
+  useEffect(() => {
+    if (showKiloanToast) {
+      addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+      setShowKiloanToast(false);
+    }
+  }, [showKiloanToast, addToast]);
   useEffect(() => {
     if (isPayingNow) {
       setAmountPaidStr(formatRupiah(grandTotal));

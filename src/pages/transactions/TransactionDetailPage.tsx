@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { supabase } from '../../utils/supabaseClient';
+import { supabase, updateTransactionProgress } from '../../utils/supabaseClient';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import {
   ChevronLeftIcon,
@@ -311,7 +311,7 @@ export default TransactionDetailPage;
 const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) => {
   const { currentUser } = useAppContext();
   const { addToast, updateToast } = useToasts();
-  const { updateTransaction } = useTransactions();
+  // const { updateTransaction } = useTransactions();
   const [loading, setLoading] = React.useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false);
 
@@ -329,16 +329,15 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
     setLoading(true);
     const toastId = addToast('Menyimpan pembayaran...', 'info');
     try {
-      await updateTransaction(transaction.id, {
+      await updateTransactionProgress(transaction.id, {
         amountPaid: updatedTransaction.amountPaid,
         change: updatedTransaction.change,
         paymentMethod: updatedTransaction.paymentMethod ?? null,
-        paymentStatus: updatedTransaction.paymentStatus ?? null,
+        // paymentStatus tidak dikirim, biarkan DB yang hitung
       });
-      updateToast(toastId, 'Status pembayaran diperbarui', 'success');
+      updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
     } catch (err: any) {
       updateToast(toastId, err?.message ?? 'Gagal memperbarui status pembayaran', 'error');
-      throw err;
     } finally {
       setLoading(false);
       setIsPaymentOpen(false);
@@ -349,7 +348,7 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
     setLoading(true);
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
-      await updateTransaction(transaction.id, { orderStatus: OrderStatus.Ready });
+      await updateTransactionProgress(transaction.id, { orderStatus: OrderStatus.Ready });
       updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
     } catch (err: any) {
       updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
@@ -362,7 +361,7 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
     setLoading(true);
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
-      await updateTransaction(transaction.id, { orderStatus: OrderStatus.Completed });
+      await updateTransactionProgress(transaction.id, { orderStatus: OrderStatus.Completed });
       updateToast(toastId, 'Status pesanan diperbarui: Selesai', 'success');
     } catch (err: any) {
       updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');

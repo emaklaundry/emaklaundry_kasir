@@ -22,9 +22,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
  * This calls the database function `get_laundry_status(transaction_id_input uuid)` which must be created
  * in the Supabase SQL editor and defined as SECURITY DEFINER (see database/get_laundry_status.sql).
  */
-export async function getLaundryStatus(transactionId: string) {
+export async function getLaundryStatus(identifier: string) {
   const { data, error } = await supabase.rpc('get_laundry_status', {
-    transaction_id_input: transactionId,
+    input_identifier: identifier,
   });
   if (error) throw error;
   return data;
