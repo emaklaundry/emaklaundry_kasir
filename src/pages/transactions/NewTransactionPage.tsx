@@ -227,16 +227,6 @@ const NewTransactionPage: React.FC = () => {
   }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
-  if (isLoadingSettings) {
-    return (
-      <div className="flex justify-center items-center w-full h-96">
-        <SpinnerIcon className="w-16 h-16" />
-        <span className="sr-only">Memuat pengaturan...</span>
-      </div>
-    );
-  }
-
-  // --- PERBAIKAN 3: Menghapus input yang tersasar ---
   // Show error toast if settings failed to load
   useEffect(() => {
     if (!settings && !isLoadingSettings) {
@@ -246,6 +236,15 @@ const NewTransactionPage: React.FC = () => {
       );
     }
   }, [settings, isLoadingSettings, addToast]);
+
+  if (isLoadingSettings) {
+    return (
+      <div className="flex justify-center items-center w-full h-96">
+        <SpinnerIcon className="w-16 h-16" />
+        <span className="sr-only">Memuat pengaturan...</span>
+      </div>
+    );
+  }
 
   if (!settings) {
     return (

@@ -1,126 +1,12 @@
--- ==========================================
--- 5. RESET & RECREATE POLICY TRANSACTIONS (WAJIB)
--- ==========================================
-BEGIN;
-ALTER TABLE public.transactions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Allow INSERT for store users" ON public.transactions;
-DROP POLICY IF EXISTS "Allow SELECT for store users" ON public.transactions;
-DROP POLICY IF EXISTS "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions;
-DROP POLICY IF EXISTS "Allow UPDATE for Super Admin only" ON public.transactions;
-DROP POLICY IF EXISTS "Allow DELETE for Admins" ON public.transactions;
-
-CREATE POLICY "Allow INSERT for store users" ON public.transactions
-  FOR INSERT WITH CHECK (
-    public.get_my_role() = 'Super Admin' 
-    OR "storeId" = public.get_my_store_id()
-  );
-
-CREATE POLICY "Allow SELECT for store users" ON public.transactions
-  FOR SELECT USING (
-    public.get_my_role() = 'Super Admin' 
-    OR "storeId" = public.get_my_store_id()
-  );
-
-CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
-  FOR UPDATE
-  USING (
-    public.get_my_role() = 'Super Admin'
-    OR (
-      public.get_my_role() IN ('Admin','Kasir')
-      AND "storeId" = public.get_my_store_id()
-    )
-  )
-  WITH CHECK (
-    public.get_my_role() = 'Super Admin'
-    OR (
-      public.get_my_role() IN ('Admin','Kasir')
-      AND "storeId" = public.get_my_store_id()
-      AND total = (SELECT total FROM public.transactions t WHERE t.id = transactions.id)
-      AND items = (SELECT items FROM public.transactions t WHERE t.id = transactions.id)
-    )
-  );
-COMMIT;
-BEGIN;
-
--- ==========================================
--- 1. PASTIKAN TOKO ADA (Cabang Kota Banjar)
--- ==========================================
-INSERT INTO public.stores (id, name, address, "isActive")
-VALUES (
-  '9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 
-  'Cabang Kota Banjar', 
-  'Kota Banjar', 
-  true
-)
-ON CONFLICT (id) DO UPDATE 
-SET name = EXCLUDED.name, "isActive" = true;
+-- apply_rpc_and_seed.sql
 
 
--- ==========================================
--- 2. REPAIR PROFILE (Buat profile jika belum ada)
--- ==========================================
--- Mencegah error foreign key saat update role di bawah
-INSERT INTO public.profiles (id, name, role, store_id, "isActive")
-SELECT 
-  au.id,
-  COALESCE(au.raw_user_meta_data->>'name', au.email) as name, 
-  'Kasir', -- Default role
-  NULL,
-  true
-FROM auth.users au
-LEFT JOIN public.profiles pp ON au.id = pp.id
-WHERE pp.id IS NULL;
-
-
--- ==========================================
--- 3. SETUP ROLE BERDASARKAN EMAIL (Data Real)
--- ==========================================
-
--- A. Setup SUPER ADMIN (mhmdnvn18@gmail.com)
-UPDATE public.profiles
-SET 
-  role = 'Super Admin', 
-  store_id = NULL
-FROM auth.users
-WHERE public.profiles.id = auth.users.id
-AND auth.users.email = 'mhmdnvn18@gmail.com';
-
--- B. Setup ADMIN TOKO (emaklaundry12@gmail.com)
-UPDATE public.profiles
-SET 
-  role = 'Admin', 
-  store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
-FROM auth.users
-WHERE public.profiles.id = auth.users.id
-AND auth.users.email = 'emaklaundry12@gmail.com';
-
--- C. Setup KASIR (ani, didi, lilis, yopi)
-UPDATE public.profiles
-SET 
-  role = 'Kasir', 
-  store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
-FROM auth.users
-WHERE public.profiles.id = auth.users.id
-AND auth.users.email IN (
-  'ani@gmail.com',
-  'didi@gmail.com',
-  'lilis@gmail.com',
-  'yopi@gmail.com'
-);
-
-
--- ==========================================
--- 4. SEED LAYANAN (SERVICES)
--- ==========================================
--- Index Unik untuk mencegah duplikasi layanan
+-- Seed services: upsert a large list of services into the target store (Cabang Kota Banjar)
 CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx ON public.services (lower(name), "storeId");
 
--- Insert Layanan
 WITH target_store AS (
   SELECT id FROM public.stores
-  WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
+  WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456' OR name ILIKE 'Cabang Kota Banjar'
   LIMIT 1
 )
 INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
@@ -204,15 +90,3 @@ ON CONFLICT (lower(name), "storeId") DO UPDATE SET
   category = EXCLUDED.category;
 
 COMMIT;
-
--- ==========================================
--- 5. VERIFIKASI HASIL
--- ==========================================
-SELECT 
-  u.email, 
-  p.role, 
-  s.name as nama_toko 
-FROM public.profiles p
-JOIN auth.users u ON p.id = u.id
-LEFT JOIN public.stores s ON p.store_id = s.id
-ORDER BY p.role DESC;

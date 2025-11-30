@@ -1,44 +1,3 @@
-
--- === STUBS FOR LINTER: Add missing functions with SET search_path = public ===
--- You can replace these with real implementations as needed.
-
--- bulk_update_order_status stub
-CREATE OR REPLACE FUNCTION public.bulk_update_order_status()
-RETURNS void
-LANGUAGE plpgsql
-SET search_path = public
-AS $$
-BEGIN
-  -- TODO: Implement this function
-  RETURN;
-END;
-$$;
-
--- get_public_services stub
-CREATE OR REPLACE FUNCTION public.get_public_services(store_id_input uuid)
-RETURNS TABLE (
-  service_name text,
-  category text,
-  duration_days integer
-)
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT NULL::text AS service_name, NULL::text AS category, NULL::integer AS duration_days WHERE false;
-$$;
-
--- complete_scheduled_maintenance stub
-CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance()
-RETURNS void
-LANGUAGE plpgsql
-SET search_path = public
-AS $$
-BEGIN
-  -- TODO: Implement this function
-  RETURN;
-END;
-$$;
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
@@ -99,7 +58,9 @@ CREATE TABLE IF NOT EXISTS public.user_credentials (
   password_hash text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
+
 ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
+-- RLS Policy dasar untuk user_credentials
 CREATE POLICY "Allow owner to SELECT/UPDATE/DELETE their credentials" ON public.user_credentials
   FOR ALL USING (profile_id = auth.uid());
 CREATE POLICY "Allow INSERT for authenticated users" ON public.user_credentials
@@ -130,6 +91,7 @@ CREATE TABLE public.scheduled_maintenances (
   "assetId" uuid REFERENCES assets(id) ON DELETE CASCADE,
   description text NOT NULL,
   "frequencyValue" integer NOT NULL,
+  "frequencyUnit" text NOT NULL,
   "nextDueDate" date NOT NULL,
   "lastCompletedDate" date
 );
@@ -173,7 +135,6 @@ CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactio
 CREATE OR REPLACE FUNCTION public.generate_invoice_code(length int DEFAULT 6)
 RETURNS text
 LANGUAGE plpgsql
-SET search_path = public
 AS $$
 DECLARE
   chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -190,7 +151,6 @@ $$;
 CREATE OR REPLACE FUNCTION public.set_invoice_code()
 RETURNS trigger
 LANGUAGE plpgsql
-SET search_path = public
 AS $$
 DECLARE
   new_code text;
@@ -259,6 +219,14 @@ ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
+-- Tambahan: Policy SELECT untuk anon di transactions
+CREATE POLICY "Enable read access for anon users to track laundry"
+ON public.transactions
+FOR SELECT
+TO anon
+USING (
+  true
+);
 
 
 -- === 3. HELPER FUNCTIONS UNTUK RLS ===
@@ -309,8 +277,10 @@ CREATE POLICY "Super Admins can manage all profiles" ON public.profiles
 CREATE POLICY "Allow SELECT for store users" ON public.stores
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR id = public.get_my_store_id());
 CREATE POLICY "Allow INSERT/UPDATE/DELETE for Super Admins only" ON public.stores
-  FOR ALL USING (public.get_my_role() = 'Super Admin');
+  FOR ALL USING (public.get_my_role() = 'Super Admin')
+  WITH CHECK (public.get_my_role() = 'Super Admin');
 
+-- --- Tabel: customers ---
 CREATE POLICY "Allow SELECT for store users" ON public.customers
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.customers
@@ -330,12 +300,9 @@ CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.services
 CREATE POLICY "Allow DELETE for Admins" ON public.services
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 
-DROP POLICY IF EXISTS "Allow SELECT for store users" ON public.inventory_items;
+-- --- Tabel: inventory_items ---
 CREATE POLICY "Allow SELECT for store users" ON public.inventory_items
-  FOR SELECT USING (
-    public.get_my_role() = 'Super Admin'
-    OR "storeId" = public.get_my_store_id()
-  );
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.inventory_items
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow UPDATE for Admins" ON public.inventory_items
@@ -352,6 +319,7 @@ CREATE POLICY "Allow UPDATE for Admins" ON public.assets
   FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.assets
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+
 -- --- Tabel: scheduled_maintenances ---
 CREATE POLICY "Allow SELECT for store users" ON public.scheduled_maintenances
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "assetId" IN (SELECT id FROM public.assets WHERE "storeId" = public.get_my_store_id()));
@@ -372,7 +340,9 @@ CREATE POLICY "Allow UPDATE for Admins" ON public.expenses
 CREATE POLICY "Allow DELETE for Admins" ON public.expenses
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 
-CREATE POLICY "Allow SELECT for store users" ON public.transactions;
+-- --- Tabel: transactions ---
+CREATE POLICY "Allow SELECT for store users" ON public.transactions
+  FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.transactions
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 -- Allow Admins and Kasirs to update only progress-related fields (payment/order progress)
@@ -380,6 +350,7 @@ CREATE POLICY "Allow INSERT for store users" ON public.transactions
 -- Implementation: USING applies to the existing row (so it ensures the actor is in the same store),
 -- and WITH CHECK compares new values against the current row (via subselects) to ensure immutable
 -- columns are unchanged. Super Admin bypasses these restrictions.
+DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
 CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
   FOR UPDATE
   USING (
@@ -422,104 +393,174 @@ CREATE POLICY "Allow ALL for Admins" ON public.settings
   WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
 
 
+-- === 5. DATA CONTOH (SAMPLE DATA) ===
 
--- === TRIGGER: Otomatis buat profile saat user dibuat di auth.users ===
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-BEGIN
-  INSERT INTO public.profiles (id, name, role, store_id)
-  VALUES (NEW.id, NEW.raw_user_meta_data->>'name', 'Kasir', NULL);
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- user dengan id ini ada di auth.users
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL);
 
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+-- cabang: Kota Banjar
+-- UUID: 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+INSERT INTO public.stores (id, name, address, "isActive")
+VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banjar', true);
+
+-- admin: admin_banjar (cabang Kota Banjar)
+-- nama: emaklaundry, 
+-- role: Admin
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('0bbe08f0-2cbc-40d9-b2ec-5a2d3ba99c0e', 'emaklaundry', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+
+-- kasir: yopi (cabang Kota Banjar)
+-- nama: yopi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+
+-- kasir: ani (cabang Kota Banjar)
+-- nama: ani, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+
+-- kasir: didi (cabang Kota Banjar)
+-- nama: didi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
+
+-- kasir: lilis (cabang Kota Banjar)
+-- nama: lilis, password: 12345678 (diasumsikan dibuat di Supabase Auth)
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
 
 
+-- === RPC: get_laundry_status ===
+-- Return a safe projection of a transaction for public/customer-facing views
+-- HAPUS BAGIAN INI (DUPLIKAT, VERSI LAMA)
+-- CREATE OR REPLACE FUNCTION public.get_laundry_status(
+--   transaction_id_input uuid
+-- )
+-- RETURNS TABLE (
+--   id text,
+--   "customerName" text,
+--   "createdAt" timestamp with time zone,
+--   "estimatedCompletionDate" date,
+--   "orderStatus" text,
+--   "paymentStatus" text,
+--   total numeric,
+--   "amountPaid" numeric
+-- )
+-- LANGUAGE sql
+-- SECURITY DEFINER
+-- AS $$
+--   SELECT
+--     t.id::text,
+--     c.name AS "customerName",
+--     t."createdAt",
+--     t."estimatedCompletionDate",
+--     t."orderStatus",
+--     t."paymentStatus",
+--     t.total,
+--     t."amountPaid"
+--   FROM
+--     public.transactions AS t
+--   JOIN
+--     public.customers AS c ON t."customerId" = c.id
+--   WHERE
+--     t.id = transaction_id_input;
+-- $$;
 
--- Hapus policy lama, ganti hanya Super Admin yang boleh UPDATE langsung
-DROP POLICY IF EXISTS "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions;
-DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
-CREATE POLICY "Allow UPDATE for Super Admin only" ON public.transactions
-  FOR UPDATE
-  USING (public.get_my_role() = 'Super Admin')
-  WITH CHECK (public.get_my_role() = 'Super Admin');
+-- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
+-- so it can read rows even when restrictive RLS policies exist. Keep the function
+-- body minimal and review ownership/permissions after deployment.
+
+-- === RPC: get_public_services ===
+-- Return a safe list of services (no pricing) for a given store
+CREATE OR REPLACE FUNCTION public.get_public_services(
+  store_id_input uuid
+)
+RETURNS TABLE (
+  service_name text,
+  category text,
+  duration_days integer
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT
+    s.name AS service_name,
+    s.category::text AS category,
+    s."durationDays"::integer AS duration_days
+  FROM
+    public.services AS s
+  WHERE
+    s."storeId" = store_id_input;
+$$;
 
 -- Note: This RPC intentionally omits price/unit to avoid exposing sensitive pricing data to public clients.
 
 -- === RPC: update_transaction_progress ===
 -- Atomically update allowed progress fields on a transaction and insert an audit_log entry.
 -- Caller must be authenticated. Super Admin can update any transaction; Admin/Kasir can only update transactions in their store.
-
 CREATE OR REPLACE FUNCTION public.update_transaction_progress(
   transaction_id_input uuid,
   p_amount_paid numeric DEFAULT NULL,
   p_change numeric DEFAULT NULL,
   p_payment_method text DEFAULT NULL,
-  -- p_payment_status text DEFAULT NULL, -- Hapus input ini, status dihitung otomatis
+  p_payment_status text DEFAULT NULL,
   p_order_status text DEFAULT NULL
 )
 RETURNS SETOF public.transactions
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
 AS $$
 DECLARE
   caller uuid := auth.uid();
   caller_role text;
   caller_store uuid;
   tx_store uuid;
-  v_current_total numeric;
-  v_new_amount_paid numeric;
-  v_final_payment_status text;
-  v_current_payment_status text;
+  tx_payment_status text; -- DITAMBAHKAN: Variabel untuk status bayar saat ini
 BEGIN
-  -- 1. Cek Role & Store
+  -- Load caller profile
   SELECT role, store_id INTO caller_role, caller_store FROM public.profiles WHERE id = caller;
-  IF caller_role IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
+  IF caller_role IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
 
-  -- 2. Ambil data transaksi saat ini
-  SELECT "storeId", "paymentStatus", total, "amountPaid"
-  INTO tx_store, v_current_payment_status, v_current_total, v_new_amount_paid
-  FROM public.transactions WHERE id = transaction_id_input;
-  IF NOT FOUND THEN RAISE EXCEPTION 'transaction not found'; END IF;
+  -- Ensure transaction exists and get its store dan payment status
+  SELECT "storeId", "paymentStatus" INTO tx_store, tx_payment_status FROM public.transactions WHERE id = transaction_id_input;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'transaction not found';
+  END IF;
 
+  -- Permission check: Super Admin bypasses store check
   IF caller_role <> 'Super Admin' AND tx_store IS DISTINCT FROM caller_store THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
 
-  -- 3. Kalkulasi Payment Status Otomatis
-  v_new_amount_paid := COALESCE(p_amount_paid, v_new_amount_paid);
-  IF v_new_amount_paid >= v_current_total THEN
-    v_final_payment_status := 'Lunas';
-  ELSE
-    v_final_payment_status := 'Belum Lunas';
+  -- DITAMBAHKAN: Pengecekan Logika Bisnis
+  -- Pesanan tidak boleh 'Selesai' jika status bayar (baik yang baru diinput atau yang sudah ada) BUKAN 'Lunas'.
+  IF p_order_status = 'Selesai' AND COALESCE(p_payment_status, tx_payment_status) <> 'Lunas' THEN
+    RAISE EXCEPTION 'Pesanan tidak dapat diselesaikan karena belum lunas.';
   END IF;
+  -- AKHIR TAMBAHAN
 
-  -- 4. Validasi Order Status
-  IF p_order_status = 'Selesai' AND v_final_payment_status <> 'Lunas' THEN
-    RAISE EXCEPTION 'Pesanan tidak dapat diselesaikan karena pembayaran belum lunas (Kurang: %)', (v_current_total - v_new_amount_paid);
-  END IF;
-
-  -- 5. Update
+  -- Perform update (only allowed progress fields)
   UPDATE public.transactions
   SET
-    "amountPaid" = v_new_amount_paid,
+    "amountPaid" = COALESCE(p_amount_paid, "amountPaid"),
     "change" = COALESCE(p_change, "change"),
     "paymentMethod" = COALESCE(p_payment_method, "paymentMethod"),
-    "paymentStatus" = v_final_payment_status,
+    "paymentStatus" = COALESCE(p_payment_status, "paymentStatus"),
     "orderStatus" = COALESCE(p_order_status, "orderStatus")
   WHERE id = transaction_id_input;
 
-  -- Audit log (tetap sama)
+  -- Best-effort audit log write (do not fail the function if audit fails)
   BEGIN
     INSERT INTO public.audit_logs("user", action, "storeId")
     VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
+  EXCEPTION WHEN OTHERS THEN
+    -- ignore audit failures
+    NULL;
+  END;
 
   RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
 END;
@@ -551,7 +592,6 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
 AS $$
   SELECT
     t.id::text,
@@ -568,8 +608,8 @@ AS $$
   JOIN
     public.customers AS c ON t."customerId" = c.id
   WHERE
-    -- Pencarian Utama: Berdasarkan Kode Invoice (optimasi: uppercase, agar pakai index)
-    t.invoice_code = UPPER(input_identifier)
+    -- Pencarian Utama: Berdasarkan Kode Invoice (Case Insensitive agar huruf kecil/besar tidak masalah)
+    t.invoice_code ILIKE input_identifier
     -- Pencarian Alternatif: Berdasarkan UUID (jika input formatnya valid UUID)
-    OR (input_identifier ~ '^[0-9a-fA-F-]{36}$' AND t.id::text = input_identifier);
+    OR (input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' AND t.id::text = input_identifier);
 $$;
