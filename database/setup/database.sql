@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS public.user_credentials (
   password_hash text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
+ALTER TABLE public.user_credentials ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow owner to SELECT/UPDATE/DELETE their credentials" ON public.user_credentials
   FOR ALL USING (profile_id = auth.uid());
 CREATE POLICY "Allow INSERT for authenticated users" ON public.user_credentials
@@ -131,6 +132,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactio
 CREATE OR REPLACE FUNCTION public.generate_invoice_code(length int DEFAULT 6)
 RETURNS text
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 DECLARE
   chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -147,6 +149,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.set_invoice_code()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 DECLARE
   new_code text;
@@ -253,6 +256,7 @@ CREATE POLICY "Admins can see profiles in their store" ON public.profiles
 CREATE POLICY "Super Admins can see all profiles" ON public.profiles
   FOR SELECT USING (public.get_my_role() = 'Super Admin');
 CREATE POLICY "Users can update their own profile" ON public.profiles
+  FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
   FOR ALL USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id())
   WITH CHECK (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
@@ -264,9 +268,8 @@ CREATE POLICY "Super Admins can manage all profiles" ON public.profiles
 CREATE POLICY "Allow SELECT for store users" ON public.stores
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR id = public.get_my_store_id());
 CREATE POLICY "Allow INSERT/UPDATE/DELETE for Super Admins only" ON public.stores
-  FOR ALL USING (public.get_my_role() = 'Super Admin')
+  FOR ALL USING (public.get_my_role() = 'Super Admin');
 
--- --- Tabel: customers ---
 CREATE POLICY "Allow SELECT for store users" ON public.customers
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.customers
@@ -286,8 +289,7 @@ CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.services
 CREATE POLICY "Allow DELETE for Admins" ON public.services
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 
--- --- Tabel: inventory_items ---
-CREATE POLICY "Allow SELECT for store users" ON public.inventory_items
+CREATE POLICY "Allow SELECT for store users" ON public.inventory_items;
 CREATE POLICY "Allow INSERT for store users" ON public.inventory_items
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow UPDATE for Admins" ON public.inventory_items
@@ -324,8 +326,7 @@ CREATE POLICY "Allow UPDATE for Admins" ON public.expenses
 CREATE POLICY "Allow DELETE for Admins" ON public.expenses
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 
--- --- Tabel: transactions ---
-CREATE POLICY "Allow SELECT for store users" ON public.transactions
+CREATE POLICY "Allow SELECT for store users" ON public.transactions;
 CREATE POLICY "Allow INSERT for store users" ON public.transactions
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 -- Allow Admins and Kasirs to update only progress-related fields (payment/order progress)
@@ -406,12 +407,6 @@ CREATE POLICY "Allow UPDATE for Super Admin only" ON public.transactions
   FOR UPDATE
   USING (public.get_my_role() = 'Super Admin')
   WITH CHECK (public.get_my_role() = 'Super Admin');
-    s."durationDays"::integer AS duration_days
-  FROM
-    public.services AS s
-  WHERE
-    s."storeId" = store_id_input;
-$$;
 
 -- Note: This RPC intentionally omits price/unit to avoid exposing sensitive pricing data to public clients.
 
@@ -430,6 +425,7 @@ CREATE OR REPLACE FUNCTION public.update_transaction_progress(
 RETURNS SETOF public.transactions
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   caller uuid := auth.uid();
@@ -514,6 +510,7 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
+SET search_path = public
 AS $$
   SELECT
     t.id::text,
