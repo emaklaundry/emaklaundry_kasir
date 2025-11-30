@@ -456,30 +456,14 @@ VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234
 --     public.transactions AS t
 --   JOIN
 --     public.customers AS c ON t."customerId" = c.id
---   WHERE
---     t.id = transaction_id_input;
--- $$;
 
--- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
--- so it can read rows even when restrictive RLS policies exist. Keep the function
--- body minimal and review ownership/permissions after deployment.
-
--- === RPC: get_public_services ===
--- Return a safe list of services (no pricing) for a given store
-CREATE OR REPLACE FUNCTION public.get_public_services(
-  store_id_input uuid
-)
-RETURNS TABLE (
-  service_name text,
-  category text,
-  duration_days integer
-)
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT
-    s.name AS service_name,
-    s.category::text AS category,
+-- Hapus policy lama, ganti hanya Super Admin yang boleh UPDATE langsung
+DROP POLICY IF EXISTS "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions;
+DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
+CREATE POLICY "Allow UPDATE for Super Admin only" ON public.transactions
+  FOR UPDATE
+  USING (public.get_my_role() = 'Super Admin')
+  WITH CHECK (public.get_my_role() = 'Super Admin');
     s."durationDays"::integer AS duration_days
   FROM
     public.services AS s
@@ -492,12 +476,13 @@ $$;
 -- === RPC: update_transaction_progress ===
 -- Atomically update allowed progress fields on a transaction and insert an audit_log entry.
 -- Caller must be authenticated. Super Admin can update any transaction; Admin/Kasir can only update transactions in their store.
+
 CREATE OR REPLACE FUNCTION public.update_transaction_progress(
   transaction_id_input uuid,
   p_amount_paid numeric DEFAULT NULL,
   p_change numeric DEFAULT NULL,
   p_payment_method text DEFAULT NULL,
-  p_payment_status text DEFAULT NULL,
+  -- p_payment_status text DEFAULT NULL, -- Hapus input ini, status dihitung otomatis
   p_order_status text DEFAULT NULL
 )
 RETURNS SETOF public.transactions
@@ -509,50 +494,53 @@ DECLARE
   caller_role text;
   caller_store uuid;
   tx_store uuid;
-  tx_payment_status text; -- DITAMBAHKAN: Variabel untuk status bayar saat ini
+  v_current_total numeric;
+  v_new_amount_paid numeric;
+  v_final_payment_status text;
+  v_current_payment_status text;
 BEGIN
-  -- Load caller profile
+  -- 1. Cek Role & Store
   SELECT role, store_id INTO caller_role, caller_store FROM public.profiles WHERE id = caller;
-  IF caller_role IS NULL THEN
-    RAISE EXCEPTION 'unauthorized';
-  END IF;
+  IF caller_role IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
 
-  -- Ensure transaction exists and get its store dan payment status
-  SELECT "storeId", "paymentStatus" INTO tx_store, tx_payment_status FROM public.transactions WHERE id = transaction_id_input;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'transaction not found';
-  END IF;
+  -- 2. Ambil data transaksi saat ini
+  SELECT "storeId", "paymentStatus", total, "amountPaid"
+  INTO tx_store, v_current_payment_status, v_current_total, v_new_amount_paid
+  FROM public.transactions WHERE id = transaction_id_input;
+  IF NOT FOUND THEN RAISE EXCEPTION 'transaction not found'; END IF;
 
-  -- Permission check: Super Admin bypasses store check
   IF caller_role <> 'Super Admin' AND tx_store IS DISTINCT FROM caller_store THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
 
-  -- DITAMBAHKAN: Pengecekan Logika Bisnis
-  -- Pesanan tidak boleh 'Selesai' jika status bayar (baik yang baru diinput atau yang sudah ada) BUKAN 'Lunas'.
-  IF p_order_status = 'Selesai' AND COALESCE(p_payment_status, tx_payment_status) <> 'Lunas' THEN
-    RAISE EXCEPTION 'Pesanan tidak dapat diselesaikan karena belum lunas.';
+  -- 3. Kalkulasi Payment Status Otomatis
+  v_new_amount_paid := COALESCE(p_amount_paid, v_new_amount_paid);
+  IF v_new_amount_paid >= v_current_total THEN
+    v_final_payment_status := 'Lunas';
+  ELSE
+    v_final_payment_status := 'Belum Lunas';
   END IF;
-  -- AKHIR TAMBAHAN
 
-  -- Perform update (only allowed progress fields)
+  -- 4. Validasi Order Status
+  IF p_order_status = 'Selesai' AND v_final_payment_status <> 'Lunas' THEN
+    RAISE EXCEPTION 'Pesanan tidak dapat diselesaikan karena pembayaran belum lunas (Kurang: %)', (v_current_total - v_new_amount_paid);
+  END IF;
+
+  -- 5. Update
   UPDATE public.transactions
   SET
-    "amountPaid" = COALESCE(p_amount_paid, "amountPaid"),
+    "amountPaid" = v_new_amount_paid,
     "change" = COALESCE(p_change, "change"),
     "paymentMethod" = COALESCE(p_payment_method, "paymentMethod"),
-    "paymentStatus" = COALESCE(p_payment_status, "paymentStatus"),
+    "paymentStatus" = v_final_payment_status,
     "orderStatus" = COALESCE(p_order_status, "orderStatus")
   WHERE id = transaction_id_input;
 
-  -- Best-effort audit log write (do not fail the function if audit fails)
+  -- Audit log (tetap sama)
   BEGIN
     INSERT INTO public.audit_logs("user", action, "storeId")
     VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
-  EXCEPTION WHEN OTHERS THEN
-    -- ignore audit failures
-    NULL;
-  END;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
 
   RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
 END;
@@ -600,8 +588,8 @@ AS $$
   JOIN
     public.customers AS c ON t."customerId" = c.id
   WHERE
-    -- Pencarian Utama: Berdasarkan Kode Invoice (Case Insensitive agar huruf kecil/besar tidak masalah)
-    t.invoice_code ILIKE input_identifier
+    -- Pencarian Utama: Berdasarkan Kode Invoice (optimasi: uppercase, agar pakai index)
+    t.invoice_code = UPPER(input_identifier)
     -- Pencarian Alternatif: Berdasarkan UUID (jika input formatnya valid UUID)
-    OR (input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' AND t.id::text = input_identifier);
+    OR (input_identifier ~ '^[0-9a-fA-F-]{36}$' AND t.id::text = input_identifier);
 $$;

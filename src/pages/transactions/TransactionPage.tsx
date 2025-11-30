@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -31,6 +29,9 @@ import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../components/Pagination';
+
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 
 // Tipe kustom untuk transaksi dengan nama pelanggan
 type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
@@ -152,7 +153,7 @@ const TransactionPage: React.FC = () => {
     currentPage,
     totalPages,
     onPageChange,
-  } = usePagination(sortedTransactions, 10);
+  } = usePagination(sortedTransactions, 15);
 
   const getSortIcon = (key: keyof TransactionWithCustomer) => {
     if (!sortConfig || sortConfig.key !== key) return null;

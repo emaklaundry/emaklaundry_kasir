@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
 import { Transaction } from '@/types';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
@@ -46,9 +46,9 @@ export function useTransactions(filter: TransactionFilter = {}) {
   // Ambil enabled dari filter, default true
   const { enabled = true, ...queryFilter } = filter;
   const { data: result, ...query } = useQuery({
-    queryKey: ['transactions', queryFilter], // queryKey tidak mengandung enabled
+    queryKey: ['transactions', queryFilter],
     queryFn: () => fetchTransactions(queryFilter),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     enabled: enabled,
   });
   const transactions = result?.data || [];
