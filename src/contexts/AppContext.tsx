@@ -48,8 +48,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single();
-        if (!error && data) {
+          .maybeSingle();
+        if (error) {
+          console.error('Error fetching profile:', error);
+        }
+        if (data) {
           if (data.isActive === false) {
             addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
             await supabase.auth.signOut();
@@ -78,6 +81,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             prevLoggedInRef.current = true;
           }
         } else {
+          // Profil tidak ditemukan (bisa karena trigger belum jalan)
+          console.warn('User login berhasil, tapi profil tidak ditemukan di database.');
+          // Opsi: Logout otomatis atau biarkan null
+          // await supabase.auth.signOut(); 
           setCurrentUser(null);
           prevLoggedInRef.current = false;
         }

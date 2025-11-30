@@ -1,14 +1,65 @@
--- apply_rpc_and_seed.sql
+
+-- ================================================================
+-- FILE: database/setup/apply_rpc_and_seed.sql
+-- DESKRIPSI: Script ini untuk mengisi data awal (Seed) Toko, User Role, dan Layanan.
+-- PRASYARAT: 
+-- 1. File 'database.sql' harus sudah dijalankan (struktur tabel sudah ada).
+-- 2. User (Super Admin, emaklaundry, YOPI, dll) harus sudah REGISTER di menu Authentication.
+-- ================================================================
+
+BEGIN;
+
+-- === BAGIAN 1: SEED TOKO UTAMA ===
+-- Memastikan toko 'Cabang Kota Banjar' ada.
+-- Menggunakan ON CONFLICT agar tidak error jika dijalankan berulang.
+
+INSERT INTO public.stores (id, name, address, "isActive")
+VALUES (
+  '9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 
+  'Cabang Kota Banjar', 
+  'Kota Banjar', 
+  true
+)
+ON CONFLICT (id) DO UPDATE 
+SET name = EXCLUDED.name, address = EXCLUDED.address; 
 
 
--- Seed services: upsert a large list of services into the target store (Cabang Kota Banjar)
+-- === BAGIAN 2: SETUP USER ROLE & STORE ===
+-- Script ini mencari user di tabel profiles berdasarkan NAMA yang Anda input saat Register.
+-- Pastikan ejaan nama saat register sesuai dengan yang ada di sini.
+
+-- 2.1. Setup SUPER ADMIN (Tanpa Toko)
+UPDATE public.profiles
+SET 
+  role = 'Super Admin',
+  store_id = NULL
+WHERE name ILIKE 'Super Admin'; -- ILIKE = Tidak case sensitive
+
+-- 2.2. Setup ADMIN TOKO (emaklaundry)
+UPDATE public.profiles
+SET 
+  role = 'Admin',
+  store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
+WHERE name ILIKE 'emaklaundry';
+
+-- 2.3. Setup KASIR (YOPI, ani, didi, lilis)
+UPDATE public.profiles
+SET 
+  role = 'Kasir',
+  store_id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
+WHERE name IN ('YOPI', 'ani', 'didi', 'lilis');
+
+
+-- === BAGIAN 3: SEED LAYANAN (SERVICES) ===
+-- Menggunakan data layanan yang Anda berikan sebelumnya.
+
+-- 3.1. Index Unik untuk mencegah duplikasi layanan di toko yang sama
 CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx ON public.services (lower(name), "storeId");
 
+-- 3.2. Insert Layanan
 WITH target_store AS (
-  -- Ambil toko aktif pertama, lebih universal
   SELECT id FROM public.stores
-  WHERE "isActive" = true
-  ORDER BY created_at ASC
+  WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456' OR name ILIKE 'Cabang Kota Banjar'
   LIMIT 1
 )
 INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
@@ -92,3 +143,7 @@ ON CONFLICT (lower(name), "storeId") DO UPDATE SET
   category = EXCLUDED.category;
 
 COMMIT;
+
+-- Verifikasi hasil (Opsional)
+SELECT name, role, store_id FROM public.profiles WHERE name IN ('Super Admin', 'emaklaundry', 'YOPI', 'ani', 'didi', 'lilis');
+SELECT count(*) as total_services FROM public.services;
