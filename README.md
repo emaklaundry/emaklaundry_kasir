@@ -256,3 +256,19 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
    ```bash
    npm install --save-dev @types/node
    ```
+
+---
+
+## 🧪 Pengujian Otomatis
+
+Aplikasi ini dilengkapi dengan unit test menggunakan Vitest dan Testing Library. Untuk menjalankan seluruh pengujian:
+
+```bash
+npm test
+```
+
+- Semua file test berada di dalam folder `src/` (misal: `src/utils/*.test.ts`, `src/components/*.test.tsx`, dll).
+- Pastikan seluruh pengujian lulus sebelum melakukan deploy atau merge ke branch utama.
+- Hasil pengujian terakhir:
+  - 13 file test dijalankan
+  - 25 pengujian (tests) semuanya lulus
