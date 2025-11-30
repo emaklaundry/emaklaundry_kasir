@@ -1,25 +1,24 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { supabase, updateTransactionProgress } from '../../utils/supabaseClient';
+import { supabase } from '../../utils/supabaseClient';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import {
   ChevronLeftIcon,
   PrinterIcon,
   UsersIcon,
   ShoppingCartIcon,
-  DollarSignIcon, // Ditambahkan untuk PaymentModal
+  SendIcon, // Import icon Send
 } from '../../components/icons';
-// import { updateTransactionProgress } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';
 import { useAppContext } from '../../contexts/AppContext';
 import { useToasts } from '../../contexts/ToastContext';
 import PaymentModal from '../../components/PaymentModal';
+import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
-import { OrderStatus, PaymentStatus, Transaction } from '@/types';
-// supabase client not used directly in this file; progress updates go through RPC helper
+import { OrderStatus, PaymentStatus, Transaction, Customer } from '@/types';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({
   label,
@@ -36,9 +35,10 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
 
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  // Optimasi: matikan fetch list, hanya butuh updateTransaction
-  const { updateTransaction } = useTransactions({ enabled: false });
   
+  // Mengambil fungsi updateTransaction dari context
+  const { updateTransaction } = useTransactions({ enabled: false });
+
   // Query untuk mengambil SATU transaksi berdasarkan ID
   const {
     data: transaction,
@@ -55,12 +55,11 @@ const TransactionDetailPage: React.FC = () => {
     enabled: !!id,
   });
 
-  const customersQuery = useQuery({ // Mengambil seluruh object query result
+  const customersQuery = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
 
-  // Ekstrak array customer dengan aman menggunakan useMemo
   const customers = useMemo(() => {
     return Array.isArray(customersQuery.data)
       ? customersQuery.data
@@ -69,10 +68,17 @@ const TransactionDetailPage: React.FC = () => {
 
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
 
+  // State untuk WhatsApp manual dari header (opsional, jika ingin tombol di header)
+  const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false);
+
   if (isTransactionLoading) {
-    return <div className="text-center py-12 text-slate-500 dark:text-slate-400">Memuat detail transaksi...</div>;
+    return (
+      <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+        Memuat detail transaksi...
+      </div>
+    );
   }
-  
+
   if (transactionError || !transaction || !customer) {
     return (
       <EmptyState
@@ -100,18 +106,30 @@ const TransactionDetailPage: React.FC = () => {
       </Link>
 
       <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
-            <p className="text-lg text-slate-500 dark:text-slate-400">{transaction.invoice_code || transaction.id}</p>
+            <p className="text-lg text-slate-500 dark:text-slate-400">
+              {transaction.invoice_code || transaction.id}
+            </p>
           </div>
-          <Link
-            to={`/transactions/${transaction.id}/receipt`}
-            className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5"
-          >
-            <PrinterIcon className="h-5 w-5 mr-2" />
-            Cetak Struk
-          </Link>
+          <div className="flex gap-2">
+             {/* Tombol Kirim WA Manual */}
+            <button
+              onClick={() => setIsHeaderWAOpen(true)}
+              className="flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-4 py-3"
+              title="Kirim Struk WhatsApp"
+            >
+              <SendIcon className="h-5 w-5" />
+            </button>
+            <Link
+              to={`/transactions/${transaction.id}/receipt`}
+              className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
+            >
+              <PrinterIcon className="h-5 w-5 mr-2" />
+              Cetak Struk
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -141,7 +159,9 @@ const TransactionDetailPage: React.FC = () => {
               label="Status Pesanan"
               value={
                 <span
-                  className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(transaction.orderStatus)}`}
+                  className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(
+                    transaction.orderStatus,
+                  )}`}
                 >
                   {transaction.orderStatus}
                 </span>
@@ -151,14 +171,15 @@ const TransactionDetailPage: React.FC = () => {
               label="Status Bayar"
               value={
                 <span
-                  className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(transaction.paymentStatus)}`}
+                  className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(
+                    transaction.paymentStatus,
+                  )}`}
                 >
                   {transaction.paymentStatus}
                 </span>
               }
             />
             <DetailItem label="Metode Bayar" value={transaction.paymentMethod || '-'} />
-            {/* Sisa Tagihan dihapus dari sini karena sudah ada di bagian total */}
           </div>
         </div>
         {transaction.notes && (
@@ -170,8 +191,12 @@ const TransactionDetailPage: React.FC = () => {
           </div>
         )}
 
-        {/* Action buttons for Kasir / Admin to update progress only */}
-        <ActionButtons transaction={transaction} />
+        {/* Action buttons passing updateTransaction and customer */}
+        <ActionButtons 
+          transaction={transaction} 
+          customer={customer}
+          updateTransaction={updateTransaction} 
+        />
       </div>
 
       <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -231,7 +256,10 @@ const TransactionDetailPage: React.FC = () => {
         {/* Tampilan Kartu Mobile */}
         <div className="md:hidden space-y-3">
           {transaction.items.map((item, index) => (
-            <div key={index} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm">
+            <div
+              key={index}
+              className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
+            >
               <div className="flex justify-between items-start">
                 <span className="font-semibold text-slate-800 dark:text-slate-100">
                   {item.serviceName}
@@ -300,26 +328,42 @@ const TransactionDetailPage: React.FC = () => {
           />
         </div>
       </div>
+      
+      {/* WhatsApp Modal untuk tombol manual di header */}
+      {isHeaderWAOpen && (
+        <WhatsAppModal
+          isOpen={isHeaderWAOpen}
+          onClose={() => setIsHeaderWAOpen(false)}
+          transaction={transaction}
+          customer={customer}
+        />
+      )}
     </div>
   );
 };
 
 export default TransactionDetailPage;
 
-const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) => {
+interface ActionButtonsProps {
+  transaction: Transaction;
+  customer: Customer; // Customer prop added
+  updateTransaction: (id: string, data: Partial<Transaction>) => Promise<Transaction | null>;
+}
+
+const ActionButtons: React.FC<ActionButtonsProps> = ({ transaction, customer, updateTransaction }) => {
   const { currentUser } = useAppContext();
   const { addToast, updateToast } = useToasts();
-  const queryClient = useQueryClient();
-  // const { updateTransaction } = useTransactions();
-  const [loading, setLoading] = React.useState(false);
-  const [isPaymentOpen, setIsPaymentOpen] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  
+  // State untuk WhatsApp Modal otomatis setelah aksi
+  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
 
   const isKasir = currentUser?.role === 'Kasir';
   const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
 
   if (!isKasir && !isAdmin) return null;
 
-  // Open payment modal
   function handleOpenPaymentModal() {
     setIsPaymentOpen(true);
   }
@@ -327,14 +371,24 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
   async function onSavePayment(updatedTransaction: Transaction) {
     setLoading(true);
     const toastId = addToast('Menyimpan pembayaran...', 'info');
+    
+    // Cek apakah perlu menampilkan WA Modal (Lunas dan Selesai/Siap)
+    const shouldShowWhatsAppModal = 
+      updatedTransaction.paymentStatus === PaymentStatus.Paid && 
+      (updatedTransaction.orderStatus === OrderStatus.Completed || updatedTransaction.orderStatus === OrderStatus.Ready);
+
     try {
-      await updateTransactionProgress(transaction.id, {
+      await updateTransaction(transaction.id, {
         amountPaid: updatedTransaction.amountPaid,
         change: updatedTransaction.change,
-        paymentMethod: updatedTransaction.paymentMethod ?? null,
+        paymentMethod: updatedTransaction.paymentMethod ?? undefined,
+        paymentStatus: updatedTransaction.paymentStatus,
       });
-      await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
       updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
+      
+      if (shouldShowWhatsAppModal) {
+        setIsWhatsAppOpen(true);
+      }
     } catch (err: any) {
       updateToast(toastId, err?.message ?? 'Gagal memperbarui status pembayaran', 'error');
     } finally {
@@ -347,8 +401,10 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
     setLoading(true);
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
-      await updateTransactionProgress(transaction.id, { orderStatus: OrderStatus.Ready });
+      await updateTransaction(transaction.id, { orderStatus: OrderStatus.Ready });
       updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
+      // Otomatis tawarkan kirim WA saat Ready
+      setIsWhatsAppOpen(true);
     } catch (err: any) {
       updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
     } finally {
@@ -357,10 +413,15 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
   }
 
   async function handleMarkCompleted() {
+    if (transaction.paymentStatus !== PaymentStatus.Paid) {
+      addToast('Transaksi belum lunas. Harap lunasi tagihan sebelum menyelesaikan pesanan.', 'error');
+      return;
+    }
+    
     setLoading(true);
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
-      await updateTransactionProgress(transaction.id, { orderStatus: OrderStatus.Completed });
+      await updateTransaction(transaction.id, { orderStatus: OrderStatus.Completed });
       updateToast(toastId, 'Status pesanan diperbarui: Selesai', 'success');
     } catch (err: any) {
       updateToast(toastId, err?.message ?? 'Gagal memperbarui status pesanan', 'error');
@@ -401,13 +462,16 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
           </div>
         </div>
       )}
+      
       <button
         disabled={loading || transaction.paymentStatus === PaymentStatus.Paid}
         onClick={handleOpenPaymentModal}
         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md disabled:bg-green-300 disabled:cursor-not-allowed"
+        title={transaction.paymentStatus === PaymentStatus.Paid ? 'Transaksi sudah lunas' : 'Input Pembayaran'}
       >
-        Bayar
+        {transaction.paymentStatus === PaymentStatus.Paid ? 'Sudah Lunas' : 'Bayar'}
       </button>
+
       <button
         disabled={
           loading ||
@@ -419,6 +483,7 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
       >
         Tandai Siap Ambil
       </button>
+
       <button
         disabled={
           loading ||
@@ -430,13 +495,11 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
         title={
           transaction.paymentStatus !== PaymentStatus.Paid
             ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
-            : ''
+            : 'Selesaikan Pesanan'
         }
       >
         Tandai Selesai
       </button>
-
-      {/* Tautan 'Edit Items' yang rusak telah dihapus */}
 
       <PaymentModal
         isOpen={isPaymentOpen}
@@ -445,6 +508,16 @@ const ActionButtons: React.FC<{ transaction: Transaction }> = ({ transaction }) 
         onSave={onSavePayment}
         disabled={loading}
       />
+      
+      {/* Modal WA Otomatis setelah aksi */}
+      {isWhatsAppOpen && (
+        <WhatsAppModal
+            isOpen={isWhatsAppOpen}
+            onClose={() => setIsWhatsAppOpen(false)}
+            transaction={transaction}
+            customer={customer}
+        />
+      )}
     </div>
   );
 };
