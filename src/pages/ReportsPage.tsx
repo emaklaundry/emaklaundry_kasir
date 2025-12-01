@@ -429,6 +429,7 @@ const ReportsPage: React.FC = () => {
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
     const end = endDate.getTime();
+    // Filter transaksi tetap dilakukan di client karena fetch-nya mengambil semua
     const transactions = (allStoreTransactions as unknown[])
       .map(normalizeTransaction)
       .filter((t): t is Omit<Transaction, 'createdAt'> & { createdAt: string } => !!t)
@@ -436,12 +437,10 @@ const ReportsPage: React.FC = () => {
         const time = new Date(t.createdAt).getTime();
         return time >= start && time <= end;
       });
-    
-    // --- PERBAIKAN DI SINI ---
-    // Jangan filter expenses lagi berdasarkan timestamp karena allStoreExpenses 
-    // sudah difetch khusus untuk range tanggal ini dari Database/QueryFn.
-    // Filter ulang di sini berisiko bug timezone (UTC vs Local) yang menyebabkan
-    // data di batas tanggal (boundary) hilang.
+
+    // PERBAIKAN: Hapus filter kedua untuk expenses.
+    // Data allStoreExpenses sudah difetch sesuai range tanggal secara spesifik di useQuery.
+    // Memfilter ulang di sini menyebabkan masalah timezone (data hilang).
     const expenses = (allStoreExpenses as Expense[]) || [];
 
     return { transactions, expenses };
