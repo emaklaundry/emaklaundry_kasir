@@ -191,7 +191,6 @@ const NewTransactionPage: React.FC = () => {
     return amountToPay;
   }, [isPayingNow, amountToPay]);
 
-
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;

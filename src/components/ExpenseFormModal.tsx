@@ -16,14 +16,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const categoryOptions = [
-    'Operasional',
-    'Listrik',
-    'Air',
-    'Gaji',
-    'Perlengkapan',
-    'Lainnya',
-  ];
+  const categoryOptions = ['Operasional', 'Listrik', 'Air', 'Gaji', 'Perlengkapan', 'Lainnya'];
   const initialFormData = useMemo(() => {
     if (expense) {
       return {
@@ -95,7 +88,10 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     >
       <form id="expense-form" onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="date" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+          <label
+            htmlFor="date"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
             Tanggal
           </label>
           <input
@@ -109,7 +105,10 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           />
         </div>
         <div>
-          <label htmlFor="description" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+          <label
+            htmlFor="description"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
             Deskripsi Pengeluaran
           </label>
           <input
@@ -124,7 +123,10 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           />
         </div>
         <div>
-          <label htmlFor="category" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+          <label
+            htmlFor="category"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
             Kategori
           </label>
           <select
@@ -136,12 +138,17 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             required
           >
             {categoryOptions.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="amount" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+          <label
+            htmlFor="amount"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
             Jumlah (Rp)
           </label>
           <input

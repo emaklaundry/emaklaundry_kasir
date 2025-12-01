@@ -381,7 +381,9 @@ const TransactionPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
-            <label htmlFor="searchTerm" className="sr-only">Cari Transaksi</label>
+            <label htmlFor="searchTerm" className="sr-only">
+              Cari Transaksi
+            </label>
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               id="searchTerm"
@@ -394,7 +396,9 @@ const TransactionPage: React.FC = () => {
             />
           </div>
           <div>
-            <label htmlFor="customerFilter" className="sr-only">Filter Pelanggan</label>
+            <label htmlFor="customerFilter" className="sr-only">
+              Filter Pelanggan
+            </label>
             <select
               id="customerFilter"
               value={customerFilter}
@@ -410,7 +414,9 @@ const TransactionPage: React.FC = () => {
             </select>
           </div>
           <div>
-            <label htmlFor="paymentFilter" className="sr-only">Filter Status Bayar</label>
+            <label htmlFor="paymentFilter" className="sr-only">
+              Filter Status Bayar
+            </label>
             <select
               id="paymentFilter"
               value={paymentFilter}
@@ -426,7 +432,9 @@ const TransactionPage: React.FC = () => {
             </select>
           </div>
           <div>
-            <label htmlFor="selectedDate" className="sr-only">Filter Tanggal</label>
+            <label htmlFor="selectedDate" className="sr-only">
+              Filter Tanggal
+            </label>
             <input
               id="selectedDate"
               type="date"

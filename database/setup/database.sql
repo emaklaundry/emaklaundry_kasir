@@ -53,7 +53,7 @@ BEGIN
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', 'New User'),
     COALESCE(NEW.raw_user_meta_data->>'role', 'Kasir'),
-    (NEW.raw_user_meta_data->>'store_id')::uuid
+    NULLIF(NEW.raw_user_meta_data->>'store_id', '')::uuid
   );
   RETURN NEW;
 END;
@@ -664,9 +664,29 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_freq_value int;
+  v_freq_unit text;
+  v_interval interval;
 BEGIN
+  -- Ambil konfigurasi frekuensi dari row terkait
+  SELECT "frequencyValue", "frequencyUnit"
+  INTO v_freq_value, v_freq_unit
+  FROM public.scheduled_maintenances
+  WHERE id = maintenance_id;
+
+  -- Konversi unit ke interval PostgreSQL (asumsi frontend kirim: 'days', 'weeks', 'months', 'years')
+  BEGIN
+    v_interval := (v_freq_value || ' ' || v_freq_unit)::interval;
+  EXCEPTION WHEN OTHERS THEN
+    -- Fallback aman jika unit tidak valid
+    v_interval := INTERVAL '30 days';
+  END;
+
   UPDATE public.scheduled_maintenances
-  SET "lastCompletedDate" = NOW(), "nextDueDate" = NOW() + INTERVAL '30 days'
+  SET 
+    "lastCompletedDate" = CURRENT_DATE, 
+    "nextDueDate" = CURRENT_DATE + v_interval
   WHERE id = maintenance_id;
 END;
 $$;
@@ -677,7 +697,7 @@ CREATE OR REPLACE FUNCTION public.get_laundry_status(
 )
 RETURNS TABLE (
   id text,
-  "invoiceCode" text, -- Kita tambahkan ini agar bisa ditampilkan di frontend
+  "invoiceCode" text,
   "customerName" text,
   "createdAt" timestamp with time zone,
   "estimatedCompletionDate" date,
@@ -693,7 +713,7 @@ AS $$
   SELECT
     t.id::text,
     t."invoiceCode" AS "invoiceCode",
-    c.name AS "customerName",
+    COALESCE(c.name, 'Guest/Dihapus') AS "customerName",
     t."createdAt",
     t."estimatedCompletionDate",
     t."orderStatus",
@@ -702,12 +722,10 @@ AS $$
     t."amountPaid"
   FROM
     public.transactions AS t
-  JOIN
+  LEFT JOIN
     public.customers AS c ON t."customerId" = c.id
   WHERE
-    -- Pencarian Utama: Berdasarkan Kode Invoice (Case Insensitive agar huruf kecil/besar tidak masalah)
     t."invoiceCode" ILIKE input_identifier
-    -- Pencarian Alternatif: Berdasarkan UUID (jika input formatnya valid UUID)
     OR (
       input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
       AND t.id = input_identifier::uuid

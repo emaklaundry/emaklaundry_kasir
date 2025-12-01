@@ -120,7 +120,9 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         <div className="mt-2 text-sm p-2 bg-blue-50 dark:bg-blue-900/50 rounded-md text-blue-800 dark:text-blue-300">
           <p>
             Terpilih: <strong>{selectedCustomer.name}</strong>
-            {selectedCustomer.phone && selectedCustomer.phone !== '0' && ` (${selectedCustomer.phone})`}
+            {selectedCustomer.phone &&
+              selectedCustomer.phone !== '0' &&
+              ` (${selectedCustomer.phone})`}
           </p>
         </div>
       )}
