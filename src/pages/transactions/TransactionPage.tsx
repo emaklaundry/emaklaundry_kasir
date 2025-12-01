@@ -82,14 +82,10 @@ const TransactionPage: React.FC = () => {
   // Proses sort dan pagination di client
   // These hooks must be declared before any useEffect or code that references their variables
 
-  // Ambil data transaksi dari server sesuai page dan filter
-  // Ambil banyak data (1000) agar filter/sort client-side bekerja dengan benar
+  // Ambil data transaksi dari server (tanpa filter parsial, biarkan filter client-side yang mengatur)
   const { transactions, updateTransaction } = useTransactions({
-    page: 1, // Hardcode ke halaman 1 karena kita ambil semua data
-    pageSize: 1000, // Ambil banyak data sekaligus
-    storeId: customerFilter === 'all' ? undefined : customerFilter,
-    paymentStatus: paymentFilter === 'all' ? undefined : paymentFilter,
-    orderStatus: statusFilter === 'all' ? undefined : statusFilter,
+    page: 1,
+    pageSize: 1000,
   });
 
   const transactionsWithCustomer = useMemo(() => {

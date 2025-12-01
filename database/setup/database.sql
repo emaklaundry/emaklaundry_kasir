@@ -33,9 +33,33 @@ CREATE TABLE public.settings (
 );
 
 
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
--- OPTIMASI: Trigger handle_new_user otomatis saat user baru di auth.users
 
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+
+-- === DEFINISI FUNGSI handle_new_user (HARUS SEBELUM TRIGGER) ===
+CREATE OR REPLACE FUNCTION public.handle_new_user(
+  user_id uuid,
+  user_name text,
+  user_role text,
+  store_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name, role, store_id)
+  VALUES (user_id, user_name, user_role, store_id)
+  ON CONFLICT (id) DO NOTHING;
+END;
+$$;
+
+-- Batasi akses eksekusi hanya untuk service_role
+REVOKE EXECUTE ON FUNCTION public.handle_new_user(uuid, text, text, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.handle_new_user(uuid, text, text, uuid) TO service_role;
+
+-- OPTIMASI: Trigger handle_new_user otomatis saat user baru di auth.users
 -- Penyempurnaan: handle_new_user_trigger kini membaca store_id dan role dari metadata
 CREATE OR REPLACE FUNCTION public.handle_new_user_trigger()
 RETURNS trigger AS $$
@@ -649,27 +673,6 @@ INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate", "store
 
 
 
-CREATE OR REPLACE FUNCTION public.handle_new_user(
-  user_id uuid,
-  user_name text,
-  user_role text,
-  store_id uuid
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, name, role, store_id)
-  VALUES (user_id, user_name, user_role, store_id)
-  ON CONFLICT (id) DO NOTHING;
-END;
-$$;
-
--- Batasi akses eksekusi hanya untuk service_role
-REVOKE EXECUTE ON FUNCTION public.handle_new_user(uuid, text, text, uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.handle_new_user(uuid, text, text, uuid) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
   maintenance_id uuid
