@@ -1015,8 +1015,8 @@ const NewTransactionPage: React.FC = () => {
         onClose={handleViewTransactions}
         title="Transaksi Berhasil!"
         message={
-          newlyCreatedTransaction?.invoiceCode
-            ? `Transaksi (No. ${newlyCreatedTransaction.invoiceCode}) telah berhasil dibuat.`
+          newlyCreatedTransaction?.invoice_code
+            ? `Transaksi (No. ${newlyCreatedTransaction.invoice_code}) telah berhasil dibuat.`
             : 'Transaksi baru telah berhasil dibuat.'
         }
         actions={[
