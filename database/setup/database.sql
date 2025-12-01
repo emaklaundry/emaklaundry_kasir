@@ -20,14 +20,7 @@ CREATE TABLE public.customers (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
--- Cegah duplikasi nomor HP customer di cabang yang sama
-CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone_store 
-ON public.customers(phone, "storeId") 
-WHERE phone IS NOT NULL AND phone <> '';
 
-
--- Aktifkan Supabase Realtime untuk tabel transaksi
-ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
 
 
 
@@ -43,7 +36,10 @@ CREATE TABLE public.settings (
 
 
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+-- OPTIMASI: Index untuk storeId di tabel utama
+-- (Pastikan tabel-tabel ini sudah ada sebelum index dibuat)
 CREATE INDEX IF NOT EXISTS idx_settings_store_id ON public.settings("storeId");
+CREATE INDEX IF NOT EXISTS idx_transactions_store_id ON public.transactions("storeId");
 CREATE INDEX IF NOT EXISTS idx_customers_store_id ON public.customers("storeId");
 CREATE INDEX IF NOT EXISTS idx_inventory_store_id ON public.inventory_items("storeId");
 CREATE INDEX IF NOT EXISTS idx_expenses_store_id ON public.expenses("storeId");
@@ -171,13 +167,30 @@ CREATE TABLE public.transactions (
   "idempotencyKey" uuid UNIQUE
 );
 
--- Index untuk tabel transactions
+
+-- === SEMUA INDEX DAN PUBLIKASI DILETAKKAN DI BAWAH SETELAH SEMUA TABEL DIBUAT ===
+
+-- 1. Index untuk Customers (Sekarang aman karena tabel customers sudah ada)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone_store
+ON public.customers(phone, "storeId")
+WHERE phone IS NOT NULL AND phone <> '';
+
+-- 2. Index untuk tabel transactions
 CREATE INDEX IF NOT EXISTS idx_transactions_store_id ON public.transactions("storeId");
 CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactions("idempotencyKey");
 CREATE INDEX IF NOT EXISTS idx_transactions_invoice_code ON public.transactions("invoiceCode");
 
--- Aktifkan Supabase Realtime untuk tabel transaksi
-ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+-- 3. Aktifkan Supabase Realtime untuk tabel transaksi (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'transactions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+  END IF;
+END;
+$$;
 
 -- === FUNGSI DAN TRIGGER UNTUK INVOICE_CODE ===
 
