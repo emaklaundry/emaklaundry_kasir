@@ -112,24 +112,12 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 
 ---
 
-jobs:
-  backup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install PostgreSQL Client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-      - name: Create backup folder
-        run: mkdir -p database/backup
-      - name: Backup Database
-        run: |
-          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -f database/backup/backup_$(date +%Y-%m-%d).sql
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: db-backup
-          path: database/backup/*.sql
-          retention-days: 7
-```
+
+---
+
+## ⚠️ Catatan Keamanan & Dependency
+
+- Ekspor Excel menggunakan library `xlsx`. Terdapat 1 high severity vulnerability pada versi terbaru (per 2 Desember 2025), namun **tidak ada perbaikan resmi** dari maintainer. Selama hanya digunakan untuk ekspor data lokal (bukan upload file dari user), risiko sangat minimal.
+- Selalu cek update dependency secara berkala dan lakukan audit dengan `npm audit`.
+
+---
