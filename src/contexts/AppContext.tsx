@@ -1,4 +1,3 @@
-
 import React, { useState, ReactNode, useEffect, useRef, useCallback } from 'react';
 import AppContext from './AppContextContext';
 import { User, Store } from '../types/index';
@@ -119,7 +118,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await supabase.auth.signOut();
     setCurrentUser(null);
   }, [currentUser]);
-
 
   // --- LOGIC AUTO LOGOUT ---
   useEffect(() => {

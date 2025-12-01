@@ -1,9 +1,4 @@
--- Cegah duplikasi nomor HP customer di cabang yang sama
-CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone_store 
-ON public.customers(phone, "storeId") 
-WHERE phone IS NOT NULL AND phone <> '';
--- Aktifkan Supabase Realtime untuk tabel transaksi
-ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
+
 -- Tabel stores harus dibuat paling awal karena direferensikan oleh banyak tabel lain
 CREATE TABLE public.stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -12,6 +7,27 @@ CREATE TABLE public.stores (
   "isActive" boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT NOW()
 );
+
+-- Tabel lain yang memiliki foreign key ke stores
+CREATE TABLE public.customers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  phone text,
+  address text,
+  notes text,
+  "defaultDiscount" integer DEFAULT 0,
+  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
+  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
+);
+
+-- Cegah duplikasi nomor HP customer di cabang yang sama
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone_store 
+ON public.customers(phone, "storeId") 
+WHERE phone IS NOT NULL AND phone <> '';
+
+
+-- Aktifkan Supabase Realtime untuk tabel transaksi
+ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
 
 
 
@@ -27,9 +43,7 @@ CREATE TABLE public.settings (
 
 
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
--- OPTIMASI: Index untuk storeId di tabel utama
 CREATE INDEX IF NOT EXISTS idx_settings_store_id ON public.settings("storeId");
-CREATE INDEX IF NOT EXISTS idx_transactions_store_id ON public.transactions("storeId");
 CREATE INDEX IF NOT EXISTS idx_customers_store_id ON public.customers("storeId");
 CREATE INDEX IF NOT EXISTS idx_inventory_store_id ON public.inventory_items("storeId");
 CREATE INDEX IF NOT EXISTS idx_expenses_store_id ON public.expenses("storeId");
@@ -157,9 +171,13 @@ CREATE TABLE public.transactions (
   "idempotencyKey" uuid UNIQUE
 );
 
--- Index untuk idempotencyKey
+-- Index untuk tabel transactions
+CREATE INDEX IF NOT EXISTS idx_transactions_store_id ON public.transactions("storeId");
 CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactions("idempotencyKey");
 CREATE INDEX IF NOT EXISTS idx_transactions_invoice_code ON public.transactions("invoiceCode");
+
+-- Aktifkan Supabase Realtime untuk tabel transaksi
+ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
 
 -- === FUNGSI DAN TRIGGER UNTUK INVOICE_CODE ===
 
