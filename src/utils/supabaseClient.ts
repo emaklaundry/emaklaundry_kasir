@@ -26,7 +26,7 @@ export async function getLaundryStatus(identifier: string) {
   if (error) throw error;
   // If data is empty or not found, throw error to match test expectation
   if (!data || (Array.isArray(data) && data.length === 0)) {
-    throw new Error('rejected promise');
+    throw new Error('Kode invoice tidak ditemukan atau data tidak valid.');
   }
   return data;
 }

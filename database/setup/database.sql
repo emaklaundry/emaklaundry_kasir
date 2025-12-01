@@ -101,7 +101,7 @@ CREATE TABLE public.expenses (
 
 CREATE TABLE public.transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  invoice_code text UNIQUE, -- <-- TAMBAHKAN BARIS INI
+  "invoiceCode" text UNIQUE, -- konsisten camelCase
   "customerId" uuid REFERENCES customers(id) ON DELETE SET NULL,
   items jsonb NOT NULL,
   subtotal numeric NOT NULL,
@@ -115,7 +115,7 @@ CREATE TABLE public.transactions (
   "amountPaid" numeric NOT NULL,
   change numeric NOT NULL,
   "paymentMethod" text,
-  "createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
+  "createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL,
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
   notes text,
   "idempotencyKey" uuid UNIQUE
@@ -123,6 +123,7 @@ CREATE TABLE public.transactions (
 
 -- Index untuk idempotencyKey
 CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactions("idempotencyKey");
+CREATE INDEX IF NOT EXISTS idx_transactions_invoice_code ON public.transactions("invoiceCode");
 
 -- === FUNGSI DAN TRIGGER UNTUK INVOICE_CODE ===
 
@@ -168,8 +169,8 @@ BEGIN
 
   WHILE attempt < max_attempts LOOP
     new_code := store_prefix || '-' || public.generate_invoice_code(6);
-    IF NOT EXISTS (SELECT 1 FROM public.transactions WHERE invoice_code = new_code) THEN
-      NEW.invoice_code := new_code;
+    IF NOT EXISTS (SELECT 1 FROM public.transactions WHERE "invoiceCode" = new_code) THEN
+      NEW."invoiceCode" := new_code;
       RETURN NEW;
     END IF;
     attempt := attempt + 1;
@@ -351,14 +352,44 @@ CREATE POLICY "Allow SELECT for store users" ON public.transactions
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.transactions
   FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
--- Allow Admins and Kasirs to update only progress-related fields (payment/order progress)
--- while preventing changes to immutable/sensitive fields (total, items, customerId, storeId, createdByUserId).
--- Implementation: USING applies to the existing row (so it ensures the actor is in the same store),
--- and WITH CHECK compares new values against the current row (via subselects) to ensure immutable
--- columns are unchanged. Super Admin bypasses these restrictions.
+
+-- Trigger: Prevent update of immutable fields except by Super Admin
+CREATE OR REPLACE FUNCTION public.prevent_immutable_transaction_update()
+RETURNS trigger AS $$
+DECLARE
+  role text;
+BEGIN
+  SELECT role INTO role FROM public.profiles WHERE id = auth.uid();
+  IF role IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF role <> 'Super Admin' THEN
+    IF NEW.total IS DISTINCT FROM OLD.total THEN
+      RAISE EXCEPTION 'You are not allowed to change total';
+    END IF;
+    IF NEW.items IS DISTINCT FROM OLD.items THEN
+      RAISE EXCEPTION 'You are not allowed to change items';
+    END IF;
+    IF NEW."customerId" IS DISTINCT FROM OLD."customerId" THEN
+      RAISE EXCEPTION 'You are not allowed to change customerId';
+    END IF;
+    IF NEW."createdByUserId" IS DISTINCT FROM OLD."createdByUserId" THEN
+      RAISE EXCEPTION 'You are not allowed to change createdByUserId';
+    END IF;
+    IF NEW."storeId" IS DISTINCT FROM OLD."storeId" THEN
+      RAISE EXCEPTION 'You are not allowed to change storeId';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS prevent_immutable_transaction_update ON public.transactions;
+CREATE TRIGGER prevent_immutable_transaction_update
+  BEFORE UPDATE ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_transaction_update();
+
 DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
--- NOTE: Policy ini hanya berlaku jika update dilakukan langsung ke tabel (misal via supabase.from('transactions').update()).
--- Jika update dilakukan via RPC (function) dengan SECURITY DEFINER, policy ini akan di-bypass.
 CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
   FOR UPDATE
   USING (
@@ -366,19 +397,6 @@ CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.tra
     OR (
       public.get_my_role() IN ('Admin','Kasir')
       AND "storeId" = public.get_my_store_id()
-    )
-  )
-  WITH CHECK (
-    public.get_my_role() = 'Super Admin'
-    OR (
-      public.get_my_role() IN ('Admin','Kasir')
-      AND "storeId" = public.get_my_store_id()
-      -- Immutable/sensitive columns must remain equal to the current row
-      AND total = (SELECT total FROM public.transactions t WHERE t.id = transactions.id)
-      AND items = (SELECT items FROM public.transactions t WHERE t.id = transactions.id)
-      AND "customerId" = (SELECT "customerId" FROM public.transactions t WHERE t.id = transactions.id)
-      AND "createdByUserId" = (SELECT "createdByUserId" FROM public.transactions t WHERE t.id = transactions.id)
-      AND "storeId" = (SELECT "storeId" FROM public.transactions t WHERE t.id = transactions.id)
     )
   );
 
@@ -545,6 +563,7 @@ INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES
 
 
 
+
 CREATE OR REPLACE FUNCTION public.handle_new_user(
   user_id uuid,
   user_name text,
@@ -562,6 +581,10 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
 END;
 $$;
+
+-- Batasi akses eksekusi hanya untuk service_role
+REVOKE EXECUTE ON FUNCTION public.handle_new_user(uuid, text, text, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.handle_new_user(uuid, text, text, uuid) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
   maintenance_id uuid
@@ -599,7 +622,7 @@ SET search_path = public
 AS $$
   SELECT
     t.id::text,
-    t.invoice_code AS "invoiceCode",
+    t."invoiceCode" AS "invoiceCode",
     c.name AS "customerName",
     t."createdAt",
     t."estimatedCompletionDate",
@@ -613,7 +636,7 @@ AS $$
     public.customers AS c ON t."customerId" = c.id
   WHERE
     -- Pencarian Utama: Berdasarkan Kode Invoice (Case Insensitive agar huruf kecil/besar tidak masalah)
-    t.invoice_code ILIKE input_identifier
+    t."invoiceCode" ILIKE input_identifier
     -- Pencarian Alternatif: Berdasarkan UUID (jika input formatnya valid UUID)
     OR (
       input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
