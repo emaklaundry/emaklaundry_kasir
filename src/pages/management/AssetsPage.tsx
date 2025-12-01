@@ -14,7 +14,7 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
-// import { useExpenses } from '../../contexts/ExpenseContext';
+// (hapus import useExpenses)
 import useAppContext from '../../contexts/useAppContext';
 import AssetFormModal from '../../components/AssetFormModal';
 import MaintenanceFormModal from '../../components/MaintenanceFormModal';
