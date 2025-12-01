@@ -9,16 +9,7 @@ CREATE TABLE public.stores (
 );
 
 -- Tabel lain yang memiliki foreign key ke stores
-CREATE TABLE public.customers (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  phone text,
-  address text,
-  notes text,
-  "defaultDiscount" integer DEFAULT 0,
-  "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
-  "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
-);
+
 
 
 
@@ -36,14 +27,6 @@ CREATE TABLE public.settings (
 
 
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
--- OPTIMASI: Index untuk storeId di tabel utama
--- (Pastikan tabel-tabel ini sudah ada sebelum index dibuat)
-CREATE INDEX IF NOT EXISTS idx_settings_store_id ON public.settings("storeId");
-CREATE INDEX IF NOT EXISTS idx_transactions_store_id ON public.transactions("storeId");
-CREATE INDEX IF NOT EXISTS idx_customers_store_id ON public.customers("storeId");
-CREATE INDEX IF NOT EXISTS idx_inventory_store_id ON public.inventory_items("storeId");
-CREATE INDEX IF NOT EXISTS idx_expenses_store_id ON public.expenses("storeId");
-CREATE INDEX IF NOT EXISTS idx_assets_store_id ON public.assets("storeId");
 -- OPTIMASI: Trigger handle_new_user otomatis saat user baru di auth.users
 
 -- Penyempurnaan: handle_new_user_trigger kini membaca store_id dan role dari metadata
