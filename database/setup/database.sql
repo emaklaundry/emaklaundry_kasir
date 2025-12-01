@@ -9,15 +9,43 @@ CREATE TABLE public.stores (
 
 
 
+
+-- OPTIMASI: Tambah kolom storeId untuk multi-cabang
 CREATE TABLE public.settings (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   "receiptMessage" text,
   "taxRate" numeric,
-  "discountRate" numeric
+  "discountRate" numeric,
+  "storeId" uuid REFERENCES public.stores(id) ON DELETE CASCADE
 );
 
--- Aktifkan RLS pada tabel settings (wajib jika ada policy)
+
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+-- OPTIMASI: Index untuk storeId di tabel utama
+CREATE INDEX IF NOT EXISTS idx_settings_store_id ON public.settings("storeId");
+CREATE INDEX IF NOT EXISTS idx_transactions_store_id ON public.transactions("storeId");
+CREATE INDEX IF NOT EXISTS idx_customers_store_id ON public.customers("storeId");
+CREATE INDEX IF NOT EXISTS idx_inventory_store_id ON public.inventory_items("storeId");
+CREATE INDEX IF NOT EXISTS idx_expenses_store_id ON public.expenses("storeId");
+CREATE INDEX IF NOT EXISTS idx_assets_store_id ON public.assets("storeId");
+-- OPTIMASI: Trigger handle_new_user otomatis saat user baru di auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_user_trigger()
+RETURNS trigger AS $$
+BEGIN
+  PERFORM public.handle_new_user(
+    NEW.id,
+    NEW.raw_user_meta_data->>'full_name',
+    'Kasir',
+    NULL
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_trigger();
 
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -557,7 +585,8 @@ $$;
 
 -- === 7. PENGATURAN AWAL (Initial Settings) ===
 
-INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0);
+-- Contoh data settings untuk satu cabang (storeId wajib diisi)
+INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate", "storeId") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0, '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
 
 
 
