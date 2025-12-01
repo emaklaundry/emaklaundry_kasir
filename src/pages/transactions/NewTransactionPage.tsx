@@ -127,9 +127,29 @@ const NewTransactionPage: React.FC = () => {
     return Math.round(taxableAmount * ((settings?.taxRate ?? 0) / 100));
   }, [subtotal, discountAmount, settings?.taxRate]);
 
+
   const grandTotal = useMemo(() => {
     return subtotal - discountAmount + taxAmount;
   }, [subtotal, discountAmount, taxAmount]);
+
+  // --- TAMBAHAN LOGIKA PEMBULATAN ---
+  const finalTotalToPay = useMemo(() => {
+    // Pembulatan hanya berlaku jika Bayar Sekarang DAN Tunai
+    if (isPayingNow && paymentMethod === PaymentMethod.Cash) {
+      return roundPrice(grandTotal);
+    }
+    return grandTotal;
+  }, [grandTotal, isPayingNow, paymentMethod]);
+
+  const roundingDifference = useMemo(() => {
+    return grandTotal - finalTotalToPay;
+  }, [grandTotal, finalTotalToPay]);
+  // ----------------------------------
+
+  // GANTI baris ini:
+  // const amountToPay = grandTotal; 
+  // MENJADI:
+  const amountToPay = finalTotalToPay;
 
   // Place handleAddService after all hooks, before conditional rendering
   const [showKiloanToast, setShowKiloanToast] = useState(false);
@@ -464,16 +484,18 @@ const NewTransactionPage: React.FC = () => {
           ? item.itemDetails.slice(0, item.quantity).map((detail) => ({ note: detail.note || '' }))
           : [],
       }));
-      // Hitung diskon akhir (diskon input manual + selisih pembulatan jika tunai)
-      const finalDiscount = discountAmount + (isPayingNow && paymentMethod === PaymentMethod.Cash ? roundingDifference : 0);
+      // Hitung total diskon akhir (diskon manual + diskon pembulatan)
+      const finalDiscount = discountAmount + roundingDifference;
+      // Pastikan total yang disimpan ke database adalah total setelah pembulatan
+      const finalTotal = grandTotal - roundingDifference;
 
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
         items: cleanedItems,
         subtotal,
-        discount: finalDiscount, // Gunakan diskon yang sudah ditambah pembulatan
+        discount: finalDiscount, // Gunakan finalDiscount
         tax: taxAmount,
-        total: grandTotal - (isPayingNow && paymentMethod === PaymentMethod.Cash ? roundingDifference : 0), // Total di DB juga menyesuaikan
+        total: finalTotal,       // Gunakan finalTotal (agar match dengan amountPaid)
         paymentStatus,
         orderStatus: OrderStatus.Processing,
         // --- UPDATE: Gunakan variabel waktu yang baru dihitung ---
@@ -913,17 +935,17 @@ const NewTransactionPage: React.FC = () => {
                       + Rp {taxAmount.toLocaleString('id-ID')}
                     </span>
                   </div>
-                  {/* TAMPILKAN PEMBULATAN DI SINI */}
+                  {/* Tambahkan blok ini di atas Grand Total */}
                   {isPayingNow && paymentMethod === PaymentMethod.Cash && roundingDifference > 0 && (
-                    <div className="flex justify-between items-center text-lg text-slate-500 italic">
+                    <div className="flex justify-between items-center text-lg text-slate-500 dark:text-slate-400 italic">
                       <span>Pembulatan:</span>
-                      <span>- Rp {roundingDifference.toLocaleString('id-ID')}</span>
+                      <span>- Rp {formatRupiah(roundingDifference)}</span>
                     </div>
                   )}
 
                   <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
-                    <span>Grand Total{isPayingNow && paymentMethod === PaymentMethod.Cash ? ' (Tunai)' : ''}:</span>
-                    <span>Rp {amountToPay.toLocaleString('id-ID')}</span>
+                    <span>Grand Total:</span>
+                    <span>Rp {formatRupiah(amountToPay)}</span>
                   </div>
                 </div>
 

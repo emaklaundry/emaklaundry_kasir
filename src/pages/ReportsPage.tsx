@@ -283,6 +283,7 @@ const ReportsPage: React.FC = () => {
   const { data: allStoreExpenses = [] } = useQuery<Expense[]>({
     queryKey: ['report-expenses-combined', selectedStoreId, startDate, endDate],
     queryFn: async () => {
+      // Helper untuk format tanggal lokal (YYYY-MM-DD)
       const formatDateStr = (date: Date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -354,13 +355,20 @@ const ReportsPage: React.FC = () => {
           (typeof a.storeId === 'string' || a.storeId === null)
         );
       }
+
       if (assetsData) {
         (assetsData as unknown[]).forEach((assetRaw) => {
           if (!isAsset(assetRaw)) return;
           const asset = assetRaw;
+
           // A. Pembelian Aset (Diperlakukan sebagai Pengeluaran)
           if (asset.purchaseDate && typeof asset.purchaseDate === 'string') {
-            const purchaseDateStr = new Date(asset.purchaseDate).toISOString().split('T')[0];
+            // PERBAIKAN: Gunakan string langsung jika format YYYY-MM-DD, hindari toISOString() yang mengubah ke UTC
+            let purchaseDateStr = asset.purchaseDate;
+            // Jika format timestamp panjang, potong saja
+            if (purchaseDateStr.includes('T')) {
+               purchaseDateStr = purchaseDateStr.split('T')[0];
+            }
             if (purchaseDateStr >= startDateStr && purchaseDateStr <= endDateStr) {
               assetExpenses.push({
                 id: `asset-purchase-${asset.id}`,
@@ -372,6 +380,7 @@ const ReportsPage: React.FC = () => {
               });
             }
           }
+
           // B. Pemeliharaan Aset (Maintenance History)
           let maintenanceHistory: MaintenanceLog[] = [];
           if (asset.maintenanceHistory) {
@@ -385,9 +394,12 @@ const ReportsPage: React.FC = () => {
               }
             }
           }
+
           maintenanceHistory.forEach((log, index) => {
+            // PERBAIKAN: Gunakan formatDateStr (Lokal) alih-alih toISOString (UTC)
             const logDate = new Date(log.date);
-            const logDateStr = logDate.toISOString().split('T')[0];
+            const logDateStr = formatDateStr(logDate);
+
             if (logDateStr >= startDateStr && logDateStr <= endDateStr) {
               assetExpenses.push({
                 id: `asset-maint-${asset.id}-${index}`,

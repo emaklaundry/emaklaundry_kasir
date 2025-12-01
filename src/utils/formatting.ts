@@ -1,7 +1,11 @@
 /**
- * Membulatkan angka ke kelipatan terdekat (default: ratusan).
- * Contoh: 15.150 -> 15.100 (jika floor) atau 15.200 (jika round/ceil)
- * Di sini kita gunakan Math.floor agar menjadi pembulatan ke bawah (diskon receh)
+ * Membulatkan harga ke bawah (diskon receh) atau ke kelipatan terdekat.
+ * Default: Membulatkan ke bawah ke ratusan terdekat (misal: 15.150 -> 15.100)
+ */
+/**
+ * Membulatkan harga ke bawah (diskon receh) atau ke kelipatan terdekat.
+ * Default: Membulatkan ke bawah ke ratusan terdekat (misal: 15.150 -> 15.100)
+ * precision default 100 (ratusan)
  */
 export const roundPrice = (amount: number, precision: number = 100): number => {
   return Math.floor(amount / precision) * precision;
