@@ -124,7 +124,7 @@ const TransactionPage: React.FC = () => {
       const term = debouncedSearchTerm.toLowerCase();
       return (
         t.id.toLowerCase().includes(term) ||
-        (t.invoice_code && t.invoice_code.toLowerCase().includes(term)) || // <--- TAMBAHAN BARIS INI
+        (t.invoiceCode && t.invoiceCode.toLowerCase().includes(term)) ||
         t.customerName.toLowerCase().includes(term) ||
         t.customerPhone.includes(term)
       );
@@ -256,9 +256,12 @@ const TransactionPage: React.FC = () => {
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedDate('');
-    handleStatusFilterChange('all');
+    setStatusFilter('all');
     setPaymentFilter('all');
     setCustomerFilter('all');
+    // Reset searchParams in URL
+    const params = new URLSearchParams();
+    setSearchParams(params);
   };
 
   const customerForWhatsApp = useMemo(() => {
@@ -382,17 +385,22 @@ const TransactionPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
+            <label htmlFor="searchTerm" className="sr-only">Cari Transaksi</label>
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
+              id="searchTerm"
               type="text"
-              placeholder="Cari ID, nama, atau no. HP..."
+              placeholder="Cari ID, Invoice, Nama, atau No. HP..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              autoComplete="off"
             />
           </div>
           <div>
+            <label htmlFor="customerFilter" className="sr-only">Filter Pelanggan</label>
             <select
+              id="customerFilter"
               value={customerFilter}
               onChange={(e) => setCustomerFilter(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -406,7 +414,9 @@ const TransactionPage: React.FC = () => {
             </select>
           </div>
           <div>
+            <label htmlFor="paymentFilter" className="sr-only">Filter Status Bayar</label>
             <select
+              id="paymentFilter"
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value as PaymentStatus | 'all')}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -420,6 +430,7 @@ const TransactionPage: React.FC = () => {
             </select>
           </div>
           <div>
+            <label htmlFor="selectedDate" className="sr-only">Filter Tanggal</label>
             <input
               id="selectedDate"
               type="date"
@@ -562,7 +573,7 @@ const TransactionPage: React.FC = () => {
                       />
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                      {t.invoice_code || t.id}
+                      {t.invoiceCode || `#${t.id.substring(0, 8)}`}
                     </td>
                     <td className="px-4 py-3">{t.customerName}</td>
                     <td className="px-4 py-3">
@@ -725,7 +736,7 @@ const TransactionPage: React.FC = () => {
                     </p>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                    {t.invoice_code || t.id}
+                    {t.invoiceCode || `#${t.id.substring(0, 8)}`}
                   </p>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between items-center">

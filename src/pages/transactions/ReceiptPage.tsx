@@ -52,7 +52,7 @@ const ReceiptPage: React.FC = () => {
         <div className="flex justify-between text-base">
           <span className="text-slate-500 dark:text-slate-400">No. Invoice</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            {transaction.invoice_code || transaction.id}
+            {transaction.invoiceCode || transaction.id}
           </span>
         </div>
         <div className="flex justify-between text-base">

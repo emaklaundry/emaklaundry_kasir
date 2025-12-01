@@ -66,7 +66,7 @@ const TransactionDetailPage: React.FC = () => {
           : [],
         createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
         estimatedCompletionDate: data.estimatedCompletionDate ?? '',
-        invoice_code: data.invoice_code ?? undefined,
+        invoiceCode: data.invoiceCode ?? undefined,
         paymentStatus: data.paymentStatus as import('../../types').PaymentStatus,
         orderStatus: data.orderStatus as import('../../types').OrderStatus,
         paymentMethod: data.paymentMethod
@@ -132,7 +132,7 @@ const TransactionDetailPage: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
             <p className="text-lg text-slate-500 dark:text-slate-400">
-              {transaction.invoice_code || transaction.id}
+              {transaction.invoiceCode || `#${transaction.id.substring(0, 8)}`}
             </p>
           </div>
           <div className="flex gap-2">

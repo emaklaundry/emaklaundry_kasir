@@ -191,22 +191,6 @@ const NewTransactionPage: React.FC = () => {
     return amountToPay;
   }, [isPayingNow, amountToPay]);
 
-  const estimatedCompletionDate = useMemo(() => {
-    if (items.length === 0) {
-      const today = new Date();
-      today.setDate(today.getDate() + 1);
-      return today.toISOString();
-    }
-    const maxDuration = Math.max(
-      ...items.map((item) => {
-        const service = services.find((s) => s.id === item.serviceId);
-        return service && service.durationDays ? service.durationDays : 0;
-      }),
-    );
-    const completionDate = new Date();
-    completionDate.setDate(completionDate.getDate() + maxDuration);
-    return completionDate.toISOString();
-  }, [items, services]);
 
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
@@ -435,6 +419,25 @@ const NewTransactionPage: React.FC = () => {
     setIsSaving(true);
     const toastId = addToast('Menyimpan transaksi...', 'info');
     try {
+      // --- PERBAIKAN: Hitung waktu saat tombol ditekan ---
+      const now = new Date(); // Waktu Masuk (Real-time)
+
+      // Hitung Estimasi Selesai berdasarkan item yang dipilih
+      let maxDurationDays = 0;
+      if (items.length === 0) {
+        maxDurationDays = 1; // Default 1 hari jika tidak ada item
+      } else {
+        maxDurationDays = Math.max(
+          ...items.map((item) => {
+            const service = services.find((s) => s.id === item.serviceId);
+            return service && service.durationDays ? service.durationDays : 0;
+          }),
+        );
+      }
+      const completionDate = new Date(now);
+      completionDate.setDate(completionDate.getDate() + maxDurationDays);
+      // ---------------------------------------------------
+
       // Sanitasi itemDetails agar tidak ada zombie notes
       const cleanedItems = items.map((item) => ({
         ...item,
@@ -451,8 +454,10 @@ const NewTransactionPage: React.FC = () => {
         total: grandTotal,
         paymentStatus,
         orderStatus: OrderStatus.Processing,
-        createdAt: new Date(),
-        estimatedCompletionDate: estimatedCompletionDate,
+        // --- UPDATE: Gunakan variabel waktu yang baru dihitung ---
+        createdAt: now,
+        estimatedCompletionDate: completionDate.toISOString(),
+        // --------------------------------------------------------
         notes,
         amountPaid: actualAmountPaid,
         change: changeAmount,

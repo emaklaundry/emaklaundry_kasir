@@ -75,7 +75,7 @@ export interface TransactionItem {
 
 export interface Transaction {
   id: string;
-  invoice_code?: string; // <-- TAMBAHKAN BARIS INI
+  invoiceCode?: string; // UBAH dari invoice_code menjadi invoiceCode (camelCase, sesuai DB)
   customerId: string;
   items: TransactionItem[];
   subtotal: number;

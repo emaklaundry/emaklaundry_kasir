@@ -93,7 +93,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
       // Explicitly map all required Transaction fields
       return {
         id: row.id ?? '',
-        invoice_code: row.invoiceCode ?? undefined,
+        invoiceCode: row.invoiceCode ?? undefined,
         customerId: row.customerId ?? '',
         items: Array.isArray(row.items)
           ? (row.items as import('../types').TransactionItem[]).map((item) => ({

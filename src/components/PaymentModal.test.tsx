@@ -28,7 +28,8 @@ describe('PaymentModal', () => {
   it('renders modal when open', () => {
     renderWithProviders(<PaymentModal {...defaultProps} />);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText(/Pembayaran: trx-1/)).toBeInTheDocument();
+    // The modal title now uses '#' as a prefix if invoiceCode is missing, fallback to id
+    expect(screen.getByText(/Pembayaran: #trx-1/)).toBeInTheDocument();
   });
 
   it('calls onClose when close button is clicked', () => {

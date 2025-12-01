@@ -415,13 +415,13 @@ CREATE POLICY "Allow INSERT for store users" ON public.transactions
 CREATE OR REPLACE FUNCTION public.prevent_immutable_transaction_update()
 RETURNS trigger AS $$
 DECLARE
-  role text;
+  current_user_role text;
 BEGIN
-  SELECT role INTO role FROM public.profiles WHERE id = auth.uid();
-  IF role IS NULL THEN
+  SELECT role INTO current_user_role FROM public.profiles WHERE id = auth.uid();
+  IF current_user_role IS NULL THEN
     RAISE EXCEPTION 'unauthorized';
   END IF;
-  IF role <> 'Super Admin' THEN
+  IF current_user_role <> 'Super Admin' THEN
     IF NEW.total IS DISTINCT FROM OLD.total THEN
       RAISE EXCEPTION 'You are not allowed to change total';
     END IF;
@@ -580,16 +580,16 @@ DECLARE
   final_payment_status text;
   final_order_status text;
 BEGIN
-  -- Load caller profile
-  SELECT role, store_id INTO caller_role, caller_store FROM public.profiles WHERE id = caller;
+  -- Load caller profile (use table alias to avoid ambiguity)
+  SELECT p.role, p.store_id INTO caller_role, caller_store FROM public.profiles p WHERE p.id = caller;
   IF caller_role IS NULL THEN
     RAISE EXCEPTION 'unauthorized';
   END IF;
 
   -- Ambil status Payment DAN Order saat ini dari database
-  SELECT "storeId", "paymentStatus", "orderStatus"
+  SELECT t."storeId", t."paymentStatus", t."orderStatus"
     INTO tx_store, current_payment_status, current_order_status
-    FROM public.transactions WHERE id = transaction_id_input;
+    FROM public.transactions t WHERE t.id = transaction_id_input;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'transaction not found';
   END IF;
@@ -623,9 +623,9 @@ BEGIN
     "orderStatus" = COALESCE(p_order_status, "orderStatus")
   WHERE id = transaction_id_input;
 
-  -- Audit log
+  -- Audit log (use table alias to avoid ambiguity)
   INSERT INTO public.audit_logs("user", action, "storeId")
-  VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
+  VALUES ((SELECT p.name FROM public.profiles p WHERE p.id = caller), concat('Update progress ', transaction_id_input), tx_store);
 
   RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
 END;

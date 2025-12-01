@@ -109,7 +109,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       // PERBAIKAN: Gunakan invoice_code jika ada, jika tidak baru gunakan ID
-      title={`Pembayaran: ${transaction.invoice_code || transaction.id}`}
+      title={`Pembayaran: ${transaction.invoiceCode || '#' + transaction.id.substring(0, 8)}`}
       footer={
         <>
           <button

@@ -605,7 +605,7 @@ const Dashboard: React.FC = () => {
                       <tr key={t.id} className="border-b dark:border-slate-700">
                         <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                           <Link to={`/transactions/${t.id}/details`} className="hover:underline">
-                            {t.invoice_code || t.id}
+                            {t.invoiceCode || `#${t.id.substring(0, 8)}`}
                           </Link>
                         </td>
                         <td className="px-4 py-3">{t.customerName}</td>
@@ -700,7 +700,7 @@ const Dashboard: React.FC = () => {
                           to={`/transactions/${t.id}/details`}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {t.invoice_code || t.id}
+                          {t.invoiceCode || `#${t.id.substring(0, 8)}`}
                         </Link>
                       </div>
                       <span
