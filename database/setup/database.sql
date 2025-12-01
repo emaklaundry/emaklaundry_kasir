@@ -1,11 +1,3 @@
--- === 8. PERBAIKAN DATA LAMA JAM MASUK TRANSAKSI ===
--- Update semua transaksi lama yang jamnya 07:00 menjadi jam 09:00 (atau sesuaikan kebutuhan)
--- Jalankan hanya sekali setelah migrasi, lalu hapus atau komentari baris ini agar tidak mengubah data baru
--- Contoh query:
--- UPDATE public.transactions
--- SET "createdAt" = ("createdAt"::date + time '09:00')
--- WHERE EXTRACT(hour FROM "createdAt") = 7;
-
 -- Tabel stores harus dibuat paling awal karena direferensikan oleh banyak tabel lain
 CREATE TABLE public.stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -14,13 +6,6 @@ CREATE TABLE public.stores (
   "isActive" boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT NOW()
 );
-
--- Tabel lain yang memiliki foreign key ke stores
-
-
-
-
-
 
 
 -- OPTIMASI: Tambah kolom storeId untuk multi-cabang
@@ -549,9 +534,6 @@ VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-
 -- nama: lilis, password: 12345678 (diasumsikan dibuat di Supabase Auth)
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
-
-
 
 -- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
 -- so it can read rows even when restrictive RLS policies exist. Keep the function
