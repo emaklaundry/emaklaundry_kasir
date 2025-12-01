@@ -30,8 +30,6 @@ const ExpensesPage: React.FC = () => {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  
-  // Loading state for save/delete actions (used to disable buttons)
   const [isSavingExpense, setIsSavingExpense] = useState(false);
 
   const handleOpenFormModal = (expense: Expense | null = null) => {
@@ -101,9 +99,9 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
-  // Gabungkan data expenses dan assets
+  // Gabungkan data expenses dan assets dengan Deduplikasi Cerdas
   const allFinancialItems: CombinedExpenseItem[] = useMemo(() => {
-    // Mapping data operasional
+    // 1. Mapping data operasional (dari tabel expenses)
     const operationalExpenses: CombinedExpenseItem[] = expenses.map((item) => ({
       id: item.id,
       date: item.date instanceof Date ? item.date.toISOString() : String(item.date),
@@ -113,13 +111,35 @@ const ExpensesPage: React.FC = () => {
       source: 'expense',
     }));
 
-    // Mapping data pembelian aset
+    // 2. Mapping data pembelian aset (dari tabel assets)
+    // HANYA jika belum ada di tabel expenses (Mencegah Duplikat Tampilan)
     const assetExpenses: CombinedExpenseItem[] = assets
       .filter((asset) => asset.purchaseCost && asset.purchaseCost > 0)
+      .filter((asset) => {
+        // Cek apakah aset ini sudah tercatat otomatis di expenses
+        const assetDateStr = asset.purchaseDate
+          ? String(asset.purchaseDate).split('T')[0]
+          : '';
+        const expectedDesc = `Pembelian Aset: ${asset.name}`;
+        
+        // Cari duplikat di operationalExpenses
+        const existsInExpenses = operationalExpenses.some(exp => {
+           const expDateStr = exp.date.split('T')[0];
+           // Cocokkan Tanggal, Deskripsi, dan Jumlah (dengan sedikit toleransi float)
+           return (
+             expDateStr === assetDateStr && 
+             exp.description === expectedDesc && 
+             Math.abs(exp.amount - Number(asset.purchaseCost)) < 100
+           );
+        });
+        
+        // Jika SUDAH ADA di expenses, jangan masukkan dari source 'asset'
+        return !existsInExpenses;
+      })
       .map((asset) => ({
         id: asset.id,
         date: asset.purchaseDate
-          ? new Date(asset.purchaseDate).toISOString()
+          ? String(asset.purchaseDate) // Gunakan string langsung dari DB (YYYY-MM-DD)
           : new Date().toISOString(),
         description: `Pembelian Aset: ${asset.name}`,
         category: 'Aset / Inventaris',
@@ -183,8 +203,9 @@ const ExpensesPage: React.FC = () => {
           <button
             onClick={handleExport}
             className="flex items-center gap-2 px-4 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700"
+            disabled={isSavingExpense}
           >
-            Download
+            {isSavingExpense ? 'Menyimpan...' : 'Download'}
           </button>
           <button
             onClick={() => handleOpenFormModal()}
@@ -263,7 +284,7 @@ const ExpensesPage: React.FC = () => {
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                         ${
-                          item.category === 'Aset / Inventaris'
+                          item.category === 'Aset / Inventaris' || item.category === 'Pembelian Aset'
                             ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
                             : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
                         }`}
