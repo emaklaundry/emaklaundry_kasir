@@ -1,14 +1,12 @@
-// ...new ReportsPage.tsx code as previously provided...
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
 import { useTransactions } from '../contexts/TransactionContext';
 import { fetchCustomers } from '../contexts/CustomerContext';
-import { useExpenses } from '../contexts/ExpenseContext';
 import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
-// import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
+import { supabase } from '../utils/supabaseClient'; // TAMBAHAN: Import Supabase Client
 import { UserRole, Service, User, ServiceCategory } from '@/types';
 
 const StatCard: React.FC<{
@@ -17,7 +15,6 @@ const StatCard: React.FC<{
   value: string | number;
   color: string;
 }> = ({ icon: Icon, title, value, color }) => (
-  // TAMBAHKAN: kelas 'print-stat-card' dan 'print-hide' pada ikon
   <div
     className={`bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}
   >
@@ -41,7 +38,7 @@ const YearlySummaryChart: React.FC<{
 
   const maxValue = useMemo(() => {
     const maxVal = Math.max(...data.flatMap((d) => [d.revenue, d.expenses]));
-    return Math.ceil(maxVal / 100000) * 100000; // Round up to nearest 100k
+    return Math.ceil(maxVal / 100000) * 100000;
   }, [data]);
 
   const chartHeight = 300;
@@ -77,9 +74,7 @@ const YearlySummaryChart: React.FC<{
           dangerouslySetInnerHTML={{ __html: tooltip.content }}
         ></div>
       )}
-      {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan SVG saat cetak */}
       <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
-        {/* Y-Axis Grid Lines and Labels */}
         {Array.from({ length: yAxisLabels }).map((_, i) => {
           const y = chartHeight - 20 - (i * (chartHeight - 30)) / (yAxisLabels - 1);
           const value = (i * maxValue) / (yAxisLabels - 1);
@@ -105,7 +100,6 @@ const YearlySummaryChart: React.FC<{
           );
         })}
 
-        {/* Bars and X-Axis Labels */}
         {data.map((d, i) => {
           const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
           const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
@@ -144,7 +138,6 @@ const YearlySummaryChart: React.FC<{
           );
         })}
 
-        {/* Axis Lines */}
         <line
           x1={yAxisWidth}
           y1={10}
@@ -163,7 +156,6 @@ const YearlySummaryChart: React.FC<{
         />
       </svg>
 
-      {/* --- TAMBAHKAN: Tabel ini HANYA akan muncul saat dicetak --- */}
       <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
         <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
           <tr className="print-only-row">
@@ -192,11 +184,9 @@ const YearlySummaryChart: React.FC<{
           ))}
         </tbody>
       </table>
-      {/* --- AKHIR BLOK CETAK --- */}
     </div>
   );
 };
-
 
 const ReportsPage: React.FC = () => {
   const { transactions: allStoreTransactions } = useTransactions();
@@ -204,6 +194,7 @@ const ReportsPage: React.FC = () => {
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
+  
   const customers = useMemo(() => {
     const raw = customersRaw.data;
     if (Array.isArray(raw)) return raw;
@@ -212,14 +203,9 @@ const ReportsPage: React.FC = () => {
       const arr = Object.values(raw).find((v) => Array.isArray(v));
       if (arr) return arr;
     }
-    if (raw !== undefined && raw !== null) {
-      console.warn('Unexpected customersRaw.data structure:', raw);
-    }
     return [];
   }, [customersRaw.data]);
 
-
-  // Ensure context is initialized before use
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { services } = useServices();
   const { users: allUsers } = useUsers();
@@ -235,7 +221,6 @@ const ReportsPage: React.FC = () => {
     new Date(today.getFullYear(), today.getMonth() + 1, 0),
   );
 
-  // Compute startDate and endDate before using them in queries
   const { startDate, endDate } = useMemo(() => {
     const now = new Date();
     now.setHours(23, 59, 59, 999);
@@ -254,13 +239,10 @@ const ReportsPage: React.FC = () => {
     return { startDate: customStartDate, endDate: endOfDay };
   }, [rangeType, customStartDate, customEndDate]);
 
-  // Query pengeluaran langsung ke supabase sesuai filter tanggal & cabang (format tanggal saja)
-  // Query pengeluaran langsung ke supabase sesuai filter tanggal & cabang
+  // --- PERBAIKAN LOGIKA FETCH EXPENSES (PAGINATION) ---
   const { data: allStoreExpenses = [], isLoading: isLoadingExpenses } = useQuery({
     queryKey: ['report-expenses', selectedStoreId, startDate, endDate],
     queryFn: async () => {
-      // PERBAIKAN: Format tanggal secara manual ke YYYY-MM-DD (Local Time)
-      // Jangan gunakan toISOString() langsung karena akan mengonversi ke UTC (bisa mundur sehari)
       const formatDateStr = (date: Date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -271,22 +253,47 @@ const ReportsPage: React.FC = () => {
       const startDateStr = formatDateStr(startDate);
       const endDateStr = formatDateStr(endDate);
 
-      let query = supabase
-        .from('expenses')
-        .select('*')
-        // Gunakan string YYYY-MM-DD agar cocok dengan tipe kolom 'date' di DB
-        .gte('date', startDateStr)
-        .lte('date', endDateStr);
+      // Siapkan variabel untuk pagination
+      let allExpenses: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (selectedStoreId && selectedStoreId !== 'all') {
-        query = query.eq('storeId', selectedStoreId);
+      // Loop sampai tidak ada data tersisa (menangani data > 1000 baris)
+      while (hasMore) {
+        let query = supabase
+          .from('expenses')
+          .select('*')
+          .gte('date', startDateStr)
+          .lte('date', endDateStr);
+
+        if (selectedStoreId && selectedStoreId !== 'all') {
+          query = query.eq('storeId', selectedStoreId);
+        }
+
+        // Ambil data per halaman (range)
+        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allExpenses = [...allExpenses, ...data];
+          // Jika data yang diterima kurang dari pageSize, berarti ini halaman terakhir
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
-      const { data, error } = await query.limit(10000);
-      if (error) throw error;
-      return data || [];
+
+      return allExpenses;
     },
   });
 
+  // Logika filter lokal (opsional, karena query DB sudah memfilter tanggal, 
+  // tapi tetap dipertahankan untuk keamanan presisi waktu jika ada perbedaan zona waktu)
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
     const end = endDate.getTime();
@@ -294,7 +301,8 @@ const ReportsPage: React.FC = () => {
       const time = new Date(t.createdAt).getTime();
       return time >= start && time <= end;
     });
-    const expenses = allStoreExpenses.filter((e) => {
+    // Filter expenses juga di sisi client untuk memastikan akurasi jam/menit
+    const expenses = allStoreExpenses.filter((e: any) => {
       const time = new Date(e.date).getTime();
       return time >= start && time <= end;
     });
@@ -401,11 +409,11 @@ const ReportsPage: React.FC = () => {
 
   const detailedExpenses = useMemo(() => {
     return filteredData.expenses
-      .map((expense) => ({
+      .map((expense: any) => ({
         ...expense,
         storeName: stores.find((s) => s.id === expense.storeId)?.name || 'N/A',
       }))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [filteredData.expenses, stores]);
 
   const monthlySummary = useMemo(() => {
@@ -413,28 +421,19 @@ const ReportsPage: React.FC = () => {
     const yearTransactions = allStoreTransactions.filter(
       (t) => new Date(t.createdAt).getFullYear() === currentYear,
     );
+    // Gunakan allStoreExpenses untuk ringkasan tahunan juga
     const yearExpenses = allStoreExpenses.filter(
-      (e) => new Date(e.date).getFullYear() === currentYear,
+      (e: any) => new Date(e.date).getFullYear() === currentYear,
     );
     const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
     ];
     const summary = monthNames.map((name) => ({ month: name, revenue: 0, expenses: 0, profit: 0 }));
     yearTransactions.forEach((t) => {
       summary[new Date(t.createdAt).getMonth()].revenue += t.amountPaid;
     });
-    yearExpenses.forEach((e) => {
+    yearExpenses.forEach((e: any) => {
       summary[new Date(e.date).getMonth()].expenses += e.amount;
     });
     summary.forEach((m) => {
