@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { useAssets } from '../contexts/AssetContext';
+import { useExpenses } from '../contexts/ExpenseContext'; // IMPORT BARU
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
@@ -14,6 +15,7 @@ interface QuickMaintenanceModalProps {
 
 const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, onClose }) => {
   const { assets, updateAsset } = useAssets();
+  const { addExpense } = useExpenses(); // HOOK
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id || '');
@@ -61,11 +63,29 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     }
 
     const toastId = addToast('Menyimpan laporan...', 'info');
-    // setIsSavingMaintenance(true);
+    
     try {
+      // 1. Simpan Log ke Aset
       await updateAsset(selectedAssetId, {
         maintenanceHistory: [...assetToUpdate.maintenanceHistory, newLog],
       });
+
+      // 2. Simpan ke Pengeluaran (Jika ada biaya)
+      if (formData.cost > 0) {
+        try {
+          const dateStr = formData.date.toISOString().split('T')[0];
+          await addExpense({
+            date: dateStr,
+            description: `Quick Maintenance: ${assetToUpdate.name} (${formData.description})`,
+            category: 'Perawatan Aset',
+            amount: formData.cost,
+            storeId: assetToUpdate.storeId
+          });
+          addToast('Biaya perbaikan otomatis dicatat ke pengeluaran.', 'success');
+        } catch (expError) {
+          console.error('Gagal catat pengeluaran:', expError);
+        }
+      }
 
       addAuditLog(
         `Melaporkan kerusakan cepat untuk aset "${assetToUpdate.name}": ${formData.description}.`,
