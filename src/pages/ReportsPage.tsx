@@ -218,7 +218,6 @@ type Expense = {
   storeId: string | null;
 };
 
-
 // Tipe transaksi hasil normalisasi (createdAt: string)
 type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
 
