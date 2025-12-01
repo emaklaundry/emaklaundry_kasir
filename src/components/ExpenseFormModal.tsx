@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Expense } from '../../types';
 import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
 import Modal from './Modal';
@@ -16,27 +16,37 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [formData, setFormData] = useState({
-    // store date as YYYY-MM-DD string to avoid timezone issues
-    date: new Date().toISOString().split('T')[0],
-    description: '',
-    category: 'Operasional',
-    amount: 0,
-  });
+  const categoryOptions = ['Operasional', 'Listrik', 'Air', 'Gaji', 'Perlengkapan', 'Lainnya'];
+  const initialFormData = useMemo(() => {
+    if (expense) {
+      return {
+        date: expense.date
+          ? String(expense.date).split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        description: expense.description || '',
+        category: expense.category || 'Operasional',
+        amount: expense.amount || 0,
+      };
+    } else {
+      return {
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        category: 'Operasional',
+        amount: 0,
+      };
+    }
+  }, [expense]);
 
-  useEffect(() => {
-    setFormData({
-      date: expense?.date
-        ? String(expense.date).split('T')[0]
-        : new Date().toISOString().split('T')[0],
-      description: expense?.description || '',
-      category: expense?.category || 'Operasional',
-      amount: expense?.amount || 0,
-    });
-  }, [expense, isOpen]);
+  const [formData, setFormData] = useState(initialFormData);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Reset formData when modal is opened or expense changes
+  React.useEffect(() => {
+    setFormData(initialFormData);
+  }, [initialFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     if (name === 'amount') {
       setFormData((prev) => ({ ...prev, amount: parseRupiah(value) }));
     } else if (name === 'date') {
@@ -46,15 +56,21 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Gunakan helper agar DRY
-    const iso = convertLocalDateToISOString(formData.date);
-    onSave({ ...formData, date: iso } as any);
+    setIsSaving(true);
+    try {
+      const iso = convertLocalDateToISOString(formData.date);
+      await onSave({ ...formData, date: iso });
+      setFormData(initialFormData); // Reset form setelah sukses
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <Modal
+      key={isOpen ? (expense ? `edit-${expense.id}` : 'new') : 'closed'}
       isOpen={isOpen}
       onClose={onClose}
       title={expense ? 'Edit Pengeluaran' : 'Tambah Pengeluaran Baru'}
@@ -63,86 +79,94 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           <button
             onClick={onClose}
             className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
+            disabled={isSaving}
           >
             Batal
           </button>
           <button
-            onClick={handleSubmit}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
+            type="submit"
+            form="expense-form"
+            className="ml-2 text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-lg px-6 py-3 disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={isSaving}
           >
-            Simpan
+            {isSaving ? 'Menyimpan...' : 'Simpan'}
           </button>
         </>
       }
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label
-            htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
-            Deskripsi
-          </label>
-          <input
-            type="text"
-            name="description"
-            id="description"
-            value={formData.description}
-            onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            required
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="category"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
-              Kategori
-            </label>
-            <input
-              type="text"
-              name="category"
-              id="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="amount"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
-              Jumlah (Rp)
-            </label>
-            <input
-              type="text"
-              name="amount"
-              id="amount"
-              value={formatRupiah(formData.amount)}
-              onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              required
-            />
-          </div>
-        </div>
-        <div>
+      <form id="expense-form" onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex flex-col gap-2">
           <label
             htmlFor="date"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+            className="block text-base font-medium text-slate-900 dark:text-white"
           >
             Tanggal
           </label>
           <input
+            id="date"
             type="date"
             name="date"
-            id="date"
             value={formData.date}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
+            required
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="description"
+            className="block text-base font-medium text-slate-900 dark:text-white"
+          >
+            Deskripsi Pengeluaran
+          </label>
+          <input
+            id="description"
+            type="text"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Contoh: Beli deterjen, bayar listrik, dll."
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
+            required
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="category"
+            className="block text-base font-medium text-slate-900 dark:text-white"
+          >
+            Kategori
+          </label>
+          <select
+            id="category"
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
+            required
+          >
+            {categoryOptions.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="amount"
+            className="block text-base font-medium text-slate-900 dark:text-white"
+          >
+            Jumlah (Rp)
+          </label>
+          <input
+            id="amount"
+            type="text"
+            name="amount"
+            value={formatRupiah(formData.amount)}
+            onChange={handleChange}
+            placeholder="Contoh: 10000"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
             required
           />
         </div>

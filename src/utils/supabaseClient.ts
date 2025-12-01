@@ -1,4 +1,6 @@
+
 import { createClient } from '@supabase/supabase-js';
+import { Database } from '../types/supabase';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -10,19 +12,36 @@ if (!supabaseAnonKey) {
   throw new Error('VITE_SUPABASE_ANON_KEY is not defined. Please check your .env file.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Pola Singleton agar tidak terjadi multiple GoTrueClient instance (HMR/dev)
+const createSupabaseClient = () => createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+declare global {
+  // eslint-disable-next-line no-var
+  var supabase: ReturnType<typeof createSupabaseClient> | undefined;
+}
+
+export const supabase = globalThis.supabase ?? createSupabaseClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.supabase = supabase;
+}
 
 /**
  * Helper RPC call to fetch a minimal, safe projection of a transaction for public/customer-facing views.
  * This calls the database function `get_laundry_status(transaction_id_input uuid)` which must be created
  * in the Supabase SQL editor and defined as SECURITY DEFINER (see database/get_laundry_status.sql).
  */
-export async function getLaundryStatus(transactionId: string) {
+export async function getLaundryStatus(identifier: string) {
   const { data, error } = await supabase.rpc('get_laundry_status', {
-    transaction_id_input: transactionId,
+    input_identifier: identifier,
   });
   if (error) throw error;
-  return data;
+  // If data is empty or not found, throw error to match test expectation
+  if (!data || (Array.isArray(data) && data.length === 0)) {
+    throw new Error('Kode invoice tidak ditemukan atau data tidak valid.');
+  }
+  // Return first element if array, else null
+  return Array.isArray(data) ? data[0] : data;
 }
 
 /**
@@ -49,20 +68,14 @@ export async function updateTransactionProgress(
     orderStatus?: string | null;
   },
 ) {
-  const {
-    amountPaid = null,
-    change = null,
-    paymentMethod = null,
-    paymentStatus = null,
-    orderStatus = null,
-  } = params;
+  const { amountPaid, change, paymentMethod, paymentStatus, orderStatus } = params;
   const { data, error } = await supabase.rpc('update_transaction_progress', {
     transaction_id_input: transactionId,
     p_amount_paid: amountPaid,
     p_change: change,
     p_payment_method: paymentMethod,
-    p_payment_status: paymentStatus,
-    p_order_status: orderStatus,
+    p_payment_status: paymentStatus ?? undefined,
+    p_order_status: orderStatus ?? undefined,
   });
   if (error) throw error;
   return data;

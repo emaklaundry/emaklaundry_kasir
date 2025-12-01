@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings } = useSettings();
@@ -37,8 +37,9 @@ const SettingsPage: React.FC = () => {
       await updateSettings(formData);
       addAuditLog('Menyimpan perubahan pada Pengaturan Aplikasi.');
       updateToast(toastId, 'Pengaturan berhasil disimpan!', 'success');
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSaving(false);
     }

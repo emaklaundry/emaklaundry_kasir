@@ -10,7 +10,7 @@ import {
 } from '../../components/icons';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { OrderStatus, PaymentStatus } from '@/types';
+// import { OrderStatus, PaymentStatus } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 
 const CustomerDetailPage: React.FC = () => {
@@ -156,7 +156,9 @@ const CustomerDetailPage: React.FC = () => {
               {customerTransactions.length > 0 ? (
                 sortedTransactions.map((t) => (
                   <tr key={t.id} className="border-b dark:border-slate-700">
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.invoice_code || t.id}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                      {t.invoice_code || t.id}
+                    </td>
                     <td className="px-4 py-3">
                       {new Date(t.createdAt).toLocaleDateString('id-ID')}
                     </td>

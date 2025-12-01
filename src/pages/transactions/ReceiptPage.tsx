@@ -20,9 +20,7 @@ const ReceiptPage: React.FC = () => {
   });
 
   // Normalize customers to always be an array
-  const customers = Array.isArray(customersRaw)
-    ? customersRaw
-    : (customersRaw?.data ?? []);
+  const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
 
   const transaction = transactions.find((t) => t.id === id);
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
@@ -53,7 +51,9 @@ const ReceiptPage: React.FC = () => {
       <div className="border-b-2 border-dashed border-slate-300 dark:border-slate-600 pb-4 mb-4">
         <div className="flex justify-between text-base">
           <span className="text-slate-500 dark:text-slate-400">No. Invoice</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200">{transaction.invoice_code || transaction.id}</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200">
+            {transaction.invoiceCode || transaction.id}
+          </span>
         </div>
         <div className="flex justify-between text-base">
           <span className="text-slate-500 dark:text-slate-400">Tanggal</span>
@@ -159,7 +159,10 @@ const ReceiptPage: React.FC = () => {
       <div className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
         <p>
           Estimasi Selesai:{' '}
-          {new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}
+          {new Date(transaction.estimatedCompletionDate).toLocaleString('id-ID', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          })}
         </p>
         <p className="mt-2">
           {settings?.receiptMessage ?? 'Terima kasih telah menggunakan layanan kami.'}

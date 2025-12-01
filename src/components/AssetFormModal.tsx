@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Asset } from '../../types';
-import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
+import { formatRupiah, parseRupiah } from '../utils/formatting';
 import Modal from './Modal';
 
 interface AssetFormModalProps {
@@ -10,19 +10,35 @@ interface AssetFormModalProps {
 }
 
 const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave }) => {
+  // Helper untuk mendapatkan YYYY-MM-DD lokal dengan aman
+  const getLocalDateStr = (dateInput?: string | Date) => {
+    if (!dateInput) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    if (typeof dateInput === 'string') {
+      return dateInput.split('T')[0];
+    }
+    const d = dateInput;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState(() => ({
     name: asset?.name || '',
     serialNumber: asset?.serialNumber || '',
-    // store date as YYYY-MM-DD string to avoid timezone shifting
-    purchaseDate: asset?.purchaseDate
-      ? String(asset.purchaseDate).split('T')[0]
-      : new Date().toISOString().split('T')[0],
+    purchaseDate: getLocalDateStr(asset?.purchaseDate),
     purchaseCost: asset?.purchaseCost || 0,
     status: asset?.status || 'Active',
   }));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     if (name === 'purchaseCost') {
       setFormData((prev) => ({ ...prev, purchaseCost: parseRupiah(value) }));
     } else if (name === 'purchaseDate') {
@@ -35,10 +51,9 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Gunakan helper agar DRY
-    const iso = convertLocalDateToISOString(formData.purchaseDate);
-    const payload = { ...formData, purchaseDate: iso };
-    onSave(payload as any);
+    // --- PERBAIKAN 2: Jangan konversi ke ISOString! ---
+    // Kirim data apa adanya (string YYYY-MM-DD) agar tanggal tidak bergeser.
+    onSave(formData);
   };
 
   return (

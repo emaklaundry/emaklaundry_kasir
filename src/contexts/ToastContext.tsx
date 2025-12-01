@@ -1,4 +1,5 @@
-import { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import { useState, ReactNode, useCallback } from 'react';
+import ToastContext from './ToastContextContext';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -8,15 +9,13 @@ export interface ToastMessage {
   type: ToastType;
 }
 
-interface ToastContextType {
+export interface ToastContextType {
   toasts: ToastMessage[];
   // addToast returns the generated id so callers can update/remove the toast later
   addToast: (message: string, type: ToastType) => number;
   updateToast: (id: number, message: string, type: ToastType) => void;
   removeToast: (id: number) => void;
 }
-
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -45,12 +44,4 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       {children}
     </ToastContext.Provider>
   );
-};
-
-export const useToasts = (): ToastContextType => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToasts must be used within a ToastProvider');
-  }
-  return context;
 };

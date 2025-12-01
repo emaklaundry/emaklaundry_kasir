@@ -14,13 +14,14 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
-import { useAppContext } from '../../contexts/AppContext';
+// (hapus import useExpenses)
+import useAppContext from '../../contexts/useAppContext';
 import AssetFormModal from '../../components/AssetFormModal';
 import MaintenanceFormModal from '../../components/MaintenanceFormModal';
 import MaintenanceHistoryModal from '../../components/MaintenanceHistoryModal';
 import ScheduledMaintenanceModal from '../../components/ScheduledMaintenanceModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import { useScheduledMaintenances } from '../../contexts/ScheduledMaintenanceContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { getStatusBadge } from '@/utils/uiHelpers';
@@ -28,6 +29,7 @@ import { Asset, MaintenanceLog, UserRole } from '@/types';
 
 const AssetsPage: React.FC = () => {
   const { assets, addAsset, updateAsset, deleteAsset } = useAssets();
+  // Tidak perlu lagi addExpense, pencatatan pengeluaran aset otomatis di laporan
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
@@ -68,6 +70,10 @@ const AssetsPage: React.FC = () => {
   };
 
   const handleSaveAsset = async (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => {
+    if (!currentUser) {
+      addToast('User context belum siap.', 'error');
+      return;
+    }
     const storeId =
       currentAsset?.storeId ||
       (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
@@ -79,18 +85,21 @@ const AssetsPage: React.FC = () => {
     setIsSavingAsset(true);
     try {
       if (currentAsset && currentAsset.id) {
+        // Edit Mode: Hanya update data aset
         await updateAsset(currentAsset.id, { ...asset, storeId });
         addAuditLog(`Memperbarui data aset: "${asset.name}".`, storeId);
         updateToast(toastId, 'Data aset berhasil diperbarui!', 'success');
       } else {
+        // Create Mode: Tambah aset saja, tidak perlu catat ke pengeluaran
         await addAsset({ ...asset, maintenanceHistory: [], storeId });
         addAuditLog(`Menambahkan aset baru: "${asset.name}".`, storeId);
         updateToast(toastId, 'Aset baru berhasil ditambahkan!', 'success');
       }
       setIsAssetFormModalOpen(false);
       setCurrentAsset(null);
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSavingAsset(false);
     }
@@ -100,11 +109,17 @@ const AssetsPage: React.FC = () => {
     if (currentAsset) {
       const newLog = { ...log, id: Date.now().toString() };
       const updatedHistory = [...currentAsset.maintenanceHistory, newLog];
-      await updateAsset(currentAsset.id, { maintenanceHistory: updatedHistory });
-      addAuditLog(
-        `Menambahkan log pemeliharaan untuk aset "${currentAsset.name}": ${log.description}.`,
-        currentAsset.storeId,
-      );
+
+      try {
+        await updateAsset(currentAsset.id, { maintenanceHistory: updatedHistory });
+        addAuditLog(
+          `Menambahkan log pemeliharaan untuk aset "${currentAsset.name}": ${log.description}.`,
+          currentAsset.storeId,
+        );
+      } catch (error) {
+        console.error('Error updating asset maintenance:', error);
+        addToast('Gagal menyimpan log perawatan.', 'error');
+      }
     }
     setIsMaintenanceFormModalOpen(false);
     setCurrentAsset(null);
@@ -122,8 +137,16 @@ const AssetsPage: React.FC = () => {
         await deleteAsset(assetToDelete.id);
         addAuditLog(`Menghapus aset: "${assetToDelete.name}".`, assetToDelete.storeId);
         updateToast(toastId, 'Aset berhasil dihapus!', 'success');
-      } catch (error: any) {
-        updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          updateToast(
+            toastId,
+            `Gagal menghapus: ${(error as { message: string }).message}`,
+            'error',
+          );
+        } else {
+          updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
+        }
       } finally {
         setAssetToDelete(null);
         setIsSavingAsset(false);
@@ -179,7 +202,8 @@ const AssetsPage: React.FC = () => {
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
-  const canAddNewAsset = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+  const canAddNewAsset =
+    !!currentUser && !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
 
   const handleFilterChange = (filter: 'all' | 'due') => {
     setMaintenanceFilter(filter);
@@ -279,16 +303,18 @@ const AssetsPage: React.FC = () => {
                   Nama Aset {getSortIcon('name')}
                 </button>
               </th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-4 py-3">
-                  <button
-                    onClick={() => requestSort('storeName')}
-                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                  >
-                    Toko {getSortIcon('storeName')}
-                  </button>
-                </th>
-              )}
+              {currentUser &&
+                currentUser.role === UserRole.SuperAdmin &&
+                selectedStoreId === 'all' && (
+                  <th className="px-4 py-3">
+                    <button
+                      onClick={() => requestSort('storeName')}
+                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                    >
+                      Toko {getSortIcon('storeName')}
+                    </button>
+                  </th>
+                )}
               <th className="px-4 py-3">
                 <button
                   onClick={() => requestSort('purchaseDate')}
@@ -323,9 +349,9 @@ const AssetsPage: React.FC = () => {
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {asset.name}
                   </td>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                    <td className="px-4 py-3">{asset.storeName}</td>
-                  )}
+                  {currentUser &&
+                    currentUser.role === UserRole.SuperAdmin &&
+                    selectedStoreId === 'all' && <td className="px-4 py-3">{asset.storeName}</td>}
                   <td className="px-4 py-3">
                     {new Date(asset.purchaseDate).toLocaleDateString('id-ID')}
                   </td>
@@ -441,9 +467,11 @@ const AssetsPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">{asset.storeName}</p>
-              )}
+              {currentUser &&
+                currentUser.role === UserRole.SuperAdmin &&
+                selectedStoreId === 'all' && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{asset.storeName}</p>
+                )}
               <div className="mt-3 space-y-1 text-sm border-t dark:border-slate-600 pt-2">
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Tgl Beli:</span>

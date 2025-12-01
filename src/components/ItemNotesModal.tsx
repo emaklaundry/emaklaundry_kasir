@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { TransactionItem } from '../../types';
 import Modal from './Modal';
 
@@ -6,25 +6,19 @@ interface ItemNotesModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: TransactionItem;
+  notes: { note: string }[];
+  setNotes: (notes: { note: string }[]) => void;
   onSave: (notes: { note: string }[]) => void;
 }
 
-const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, onSave }) => {
-  // Always preserve all notes, but only show/edit up to item.quantity
-  const [notes, setNotes] = useState<{ note: string }[]>([]);
-
-  useEffect(() => {
-    if (item) {
-      // Use all notes from itemDetails, but only show up to quantity
-      const allNotes = item.itemDetails || [];
-      const initialNotes = Array.from(
-        { length: item.quantity },
-        (_, i) => allNotes[i] || { note: '' },
-      );
-      setNotes(initialNotes);
-    }
-  }, [item]);
-
+const ItemNotesModal: React.FC<ItemNotesModalProps> = ({
+  isOpen,
+  onClose,
+  item,
+  notes,
+  setNotes,
+  onSave,
+}) => {
   const handleNoteChange = (index: number, value: string) => {
     const newNotes = [...notes];
     newNotes[index] = { note: value };
@@ -63,26 +57,33 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, 
         </>
       }
     >
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-        {notes.map((note, index) => (
-          <div key={index}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
+      >
+        {notes.map((n, i) => (
+          <div key={i}>
             <label
-              htmlFor={`note-${index}`}
-              className="block mb-1 text-base font-medium text-slate-900 dark:text-white"
+              htmlFor={`note-${i}`}
+              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
             >
-              Item #{index + 1}
+              {`Item #${i + 1}`}
             </label>
             <input
               type="text"
-              id={`note-${index}`}
-              value={note.note}
-              onChange={(e) => handleNoteChange(index, e.target.value)}
+              id={`note-${i}`}
+              value={n.note}
+              placeholder="Noda di kerah, sobek, dsb."
+              onChange={(e) => handleNoteChange(i, e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              placeholder="Contoh: Noda di kerah"
+              aria-label={`Item #${i + 1}`}
             />
           </div>
         ))}
-      </div>
+      </form>
     </Modal>
   );
 };

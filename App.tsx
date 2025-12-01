@@ -1,9 +1,9 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
-import { useToasts } from './src/contexts/ToastContext';
+import useToasts from './src/contexts/useToasts';
 import { UserRole } from './src/types';
-import { useAppContext } from './src/contexts/AppContext';
+import useAppContext from './src/contexts/useAppContext';
 import Layout from './src/components/Layout';
 
 import useTheme from './src/hooks/useTheme';
@@ -62,7 +62,10 @@ const PwaStatusHandler: React.FC = () => {
   React.useEffect(() => {
     registerSW({
       onOfflineReady() {
-        addToast('Mode Offline Aktif: Aplikasi kini siap digunakan tanpa koneksi internet.', 'info');
+        addToast(
+          'Mode Offline Aktif: Aplikasi kini siap digunakan tanpa koneksi internet.',
+          'info',
+        );
       },
       onNeedRefresh() {},
     });

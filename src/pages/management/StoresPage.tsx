@@ -12,7 +12,7 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
-import { useAppContext } from '../../contexts/AppContext';
+import useAppContext from '../../contexts/useAppContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchInventory } from '../../contexts/InventoryContext';
@@ -20,7 +20,7 @@ import { useAssets } from '../../contexts/AssetContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import StoreFormModal from '../../components/StoreFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import { useSortableData } from '../../hooks/useSortableData';
 import { Store } from '@/types';
 
@@ -81,8 +81,9 @@ const StoresPage: React.FC = () => {
         updateToast(toastId, 'Cabang baru berhasil ditambahkan.', 'success');
       }
       handleCloseFormModal();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error?.message || error}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
       setIsSavingStore(false);
     }
@@ -131,8 +132,16 @@ const StoresPage: React.FC = () => {
           `Status cabang ${storeToToggle.name} diubah menjadi ${newStatus ? 'Aktif' : 'Tidak Aktif'}.`,
           'success',
         );
-      } catch (error: any) {
-        updateToast(toastId, `Gagal mengubah status: ${error?.message || error}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          updateToast(
+            toastId,
+            `Gagal mengubah status: ${(error as { message?: string }).message || error}`,
+            'error',
+          );
+        } else {
+          updateToast(toastId, `Gagal mengubah status: ${String(error)}`, 'error');
+        }
       } finally {
         setStoreToToggle(null);
         setIsSavingStore(false);
@@ -148,8 +157,16 @@ const StoresPage: React.FC = () => {
         await deleteStore(storeToDelete.id);
         addAuditLog(`Menghapus cabang: "${storeToDelete.name}".`);
         updateToast(toastId, 'Cabang berhasil dihapus.', 'success');
-      } catch (error: any) {
-        updateToast(toastId, `Gagal menghapus: ${error?.message || error}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          updateToast(
+            toastId,
+            `Gagal menghapus: ${(error as { message?: string }).message || error}`,
+            'error',
+          );
+        } else {
+          updateToast(toastId, `Gagal menghapus: ${String(error)}`, 'error');
+        }
       } finally {
         setStoreToDelete(null);
         setIsSavingStore(false);

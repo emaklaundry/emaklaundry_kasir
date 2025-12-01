@@ -20,7 +20,10 @@ export function useSettings() {
   const updateSettings = useMutation({
     mutationFn: async (data: Partial<Settings>) => {
       // Prevent accidental updates to immutable primary key
-      const { id: _ignoredId, ...payload } = data as any;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _ignoredId, ...payload } = data as Omit<Partial<Settings>, 'id'> & {
+        id?: unknown;
+      };
 
       // Re-fetch the current settings row at save time to avoid races
       const { data: existingRows, error: fetchErr } = await supabase

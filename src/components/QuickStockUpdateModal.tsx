@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchInventory, useInventoryMutations } from '../contexts/InventoryContext';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import Modal from './Modal';
 import { InventoryItem } from '@/types';
 
@@ -18,9 +18,10 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     queryKey: ['inventory', { page: 1, pageSize: 1000, storeId: selectedStoreId }],
     queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId: selectedStoreId }),
   });
-  const inventory = Array.isArray(inventoryRaw)
-    ? inventoryRaw
-    : (inventoryRaw?.data ?? []);
+  const inventory = React.useMemo(
+    () => (Array.isArray(inventoryRaw) ? inventoryRaw : (inventoryRaw?.data ?? [])),
+    [inventoryRaw],
+  );
   const { updateInventoryItem } = useInventoryMutations();
   const { addToast, updateToast } = useToasts();
   const [isSavingStock, setIsSavingStock] = useState(false);
@@ -30,7 +31,6 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
 
   useEffect(() => {
     if (isOpen) {
-      // Initialize local state with current stock values from context
       const initial = inventory.reduce(
         (acc, item) => {
           acc[item.id] = item.stock;
@@ -38,8 +38,10 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
         },
         {} as { [key: string]: number },
       );
-      setStockUpdates(initial);
-      setInitialStock(initial);
+      setTimeout(() => {
+        setStockUpdates(initial);
+        setInitialStock(initial);
+      }, 0);
     }
   }, [isOpen, inventory]);
 
@@ -79,8 +81,16 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     try {
       await Promise.all(updates);
       updateToast(toastId, 'Semua stok berhasil diperbarui!', 'success');
-    } catch (error: any) {
-      updateToast(toastId, `Gagal memperbarui beberapa stok: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        updateToast(
+          toastId,
+          `Gagal memperbarui beberapa stok: ${(error as { message: string }).message}`,
+          'error',
+        );
+      } else {
+        updateToast(toastId, 'Gagal memperbarui beberapa stok: Unknown error', 'error');
+      }
     }
     setIsSavingStock(false);
     onClose();

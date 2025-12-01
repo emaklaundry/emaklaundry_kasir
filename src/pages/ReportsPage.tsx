@@ -1,14 +1,31 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+// src/pages/ReportsPage.tsx
+
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
 import { useTransactions } from '../contexts/TransactionContext';
 import { fetchCustomers } from '../contexts/CustomerContext';
-import { useExpenses } from '../contexts/ExpenseContext';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
-import { useToasts } from '../contexts/ToastContext';
 import { useServices } from '../contexts/ServiceContext';
-import { Transaction, UserRole, Service, User, ServiceCategory } from '@/types';
+import { supabase } from '../utils/supabaseClient';
+import { UserRole, Service, User, ServiceCategory, MaintenanceLog, Transaction } from '@/types';
+
+// Type guard for Transaction
+function isTransaction(obj: unknown): obj is Transaction {
+  if (!obj || typeof obj !== 'object') return false;
+  const t = obj as Record<string, unknown>;
+  return (
+    typeof t.id === 'string' &&
+    (typeof t.createdAt === 'string' || t.createdAt instanceof Date) &&
+    typeof t.amountPaid === 'number' &&
+    typeof t.discount === 'number' &&
+    typeof t.total === 'number' &&
+    typeof t.customerId === 'string' &&
+    typeof t.createdByUserId === 'string' &&
+    Array.isArray(t.items)
+  );
+}
 
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
@@ -16,7 +33,6 @@ const StatCard: React.FC<{
   value: string | number;
   color: string;
 }> = ({ icon: Icon, title, value, color }) => (
-  // TAMBAHKAN: kelas 'print-stat-card' dan 'print-hide' pada ikon
   <div
     className={`bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}
   >
@@ -76,7 +92,6 @@ const YearlySummaryChart: React.FC<{
           dangerouslySetInnerHTML={{ __html: tooltip.content }}
         ></div>
       )}
-      {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan SVG saat cetak */}
       <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
         {/* Y-Axis Grid Lines and Labels */}
         {Array.from({ length: yAxisLabels }).map((_, i) => {
@@ -162,7 +177,7 @@ const YearlySummaryChart: React.FC<{
         />
       </svg>
 
-      {/* --- TAMBAHKAN: Tabel ini HANYA akan muncul saat dicetak --- */}
+      {/* --- Tabel ini HANYA akan muncul saat dicetak --- */}
       <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
         <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
           <tr className="print-only-row">
@@ -191,10 +206,22 @@ const YearlySummaryChart: React.FC<{
           ))}
         </tbody>
       </table>
-      {/* --- AKHIR BLOK CETAK --- */}
     </div>
   );
 };
+
+// --- Type Definitions ---
+type Expense = {
+  id: string;
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+  storeId: string | null;
+};
+
+// Tipe transaksi hasil normalisasi (createdAt: string)
+type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
 
 const ReportsPage: React.FC = () => {
   const { transactions: allStoreTransactions } = useTransactions();
@@ -202,31 +229,11 @@ const ReportsPage: React.FC = () => {
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
-  const customers = useMemo(() => {
-    const raw = customersRaw.data;
-    if (Array.isArray(raw)) return raw;
-    if (raw && Array.isArray(raw.data)) return raw.data;
-    if (raw && typeof raw === 'object' && raw !== null) {
-      // Try to extract array from any property that is an array
-      const arr = Object.values(raw).find((v) => Array.isArray(v));
-      if (arr) return arr;
-    }
-    if (raw !== undefined && raw !== null) {
-      // Log unexpected structure for debugging
-      // eslint-disable-next-line no-console
-      console.warn('Unexpected customersRaw.data structure:', raw);
-    }
-    return [];
-  }, [customersRaw.data]);
-  const { expenses: allStoreExpenses } = useExpenses();
-  const { services } = useServices();
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const { addToast } = useToasts();
+  const { services } = useServices();
   const { users: allUsers } = useUsers();
-
-  const [reportType, setReportType] = useState<'range' | 'yearlySummary'>('range');
+  const [reportType] = useState<'range' | 'yearlySummary'>('range');
   const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
-
   const today = new Date();
   const [customStartDate, setCustomStartDate] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -235,10 +242,10 @@ const ReportsPage: React.FC = () => {
     new Date(today.getFullYear(), today.getMonth() + 1, 0),
   );
 
+  // Date range for reports
   const { startDate, endDate } = useMemo(() => {
     const now = new Date();
     now.setHours(23, 59, 59, 999);
-
     if (rangeType === 'weekly') {
       const firstDayOfWeek = new Date(now);
       firstDayOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
@@ -249,34 +256,220 @@ const ReportsPage: React.FC = () => {
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
       return { startDate: firstDay, endDate: now };
     }
-    // custom view
     const endOfDay = new Date(customEndDate);
     endOfDay.setHours(23, 59, 59, 999);
     return { startDate: customStartDate, endDate: endOfDay };
   }, [rangeType, customStartDate, customEndDate]);
 
+  // Customers
+  const customers = useMemo(() => {
+    const raw = customersRaw.data;
+    if (Array.isArray(raw)) return raw as { id: string; name: string }[];
+    if (
+      raw &&
+      typeof raw === 'object' &&
+      raw !== null &&
+      Array.isArray((raw as { data?: unknown }).data)
+    ) {
+      return (raw as { data: { id: string; name: string }[] }).data;
+    }
+    if (raw && typeof raw === 'object' && raw !== null) {
+      const arr = Object.values(raw).find((v) => Array.isArray(v));
+      if (arr) return arr as { id: string; name: string }[];
+    }
+    return [];
+  }, [customersRaw.data]);
+
+  // --- Fetch Combined Expenses (Operasional, Pembelian Aset, Pemeliharaan Aset) ---
+  const { data: allStoreExpenses = [] } = useQuery<Expense[]>({
+    queryKey: ['report-expenses-combined', selectedStoreId, startDate, endDate],
+    queryFn: async () => {
+      // Helper untuk format tanggal lokal (YYYY-MM-DD)
+      const formatDateStr = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const startDateStr = formatDateStr(startDate);
+      const endDateStr = formatDateStr(endDate);
+
+      // 1. Fetch Expenses (Operasional & Aset yang sudah tercatat di expenses)
+      let allOperationalExpenses: Expense[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase
+          .from('expenses')
+          .select('*')
+          .gte('date', startDateStr)
+          .lte('date', endDateStr);
+
+        if (selectedStoreId && selectedStoreId !== 'all') {
+          query = query.eq('storeId', selectedStoreId);
+        }
+
+        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allOperationalExpenses = [...allOperationalExpenses, ...(data as Expense[])];
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // 2. Fetch Assets (Untuk Backfill Aset Lama yang belum tercatat di expenses)
+      let assetQuery = supabase.from('assets').select('*');
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        assetQuery = assetQuery.eq('storeId', selectedStoreId);
+      }
+      const { data: assetsData, error: assetsError } = await assetQuery;
+      if (assetsError) throw assetsError;
+
+      const assetExpenses: Expense[] = [];
+
+      // Helper untuk mengecek duplikasi di tabel expenses
+      const isExpenseExist = (desc: string, date: string, amount: number) => {
+        return allOperationalExpenses.some(
+          (e) =>
+            e.description === desc &&
+            e.date === date &&
+            Math.abs(e.amount - amount) < 100 // Toleransi sedikit
+        );
+      };
+
+      if (assetsData) {
+        // Gunakan Type Assertion yang lebih longgar untuk data mentah DB
+        (assetsData as Record<string, unknown>[]).forEach((asset) => {
+          // Validasi minimal
+          if (!asset.id || !asset.name) return;
+
+          // A. Pembelian Aset
+          if (asset.purchaseDate) {
+            let purchaseDateStr = String(asset.purchaseDate);
+            if (purchaseDateStr.includes('T')) {
+               purchaseDateStr = purchaseDateStr.split('T')[0];
+            }
+            
+            // Filter tanggal sesuai range
+            if (purchaseDateStr >= startDateStr && purchaseDateStr <= endDateStr) {
+              const cost = Number(asset.purchaseCost) || 0;
+              const description = `Pembelian Aset: ${asset.name}`;
+
+              // Cek apakah sudah ada di expenses (untuk mencegah duplikat data baru)
+              if (!isExpenseExist(description, purchaseDateStr, cost)) {
+                assetExpenses.push({
+                  id: `asset-purchase-${asset.id}`,
+                  date: purchaseDateStr,
+                  description: description,
+                  category: 'Pembelian Aset',
+                  amount: cost,
+                  storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+                });
+              }
+            }
+          }
+
+          // B. Pemeliharaan Aset (History)
+          let maintenanceHistory: MaintenanceLog[] = [];
+          if (asset.maintenanceHistory) {
+            if (Array.isArray(asset.maintenanceHistory)) {
+              maintenanceHistory = asset.maintenanceHistory;
+            } else if (typeof asset.maintenanceHistory === 'string') {
+              try {
+                maintenanceHistory = JSON.parse(asset.maintenanceHistory);
+              } catch { /* ignore */ }
+            }
+          }
+
+          maintenanceHistory.forEach((log, index) => {
+            const logDate = new Date(log.date);
+            const logDateStr = formatDateStr(logDate);
+            const cost = Number(log.cost) || 0;
+            
+            if (logDateStr >= startDateStr && logDateStr <= endDateStr) {
+              // Format deskripsi harus dicek terhadap format yang disimpan AssetsPage
+              // AssetsPage format: "Perawatan Aset: [Nama] ([Desc])"
+              // Kita gunakan format yang sama untuk pengecekan
+              const expenseDescToCheck = `Perawatan Aset: ${asset.name} (${log.description})`;
+              
+              if (!isExpenseExist(expenseDescToCheck, logDateStr, cost)) {
+                assetExpenses.push({
+                  id: `asset-maint-${asset.id}-${index}`,
+                  date: logDateStr,
+                  description: `[Maintenance] ${asset.name}: ${log.description}`, // Penanda beda untuk log manual
+                  category: 'Pemeliharaan Aset',
+                  amount: cost,
+                  storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+                });
+              }
+            }
+          });
+        });
+      }
+
+      // Gabungkan: Expenses (Database) + AssetExpenses (Backfill Manual)
+      return [...allOperationalExpenses, ...assetExpenses];
+    },
+  });
+
+  // Filtered Data
+  function normalizeTransaction(
+    t: unknown,
+  ): (Omit<Transaction, 'createdAt'> & { createdAt: string }) | null {
+    if (!t || typeof t !== 'object') return null;
+    const obj = t as Record<string, unknown>;
+    let createdAt: string;
+    if (typeof obj.createdAt === 'string') {
+      createdAt = obj.createdAt;
+    } else if (obj.createdAt instanceof Date) {
+      createdAt = obj.createdAt.toISOString();
+    } else {
+      return null;
+    }
+    const tx = { ...obj, createdAt } as unknown;
+    return isTransaction(tx as unknown)
+      ? (tx as Omit<Transaction, 'createdAt'> & { createdAt: string })
+      : null;
+  }
+
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
     const end = endDate.getTime();
-    const transactions = allStoreTransactions.filter((t) => {
-      const time = new Date(t.createdAt).getTime();
-      return time >= start && time <= end;
-    });
-    const expenses = allStoreExpenses.filter((e) => {
-      const time = new Date(e.date).getTime();
-      return time >= start && time <= end;
-    });
+    
+    const transactions = (allStoreTransactions as unknown[])
+      .map(normalizeTransaction)
+      .filter((t): t is Omit<Transaction, 'createdAt'> & { createdAt: string } => !!t)
+      .filter((t) => {
+        const time = new Date(t.createdAt).getTime();
+        return time >= start && time <= end;
+      });
+
+    // FILTER GANDA DIHAPUS: Gunakan data langsung dari query yang sudah valid
+    const expenses = (allStoreExpenses as Expense[]) || [];
+
     return { transactions, expenses };
   }, [startDate, endDate, allStoreTransactions, allStoreExpenses]);
 
-  const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + t.amountPaid, 0);
-  const totalExpenses = filteredData.expenses.reduce((acc, e) => acc + e.amount, 0);
+  const totalRevenue = filteredData.transactions.reduce((acc: number, t) => acc + t.amountPaid, 0);
+  const totalExpenses = filteredData.expenses.reduce((acc: number, e) => acc + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
 
+  // ... (Kode selebihnya untuk chart, tabel, dll tetap sama) ...
+  
   const serviceMap = useMemo(
     () =>
       services.reduce(
-        (map, service) => ({ ...map, [service.id]: service }),
+        (map: Record<string, Service>, service: Service) => ({ ...map, [service.id]: service }),
         {} as Record<string, Service>,
       ),
     [services],
@@ -284,8 +477,8 @@ const ReportsPage: React.FC = () => {
 
   const topServices = useMemo(() => {
     const serviceRevenue: { [key: string]: number } = {};
-    filteredData.transactions.forEach((t) =>
-      t.items.forEach((item) => {
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
+      t.items.forEach((item: { serviceId: string; subtotal: number }) => {
         serviceRevenue[item.serviceId] = (serviceRevenue[item.serviceId] || 0) + item.subtotal;
       }),
     );
@@ -301,12 +494,12 @@ const ReportsPage: React.FC = () => {
 
   const topCustomers = useMemo(() => {
     const customerSpending: { [key: string]: number } = {};
-    filteredData.transactions.forEach((t) => {
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) => {
       customerSpending[t.customerId] = (customerSpending[t.customerId] || 0) + t.total;
     });
     return Object.entries(customerSpending)
       .map(([customerId, total]) => ({
-        name: customers.find((c) => c.id === customerId)?.name || 'N/A',
+        name: customers.find((c: { id: string }) => c.id === customerId)?.name || 'N/A',
         total,
       }))
       .sort((a, b) => b.total - a.total)
@@ -314,20 +507,24 @@ const ReportsPage: React.FC = () => {
   }, [filteredData.transactions, customers]);
 
   const userMap = useMemo(
-    () => allUsers.reduce((map, user) => ({ ...map, [user.id]: user }), {} as Record<string, User>),
+    () =>
+      allUsers.reduce(
+        (map: Record<string, User>, user: User) => ({ ...map, [user.id]: user }),
+        {} as Record<string, User>,
+      ),
     [allUsers],
   );
 
   const cashierPerformance = useMemo(() => {
     const stats: {
-      [key: number]: {
+      [key: string]: {
         name: string;
         transactionCount: number;
         totalRevenue: number;
         totalDiscount: number;
       };
     } = {};
-    filteredData.transactions.forEach((t) => {
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) => {
       if (!t.createdByUserId || !userMap[t.createdByUserId]) return;
       const user = userMap[t.createdByUserId];
       if (!stats[user.id])
@@ -345,13 +542,19 @@ const ReportsPage: React.FC = () => {
   }, [filteredData.transactions, userMap]);
 
   const revenueByCategory = useMemo(() => {
-    const categoryRevenue: { [key in ServiceCategory]?: number } = {};
-    filteredData.transactions.forEach((t) =>
-      t.items.forEach((item) => {
+    const categoryRevenue: Record<ServiceCategory, number> = {
+      Kiloan: 0,
+      Satuan: 0,
+      Sepatu: 0,
+      Karpet: 0,
+    };
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
+      t.items.forEach((item: { serviceId: string; subtotal: number }) => {
         const service = serviceMap[item.serviceId];
-        if (service)
-          categoryRevenue[service.category] =
-            (categoryRevenue[service.category] || 0) + item.subtotal;
+        if (service) {
+          const cat = service.category as ServiceCategory;
+          categoryRevenue[cat] = (categoryRevenue[cat] || 0) + item.subtotal;
+        }
       }),
     );
     return Object.entries(categoryRevenue)
@@ -371,17 +574,18 @@ const ReportsPage: React.FC = () => {
     return filteredData.expenses
       .map((expense) => ({
         ...expense,
-        storeName: stores.find((s) => s.id === expense.storeId)?.name || 'N/A',
+        storeName: stores.find((s: { id: string }) => s.id === expense.storeId)?.name || 'N/A',
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [filteredData.expenses, stores]);
 
   const monthlySummary = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    const yearTransactions = allStoreTransactions.filter(
-      (t) => new Date(t.createdAt).getFullYear() === currentYear,
-    );
-    const yearExpenses = allStoreExpenses.filter(
+    const yearTransactions = (allStoreTransactions as unknown[])
+      .map(normalizeTransaction)
+      .filter((t): t is NormalizedTransaction => !!t)
+      .filter((t) => new Date(t.createdAt).getFullYear() === currentYear);
+    const yearExpenses = (allStoreExpenses as Expense[]).filter(
       (e) => new Date(e.date).getFullYear() === currentYear,
     );
     const monthNames = [
@@ -398,7 +602,12 @@ const ReportsPage: React.FC = () => {
       'Nov',
       'Des',
     ];
-    const summary = monthNames.map((name) => ({ month: name, revenue: 0, expenses: 0, profit: 0 }));
+    const summary = monthNames.map((name) => ({
+      month: name,
+      revenue: 0,
+      expenses: 0,
+      profit: 0,
+    }));
     yearTransactions.forEach((t) => {
       summary[new Date(t.createdAt).getMonth()].revenue += t.amountPaid;
     });
@@ -411,43 +620,55 @@ const ReportsPage: React.FC = () => {
     return summary;
   }, [allStoreTransactions, allStoreExpenses]);
 
+  const printHeaderTitle = useMemo(() => {
+    const startStr = startDate.toLocaleDateString('id-ID');
+    const endStr = endDate.toLocaleDateString('id-ID');
+    if (reportType === 'range') {
+      if (rangeType === 'custom') {
+        return `Laporan Kustom (${startStr} - ${endStr})`;
+      }
+      if (rangeType === 'weekly') {
+        return `Laporan Mingguan (Hingga ${endStr})`;
+      }
+      if (rangeType === 'monthly') {
+        return `Laporan Bulanan (Hingga ${endStr})`;
+      }
+    }
+    if (reportType === 'yearlySummary') {
+      return `Ringkasan Tahunan ${new Date().getFullYear()}`;
+    }
+    return '';
+  }, [reportType, rangeType, startDate, endDate]);
+
+  if (!currentUser) {
+    return (
+      <div className="flex justify-center items-center h-64 text-slate-500">
+        User context not loaded.
+      </div>
+    );
+  }
+
   const getStoreName = () => {
+    if (!currentUser) return '';
     if (currentUser.role === UserRole.SuperAdmin) {
       if (selectedStoreId === 'all') return 'Laporan Gabungan - Semua Cabang';
-      return `Laporan - ${stores.find((s) => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal'}`;
+      return `Laporan - ${stores.find((s: { id: string }) => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal'}`;
     }
-    return `Laporan - ${stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal'}`;
+    return `Laporan - ${stores.find((s: { id: string }) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal'}`;
   };
 
   const isRangeReport = reportType === 'range';
-
-  // --- TAMBAHAN: Teks header untuk laporan cetak ---
-  const printHeaderTitle = useMemo(() => {
-    // Untuk 'range'
-    const startStr = startDate.toLocaleDateString('id-ID');
-    const endStr = endDate.toLocaleDateString('id-ID');
-    if (rangeType === 'custom') {
-      return `Laporan Kustom (${startStr} - ${endStr})`;
-    }
-    return `Laporan ${rangeType === 'weekly' ? 'Mingguan' : 'Bulanan'} (Hingga ${endStr})`;
-  }, [rangeType, startDate, endDate]);
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400 -mb-2 print-hide">
         {getStoreName()}
       </h2>
-
-      {/* --- TAMBAHAN: Header yang HANYA muncul saat dicetak --- */}
       <div className="print-only-block">
         <h1>{getStoreName()}</h1>
         <h3>{printHeaderTitle}</h3>
       </div>
-      {/* --- AKHIR BLOK CETAK --- */}
-
-      {/* TAMBAHKAN: 'print-hide' untuk menyembunyikan seluruh baris filter ini saat cetak */}
       <div className="flex justify-between items-center flex-wrap gap-4 print-hide">
-        {/* Tombol Rentang Waktu dihapus */}
         {isRangeReport && (
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
@@ -496,10 +717,8 @@ const ReportsPage: React.FC = () => {
           Cetak Laporan
         </button>
       </div>
-
       {isRangeReport ? (
         <>
-          {/* TAMBAHKAN: 'print-stat-card-container' untuk styling pembungkus saat cetak */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print-stat-card-container">
             <StatCard
               icon={DollarSignIcon}
@@ -527,7 +746,6 @@ const ReportsPage: React.FC = () => {
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
             <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Layanan Terlaris
@@ -555,7 +773,6 @@ const ReportsPage: React.FC = () => {
                 </table>
               </div>
             </div>
-            {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
             <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pelanggan Teratas
@@ -584,13 +801,11 @@ const ReportsPage: React.FC = () => {
               </div>
             </div>
           </div>
-          {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
           <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <BarChartIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Pendapatan per Kategori Layanan
             </h2>
-            {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan bagan visual saat cetak */}
             <div className="space-y-3 print-chart-hide">
               {revenueByCategory.length > 0 ? (
                 revenueByCategory.map((c) => (
@@ -620,8 +835,6 @@ const ReportsPage: React.FC = () => {
                 </p>
               )}
             </div>
-
-            {/* --- TAMBAHKAN: Tabel ini HANYA akan muncul saat dicetak --- */}
             <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
               <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                 <tr className="print-only-row">
@@ -642,9 +855,7 @@ const ReportsPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
-            {/* --- AKHIR BLOK CETAK --- */}
           </div>
-          {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
           <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
@@ -690,11 +901,10 @@ const ReportsPage: React.FC = () => {
               </table>
             </div>
           </div>
-          {/* TAMBAHKAN: 'report-section' untuk menghindari page-break */}
           <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
-              Rincian Pengeluaran
+              Rincian Pengeluaran (Termasuk Aset & Pemeliharaan)
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
@@ -703,7 +913,7 @@ const ReportsPage: React.FC = () => {
                     <th className="px-4 py-2">Tanggal</th>
                     <th className="px-4 py-2">Deskripsi</th>
                     <th className="px-4 py-2">Kategori</th>
-                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                    {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                       <th className="px-4 py-2">Toko</th>
                     )}
                     <th className="px-4 py-2 text-right">Jumlah</th>
@@ -719,8 +929,20 @@ const ReportsPage: React.FC = () => {
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {e.description}
                         </td>
-                        <td className="px-4 py-2">{e.category}</td>
-                        {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                        <td className="px-4 py-2">
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              e.category === 'Pembelian Aset'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                                : e.category === 'Pemeliharaan Aset'
+                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200'
+                            }`}
+                          >
+                            {e.category}
+                          </span>
+                        </td>
+                        {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                           <td className="px-4 py-2">{e.storeName}</td>
                         )}
                         <td className="px-4 py-2 text-right">
@@ -732,7 +954,7 @@ const ReportsPage: React.FC = () => {
                     <tr>
                       <td
                         colSpan={
-                          currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'
+                          currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all'
                             ? 5
                             : 4
                         }
@@ -747,7 +969,7 @@ const ReportsPage: React.FC = () => {
                   <tr>
                     <td
                       colSpan={
-                        currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'
+                        currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all'
                           ? 4
                           : 3
                       }
@@ -765,7 +987,6 @@ const ReportsPage: React.FC = () => {
           </div>
         </>
       ) : (
-        // TAMBAHKAN: 'report-section' untuk menghindari page-break
         <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
             Ringkasan Bulanan {new Date().getFullYear()}

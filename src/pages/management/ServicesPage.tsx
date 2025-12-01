@@ -11,12 +11,12 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
-import { useAppContext } from '../../contexts/AppContext';
-import { Service, ServiceCategory, UserRole } from '@/types';
+import useAppContext from '../../contexts/useAppContext';
+import { Service, UserRole } from '@/types';
 
 const ServicesPage: React.FC = () => {
   const { services, addService, updateService, deleteService } = useServices();
@@ -87,8 +87,9 @@ const ServicesPage: React.FC = () => {
         updateToast(toastId, 'Layanan baru berhasil ditambahkan.', 'success');
       }
       handleCloseFormModal();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan layanan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal menyimpan layanan: ${errMsg}`, 'error');
     } finally {
       setIsSavingService(false);
     }
@@ -106,8 +107,16 @@ const ServicesPage: React.FC = () => {
         await deleteService(serviceToDelete.id);
         addAuditLog(`Menghapus layanan: "${serviceToDelete.name}".`);
         updateToast(toastId, 'Layanan berhasil dihapus.', 'success');
-      } catch (error: any) {
-        updateToast(toastId, `Gagal menghapus layanan: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          updateToast(
+            toastId,
+            `Gagal menghapus layanan: ${(error as { message: string }).message}`,
+            'error',
+          );
+        } else {
+          updateToast(toastId, 'Gagal menghapus layanan: Unknown error', 'error');
+        }
       } finally {
         setServiceToDelete(null);
         setIsSavingService(false);

@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { useToasts, ToastMessage, ToastType } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
+import type { ToastMessage, ToastType } from '../contexts/ToastContext';
 
 const ToastIcon: React.FC<{ type: ToastType }> = ({ type }) => {
   switch (type) {

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQuery as useInventoryQuery } from '@tanstack/react-query';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { fetchInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
 import { fetchCustomers } from '../contexts/CustomerContext';
@@ -9,7 +9,7 @@ import { useExpenses } from '../contexts/ExpenseContext';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
@@ -113,6 +113,19 @@ const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }>
   );
 };
 
+function TrendIndicator({ trendData }: { trendData?: TrendData }) {
+  if (!trendData || trendData.trend === 'neutral') return null;
+  const isUp = trendData.trend === 'up';
+  const trendColor = isUp ? 'text-green-500' : 'text-red-500';
+  const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
+  return (
+    <div className={`flex items-center text-sm font-semibold mt-1 ${trendColor}`}>
+      <TrendIcon className="w-4 h-4 mr-1" />
+      <span>{trendData.percentage} vs 30 hari lalu</span>
+    </div>
+  );
+}
+
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
   title: string;
@@ -121,21 +134,6 @@ const StatCard: React.FC<{
   to?: string;
   trendData?: TrendData;
 }> = ({ icon: Icon, title, value, color, to, trendData }) => {
-  const TrendIndicator = () => {
-    if (!trendData || trendData.trend === 'neutral') return null;
-
-    const isUp = trendData.trend === 'up';
-    const trendColor = isUp ? 'text-green-500' : 'text-red-500';
-    const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
-
-    return (
-      <div className={`flex items-center text-sm font-semibold mt-1 ${trendColor}`}>
-        <TrendIcon className="w-4 h-4 mr-1" />
-        <span>{trendData.percentage} vs 30 hari lalu</span>
-      </div>
-    );
-  };
-
   const content = (
     <div
       className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors' : ''}`}
@@ -151,10 +149,9 @@ const StatCard: React.FC<{
           <Icon className={`w-7 h-7 ${color.replace('border-', 'text-')}`} />
         </div>
       </div>
-      <TrendIndicator />
+      <TrendIndicator trendData={trendData} />
     </div>
   );
-
   return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
 };
 
@@ -200,13 +197,13 @@ const Dashboard: React.FC = () => {
     }
     if (raw !== undefined && raw !== null) {
       // Log unexpected structure for debugging
-      // eslint-disable-next-line no-console
+
       console.warn('Unexpected customersQuery.data structure:', raw);
     }
     return [];
   }, [customersQuery.data]);
 
-  const { expenses, addExpense } = useExpenses();
+  const { addExpense } = useExpenses();
   const { scheduledMaintenances, updateScheduledMaintenance } = useScheduledMaintenances();
   const { assets, updateAsset } = useAssets();
   const { addAuditLog } = useAuditLogs();
@@ -220,7 +217,7 @@ const Dashboard: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [transactionForPayment, setTransactionForPayment] = useState<Transaction | null>(null);
 
-  const isCashier = currentUser.role === UserRole.Cashier;
+  const isCashier = currentUser?.role === UserRole.Cashier;
 
   const weeklyRevenueData = useMemo(() => {
     const data = Array.from({ length: 7 }, (_, i) => {
@@ -329,10 +326,14 @@ const Dashboard: React.FC = () => {
     currentPage: activeOrdersCurrentPage,
     totalPages: activeOrdersTotalPages,
     onPageChange: onActiveOrdersPageChange,
-  } = usePagination<ActiveOrder>(activeOrders);
+  } = usePagination<ActiveOrder>(activeOrders, 15);
 
   const handleSaveExpense = useCallback(
     async (expense: Omit<Expense, 'id' | 'storeId'>) => {
+      if (!currentUser) {
+        addToast('User tidak ditemukan. Silakan login ulang.', 'error');
+        return;
+      }
       const storeId =
         currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
       if (!storeId || storeId === 'all') {
@@ -344,7 +345,7 @@ const Dashboard: React.FC = () => {
       addAuditLog(`Mencatat pengeluaran cepat: "${newExpense.description}".`, storeId);
       setIsExpenseModalOpen(false);
     },
-    [currentUser.role, currentUser.storeId, selectedStoreId, addExpense, addAuditLog, addToast],
+    [currentUser, selectedStoreId, addExpense, addAuditLog, addToast],
   );
 
   const handleOpenPaymentModal = useCallback((transaction: Transaction) => {
@@ -394,7 +395,6 @@ const Dashboard: React.FC = () => {
         return; // No next status from 'Completed'
       }
 
-      const updatedTransaction = { ...transaction, orderStatus: nextStatus };
       await updateTransaction(transaction.id, { orderStatus: nextStatus });
       addAuditLog(
         `Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`,
@@ -443,14 +443,17 @@ const Dashboard: React.FC = () => {
   }, [transactionForWhatsApp, customerMap]);
 
   const getStoreName = () => {
-    if (currentUser.role === UserRole.SuperAdmin) {
+    if (currentUser?.role === UserRole.SuperAdmin) {
       if (selectedStoreId === 'all') return 'Semua Cabang';
       return stores.find((s) => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal';
     }
-    return stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
+    if (currentUser?.storeId) {
+      return stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
+    }
+    return 'Cabang Tidak Dikenal';
   };
 
-  const isActionDisabled = currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all';
+  const isActionDisabled = currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all';
 
   return (
     <>
@@ -588,7 +591,7 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody>
                 {paginatedActiveOrders.length > 0 ? (
-                  paginatedActiveOrders.map((t, idx) => {
+                  paginatedActiveOrders.map((t) => {
                     const isSelesaikanDisabled =
                       t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                     const nextActionText =
@@ -602,7 +605,7 @@ const Dashboard: React.FC = () => {
                       <tr key={t.id} className="border-b dark:border-slate-700">
                         <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                           <Link to={`/transactions/${t.id}/details`} className="hover:underline">
-                            {t.invoice_code || t.id}
+                            {t.invoiceCode || `#${t.id.substring(0, 8)}`}
                           </Link>
                         </td>
                         <td className="px-4 py-3">{t.customerName}</td>
@@ -673,7 +676,7 @@ const Dashboard: React.FC = () => {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3">
             {paginatedActiveOrders.length > 0 ? (
-              paginatedActiveOrders.map((t, idx) => {
+              paginatedActiveOrders.map((t) => {
                 const isSelesaikanDisabled =
                   t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
                 const mobileNextActionText =
@@ -697,7 +700,7 @@ const Dashboard: React.FC = () => {
                           to={`/transactions/${t.id}/details`}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {t.invoice_code || t.id}
+                          {t.invoiceCode || `#${t.id.substring(0, 8)}`}
                         </Link>
                       </div>
                       <span

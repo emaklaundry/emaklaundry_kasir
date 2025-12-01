@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
@@ -9,19 +8,18 @@ import {
   SearchIcon,
   UsersIcon,
   ArrowUpIcon,
-  ArrowDownIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { useAppContext } from '../../contexts/AppContext';
+import useAppContext from '../../contexts/useAppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
-import { usePagination } from '../../hooks/usePagination';
+// import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 import { Customer, UserRole } from '@/types';
 
@@ -32,12 +30,7 @@ const CustomersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const {
-    data: result = { data: [], count: 0 },
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
+  const { data: result = { data: [], count: 0 } } = useQuery({
     queryKey: [
       'customers',
       { page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId },
@@ -83,12 +76,14 @@ const CustomersPage: React.FC = () => {
 
   type CustomerWithStats = (typeof customerStats)[0];
 
-  const addCustomerMutation = useMutation({
-    mutationFn: async (data: any) => addCustomer(data),
-  });
-  const updateCustomerMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => updateCustomer(id, data),
-  });
+  // type CustomerInput = Omit<Customer, 'id'>;
+  // const addCustomerMutation = useMutation({
+  //   mutationFn: async (data: CustomerInput) => addCustomer(data),
+  // });
+  // const updateCustomerMutation = useMutation({
+  //   mutationFn: async ({ id, data }: { id: string; data: CustomerInput }) =>
+  //     updateCustomer(id, data),
+  // });
 
   const {
     items: sortedCustomers,
@@ -103,8 +98,10 @@ const CustomersPage: React.FC = () => {
 
   const getSortIcon = (key: keyof CustomerWithStats) => {
     if (!sortConfig || sortConfig.key !== key) return null;
-    if (sortConfig.direction === 'ascending')
+    if (sortConfig.direction === 'ascending') {
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
+    }
+    return null;
   };
 
   const handleOpenFormModal = (customer?: Customer | null) => {
@@ -119,7 +116,7 @@ const CustomersPage: React.FC = () => {
 
   const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
     // Pilih storeId sesuai role user
-    let storeId =
+    const storeId =
       currentCustomer?.storeId ||
       (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
     if (!storeId || storeId === 'all') {
@@ -147,8 +144,12 @@ const CustomersPage: React.FC = () => {
         updateToast(toastId, 'Pelanggan baru berhasil ditambahkan!', 'success');
       }
       handleCloseFormModal();
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menyimpan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        updateToast(toastId, `Gagal menyimpan: ${(error as { message: string }).message}`, 'error');
+      } else {
+        updateToast(toastId, 'Gagal menyimpan: Unknown error', 'error');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -176,8 +177,16 @@ const CustomersPage: React.FC = () => {
         await deleteCustomer(customerToDelete.id);
         addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId);
         updateToast(toastId, 'Pelanggan berhasil dihapus!', 'success');
-      } catch (error: any) {
-        updateToast(toastId, `Gagal menghapus: ${error.message}`, 'error');
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'message' in error) {
+          updateToast(
+            toastId,
+            `Gagal menghapus: ${(error as { message: string }).message}`,
+            'error',
+          );
+        } else {
+          updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
+        }
       } finally {
         setCustomerToDelete(null);
         setIsSaving(false);

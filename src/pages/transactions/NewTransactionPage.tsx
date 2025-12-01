@@ -1,28 +1,27 @@
-import { generateUUID } from '../../utils';
+// --- TAMBAHAN: Interface lokal untuk menangani P & L ---
+interface ExtendedTransactionItem extends TransactionItem {
+  length?: number;
+  width?: number;
+}
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-
-import { useQuery } from '@tanstack/react-query';
-import {
-  Trash2Icon,
-  MessageSquareIcon,
-  PlusCircleIcon,
-  TagIcon,
-  SpinnerIcon,
-} from '../../components/icons';
+import { generateUUID } from '../../utils';
+import { supabase } from '../../utils/supabaseClient';
+import { Trash2Icon, MessageSquareIcon, TagIcon, SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
-import { useAppContext } from '../../contexts/AppContext';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import useAppContext from '../../contexts/useAppContext';
+import { formatRupiah, parseRupiah, roundPrice } from '../../utils/formatting';
 import CustomerSelector from '../../components/CustomerSelector';
 import ServiceSelector from '../../components/ServiceSelector';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 
 import WhatsAppModal from '../../components/WhatsAppModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
@@ -42,7 +41,8 @@ const NewTransactionPage: React.FC = () => {
   // --- SEMUA HOOK HARUS DI ATAS SINI ---
   const navigate = useNavigate();
   const { settings, isLoading: isLoadingSettings } = useSettings();
-  const { transactions, addTransaction } = useTransactions();
+  const { addTransaction } = useTransactions();
+  const queryClient = useQueryClient();
   const { data: customersData } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
@@ -56,13 +56,15 @@ const NewTransactionPage: React.FC = () => {
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [items, setItems] = useState<TransactionItem[]>([]);
+  // Ganti tipe state items menjadi ExtendedTransactionItem[]
+  const [items, setItems] = useState<ExtendedTransactionItem[]>([]);
   const [notes, setNotes] = useState('');
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState<number | ''>(0);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [editingNotes, setEditingNotes] = useState<{ note: string }[]>([]);
   const [isKiloanTaggingModalOpen, setIsKiloanTaggingModalOpen] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
@@ -70,12 +72,16 @@ const NewTransactionPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isPayingNow, setIsPayingNow] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
-  const [amountPaidStr, setAmountPaidStr] = useState('');
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // State untuk idempotencyKey
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
 
   // Semua useMemo, useEffect, useCallback juga di sini
+  const canEditDiscount = useMemo(() => {
+    if (!currentUser) return false;
+    if (currentUser.role === UserRole.SuperAdmin) return true;
+    return currentUser.canGiveDiscount === true;
+  }, [currentUser]);
   const canApplyDiscount = useMemo(() => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.SuperAdmin) return true;
@@ -107,59 +113,98 @@ const NewTransactionPage: React.FC = () => {
     } else {
       val = Number(discountValue) || 0;
     }
+    let rawDiscount = 0;
     if (type === 'percent') {
-      return subtotal * (val / 100);
+      rawDiscount = subtotal * (val / 100);
+    } else {
+      rawDiscount = Math.min(val, subtotal);
     }
-    return Math.min(val, subtotal);
+    return Math.round(rawDiscount);
   }, [subtotal, discountValue, discountType, canApplyDiscount, settings?.discountRate]);
 
   const taxAmount = useMemo(() => {
     const taxableAmount = subtotal - discountAmount;
-    return taxableAmount * ((settings?.taxRate ?? 0) / 100);
+    return Math.round(taxableAmount * ((settings?.taxRate ?? 0) / 100));
   }, [subtotal, discountAmount, settings?.taxRate]);
+
 
   const grandTotal = useMemo(() => {
     return subtotal - discountAmount + taxAmount;
   }, [subtotal, discountAmount, taxAmount]);
 
-  // Place handleAddService after all hooks, before conditional rendering
-  const handleAddService = useCallback(
-    (service: Service) => {
-      const isKiloan = service.category === ServiceCategory.Kiloan;
-      setItems((currentItems) => {
-        const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
-        if (existingItemIndex > -1) {
-          if (isKiloan) {
-            addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
-            return currentItems;
-          }
-          const updatedItems = [...currentItems];
-          const currentItem = updatedItems[existingItemIndex];
-          currentItem.quantity += 1;
-          currentItem.subtotal = currentItem.price * currentItem.quantity;
-          return updatedItems;
-        } else {
-          const newItem: TransactionItem = {
-            serviceId: service.id,
-            serviceName: service.name,
-            price: service.price,
-            unit: service.unit,
-            quantity: 1,
-            subtotal: service.price * 1,
-          };
-          return [...currentItems, newItem];
-        }
-      });
-    },
-    [addToast],
-  );
-  useEffect(() => {
-    if (isPayingNow) {
-      setAmountPaidStr(formatRupiah(grandTotal));
+  // --- TAMBAHAN LOGIKA PEMBULATAN ---
+  const finalTotalToPay = useMemo(() => {
+    // Pembulatan hanya berlaku jika Bayar Sekarang DAN Tunai
+    if (isPayingNow && paymentMethod === PaymentMethod.Cash) {
+      return roundPrice(grandTotal);
     }
-  }, [grandTotal, isPayingNow, addToast]);
+    return grandTotal;
+  }, [grandTotal, isPayingNow, paymentMethod]);
 
-  const amountToPay = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
+  const roundingDifference = useMemo(() => {
+    return grandTotal - finalTotalToPay;
+  }, [grandTotal, finalTotalToPay]);
+  // ----------------------------------
+
+  // GANTI baris ini:
+  // const amountToPay = grandTotal; 
+  // MENJADI:
+  const amountToPay = finalTotalToPay;
+
+  // Place handleAddService after all hooks, before conditional rendering
+  const [showKiloanToast, setShowKiloanToast] = useState(false);
+  // --- MODIFIKASI: handleAddService ---
+  const handleAddService = useCallback((service: Service) => {
+    const isKiloan = service.category === ServiceCategory.Kiloan;
+    const isMeter = service.unit.toLowerCase() === 'm2' || service.unit.toLowerCase() === 'meter';
+    let shouldShowToast = false;
+    setItems((currentItems) => {
+      const existingItemIndex = currentItems.findIndex((item) => item.serviceId === service.id);
+      if (existingItemIndex > -1) {
+        if (isKiloan) {
+          shouldShowToast = true;
+          return currentItems;
+        }
+        const updatedItems = [...currentItems];
+        const currentItem = updatedItems[existingItemIndex];
+        currentItem.quantity += 1;
+        currentItem.subtotal = currentItem.price * currentItem.quantity;
+        // FIX: Sinkronkan itemDetails jika kategori Satuan
+        if (!isKiloan && !isMeter) {
+          const currentNotes = currentItem.itemDetails || [];
+          if (currentNotes.length < currentItem.quantity) {
+            currentItem.itemDetails = [...currentNotes, { note: '' }];
+          }
+        }
+        return updatedItems;
+      } else {
+        const newItem: ExtendedTransactionItem = {
+          serviceId: service.id,
+          serviceName: service.name,
+          price: service.price,
+          unit: service.unit,
+          quantity: 1,
+          subtotal: service.price * 1,
+          length: isMeter ? 1 : undefined,
+          width: isMeter ? 1 : undefined,
+          // Tambahkan itemDetails kosong jika Satuan
+          ...(!isKiloan && !isMeter ? { itemDetails: [{ note: '' }] } : {}),
+        };
+        return [...currentItems, newItem];
+      }
+    });
+    if (isKiloan) setShowKiloanToast(shouldShowToast);
+  }, []);
+
+  useEffect(() => {
+    if (showKiloanToast) {
+      addToast('Item kiloan sudah ada. Ubah beratnya di keranjang.', 'info');
+      setShowKiloanToast(false);
+    }
+  }, [showKiloanToast, addToast]);
+
+
+  // (Deklarasi duplikat finalTotalToPay, roundingDifference, amountToPay dihapus. Sudah ada di atas.)
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
   const changeAmount = useMemo(() => {
@@ -171,43 +216,26 @@ const NewTransactionPage: React.FC = () => {
 
   const actualAmountPaid = useMemo(() => {
     if (!isPayingNow) return 0;
-    return amountToPay;
+    return amountToPay; // Menggunakan nilai yang sudah dibulatkan
   }, [isPayingNow, amountToPay]);
-
-  const estimatedCompletionDate = useMemo(() => {
-    if (items.length === 0) {
-      const today = new Date();
-      today.setDate(today.getDate() + 1);
-      return today;
-    }
-    const maxDuration = Math.max(
-      ...items.map((item) => {
-        const service = services.find((s) => s.id === item.serviceId);
-        return service && service.durationDays ? service.durationDays : 0;
-      }),
-    );
-    const completionDate = new Date();
-    completionDate.setDate(completionDate.getDate() + maxDuration);
-    return completionDate;
-  }, [items, services]);
 
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;
-    if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
-    if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
-    // Bayar sebagian hanya jika amountPaid > 0 dan < grandTotal
-    // Jika jumlah bayar sama atau lebih besar dari total, Lunas.
-    if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
-    // Jika kurang, dianggap Belum Lunas (Unpaid).
+    // Gunakan amountToPay untuk pengecekan status, bukan grandTotal mentah
+    // Karena jika dibulatkan ke bawah, actualAmountPaid pasti < grandTotal asli
+    if (actualAmountPaid > 0) return PaymentStatus.Paid;
     return PaymentStatus.Unpaid;
-  }, [isPayingNow, actualAmountPaid, grandTotal]);
+  }, [isPayingNow, grandTotal, actualAmountPaid]);
 
   const currentStoreId = useMemo(() => {
-    return currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
+    return currentUser && currentUser.role === UserRole.SuperAdmin
+      ? selectedStoreId
+      : currentUser?.storeId;
   }, [currentUser, selectedStoreId]);
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
+  // Catatan: Dependensi useEffect ini sudah aman, logika hanya berjalan saat selectedCustomer atau setting diskon berubah.
   useEffect(() => {
     if (!canApplyDiscount) {
       setDiscountType('percent');
@@ -223,9 +251,19 @@ const NewTransactionPage: React.FC = () => {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
     }
-  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, settings?.discountRate]);
+  }, [canApplyDiscount, selectedCustomer, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
+  // Show error toast if settings failed to load
+  useEffect(() => {
+    if (!settings && !isLoadingSettings) {
+      addToast(
+        'Tidak dapat memuat data pajak, diskon, dan lainnya. Pastikan Anda memiliki koneksi dan hak akses yang benar untuk melihat tabel settings.',
+        'error',
+      );
+    }
+  }, [settings, isLoadingSettings, addToast]);
+
   if (isLoadingSettings) {
     return (
       <div className="flex justify-center items-center w-full h-96">
@@ -235,7 +273,6 @@ const NewTransactionPage: React.FC = () => {
     );
   }
 
-  // --- PERBAIKAN 3: Menghapus input yang tersasar ---
   if (!settings) {
     return (
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md text-center">
@@ -246,39 +283,43 @@ const NewTransactionPage: React.FC = () => {
           Tidak dapat memuat data pajak, diskon, dan lainnya. Pastikan Anda memiliki koneksi dan hak
           akses yang benar untuk melihat tabel 'settings'.
         </p>
-        {/* Input yang tersasar sudah dihapus dari sini */}
       </div>
     );
   }
 
+  // --- MODIFIKASI: handleItemChange ---
   const handleItemChange = (
     index: number,
-    field: 'quantity' | 'taggedItems' | 'itemDetails',
+    field: 'quantity' | 'taggedItems' | 'itemDetails' | 'length' | 'width',
     value: number | string | Array<{ note: string }>,
   ) => {
     const newItems = [...items];
     const item = newItems[index];
     const service = services.find((s) => s.id === item.serviceId);
 
-    if (field === 'quantity' && typeof value === 'number') {
+    if ((field === 'length' || field === 'width') && typeof value === 'number') {
+      const val = value >= 0 ? value : 0;
+      if (field === 'length') item.length = val;
+      if (field === 'width') item.width = val;
+      const l = item.length || 0;
+      const w = item.width || 0;
+      const area = parseFloat((l * w).toFixed(2));
+      item.quantity = area;
+      item.subtotal = item.price * item.quantity;
+    } else if (field === 'quantity' && typeof value === 'number') {
       const newQuantity = value >= 0 ? value : 0;
       item.quantity = newQuantity;
-      // Pastikan item.price adalah number
       const price = typeof item.price === 'number' ? item.price : Number(item.price) || 0;
       item.subtotal = price * item.quantity;
-
       if (service && service.category === ServiceCategory.Satuan) {
-        // Only extend itemDetails, never truncate
         const currentNotes = item.itemDetails || [];
         if (currentNotes.length < newQuantity) {
-          // Add new empty notes if increasing quantity
           const newNotes = [
             ...currentNotes,
             ...Array.from({ length: newQuantity - currentNotes.length }, () => ({ note: '' })),
           ];
           item.itemDetails = newNotes;
         } else {
-          // Do not truncate, keep all notes
           item.itemDetails = currentNotes;
         }
       }
@@ -292,6 +333,13 @@ const NewTransactionPage: React.FC = () => {
 
   const handleOpenNotesModal = (index: number) => {
     setEditingItemIndex(index);
+    const item = items[index];
+    const allNotes = item?.itemDetails || [];
+    const initialNotes = Array.from(
+      { length: item.quantity },
+      (_, i) => allNotes[i] || { note: '' },
+    );
+    setEditingNotes(initialNotes);
     setIsNotesModalOpen(true);
   };
 
@@ -306,6 +354,7 @@ const NewTransactionPage: React.FC = () => {
     }
     setEditingItemIndex(null);
     setIsNotesModalOpen(false);
+    setEditingNotes([]);
   };
 
   const handleSaveKiloanTags = (tags: string) => {
@@ -329,14 +378,33 @@ const NewTransactionPage: React.FC = () => {
     try {
       const newCustomer = await addCustomer({ ...customer, storeId: currentStoreId });
       if (newCustomer) {
-        setSelectedCustomer(newCustomer);
+        // Map Supabase customer (nullable fields) to app Customer type
+        setSelectedCustomer({
+          id: newCustomer.id,
+          name: newCustomer.name,
+          phone: newCustomer.phone ?? '',
+          address: newCustomer.address ?? '',
+          notes: newCustomer.notes ?? '',
+          storeId: newCustomer.storeId ?? '',
+          defaultDiscount: newCustomer.defaultDiscount ?? 0,
+          createdAt: newCustomer.createdAt ? new Date(newCustomer.createdAt) : new Date(),
+        });
         setIsCustomerModalOpen(false);
         updateToast(toastId, 'Pelanggan berhasil ditambahkan!', 'success');
       } else {
         updateToast(toastId, 'Gagal menambah pelanggan: Data tidak valid.', 'error');
       }
-    } catch (error: any) {
-      updateToast(toastId, `Gagal menambah pelanggan: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      let msg = 'Unknown error';
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof (error as { message?: string }).message === 'string'
+      ) {
+        msg = (error as { message: string }).message;
+      }
+      updateToast(toastId, `Gagal menambah pelanggan: ${msg}`, 'error');
     }
   };
 
@@ -345,7 +413,12 @@ const NewTransactionPage: React.FC = () => {
     if (isSaving) return;
 
     if (!currentStoreId || currentStoreId === 'all') {
-      addToast('Super Admin harus memilih cabang spesifik untuk membuat transaksi.', 'warning');
+      // Perbaikan pesan agar cocok untuk semua role jika terjadi error data
+      const msg =
+        currentUser?.role === UserRole.SuperAdmin
+          ? 'Super Admin harus memilih cabang spesifik.'
+          : 'Data cabang Anda tidak valid. Silakan relogin.';
+      addToast(msg, 'warning');
       return;
     }
     if (!selectedCustomer) {
@@ -370,39 +443,91 @@ const NewTransactionPage: React.FC = () => {
     setIsSaving(true);
     const toastId = addToast('Menyimpan transaksi...', 'info');
     try {
+      // --- PERBAIKAN: Hitung waktu saat tombol ditekan ---
+      const now = new Date(); // Waktu Masuk (Real-time)
+
+      // Hitung Estimasi Selesai berdasarkan item yang dipilih
+      let maxDurationDays = 0;
+      if (items.length === 0) {
+        maxDurationDays = 1; // Default 1 hari jika tidak ada item
+      } else {
+        maxDurationDays = Math.max(
+          ...items.map((item) => {
+            const service = services.find((s) => s.id === item.serviceId);
+            return service && service.durationDays ? service.durationDays : 0;
+          }),
+        );
+      }
+      const completionDate = new Date(now);
+      completionDate.setDate(completionDate.getDate() + maxDurationDays);
+      // ---------------------------------------------------
+
       // Sanitasi itemDetails agar tidak ada zombie notes
-      const cleanedItems = items.map(item => ({
+      const cleanedItems = items.map((item) => ({
         ...item,
         itemDetails: item.itemDetails
-          ? item.itemDetails.slice(0, item.quantity).map(detail => ({ note: detail.note || '' }))
-          : []
+          ? item.itemDetails.slice(0, item.quantity).map((detail) => ({ note: detail.note || '' }))
+          : [],
       }));
+      // Hitung total diskon akhir (diskon manual + diskon pembulatan)
+      const finalDiscount = discountAmount + roundingDifference;
+      // Pastikan total yang disimpan ke database adalah total setelah pembulatan
+      const finalTotal = grandTotal - roundingDifference;
+
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
         items: cleanedItems,
         subtotal,
-        discount: discountAmount,
+        discount: finalDiscount, // Gunakan finalDiscount
         tax: taxAmount,
-        total: grandTotal,
+        total: finalTotal,       // Gunakan finalTotal (agar match dengan amountPaid)
         paymentStatus,
         orderStatus: OrderStatus.Processing,
-        createdAt: new Date(),
-        estimatedCompletionDate: estimatedCompletionDate,
+        // --- UPDATE: Gunakan variabel waktu yang baru dihitung ---
+        createdAt: now,
+        estimatedCompletionDate: completionDate.toISOString(),
+        // --------------------------------------------------------
         notes,
         amountPaid: actualAmountPaid,
         change: changeAmount,
         paymentMethod: isPayingNow && actualAmountPaid > 0 ? paymentMethod : undefined,
-        createdByUserId: currentUser.id,
+        createdByUserId: currentUser?.id ?? '',
         storeId: currentStoreId,
         idempotencyKey: idempotencyKey,
       };
       const savedTransaction = await addTransaction(newTransaction);
       if (savedTransaction) {
+        // Map Supabase transaction (JSON fields, dates) to app Transaction type
+        const tx: Transaction = {
+          ...savedTransaction,
+          customerId: savedTransaction.customerId ?? '',
+          createdByUserId: savedTransaction.createdByUserId ?? '',
+          storeId: savedTransaction.storeId ?? '',
+          notes: savedTransaction.notes ?? undefined,
+          idempotencyKey: savedTransaction.idempotencyKey ?? undefined,
+          items: Array.isArray(savedTransaction.items)
+            ? (savedTransaction.items as unknown as import('../../types').TransactionItem[]).map(
+                (item) => ({
+                  ...item,
+                  itemDetails: item.itemDetails ?? [],
+                }),
+              )
+            : [],
+          createdAt: savedTransaction.createdAt ? new Date(savedTransaction.createdAt) : new Date(),
+          estimatedCompletionDate: savedTransaction.estimatedCompletionDate ?? '',
+          invoiceCode: savedTransaction.invoiceCode ?? undefined,
+          paymentStatus: savedTransaction.paymentStatus as PaymentStatus,
+          orderStatus: savedTransaction.orderStatus as OrderStatus,
+          paymentMethod: savedTransaction.paymentMethod
+            ? (savedTransaction.paymentMethod as PaymentMethod)
+            : undefined,
+        };
         addAuditLog(
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
           currentStoreId,
         );
-        setNewlyCreatedTransaction(savedTransaction);
+        await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
+        setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);
         updateToast(toastId, 'Transaksi berhasil disimpan.', 'success');
       } else {
@@ -412,13 +537,65 @@ const NewTransactionPage: React.FC = () => {
           'error',
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Tangani error duplikat idempotencyKey
-      if (error.code === '23505' && error.message?.includes('idempotencyKey')) {
-        updateToast(toastId, 'Transaksi ini sudah tersimpan sebelumnya.', 'success');
-        handleNewTransaction();
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code?: string }).code === '23505' &&
+        'message' in error &&
+        typeof (error as { message?: string }).message === 'string' &&
+        (error as { message: string }).message.includes('idempotencyKey')
+      ) {
+        // Fetch ulang transaksi existing berdasarkan idempotencyKey
+        const { data: existingTx } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('idempotencyKey', idempotencyKey)
+          .single();
+        if (existingTx) {
+          // Map Supabase transaction (JSON fields, dates) to app Transaction type
+          const tx: Transaction = {
+            ...existingTx,
+            customerId: existingTx.customerId ?? '',
+            createdByUserId: existingTx.createdByUserId ?? '',
+            storeId: existingTx.storeId ?? '',
+            notes: existingTx.notes ?? undefined,
+            idempotencyKey: existingTx.idempotencyKey ?? undefined,
+            items: Array.isArray(existingTx.items)
+              ? (existingTx.items as unknown as import('../../types').TransactionItem[]).map(
+                  (item) => ({
+                    ...item,
+                    itemDetails: item.itemDetails ?? [],
+                  })
+                )
+              : [],
+            createdAt: existingTx.createdAt ? new Date(existingTx.createdAt) : new Date(),
+            estimatedCompletionDate: existingTx.estimatedCompletionDate ?? '',
+            invoiceCode: existingTx.invoiceCode ?? undefined,
+            paymentStatus: existingTx.paymentStatus as PaymentStatus,
+            orderStatus: existingTx.orderStatus as OrderStatus,
+            paymentMethod: existingTx.paymentMethod
+              ? (existingTx.paymentMethod as PaymentMethod)
+              : undefined,
+          };
+          setNewlyCreatedTransaction(tx);
+          setIsWhatsAppModalOpen(true);
+        }
+        updateToast(toastId, 'Transaksi berhasil disimpan (terdeteksi duplikat).', 'success');
+        // setIsSuccessModalOpen(true); // Tetap biarkan di handleCloseWhatsAppModal
       } else {
-        updateToast(toastId, `Gagal menyimpan transaksi: ${error.message}`, 'error');
+        let msg = 'Unknown error';
+        if (
+          error &&
+          typeof error === 'object' &&
+          'message' in error &&
+          typeof (error as { message?: string }).message === 'string'
+        ) {
+          msg = (error as { message: string }).message;
+        }
+        updateToast(toastId, `Gagal menyimpan transaksi: ${msg}`, 'error');
       }
     } finally {
       setIsSaving(false);
@@ -465,34 +642,12 @@ const NewTransactionPage: React.FC = () => {
 
   const handlePaymentOptionChange = (paying: boolean) => {
     setIsPayingNow(paying);
-    if (paying) {
-      setAmountPaidStr(formatRupiah(grandTotal));
-    } else {
-      setAmountPaidStr('');
+    if (!paying) {
       setPaymentMethod(undefined);
       setTenderedAmountStr('');
     }
   };
 
-  const handleAmountToPayChange = (valueStr: string) => {
-    const rawValue = parseRupiah(valueStr);
-    if (valueStr === '' || rawValue === 0) {
-      setAmountPaidStr('');
-      return;
-    }
-    // Hanya izinkan input yang sama persis dengan grandTotal
-    if (rawValue !== grandTotal) {
-      setAmountPaidStr('');
-      addToast(
-        'Jumlah bayar harus sama dengan total tagihan. Tidak boleh kurang atau lebih.',
-        'error',
-      );
-      return;
-    }
-    setAmountPaidStr(formatRupiah(rawValue));
-  };
-
-  const quickCashButtons = [50000, 100000];
 
   return (
     <>
@@ -532,26 +687,73 @@ const NewTransactionPage: React.FC = () => {
                             <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                               {item.serviceName}
                             </td>
-                            <td className="px-4 py-2">
-                              <div className="flex items-center">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step={item.unit === 'kg' ? '0.01' : '1'}
-                                  value={item.quantity}
-                                  onChange={(e) =>
-                                    handleItemChange(
-                                      index,
-                                      'quantity',
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                />
-                                <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
-                                  {item.unit}
-                                </span>
-                              </div>
+                            <td className="px-4 py-2 w-48">
+                              {item.unit.toLowerCase() === 'm2' ||
+                              item.unit.toLowerCase() === 'meter' ? (
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500 w-4">P:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      placeholder="P"
+                                      value={item.length}
+                                      onChange={(e) =>
+                                        handleItemChange(
+                                          index,
+                                          'length',
+                                          parseFloat(e.target.value) || 0,
+                                        )
+                                      }
+                                      className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    />
+                                    <span className="text-sm text-slate-500">m</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500 w-4">L:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      placeholder="L"
+                                      value={item.width}
+                                      onChange={(e) =>
+                                        handleItemChange(
+                                          index,
+                                          'width',
+                                          parseFloat(e.target.value) || 0,
+                                        )
+                                      }
+                                      className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    />
+                                    <span className="text-sm text-slate-500">m</span>
+                                  </div>
+                                  <div className="text-sm font-bold text-blue-600 mt-1">
+                                    = {item.quantity} {item.unit}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step={item.unit === 'kg' ? '0.01' : '1'}
+                                    value={item.quantity}
+                                    onChange={(e) =>
+                                      handleItemChange(
+                                        index,
+                                        'quantity',
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                    }
+                                    className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                  />
+                                  <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
+                                    {item.unit}
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-center">
                               <div className="flex items-center justify-center">
@@ -628,12 +830,15 @@ const NewTransactionPage: React.FC = () => {
                   onAddNewCustomer={() => setIsCustomerModalOpen(true)}
                 />
                 {/* Banner info diskon otomatis */}
-                {selectedCustomer && selectedCustomer.defaultDiscount && selectedCustomer.defaultDiscount > 0 && (
-                  <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
-                    <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
-                    Diskon {selectedCustomer.defaultDiscount}% otomatis diterapkan untuk {selectedCustomer.name}.
-                  </div>
-                )}
+                {selectedCustomer &&
+                  selectedCustomer.defaultDiscount &&
+                  selectedCustomer.defaultDiscount > 0 && (
+                    <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
+                      <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
+                      Diskon {selectedCustomer.defaultDiscount}% otomatis diterapkan untuk{' '}
+                      {selectedCustomer.name}.
+                    </div>
+                  )}
                 <div>
                   <label
                     htmlFor="notes"
@@ -697,7 +902,7 @@ const NewTransactionPage: React.FC = () => {
                           )
                         }
                         className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600"
-                        disabled={!canApplyDiscount}
+                        disabled={!canEditDiscount}
                       />
                     </div>
                   </div>
@@ -715,9 +920,17 @@ const NewTransactionPage: React.FC = () => {
                       + Rp {taxAmount.toLocaleString('id-ID')}
                     </span>
                   </div>
+                  {/* Tambahkan blok ini di atas Grand Total */}
+                  {isPayingNow && paymentMethod === PaymentMethod.Cash && roundingDifference > 0 && (
+                    <div className="flex justify-between items-center text-lg text-slate-500 dark:text-slate-400 italic">
+                      <span>Pembulatan:</span>
+                      <span>- Rp {formatRupiah(roundingDifference)}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
                     <span>Grand Total:</span>
-                    <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
+                    <span>Rp {formatRupiah(amountToPay)}</span>
                   </div>
                 </div>
 
@@ -758,34 +971,18 @@ const NewTransactionPage: React.FC = () => {
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
-                            // UPDATED: Style disamakan persis dengan tombol "Bayar Sekarang"
                             className={`p-3 rounded-lg text-base border-2 font-semibold transition-colors duration-200
-                              ${paymentMethod === m
-                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-slate-900 dark:text-white'
-                                : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                              ${
+                                paymentMethod === m
+                                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 text-slate-900 dark:text-white'
+                                  : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }
                             `}
                           >
                             {m}
                           </button>
                         ))}
                       </div>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="amountPaid"
-                        className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-                      >
-                        Jumlah Bayar (Rp)
-                      </label>
-                      <input
-                        type="text"
-                        id="amountPaid"
-                        value={amountPaidStr}
-                        onChange={(e) => handleAmountToPayChange(e.target.value)}
-                        className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                        placeholder="0"
-                        disabled={true}
-                      />
                     </div>
                     {paymentMethod === PaymentMethod.Cash && (
                       <div>
@@ -809,7 +1006,6 @@ const NewTransactionPage: React.FC = () => {
                         />
                       </div>
                     )}
-                    {/* Tombol uang pas & quick cash dihapus, hanya input manual */}
                     {changeAmount > 0 && (
                       <div className="flex justify-between items-center text-lg">
                         <span className="text-slate-600 dark:text-slate-300">Kembalian:</span>
@@ -825,17 +1021,23 @@ const NewTransactionPage: React.FC = () => {
                   type="submit"
                   disabled={
                     isSaving ||
-                    (currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all')
+                    (currentUser &&
+                      currentUser.role === UserRole.SuperAdmin &&
+                      selectedStoreId === 'all')
+                      ? true
+                      : undefined
                   }
                   className="w-full flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
                 >
                   {isSaving ? <SpinnerIcon className="w-7 h-7" /> : 'Simpan Transaksi'}
                 </button>
-                {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                  <p className="text-center text-sm text-yellow-600 dark:text-yellow-400">
-                    Pilih cabang spesifik di header untuk membuat transaksi.
-                  </p>
-                )}
+                {currentUser &&
+                  currentUser.role === UserRole.SuperAdmin &&
+                  selectedStoreId === 'all' && (
+                    <p className="text-center text-sm text-yellow-600 dark:text-yellow-400">
+                      Pilih cabang spesifik di header untuk membuat transaksi.
+                    </p>
+                  )}
               </div>
             </div>
           </div>
@@ -853,8 +1055,8 @@ const NewTransactionPage: React.FC = () => {
         onClose={handleViewTransactions}
         title="Transaksi Berhasil!"
         message={
-          newlyCreatedTransaction?.invoice_code
-            ? `Transaksi (No. ${newlyCreatedTransaction.invoice_code}) telah berhasil dibuat.`
+          newlyCreatedTransaction?.invoiceCode
+            ? `Transaksi (No. ${newlyCreatedTransaction.invoiceCode}) telah berhasil dibuat.`
             : 'Transaksi baru telah berhasil dibuat.'
         }
         actions={[
@@ -864,8 +1066,13 @@ const NewTransactionPage: React.FC = () => {
       />
       <ItemNotesModal
         isOpen={isNotesModalOpen}
-        onClose={() => setIsNotesModalOpen(false)}
+        onClose={() => {
+          setIsNotesModalOpen(false);
+          setEditingNotes([]);
+        }}
         item={editingItemIndex !== null ? items[editingItemIndex] : null!}
+        notes={editingNotes}
+        setNotes={setEditingNotes}
         onSave={handleSaveNotes}
       />
       <KiloanTaggingModal

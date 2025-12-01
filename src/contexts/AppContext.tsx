@@ -1,18 +1,20 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useRef } from 'react';
-import { User, Store } from '../../types';
+import React, { useState, ReactNode, useEffect, useRef, useCallback } from 'react';
+import AppContext from './AppContextContext';
+import { User, Store } from '../types/index';
 import { supabase } from '../utils/supabaseClient';
 import { useStores } from './StoreContext';
-import { useToasts } from './ToastContext'; // 1. IMPOR useToasts
+import useToasts from './useToasts'; // 1. IMPOR useToasts
 
-interface AppContextType {
+// Konfigurasi waktu timeout (misal: 15 menit)
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+
+export interface AppContextType {
   currentUser: User | null;
   signOut: () => Promise<void>;
   stores: Store[];
   selectedStoreId: string; // 'all' or a specific store ID
   setSelectedStoreId: (storeId: string) => void;
 }
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { stores } = useStores();
@@ -48,8 +50,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single();
-        if (!error && data) {
+          .maybeSingle();
+        if (error) {
+          console.error('Error fetching profile:', error);
+        }
+        if (data) {
           if (data.isActive === false) {
             addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
             await supabase.auth.signOut();
@@ -59,25 +64,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             // Deteksi transisi dari logout ke login
             if (!prevLoggedInRef.current) {
               const newLog = {
-                timestamp: new Date(),
-                user: data.name,
+                timestamp: new Date().toISOString(),
+                user: data.name ?? null,
                 action: 'Melakukan login.',
-                storeId: data.store_id || null,
+                storeId: data.store_id ?? null,
               };
               supabase.from('audit_logs').insert([newLog]).then();
             }
             setCurrentUser({
               id: data.id,
               name: data.name,
-              role: data.role,
-              storeId: data.store_id,
+              role: data.role as import('../types').UserRole,
+              storeId: data.store_id ?? undefined,
               createdAt: data.created_at ? new Date(data.created_at) : undefined,
-              isActive: data.isActive,
-              canGiveDiscount: data.canGiveDiscount,
+              isActive: data.isActive ?? false,
+              canGiveDiscount: data.canGiveDiscount ?? false,
             });
             prevLoggedInRef.current = true;
           }
         } else {
+          // Profil tidak ditemukan (bisa karena trigger belum jalan)
+          console.warn('User login berhasil, tapi profil tidak ditemukan di database.');
+          // Opsi: Logout otomatis atau biarkan null
+          // await supabase.auth.signOut();
           setCurrentUser(null);
           prevLoggedInRef.current = false;
         }
@@ -95,20 +104,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [addToast]);
 
-  const signOut = async () => {
-    // Tambahkan log logout sebelum currentUser dihapus
+  // Bungkus signOut dengan useCallback agar stabil di dalam useEffect dependency
+  const signOut = useCallback(async () => {
     if (currentUser) {
       const newLog = {
-        timestamp: new Date(),
-        user: currentUser.name,
+        timestamp: new Date().toISOString(),
+        user: currentUser.name ?? null,
         action: 'Melakukan logout.',
-        storeId: currentUser.storeId || null,
+        storeId: currentUser.storeId ?? null,
       };
       supabase.from('audit_logs').insert([newLog]).then();
     }
     await supabase.auth.signOut();
     setCurrentUser(null);
-  };
+  }, [currentUser]);
+
+  // --- LOGIC AUTO LOGOUT ---
+  useEffect(() => {
+    // Hanya jalankan jika user sedang login
+    if (!currentUser) return;
+
+    let timeoutId: NodeJS.Timeout;
+
+    const handleInactivity = () => {
+      signOut();
+      addToast('Sesi Anda telah berakhir karena tidak ada aktivitas.', 'info');
+    };
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleInactivity, INACTIVITY_TIMEOUT);
+    };
+
+    // Event yang dianggap sebagai aktivitas
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach((event) => {
+      document.addEventListener(event, resetTimer);
+    });
+
+    // Mulai timer pertama kali
+    resetTimer();
+
+    // Cleanup saat unmount atau currentUser berubah (logout)
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach((event) => {
+        document.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [currentUser, signOut, addToast]);
+  // -------------------------
 
   return (
     <AppContext.Provider
@@ -117,12 +162,4 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       {children}
     </AppContext.Provider>
   );
-};
-
-export const useAppContext = (): AppContextType => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
 };

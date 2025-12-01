@@ -29,23 +29,10 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Network First for Supabase API requests
+  // Jangan cache request ke Supabase (data dinamis)
   if (url.hostname.endsWith('supabase.co')) {
-    event.respondWith(
-      (async () => {
-        try {
-          const response = await fetch(event.request);
-          if (response && response.status === 200) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(event.request, response.clone());
-          }
-          return response;
-        } catch (err) {
-          const cached = await caches.match(event.request);
-          return cached || Response.error();
-        }
-      })(),
-    );
+    // Network only, no cache
+    event.respondWith(fetch(event.request));
     return;
   }
 

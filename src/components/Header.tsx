@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useAppContext } from '../contexts/AppContext';
-import useTheme, { Theme } from '../hooks/useTheme';
+import useAppContext from '../contexts/useAppContext';
+import useTheme from '../hooks/useTheme';
 import useCommandPalette from '../hooks/useCommandPalette';
 import { SunIcon, MoonIcon, CommandIcon } from './icons';
 import { UserRole } from '@/types';

@@ -1,4 +1,16 @@
 /**
+ * Membulatkan harga ke bawah (diskon receh) atau ke kelipatan terdekat.
+ * Default: Membulatkan ke bawah ke ratusan terdekat (misal: 15.150 -> 15.100)
+ */
+/**
+ * Membulatkan harga ke bawah (diskon receh) atau ke kelipatan terdekat.
+ * Default: Membulatkan ke bawah ke ratusan terdekat (misal: 15.150 -> 15.100)
+ * precision default 100 (ratusan)
+ */
+export const roundPrice = (amount: number, precision: number = 100): number => {
+  return Math.floor(amount / precision) * precision;
+};
+/**
  * Konversi string tanggal lokal (YYYY-MM-DD) ke ISO string (UTC midnight)
  * @param dateStr string tanggal lokal, misal '2023-11-15'
  */

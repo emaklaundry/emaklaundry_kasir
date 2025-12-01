@@ -1,9 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -12,7 +9,7 @@ import { usePagination } from '../../hooks/usePagination';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
-import { useToasts } from '../../contexts/ToastContext';
+import useToasts from '../../contexts/useToasts';
 
 import {
   PlusCircleIcon,
@@ -31,6 +28,9 @@ import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../components/Pagination';
+
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 
 // Tipe kustom untuk transaksi dengan nama pelanggan
 type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
@@ -77,18 +77,15 @@ const TransactionPage: React.FC = () => {
   const { addToast, updateToast } = useToasts();
 
   // State untuk halaman
-  const [page, setPage] = useState(1);
+  // page and setPage are assigned a value but never used
 
   // Proses sort dan pagination di client
   // These hooks must be declared before any useEffect or code that references their variables
 
-  // Ambil data transaksi dari server sesuai page dan filter
+  // Ambil data transaksi dari server (tanpa filter parsial, biarkan filter client-side yang mengatur)
   const { transactions, updateTransaction } = useTransactions({
-    page,
-    pageSize: 10,
-    storeId: customerFilter === 'all' ? undefined : customerFilter,
-    paymentStatus: paymentFilter === 'all' ? undefined : paymentFilter,
-    orderStatus: statusFilter === 'all' ? undefined : statusFilter,
+    page: 1,
+    pageSize: 1000,
   });
 
   const transactionsWithCustomer = useMemo(() => {
@@ -123,7 +120,7 @@ const TransactionPage: React.FC = () => {
       const term = debouncedSearchTerm.toLowerCase();
       return (
         t.id.toLowerCase().includes(term) ||
-        (t.invoice_code && t.invoice_code.toLowerCase().includes(term)) || // <--- TAMBAHAN BARIS INI
+        (t.invoiceCode && t.invoiceCode.toLowerCase().includes(term)) ||
         t.customerName.toLowerCase().includes(term) ||
         t.customerPhone.includes(term)
       );
@@ -151,7 +148,7 @@ const TransactionPage: React.FC = () => {
     currentPage,
     totalPages,
     onPageChange,
-  } = usePagination(sortedTransactions);
+  } = usePagination(sortedTransactions, 15);
 
   const getSortIcon = (key: keyof TransactionWithCustomer) => {
     if (!sortConfig || sortConfig.key !== key) return null;
@@ -191,8 +188,9 @@ const TransactionPage: React.FC = () => {
         setTransactionForWhatsApp(updatedTransaction);
         setIsWhatsAppModalOpen(true);
       }
-    } catch (error: any) {
-      updateToast(toastId, `Gagal memperbarui status: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal memperbarui status: ${errMsg}`, 'error');
     }
   };
 
@@ -228,16 +226,16 @@ const TransactionPage: React.FC = () => {
         setTransactionForWhatsApp(updatedTransaction);
         setIsWhatsAppModalOpen(true);
       }
-    } catch (error: any) {
-      updateToast(toastId, `Gagal memperbarui pembayaran: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal memperbarui pembayaran: ${errMsg}`, 'error');
     } finally {
       setIsSavingPayment(false);
     }
   };
 
-  const handleOpenWhatsAppModal = (transaction: Transaction, customer: Customer) => {
+  const handleOpenWhatsAppModal = (transaction: Transaction) => {
     setTransactionForWhatsApp(transaction);
-    // setCustomerForWhatsApp(customer); // Ini tidak perlu, customerForWhatsApp diambil dari useMemo
     setIsWhatsAppModalOpen(true);
   };
 
@@ -254,9 +252,12 @@ const TransactionPage: React.FC = () => {
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedDate('');
-    handleStatusFilterChange('all');
+    setStatusFilter('all');
     setPaymentFilter('all');
     setCustomerFilter('all');
+    // Reset searchParams in URL
+    const params = new URLSearchParams();
+    setSearchParams(params);
   };
 
   const customerForWhatsApp = useMemo(() => {
@@ -323,8 +324,9 @@ const TransactionPage: React.FC = () => {
         `Berhasil mengubah status ${selectedIds.size} transaksi menjadi ${bulkActionStatus}.`,
         'success',
       );
-    } catch (error: any) {
-      updateToast(toastId, `Gagal memperbarui status massal: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal memperbarui status massal: ${errMsg}`, 'error');
     } finally {
       setIsBulkConfirmOpen(false);
       setBulkActionStatus(null);
@@ -379,17 +381,26 @@ const TransactionPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
+            <label htmlFor="searchTerm" className="sr-only">
+              Cari Transaksi
+            </label>
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
+              id="searchTerm"
               type="text"
-              placeholder="Cari ID, nama, atau no. HP..."
+              placeholder="Cari ID, Invoice, Nama, atau No. HP..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              autoComplete="off"
             />
           </div>
           <div>
+            <label htmlFor="customerFilter" className="sr-only">
+              Filter Pelanggan
+            </label>
             <select
+              id="customerFilter"
               value={customerFilter}
               onChange={(e) => setCustomerFilter(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -403,20 +414,24 @@ const TransactionPage: React.FC = () => {
             </select>
           </div>
           <div>
+            <label htmlFor="paymentFilter" className="sr-only">
+              Filter Status Bayar
+            </label>
             <select
+              id="paymentFilter"
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value as PaymentStatus | 'all')}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             >
               <option value="all">Semua St. Bayar</option>
-              {Object.values(PaymentStatus).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value={PaymentStatus.Paid}>Lunas</option>
+              <option value={PaymentStatus.Unpaid}>Belum Lunas</option>
             </select>
           </div>
           <div>
+            <label htmlFor="selectedDate" className="sr-only">
+              Filter Tanggal
+            </label>
             <input
               id="selectedDate"
               type="date"
@@ -513,7 +528,7 @@ const TransactionPage: React.FC = () => {
                     onClick={() => requestSort('createdAt')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
                   >
-                    Tanggal {getSortIcon('createdAt')}
+                    Jam Masuk {getSortIcon('createdAt')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -558,10 +573,20 @@ const TransactionPage: React.FC = () => {
                         className="w-5 h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{t.invoice_code || t.id}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                      {t.invoiceCode || `#${t.id.substring(0, 8)}`}
+                    </td>
                     <td className="px-4 py-3">{t.customerName}</td>
                     <td className="px-4 py-3">
-                      {new Date(t.createdAt).toLocaleDateString('id-ID')}
+                      {t.createdAt
+                        ? new Date(t.createdAt).toLocaleString('id-ID', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '-'}
                     </td>
                     <td className="px-4 py-3 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
                     <td className="px-4 py-3">
@@ -631,9 +656,11 @@ const TransactionPage: React.FC = () => {
                       </Link>
                       <button
                         onClick={() => {
-                          const customer = customers.find((c: Customer) => c.id === t.customerId);
-                          if (customer) {
-                            handleOpenWhatsAppModal(t, customer);
+                          const foundCustomer = customers.find(
+                            (c: Customer) => c.id === t.customerId,
+                          );
+                          if (foundCustomer) {
+                            handleOpenWhatsAppModal(t);
                           } else {
                             addToast('Data pelanggan tidak ditemukan.', 'error');
                           }
@@ -698,14 +725,20 @@ const TransactionPage: React.FC = () => {
                       {t.customerName}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {new Date(t.createdAt).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}
+                      {t.createdAt
+                        ? new Date(t.createdAt).toLocaleString('id-ID', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '-'}
                     </p>
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.invoice_code || t.id}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                    {t.invoiceCode || `#${t.id.substring(0, 8)}`}
+                  </p>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-500 dark:text-slate-400 text-base">Total:</span>
@@ -760,9 +793,11 @@ const TransactionPage: React.FC = () => {
                     </Link>
                     <button
                       onClick={() => {
-                        const customer = customers.find((c: Customer) => c.id === t.customerId);
-                        if (customer) {
-                          handleOpenWhatsAppModal(t, customer);
+                        const foundCustomer = customers.find(
+                          (c: Customer) => c.id === t.customerId,
+                        );
+                        if (foundCustomer) {
+                          handleOpenWhatsAppModal(t);
                         } else {
                           addToast('Data pelanggan tidak ditemukan.', 'error');
                         }

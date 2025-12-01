@@ -3,14 +3,13 @@ import React, { useState } from 'react';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
-import { useAppContext } from '../contexts/AppContext';
+import useAppContext from '../contexts/useAppContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
-import { useToasts } from '../contexts/ToastContext';
+import useToasts from '../contexts/useToasts';
 import { UserRole, Expense } from '@/types';
 import {
   PlusIcon,
-  UsersIcon,
   ReceiptIcon,
   WrenchIcon,
   DollarSignIcon,
@@ -83,7 +82,7 @@ const QuickActionsPage: React.FC = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-6">Aksi Cepat</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {actions.map((action, idx) =>
+        {actions.map((action) =>
           action.onClick ? (
             <button
               key={action.label}

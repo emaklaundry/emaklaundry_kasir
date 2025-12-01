@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SearchIcon } from './icons';
-import { Service, ServiceCategory } from '@/types';
+import { Service } from '@/types';
 
 interface ServiceSelectorProps {
   services: Service[];

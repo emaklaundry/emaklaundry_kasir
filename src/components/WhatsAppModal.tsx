@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useToasts } from '../contexts/ToastContext';
+import React from 'react';
+import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { SendIcon } from './icons';
 import { Transaction, Customer, OrderStatus } from '@/types';
@@ -17,78 +17,74 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   transaction,
   customer,
 }) => {
-  const [message, setMessage] = useState('');
   const { addToast } = useToasts();
 
-    useEffect(() => {
-      if (transaction && customer) {
-        let defaultMessage = '';
-        const itemsList = transaction.items
-          .map((item) => `- ${item.quantity} ${item.unit} ${item.serviceName} @ Rp${item.price.toLocaleString('id-ID')} = Rp${item.subtotal.toLocaleString('id-ID')}`)
-          .join('\n');
-
-        // Hitung ulang untuk memastikan data akurat
-        const subtotal = transaction.subtotal || transaction.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-        const discount = transaction.discount || 0;
-        const tax = transaction.tax || 0;
-        const total = transaction.total || subtotal - discount + tax;
-        const amountPaid = transaction.amountPaid || 0;
-        // Pastikan sisa tagihan tidak minus (jika ada kembalian)
-        const rawRemaining = total - amountPaid;
-        const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
-
-        // Gunakan Invoice Code jika ada
-        const invoiceNumber = transaction.invoice_code || transaction.id.slice(-6).toUpperCase();
-
-        if (transaction.orderStatus === OrderStatus.Processing) {
-          defaultMessage =
-            `Halo ${customer.name},\n\n` +
-            `Terima kasih telah mempercayakan laundry Anda kepada kami. Berikut adalah detail pesanan Anda:\n` +
-            `─────────────────────────────\n` +
-            `🧾 *No. Invoice*: ${invoiceNumber}\n` + // Ganti Label jadi No. Invoice
-            `📅 *Tanggal*: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n` +
-            `─────────────────────────────\n` +
-            `*Daftar Item:*\n${itemsList}\n` +
-            `─────────────────────────────\n` +
-            `Subtotal: Rp${subtotal.toLocaleString('id-ID')}\n` +
-            `Diskon: Rp${discount.toLocaleString('id-ID')}\n` +
-            `Pajak: Rp${tax.toLocaleString('id-ID')}\n` +
-            `Total: Rp${total.toLocaleString('id-ID')}\n` +
-            `Dibayar: Rp${amountPaid.toLocaleString('id-ID')}\n` +
-            `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
-            `💳 *Status Bayar*: ${transaction.paymentStatus}\n` +
-            `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n` +
-            `─────────────────────────────\n` +
-            `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
-            `Salam hangat,\nTim Emak Laundry`;
-        } else if (transaction.orderStatus === OrderStatus.Ready) {
-          defaultMessage =
-            `Halo ${customer.name},\n\n` +
-            `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
-            `─────────────────────────────\n` +
-            `*Daftar Item:*\n${itemsList}\n` +
-            `─────────────────────────────\n` +
-            `Total Tagihan: Rp${total.toLocaleString('id-ID')}\n` +
-            `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
-            `─────────────────────────────\n` +
-            `Silakan datang ke toko kami untuk pengambilan.\n\n` +
-            `Terima kasih,\nTim Emak Laundry`;
-        } else {
-          // Completed
-          defaultMessage =
-            `Halo ${customer.name},\n\n` +
-            `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
-            `─────────────────────────────\n` +
-            `*Daftar Item:*\n${itemsList}\n` +
-            `─────────────────────────────\n` +
-            `Total: Rp${total.toLocaleString('id-ID')}\n` +
-            `Status: LUNAS\n` +
-            `─────────────────────────────\n` +
-            `Terima kasih telah menggunakan layanan kami.\nTim Emak Laundry`;
-        }
-        setMessage(defaultMessage);
-      }
-    }, [transaction, customer]);
+  const message = React.useMemo(() => {
+    if (!transaction || !customer) return '';
+    let defaultMessage = '';
+    const itemsList = transaction.items
+      .map(
+        (item) =>
+          `- ${item.quantity} ${item.unit} ${item.serviceName} @ Rp${item.price.toLocaleString('id-ID')} = Rp${item.subtotal.toLocaleString('id-ID')}`,
+      )
+      .join('\n');
+    const subtotal =
+      transaction.subtotal ||
+      transaction.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const discount = transaction.discount || 0;
+    const tax = transaction.tax || 0;
+    const total = transaction.total || subtotal - discount + tax;
+    const amountPaid = transaction.amountPaid || 0;
+    const rawRemaining = total - amountPaid;
+    const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
+    const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
+    if (transaction.orderStatus === OrderStatus.Processing) {
+      defaultMessage =
+        `Halo ${customer.name},\n\n` +
+        `Terima kasih telah mempercayakan laundry Anda kepada kami. Berikut adalah detail pesanan Anda:\n` +
+        `─────────────────────────────\n` +
+        `🧾 *No. Invoice*: ${invoiceNumber}\n` +
+        `📅 *Tanggal*: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n` +
+        `─────────────────────────────\n` +
+        `*Daftar Item:*\n${itemsList}\n` +
+        `─────────────────────────────\n` +
+        `Subtotal: Rp${subtotal.toLocaleString('id-ID')}\n` +
+        `Diskon: Rp${discount.toLocaleString('id-ID')}\n` +
+        `Pajak: Rp${tax.toLocaleString('id-ID')}\n` +
+        `Total: Rp${total.toLocaleString('id-ID')}\n` +
+        `Dibayar: Rp${amountPaid.toLocaleString('id-ID')}\n` +
+        `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
+        `💳 *Status Bayar*: ${transaction.paymentStatus}\n` +
+        `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}\n` +
+        `─────────────────────────────\n` +
+        `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
+        `Salam hangat,\nTim Emak Laundry`;
+    } else if (transaction.orderStatus === OrderStatus.Ready) {
+      defaultMessage =
+        `Halo ${customer.name},\n\n` +
+        `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
+        `─────────────────────────────\n` +
+        `*Daftar Item:*\n${itemsList}\n` +
+        `─────────────────────────────\n` +
+        `Total Tagihan: Rp${total.toLocaleString('id-ID')}\n` +
+        `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
+        `─────────────────────────────\n` +
+        `Silakan datang ke toko kami untuk pengambilan.\n\n` +
+        `Terima kasih,\nTim Emak Laundry`;
+    } else {
+      defaultMessage =
+        `Halo ${customer.name},\n\n` +
+        `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
+        `─────────────────────────────\n` +
+        `*Daftar Item:*\n${itemsList}\n` +
+        `─────────────────────────────\n` +
+        `Total: Rp${total.toLocaleString('id-ID')}\n` +
+        `Status: LUNAS\n` +
+        `─────────────────────────────\n` +
+        `Terima kasih telah menggunakan layanan kami.\nTim Emak Laundry`;
+    }
+    return defaultMessage;
+  }, [transaction, customer]);
 
   const handleSend = () => {
     if (!customer?.phone) {

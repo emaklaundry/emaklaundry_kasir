@@ -38,6 +38,7 @@ const Icon: React.FC<{ children: React.ReactNode; className?: string }> = ({
 export const SpinnerIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg
     aria-hidden="true"
+    data-testid="spinner-icon"
     className={`animate-spin ${className}`}
     viewBox="0 0 100 101"
     fill="none"
