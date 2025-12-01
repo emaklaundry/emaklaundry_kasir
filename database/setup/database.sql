@@ -163,6 +163,14 @@ CREATE INDEX IF NOT EXISTS idx_transactions_store_id ON public.transactions("sto
 CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactions("idempotencyKey");
 CREATE INDEX IF NOT EXISTS idx_transactions_invoice_code ON public.transactions("invoiceCode");
 
+-- Tambahan Index Optimasi (untuk performa filter storeId di semua tabel utama)
+CREATE INDEX IF NOT EXISTS idx_settings_store_id ON public.settings("storeId");
+CREATE INDEX IF NOT EXISTS idx_customers_store_id ON public.customers("storeId"); -- Index non-unique utk filter cepat
+CREATE INDEX IF NOT EXISTS idx_inventory_store_id ON public.inventory_items("storeId");
+CREATE INDEX IF NOT EXISTS idx_expenses_store_id ON public.expenses("storeId");
+CREATE INDEX IF NOT EXISTS idx_assets_store_id ON public.assets("storeId");
+CREATE INDEX IF NOT EXISTS idx_services_store_id ON public.services("storeId");
+
 -- 3. Aktifkan Supabase Realtime untuk tabel transaksi (idempotent)
 DO $$
 BEGIN

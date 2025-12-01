@@ -3,6 +3,7 @@
 
 # Laundry Management System (Web Kasir)
 
+
 **Versi:** 1.1.7  
 **Update terakhir:** 1 Desember 2025
 
@@ -11,6 +12,7 @@
 Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, backup database otomatis/manual, dan kini siap multi-cabang (multi-tenant) dengan performa dan keamanan optimal.
 
 ---
+
 
 ## ✨ Fitur Utama
 
@@ -26,19 +28,15 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 
 ---
 
+
 ## 🛠️ Teknologi
 
 - **Frontend:** React 19, TypeScript, Vite
 - **State:** React Context, React Query
 - **Styling:** Tailwind CSS
 
-- **URL Encoding Password:** Jika password database mengandung karakter spesial (seperti #), karakter tersebut wajib diganti dengan kode URL.
-  - Contoh: `#` menjadi `%23`
-  - Password: `#Password123` → `%23Password123`
-- **Gunakan Session Pooler URL:** Jangan gunakan URL `db.project.supabase.co` (Direct Connection) karena sering bermasalah dengan resolusi DNS di dalam Docker Container. Gunakan URL Session Pooler (biasanya berakhiran `.pooler.supabase.com`).
-- **Port:** 5432 (Session Mode) atau 6543 (Transaction Mode). Gunakan 5432 untuk pg_dump.
-
 ---
+
 
 ## 🚀 Perintah Backup
 
@@ -52,7 +50,9 @@ Gunakan ini jika Anda sudah memiliki struktur tabel (Schema) dan hanya ingin mem
 supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" --data-only -f database/backup/data.sql
 ```
 
+
 Output: File `database/backup/backup_schema.sql`.
+
 
 ### 2. Backup Lengkap (Schema + Data)
 
@@ -62,9 +62,11 @@ Gunakan ini untuk snapshot penuh database.
 supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" -f database/backup/full_backup.sql
 ```
 
+
 Output: File `database/backup/full_backup.sql`.
 
 ---
+
 
 ## 🔄 Backup Otomatis Database Supabase (GitHub Actions)
 
@@ -111,15 +113,16 @@ jobs:
 
 ---
 
+
 ## 📁 Struktur Direktori
 
 - `src/` : Source code utama (komponen, halaman, context, hooks, utils)
 - `public/` : Aset publik (favicon, manifest, dll)
 - `database/` : Skrip SQL dan dokumentasi deployment database
-- `tests/` : Unit test
 - `index.html`, `index.tsx`, `App.tsx` : Entry point aplikasi
 
 ---
+
 
 ## 🔒 Hak Akses & Role
 
@@ -128,6 +131,7 @@ jobs:
 - **Kasir**: Input transaksi, update status, akses terbatas
 
 ---
+
 
 ## 📝 Catatan Pengembangan & Perubahan Terbaru
 
@@ -145,7 +149,15 @@ jobs:
 - RLS (Row Level Security) dan RBAC sudah aktif dan aman untuk production
 - Semua pengujian, lint, dan format lolos tanpa error
 
+### ⚡️ Troubleshooting SQL Migration (v1.1.7)
+
+- Semua perintah `CREATE INDEX` dan `ALTER PUBLICATION` harus diletakkan setelah seluruh `CREATE TABLE` (DDL order wajib benar, jika tidak akan error "relation does not exist").
+- Pastikan tidak ada duplikasi `CREATE TABLE` (misal: `public.customers`) dalam file SQL.
+- Jika error `relation ... already exists`, cek dan hapus duplikat definisi tabel.
+- Semua migrasi sudah diuji dan berjalan tanpa error pada Supabase/PostgreSQL 15+.
+
 ---
+
 
 ## 📝 Catatan Rilis (Changelog)
 
@@ -153,19 +165,10 @@ jobs:
 
 - [Security] Database siap multi-cabang: kolom dan index storeId di semua tabel utama
 - [Security] Trigger handle_new_user otomatis untuk fail-safe RLS
+- [Fix] Semua perintah CREATE INDEX dan ALTER PUBLICATION sudah diurutkan setelah seluruh CREATE TABLE (tidak ada lagi error "relation does not exist")
+- [Fix] Duplikasi CREATE TABLE (customers) dihilangkan (tidak ada lagi error "relation already exists")
 - [Docs] Update README, dokumentasi best practice production-ready
 - [Test] Semua pengujian, lint, dan format lolos tanpa error
-
-### v1.1.5 - 1 Desember 2025
-
-- [Release] Peningkatan versi aplikasi ke 1.1.5.
-- [Docs] Update README, status pengujian, dan coverage terbaru (Desember 2025).
-- [Test] Seluruh pengujian per-file, coverage >85%, dan tidak ada lagi error context/mocking.
-
-### v1.1.4 - 30 November 2025
-
-- **Admin Cabang**: Kelola transaksi, pelanggan, inventaris, aset, laporan cabang
-- **Kasir**: Input transaksi, update status, akses terbatas
 
 ---
 
@@ -174,6 +177,7 @@ jobs:
 Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.com](mailto:mhmdnvn18@gmail.com) atau buat issue di repository ini.
 
 ---
+
 
 ## 🧪 Pengujian Otomatis
 
@@ -187,6 +191,7 @@ npm test
 - Pastikan seluruh pengujian lulus sebelum melakukan deploy atau merge ke branch utama.
 
 ---
+
 
 **Versi:** 1.1.7  
 **Update terakhir:** 1 Desember 2025
