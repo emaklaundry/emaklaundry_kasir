@@ -527,7 +527,7 @@ const TransactionPage: React.FC = () => {
                     onClick={() => requestSort('createdAt')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
                   >
-                    Tanggal {getSortIcon('createdAt')}
+                    Jam Masuk {getSortIcon('createdAt')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -577,8 +577,8 @@ const TransactionPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">{t.customerName}</td>
                     <td className="px-4 py-3">
-                      {t.estimatedCompletionDate
-                        ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
+                      {t.createdAt
+                        ? new Date(t.createdAt).toLocaleString('id-ID', {
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit',
@@ -724,8 +724,8 @@ const TransactionPage: React.FC = () => {
                       {t.customerName}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {t.estimatedCompletionDate
-                        ? new Date(t.estimatedCompletionDate).toLocaleString('id-ID', {
+                      {t.createdAt
+                        ? new Date(t.createdAt).toLocaleString('id-ID', {
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit',

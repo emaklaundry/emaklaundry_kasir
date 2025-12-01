@@ -1,3 +1,10 @@
+-- === 8. PERBAIKAN DATA LAMA JAM MASUK TRANSAKSI ===
+-- Update semua transaksi lama yang jamnya 07:00 menjadi jam 09:00 (atau sesuaikan kebutuhan)
+-- Jalankan hanya sekali setelah migrasi, lalu hapus atau komentari baris ini agar tidak mengubah data baru
+-- Contoh query:
+-- UPDATE public.transactions
+-- SET "createdAt" = ("createdAt"::date + time '09:00')
+-- WHERE EXTRACT(hour FROM "createdAt") = 7;
 
 -- Tabel stores harus dibuat paling awal karena direferensikan oleh banyak tabel lain
 CREATE TABLE public.stores (
