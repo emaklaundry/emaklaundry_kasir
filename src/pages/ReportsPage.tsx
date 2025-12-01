@@ -6,8 +6,8 @@ import { fetchCustomers } from '../contexts/CustomerContext';
 import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
-import { supabase } from '../utils/supabaseClient'; // PERBAIKAN: Import Supabase Client
-import { UserRole, Service, User, ServiceCategory } from '@/types';
+import { supabase } from '../utils/supabaseClient';
+import { UserRole, Service, User, ServiceCategory, Asset, MaintenanceLog } from '@/types';
 
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
@@ -243,9 +243,9 @@ const ReportsPage: React.FC = () => {
     return { startDate: customStartDate, endDate: endOfDay };
   }, [rangeType, customStartDate, customEndDate]);
 
-  // --- PERBAIKAN LOGIKA FETCH EXPENSES (PAGINATION) ---
+  // --- PERBAIKAN: Fetch Combined Expenses (Operasional, Pembelian Aset, Pemeliharaan Aset) ---
   const { data: allStoreExpenses = [], isLoading: isLoadingExpenses } = useQuery({
-    queryKey: ['report-expenses', selectedStoreId, startDate, endDate],
+    queryKey: ['report-expenses-combined', selectedStoreId, startDate, endDate],
     queryFn: async () => {
       const formatDateStr = (date: Date) => {
         const year = date.getFullYear();
@@ -256,14 +256,15 @@ const ReportsPage: React.FC = () => {
 
       const startDateStr = formatDateStr(startDate);
       const endDateStr = formatDateStr(endDate);
+      const startTime = startDate.getTime();
+      const endTime = endDate.getTime();
 
-      // Siapkan variabel untuk pagination
-      let allExpenses: any[] = [];
+      // 1. Fetch Expenses (Operasional) dengan Pagination
+      let allOperationalExpenses: any[] = [];
       let page = 0;
       const pageSize = 1000;
       let hasMore = true;
 
-      // Loop sampai tidak ada data tersisa (menangani data > 1000 baris)
       while (hasMore) {
         let query = supabase
           .from('expenses')
@@ -275,14 +276,12 @@ const ReportsPage: React.FC = () => {
           query = query.eq('storeId', selectedStoreId);
         }
 
-        // Ambil data per halaman (range)
         const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
-          allExpenses = [...allExpenses, ...data];
-          // Jika data yang diterima kurang dari pageSize, berarti ini halaman terakhir
+          allOperationalExpenses = [...allOperationalExpenses, ...data];
           if (data.length < pageSize) {
             hasMore = false;
           }
@@ -292,7 +291,58 @@ const ReportsPage: React.FC = () => {
         }
       }
 
-      return allExpenses;
+      // 2. Fetch Assets (Untuk Pembelian & Pemeliharaan)
+      let assetQuery = supabase.from('assets').select('*');
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        assetQuery = assetQuery.eq('storeId', selectedStoreId);
+      }
+      const { data: assetsData, error: assetsError } = await assetQuery;
+      
+      if (assetsError) throw assetsError;
+
+      const assetExpenses: any[] = [];
+
+      if (assetsData) {
+        (assetsData as Asset[]).forEach(asset => {
+          // A. Pembelian Aset (Diperlakukan sebagai Pengeluaran)
+          const purchaseTime = new Date(asset.purchaseDate).getTime();
+          // Normalisasi tanggal string untuk perbandingan rentang waktu yang konsisten
+          const purchaseDateStr = new Date(asset.purchaseDate).toISOString().split('T')[0];
+
+          if (purchaseDateStr >= startDateStr && purchaseDateStr <= endDateStr) {
+            assetExpenses.push({
+              id: `asset-purchase-${asset.id}`,
+              date: asset.purchaseDate,
+              description: `[Aset] Pembelian: ${asset.name}`,
+              category: 'Pembelian Aset',
+              amount: asset.purchaseCost,
+              storeId: asset.storeId
+            });
+          }
+
+          // B. Pemeliharaan Aset (Maintenance History)
+          if (asset.maintenanceHistory && Array.isArray(asset.maintenanceHistory)) {
+            asset.maintenanceHistory.forEach((log: MaintenanceLog, index) => {
+              const logDate = new Date(log.date);
+              const logDateStr = logDate.toISOString().split('T')[0];
+
+              if (logDateStr >= startDateStr && logDateStr <= endDateStr) {
+                assetExpenses.push({
+                  id: `asset-maint-${asset.id}-${index}`,
+                  date: log.date,
+                  description: `[Maintenance] ${asset.name}: ${log.description}`,
+                  category: 'Pemeliharaan Aset',
+                  amount: log.cost,
+                  storeId: asset.storeId
+                });
+              }
+            });
+          }
+        });
+      }
+
+      // Gabungkan semua pengeluaran
+      return [...allOperationalExpenses, ...assetExpenses];
     },
   });
 
@@ -303,7 +353,9 @@ const ReportsPage: React.FC = () => {
       const time = new Date(t.createdAt).getTime();
       return time >= start && time <= end;
     });
-    // Filter expenses di sisi client untuk akurasi jam/menit jika perlu
+    
+    // Expenses sudah difilter di queryFn, tapi filter ulang di client memastikan akurasi
+    // terutama jika ada perbedaan zona waktu atau pembaruan real-time
     const expenses = allStoreExpenses.filter((e: any) => {
       const time = new Date(e.date).getTime();
       return time >= start && time <= end;
@@ -707,7 +759,7 @@ const ReportsPage: React.FC = () => {
           <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
-              Rincian Pengeluaran
+              Rincian Pengeluaran (Termasuk Aset & Pemeliharaan)
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
@@ -732,7 +784,17 @@ const ReportsPage: React.FC = () => {
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {e.description}
                         </td>
-                        <td className="px-4 py-2">{e.category}</td>
+                        <td className="px-4 py-2">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            e.category === 'Pembelian Aset' 
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' 
+                              : e.category === 'Pemeliharaan Aset'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200'
+                          }`}>
+                            {e.category}
+                          </span>
+                        </td>
                         {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                           <td className="px-4 py-2">{e.storeName}</td>
                         )}
