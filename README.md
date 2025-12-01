@@ -3,8 +3,7 @@
 
 # Laundry Management System (Web Kasir)
 
-
-**Versi:** 1.1.7  
+**Versi:** 1.1.8  
 **Update terakhir:** 1 Desember 2025
 
 ---
@@ -12,7 +11,6 @@
 Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, backup database otomatis/manual, dan kini siap multi-cabang (multi-tenant) dengan performa dan keamanan optimal.
 
 ---
-
 
 ## ✨ Fitur Utama
 
@@ -28,7 +26,6 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 
 ---
 
-
 ## 🛠️ Teknologi
 
 - **Frontend:** React 19, TypeScript, Vite
@@ -36,7 +33,6 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 - **Styling:** Tailwind CSS
 
 ---
-
 
 ## 🚀 Perintah Backup
 
@@ -50,9 +46,7 @@ Gunakan ini jika Anda sudah memiliki struktur tabel (Schema) dan hanya ingin mem
 supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" --data-only -f database/backup/data.sql
 ```
 
-
 Output: File `database/backup/backup_schema.sql`.
-
 
 ### 2. Backup Lengkap (Schema + Data)
 
@@ -62,11 +56,9 @@ Gunakan ini untuk snapshot penuh database.
 supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" -f database/backup/full_backup.sql
 ```
 
-
 Output: File `database/backup/full_backup.sql`.
 
 ---
-
 
 ## 🔄 Backup Otomatis Database Supabase (GitHub Actions)
 
@@ -113,7 +105,6 @@ jobs:
 
 ---
 
-
 ## 📁 Struktur Direktori
 
 - `src/` : Source code utama (komponen, halaman, context, hooks, utils)
@@ -123,7 +114,6 @@ jobs:
 
 ---
 
-
 ## 🔒 Hak Akses & Role
 
 - **Super Admin**: Akses penuh seluruh fitur & pengaturan
@@ -131,7 +121,6 @@ jobs:
 - **Kasir**: Input transaksi, update status, akses terbatas
 
 ---
-
 
 ## 📝 Catatan Pengembangan & Perubahan Terbaru
 
@@ -158,7 +147,6 @@ jobs:
 
 ---
 
-
 ## 📝 Catatan Rilis (Changelog)
 
 ### v1.1.7 - 1 Desember 2025
@@ -178,7 +166,6 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 
 ---
 
-
 ## 🧪 Pengujian Otomatis
 
 Aplikasi ini dilengkapi dengan unit test menggunakan Vitest dan Testing Library. Untuk menjalankan seluruh pengujian:
@@ -192,8 +179,7 @@ npm test
 
 ---
 
-
-**Versi:** 1.1.7  
+**Versi:** 1.1.8  
 **Update terakhir:** 1 Desember 2025
 
 ---
