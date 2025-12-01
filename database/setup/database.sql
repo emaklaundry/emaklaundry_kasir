@@ -337,6 +337,8 @@ CREATE POLICY "Allow INSERT for store users" ON public.transactions
 -- and WITH CHECK compares new values against the current row (via subselects) to ensure immutable
 -- columns are unchanged. Super Admin bypasses these restrictions.
 DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
+-- NOTE: Policy ini hanya berlaku jika update dilakukan langsung ke tabel (misal via supabase.from('transactions').update()).
+-- Jika update dilakukan via RPC (function) dengan SECURITY DEFINER, policy ini akan di-bypass.
 CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
   FOR UPDATE
   USING (
@@ -505,13 +507,8 @@ BEGIN
   WHERE id = transaction_id_input;
 
   -- Best-effort audit log write (do not fail the function if audit fails)
-  BEGIN
-    INSERT INTO public.audit_logs("user", action, "storeId")
-    VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
-  EXCEPTION WHEN OTHERS THEN
-    -- ignore audit failures
-    NULL;
-  END;
+  INSERT INTO public.audit_logs("user", action, "storeId")
+  VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
 
   RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
 END;
