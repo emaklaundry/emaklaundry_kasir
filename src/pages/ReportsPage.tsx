@@ -1,272 +1,777 @@
+// ...new ReportsPage.tsx code as previously provided...
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../utils/supabaseClient';
+import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
+import { useTransactions } from '../contexts/TransactionContext';
+import { fetchCustomers } from '../contexts/CustomerContext';
+import { useExpenses } from '../contexts/ExpenseContext';
 import useAppContext from '../contexts/useAppContext';
-import { formatRupiah } from '../utils/formatting';
-import { SpinnerIcon, ReceiptIcon } from '../components/icons';
+import { useUsers } from '../contexts/UserContext';
+// import { useToasts } from '../contexts/ToastContext';
+import { useServices } from '../contexts/ServiceContext';
+import { UserRole, Service, User, ServiceCategory } from '@/types';
 
-interface DailyStat {
-  date: string;     // Tanggal (1, 2, 3...)
-  fullDate: string; // Tanggal lengkap untuk display
-  revenue: number;
-  expense: number;
-  profit: number;
-  txCount: number;  // Jumlah transaksi
-}
+const StatCard: React.FC<{
+  icon: React.FC<{ className?: string }>;
+  title: string;
+  value: string | number;
+  color: string;
+}> = ({ icon: Icon, title, value, color }) => (
+  // TAMBAHKAN: kelas 'print-stat-card' dan 'print-hide' pada ikon
+  <div
+    className={`bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}
+  >
+    <Icon className="w-10 h-10 text-slate-500 print-hide" />
+    <div>
+      <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
+      <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
+    </div>
+  </div>
+);
+
+const YearlySummaryChart: React.FC<{
+  data: { month: string; revenue: number; expenses: number; profit: number }[];
+}> = ({ data }) => {
+  const [tooltip, setTooltip] = useState<{
+    visible: boolean;
+    content: string;
+    x: number;
+    y: number;
+  }>({ visible: false, content: '', x: 0, y: 0 });
+
+  const maxValue = useMemo(() => {
+    const maxVal = Math.max(...data.flatMap((d) => [d.revenue, d.expenses]));
+    return Math.ceil(maxVal / 100000) * 100000; // Round up to nearest 100k
+  }, [data]);
+
+  const chartHeight = 300;
+  const chartWidth = 800;
+  const barWidth = 20;
+  const barMargin = 15;
+  const groupMargin = 40;
+  const yAxisLabels = 6;
+  const yAxisWidth = 80;
+
+  const showTooltip = (content: string, event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltip({
+      visible: true,
+      content,
+      x: rect.left + window.scrollX + rect.width / 2,
+      y: rect.top + window.scrollY - 10,
+    });
+  };
+
+  const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
+
+  return (
+    <div className="relative overflow-x-auto">
+      {tooltip.visible && (
+        <div
+          style={{
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translateX(-50%) translateY(-100%)',
+          }}
+          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
+          dangerouslySetInnerHTML={{ __html: tooltip.content }}
+        ></div>
+      )}
+      {/* TAMBAHKAN: 'print-chart-hide' untuk menyembunyikan SVG saat cetak */}
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
+        {/* Y-Axis Grid Lines and Labels */}
+        {Array.from({ length: yAxisLabels }).map((_, i) => {
+          const y = chartHeight - 20 - (i * (chartHeight - 30)) / (yAxisLabels - 1);
+          const value = (i * maxValue) / (yAxisLabels - 1);
+          return (
+            <g key={i}>
+              <line
+                x1={yAxisWidth}
+                y1={y}
+                x2={chartWidth}
+                y2={y}
+                stroke="currentColor"
+                className="text-slate-200 dark:text-slate-700"
+              />
+              <text
+                x={yAxisWidth - 10}
+                y={y + 5}
+                textAnchor="end"
+                className="text-xs fill-current text-slate-500 dark:text-slate-400"
+              >
+                {`${(value / 1000000).toFixed(1)}jt`}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Bars and X-Axis Labels */}
+        {data.map((d, i) => {
+          const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
+          const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
+          const expensesHeight = (d.expenses / maxValue) * (chartHeight - 30);
+          const tooltipContent = `<b>${d.month}</b><br/>Pendapatan: Rp ${d.revenue.toLocaleString('id-ID')}<br/>Pengeluaran: Rp ${d.expenses.toLocaleString('id-ID')}`;
+
+          return (
+            <g key={i}>
+              <rect
+                x={x - barMargin / 2}
+                y={chartHeight - 20 - revenueHeight}
+                width={barWidth}
+                height={revenueHeight}
+                className="fill-current text-green-500 hover:opacity-80"
+                onMouseMove={(e) => showTooltip(tooltipContent, e)}
+                onMouseLeave={hideTooltip}
+              />
+              <rect
+                x={x + barWidth - barMargin / 2}
+                y={chartHeight - 20 - expensesHeight}
+                width={barWidth}
+                height={expensesHeight}
+                className="fill-current text-red-500 hover:opacity-80"
+                onMouseMove={(e) => showTooltip(tooltipContent, e)}
+                onMouseLeave={hideTooltip}
+              />
+              <text
+                x={x}
+                y={chartHeight - 5}
+                textAnchor="middle"
+                className="text-xs fill-current text-slate-500 dark:text-slate-400"
+              >
+                {d.month}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Axis Lines */}
+        <line
+          x1={yAxisWidth}
+          y1={10}
+          x2={yAxisWidth}
+          y2={chartHeight - 20}
+          stroke="currentColor"
+          className="text-slate-300 dark:text-slate-600"
+        />
+        <line
+          x1={yAxisWidth}
+          y1={chartHeight - 20}
+          x2={chartWidth}
+          y2={chartHeight - 20}
+          stroke="currentColor"
+          className="text-slate-300 dark:text-slate-600"
+        />
+      </svg>
+
+      {/* --- TAMBAHKAN: Tabel ini HANYA akan muncul saat dicetak --- */}
+      <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
+        <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <tr className="print-only-row">
+            <th className="print-only-cell px-4 py-3">Bulan</th>
+            <th className="print-only-cell px-4 py-3 text-right">Pendapatan</th>
+            <th className="print-only-cell px-4 py-3 text-right">Pengeluaran</th>
+            <th className="print-only-cell px-4 py-3 text-right">Laba</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.month} className="print-only-row border-b dark:border-slate-700">
+              <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">
+                {d.month}
+              </td>
+              <td className="print-only-cell px-4 py-3 text-right">
+                Rp {d.revenue.toLocaleString('id-ID')}
+              </td>
+              <td className="print-only-cell px-4 py-3 text-right">
+                Rp {d.expenses.toLocaleString('id-ID')}
+              </td>
+              <td className="print-only-cell px-4 py-3 text-right font-semibold">
+                Rp {d.profit.toLocaleString('id-ID')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* --- AKHIR BLOK CETAK --- */}
+    </div>
+  );
+};
+
 
 const ReportsPage: React.FC = () => {
-  const { selectedStoreId } = useAppContext();
-  
-  // State filter
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-  // --- 1. Filter Tanggal Akurat (00:00 s/d 23:59) ---
-  const dateRange = useMemo(() => {
-    const startDate = new Date(selectedYear, selectedMonth, 1, 0, 0, 0);
-    const endDate = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999);
-    return {
-      start: startDate.toISOString(),
-      end: endDate.toISOString(),
-    };
-  }, [selectedMonth, selectedYear]);
-
-  // --- 2. Query SEMUA Data (Tanpa Batas 50 Baris) ---
-  const { data: transactions = [], isLoading: isLoadingTx } = useQuery({
-    queryKey: ['report-transactions', selectedStoreId, dateRange],
-    queryFn: async () => {
-      let query = supabase
-        .from('transactions')
-        .select('createdAt, total, paymentStatus, orderStatus')
-        .gte('createdAt', dateRange.start)
-        .lte('createdAt', dateRange.end)
-        .neq('orderStatus', 'Batal'); // Abaikan transaksi batal
-      
-      if (selectedStoreId && selectedStoreId !== 'all') {
-        query = query.eq('storeId', selectedStoreId);
-      }
-
-      // Limit 10.000 untuk memastikan semua data bulan ini terambil
-      const { data, error } = await query.limit(10000); 
-      if (error) throw error;
-      return data || [];
-    },
+  const { transactions: allStoreTransactions } = useTransactions();
+  const customersRaw = useQuery({
+    queryKey: ['customers', { page: 1, pageSize: 1000 }],
+    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
+  const customers = useMemo(() => {
+    const raw = customersRaw.data;
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.data)) return raw.data;
+    if (raw && typeof raw === 'object' && raw !== null) {
+      const arr = Object.values(raw).find((v) => Array.isArray(v));
+      if (arr) return arr;
+    }
+    if (raw !== undefined && raw !== null) {
+      console.warn('Unexpected customersRaw.data structure:', raw);
+    }
+    return [];
+  }, [customersRaw.data]);
 
-  const { data: expenses = [], isLoading: isLoadingExp } = useQuery({
-    queryKey: ['report-expenses', selectedStoreId, dateRange],
+
+  // Ensure context is initialized before use
+  const { currentUser, selectedStoreId, stores } = useAppContext();
+  const { services } = useServices();
+  const { users: allUsers } = useUsers();
+
+  const [reportType] = useState<'range' | 'yearlySummary'>('range');
+  const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
+
+  const today = new Date();
+  const [customStartDate, setCustomStartDate] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    new Date(today.getFullYear(), today.getMonth() + 1, 0),
+  );
+
+  // Compute startDate and endDate before using them in queries
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    if (rangeType === 'weekly') {
+      const firstDayOfWeek = new Date(now);
+      firstDayOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+      firstDayOfWeek.setHours(0, 0, 0, 0);
+      return { startDate: firstDayOfWeek, endDate: now };
+    }
+    if (rangeType === 'monthly') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { startDate: firstDay, endDate: now };
+    }
+    const endOfDay = new Date(customEndDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    return { startDate: customStartDate, endDate: endOfDay };
+  }, [rangeType, customStartDate, customEndDate]);
+
+  // Query pengeluaran langsung ke supabase sesuai filter tanggal & cabang
+  const { data: allStoreExpenses = [], isLoading: isLoadingExpenses } = useQuery({
+    queryKey: ['report-expenses', selectedStoreId, startDate, endDate],
     queryFn: async () => {
       let query = supabase
         .from('expenses')
         .select('*')
-        .gte('date', dateRange.start)
-        .lte('date', dateRange.end);
-
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString());
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
-
       const { data, error } = await query.limit(10000);
       if (error) throw error;
       return data || [];
     },
   });
 
-  // --- 3. Pengolahan Data (Tanpa Grafik) ---
-  const reportData = useMemo(() => {
-    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-    const stats: DailyStat[] = [];
-    
-    // Inisialisasi data harian kosong
-    for (let i = 1; i <= daysInMonth; i++) {
-      const dateObj = new Date(selectedYear, selectedMonth, i);
-      stats.push({
-        date: String(i),
-        fullDate: dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }),
-        revenue: 0,
-        expense: 0,
-        profit: 0,
-        txCount: 0
-      });
-    }
-
-    // Hitung Pendapatan
-    transactions.forEach((tx) => {
-      const day = new Date(tx.createdAt).getDate();
-      const idx = day - 1;
-      if (stats[idx]) {
-        stats[idx].revenue += Number(tx.total) || 0;
-        stats[idx].txCount += 1;
-      }
+  const filteredData = useMemo(() => {
+    const start = startDate.getTime();
+    const end = endDate.getTime();
+    const transactions = allStoreTransactions.filter((t) => {
+      const time = new Date(t.createdAt).getTime();
+      return time >= start && time <= end;
     });
-
-    // Hitung Pengeluaran
-    expenses.forEach((exp) => {
-      const day = new Date(exp.date).getDate();
-      const idx = day - 1;
-      if (stats[idx]) {
-        stats[idx].expense += Number(exp.amount) || 0;
-      }
+    const expenses = allStoreExpenses.filter((e) => {
+      const time = new Date(e.date).getTime();
+      return time >= start && time <= end;
     });
+    return { transactions, expenses };
+  }, [startDate, endDate, allStoreTransactions, allStoreExpenses]);
 
-    // Hitung Profit & Total Summary
-    let totalRevenue = 0;
-    let totalExpense = 0;
-    let totalTx = 0;
+  const totalRevenue = filteredData.transactions.reduce((acc, t) => acc + t.amountPaid, 0);
+  const totalExpenses = filteredData.expenses.reduce((acc, e) => acc + e.amount, 0);
+  const netProfit = totalRevenue - totalExpenses;
 
-    stats.forEach(stat => {
-      stat.profit = stat.revenue - stat.expense;
-      totalRevenue += stat.revenue;
-      totalExpense += stat.expense;
-      totalTx += stat.txCount;
-    });
+  const serviceMap = useMemo(
+    () =>
+      services.reduce(
+        (map, service) => ({ ...map, [service.id]: service }),
+        {} as Record<string, Service>,
+      ),
+    [services],
+  );
 
-    // Urutkan tabel dari tanggal terbaru (opsional, bisa diubah)
-    // stats.reverse(); 
-
-    return {
-      dailyStats: stats,
-      summary: {
-        totalRevenue,
-        totalExpense,
-        netProfit: totalRevenue - totalExpense,
-        totalTx,
-        totalExp: expenses.length
-      }
-    };
-  }, [transactions, expenses, selectedMonth, selectedYear]);
-
-  if (isLoadingTx || isLoadingExp) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96">
-        <SpinnerIcon className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-        <p className="text-slate-500">Memuat laporan keuangan...</p>
-      </div>
+  const topServices = useMemo(() => {
+    const serviceRevenue: { [key: string]: number } = {};
+    filteredData.transactions.forEach((t) =>
+      t.items.forEach((item) => {
+        serviceRevenue[item.serviceId] = (serviceRevenue[item.serviceId] || 0) + item.subtotal;
+      }),
     );
-  }
+    return Object.entries(serviceRevenue)
+      .map(([serviceId, revenue]) => ({
+        name: serviceMap[serviceId]?.name || 'Layanan Dihapus',
+        revenue,
+      }))
+      .filter((s) => s.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [filteredData.transactions, serviceMap]);
+
+  const topCustomers = useMemo(() => {
+    const customerSpending: { [key: string]: number } = {};
+    filteredData.transactions.forEach((t) => {
+      customerSpending[t.customerId] = (customerSpending[t.customerId] || 0) + t.total;
+    });
+    return Object.entries(customerSpending)
+      .map(([customerId, total]) => ({
+        name: customers.find((c) => c.id === customerId)?.name || 'N/A',
+        total,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [filteredData.transactions, customers]);
+
+  const userMap = useMemo(
+    () => allUsers.reduce((map, user) => ({ ...map, [user.id]: user }), {} as Record<string, User>),
+    [allUsers],
+  );
+
+  const cashierPerformance = useMemo(() => {
+    const stats: {
+      [key: number]: {
+        name: string;
+        transactionCount: number;
+        totalRevenue: number;
+        totalDiscount: number;
+      };
+    } = {};
+    filteredData.transactions.forEach((t) => {
+      if (!t.createdByUserId || !userMap[t.createdByUserId]) return;
+      const user = userMap[t.createdByUserId];
+      if (!stats[user.id])
+        stats[user.id] = {
+          name: user.name,
+          transactionCount: 0,
+          totalRevenue: 0,
+          totalDiscount: 0,
+        };
+      stats[user.id].transactionCount++;
+      stats[user.id].totalRevenue += t.amountPaid;
+      stats[user.id].totalDiscount += t.discount;
+    });
+    return Object.values(stats).sort((a, b) => b.totalRevenue - a.totalRevenue);
+  }, [filteredData.transactions, userMap]);
+
+  const revenueByCategory = useMemo(() => {
+    const categoryRevenue: { [key in ServiceCategory]?: number } = {};
+    filteredData.transactions.forEach((t) =>
+      t.items.forEach((item) => {
+        const service = serviceMap[item.serviceId];
+        if (service)
+          categoryRevenue[service.category] =
+            (categoryRevenue[service.category] || 0) + item.subtotal;
+      }),
+    );
+    return Object.entries(categoryRevenue)
+      .map(([category, revenue]) => ({
+        category: category as ServiceCategory,
+        revenue: revenue as number,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [filteredData.transactions, serviceMap]);
+
+  const maxRevenueByCategory = useMemo(
+    () => Math.max(...revenueByCategory.map((item) => item.revenue), 0),
+    [revenueByCategory],
+  );
+
+  const detailedExpenses = useMemo(() => {
+    return filteredData.expenses
+      .map((expense) => ({
+        ...expense,
+        storeName: stores.find((s) => s.id === expense.storeId)?.name || 'N/A',
+      }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [filteredData.expenses, stores]);
+
+  const monthlySummary = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const yearTransactions = allStoreTransactions.filter(
+      (t) => new Date(t.createdAt).getFullYear() === currentYear,
+    );
+    const yearExpenses = allStoreExpenses.filter(
+      (e) => new Date(e.date).getFullYear() === currentYear,
+    );
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    const summary = monthNames.map((name) => ({ month: name, revenue: 0, expenses: 0, profit: 0 }));
+    yearTransactions.forEach((t) => {
+      summary[new Date(t.createdAt).getMonth()].revenue += t.amountPaid;
+    });
+    yearExpenses.forEach((e) => {
+      summary[new Date(e.date).getMonth()].expenses += e.amount;
+    });
+    summary.forEach((m) => {
+      m.profit = m.revenue - m.expenses;
+    });
+    return summary;
+  }, [allStoreTransactions, allStoreExpenses]);
+
+  const getStoreName = () => {
+    if (currentUser.role === UserRole.SuperAdmin) {
+      if (selectedStoreId === 'all') return 'Laporan Gabungan - Semua Cabang';
+      return `Laporan - ${stores.find((s) => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal'}`;
+    }
+    return `Laporan - ${stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal'}`;
+  };
+
+  const isRangeReport = reportType === 'range';
+
+  const printHeaderTitle = useMemo(() => {
+    const startStr = startDate.toLocaleDateString('id-ID');
+    const endStr = endDate.toLocaleDateString('id-ID');
+    if (rangeType === 'custom') {
+      return `Laporan Kustom (${startStr} - ${endStr})`;
+    }
+    return `Laporan ${rangeType === 'weekly' ? 'Mingguan' : 'Bulanan'} (Hingga ${endStr})`;
+  }, [rangeType, startDate, endDate]);
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Header & Filter */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center">
-            <ReceiptIcon className="w-8 h-8 mr-3 text-blue-600" />
-            Laporan Keuangan
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Periode: {new Date(selectedYear, selectedMonth).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-          </p>
-        </div>
-        
-        <div className="flex gap-2">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-          >
-            {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'].map((m, i) => (
-              <option key={i} value={i}>{m}</option>
-            ))}
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-          >
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </div>
+    <div className="space-y-6">
+      <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400 -mb-2 print-hide">
+        {getStoreName()}
+      </h2>
+      <div className="print-only-block">
+        <h1>{getStoreName()}</h1>
+        <h3>{printHeaderTitle}</h3>
       </div>
-
-      {/* Kartu Ringkasan (Summary Cards) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Pendapatan */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border-l-4 border-green-500">
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Total Pendapatan</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
-            Rp {formatRupiah(reportData.summary.totalRevenue)}
-          </p>
-          <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded inline-block">
-            {reportData.summary.totalTx} Transaksi Berhasil
-          </p>
-        </div>
-
-        {/* Pengeluaran */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border-l-4 border-red-500">
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Total Pengeluaran</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
-            Rp {formatRupiah(reportData.summary.totalExpense)}
-          </p>
-          <p className="text-xs text-red-600 mt-2 font-medium bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded inline-block">
-            {reportData.summary.totalExp} Item Tercatat
-          </p>
-        </div>
-
-        {/* Laba Bersih */}
-        <div className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border-l-4 ${reportData.summary.netProfit >= 0 ? 'border-blue-500' : 'border-orange-500'}`}>
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Laba Bersih</p>
-          <p className={`text-2xl font-bold mt-2 ${reportData.summary.netProfit >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`}>
-            Rp {formatRupiah(reportData.summary.netProfit)}
-          </p>
-          <p className="text-xs text-slate-500 mt-2">
-            (Pendapatan - Pengeluaran)
-          </p>
-        </div>
+      <div className="flex justify-between items-center flex-wrap gap-4 print-hide">
+        {isRangeReport && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <button
+                onClick={() => setRangeType('weekly')}
+                className={`px-3 py-1.5 text-base font-medium rounded-md ${rangeType === 'weekly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}
+              >
+                Minggu Ini
+              </button>
+              <button
+                onClick={() => setRangeType('monthly')}
+                className={`px-3 py-1.5 text-base font-medium rounded-md ${rangeType === 'monthly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}
+              >
+                Bulan Ini
+              </button>
+              <button
+                onClick={() => setRangeType('custom')}
+                className={`px-3 py-1.5 text-base font-medium rounded-md ${rangeType === 'custom' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}
+              >
+                Kustom
+              </button>
+            </div>
+            {rangeType === 'custom' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={customStartDate.toISOString().split('T')[0]}
+                  onChange={(e) => setCustomStartDate(new Date(e.target.value))}
+                  className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-base"
+                />
+                <span>-</span>
+                <input
+                  type="date"
+                  value={customEndDate.toISOString().split('T')[0]}
+                  onChange={(e) => setCustomEndDate(new Date(e.target.value))}
+                  className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-base"
+                />
+              </div>
+            )}
+          </div>
+        )}
+        <button
+          onClick={() => window.print()}
+          className="print-hide flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3"
+        >
+          Cetak Laporan
+        </button>
       </div>
-
-      {/* Tabel Rincian Harian (Pengganti Grafik) */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Rincian Harian</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-              <tr>
-                <th scope="col" className="px-6 py-3">Tanggal</th>
-                <th scope="col" className="px-6 py-3 text-right text-green-600">Pendapatan</th>
-                <th scope="col" className="px-6 py-3 text-right text-red-600">Pengeluaran</th>
-                <th scope="col" className="px-6 py-3 text-right">Laba / Rugi</th>
-                <th scope="col" className="px-6 py-3 text-center">Jml Transaksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.dailyStats.map((stat) => (
-                <tr key={stat.date} className="bg-white border-b dark:bg-slate-800 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
-                  <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white">
-                    {stat.fullDate}
-                  </td>
-                  <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-slate-300">
-                    {stat.revenue > 0 ? `Rp ${formatRupiah(stat.revenue)}` : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-slate-300">
-                    {stat.expense > 0 ? `Rp ${formatRupiah(stat.expense)}` : '-'}
-                  </td>
-                  <td className={`px-6 py-4 text-right font-bold ${stat.profit >= 0 ? 'text-blue-600' : 'text-orange-500'}`}>
-                    Rp {formatRupiah(stat.profit)}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    {stat.txCount > 0 ? stat.txCount : '-'}
-                  </td>
+      {isRangeReport ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print-stat-card-container">
+            <StatCard
+              icon={DollarSignIcon}
+              title="Total Pendapatan"
+              value={`Rp ${totalRevenue.toLocaleString('id-ID')}`}
+              color="border-green-500"
+            />
+            <StatCard
+              icon={DollarSignIcon}
+              title="Total Pengeluaran"
+              value={`Rp ${totalExpenses.toLocaleString('id-ID')}`}
+              color="border-red-500"
+            />
+            <StatCard
+              icon={BarChartIcon}
+              title="Laba Bersih"
+              value={`Rp ${netProfit.toLocaleString('id-ID')}`}
+              color="border-blue-500"
+            />
+            <StatCard
+              icon={PackageIcon}
+              title="Total Transaksi"
+              value={filteredData.transactions.length}
+              color="border-yellow-500"
+            />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+                Layanan Terlaris
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                  <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                    <tr>
+                      <th className="px-4 py-2">Nama Layanan</th>
+                      <th className="px-4 py-2 text-right">Pendapatan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topServices.map((s) => (
+                      <tr key={s.name} className="border-b dark:border-slate-700">
+                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
+                          {s.name}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          Rp {s.revenue.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+                Pelanggan Teratas
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                  <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                    <tr>
+                      <th className="px-4 py-2">Nama Pelanggan</th>
+                      <th className="px-4 py-2 text-right">Total Belanja</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topCustomers.map((c) => (
+                      <tr key={c.name} className="border-b dark:border-slate-700">
+                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
+                          {c.name}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          Rp {c.total.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+              <BarChartIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
+              Pendapatan per Kategori Layanan
+            </h2>
+            <div className="space-y-3 print-chart-hide">
+              {revenueByCategory.length > 0 ? (
+                revenueByCategory.map((c) => (
+                  <div key={c.category}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-base font-medium text-slate-700 dark:text-slate-300">
+                        {c.category}
+                      </span>
+                      <span className="text-base font-medium text-slate-700 dark:text-slate-300">
+                        Rp {c.revenue.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4 dark:bg-slate-700">
+                      <div
+                        className="bg-blue-600 h-4 rounded-full"
+                        style={{
+                          width: `${maxRevenueByCategory > 0 ? (c.revenue / maxRevenueByCategory) * 100 : 0}%`,
+                        }}
+                        title={`Rp ${c.revenue.toLocaleString('id-ID')}`}
+                      ></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-6 text-slate-500 dark:text-slate-400">
+                  Tidak ada data pendapatan.
+                </p>
+              )}
+            </div>
+            <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
+              <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                <tr className="print-only-row">
+                  <th className="print-only-cell px-4 py-3">Kategori</th>
+                  <th className="print-only-cell px-4 py-3 text-right">Pendapatan</th>
                 </tr>
-              ))}
-              {/* Baris Total di Bawah Tabel */}
-              <tr className="bg-slate-100 dark:bg-slate-900 font-bold border-t-2 border-slate-300 dark:border-slate-600">
-                <td className="px-6 py-4 text-slate-900 dark:text-white">TOTAL BULAN INI</td>
-                <td className="px-6 py-4 text-right text-green-700 dark:text-green-400">Rp {formatRupiah(reportData.summary.totalRevenue)}</td>
-                <td className="px-6 py-4 text-right text-red-700 dark:text-red-400">Rp {formatRupiah(reportData.summary.totalExpense)}</td>
-                <td className="px-6 py-4 text-right text-blue-700 dark:text-blue-400">Rp {formatRupiah(reportData.summary.netProfit)}</td>
-                <td className="px-6 py-4 text-center text-slate-900 dark:text-white">{reportData.summary.totalTx}</td>
-              </tr>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {revenueByCategory.map((c) => (
+                  <tr key={c.category} className="print-only-row border-b dark:border-slate-700">
+                    <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">
+                      {c.category}
+                    </td>
+                    <td className="print-only-cell px-4 py-3 text-right">
+                      Rp {c.revenue.toLocaleString('id-ID')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+              <UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
+              Performa Kasir
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                  <tr>
+                    <th className="px-4 py-2">Nama Kasir</th>
+                    <th className="px-4 py-2 text-center">Total Transaksi</th>
+                    <th className="px-4 py-2 text-right">Total Pendapatan</th>
+                    <th className="px-4 py-2 text-right">Total Diskon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cashierPerformance.length > 0 ? (
+                    cashierPerformance.map((c) => (
+                      <tr key={c.name} className="border-b dark:border-slate-700">
+                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
+                          {c.name}
+                        </td>
+                        <td className="px-4 py-2 text-center">{c.transactionCount}</td>
+                        <td className="px-4 py-2 text-right">
+                          Rp {c.totalRevenue.toLocaleString('id-ID')}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          Rp {c.totalDiscount.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="text-center py-6 text-slate-500 dark:text-slate-400"
+                      >
+                        Tidak ada data performa.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+              <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
+              Rincian Pengeluaran
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                  <tr>
+                    <th className="px-4 py-2">Tanggal</th>
+                    <th className="px-4 py-2">Deskripsi</th>
+                    <th className="px-4 py-2">Kategori</th>
+                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                      <th className="px-4 py-2">Toko</th>
+                    )}
+                    <th className="px-4 py-2 text-right">Jumlah</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detailedExpenses.length > 0 ? (
+                    detailedExpenses.map((e) => (
+                      <tr key={e.id} className="border-b dark:border-slate-700">
+                        <td className="px-4 py-2">
+                          {new Date(e.date).toLocaleDateString('id-ID')}
+                        </td>
+                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
+                          {e.description}
+                        </td>
+                        <td className="px-4 py-2">{e.category}</td>
+                        {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                          <td className="px-4 py-2">{e.storeName}</td>
+                        )}
+                        <td className="px-4 py-2 text-right">
+                          Rp {e.amount.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={
+                          currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'
+                            ? 5
+                            : 4
+                        }
+                        className="text-center py-6 text-slate-500 dark:text-slate-400"
+                      >
+                        Tidak ada data pengeluaran.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot className="text-sm font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-700">
+                  <tr>
+                    <td
+                      colSpan={
+                        currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'
+                          ? 4
+                          : 3
+                      }
+                      className="px-4 py-2 text-right"
+                    >
+                      Total Pengeluaran
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      Rp {totalExpenses.toLocaleString('id-ID')}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+            Ringkasan Bulanan {new Date().getFullYear()}
+          </h2>
+          <YearlySummaryChart data={monthlySummary} />
         </div>
-      </div>
+      )}
     </div>
   );
-}
+};
 
 export default ReportsPage;
