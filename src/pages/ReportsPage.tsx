@@ -218,16 +218,9 @@ type Expense = {
   storeId: string | null;
 };
 
-type Transaction = {
-  id: string;
-  createdAt: string;
-  amountPaid: number;
-  discount: number;
-  total: number;
-  customerId: string;
-  createdByUserId: string;
-  items: Array<{ serviceId: string; subtotal: number }>;
-};
+
+// Tipe transaksi hasil normalisasi (createdAt: string)
+type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
 
 const ReportsPage: React.FC = () => {
   // All hooks must be called unconditionally and at the top level
@@ -467,7 +460,7 @@ const ReportsPage: React.FC = () => {
 
   const topServices = useMemo(() => {
     const serviceRevenue: { [key: string]: number } = {};
-    filteredData.transactions.forEach((t: Transaction) =>
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
       t.items.forEach((item: { serviceId: string; subtotal: number }) => {
         serviceRevenue[item.serviceId] = (serviceRevenue[item.serviceId] || 0) + item.subtotal;
       }),
@@ -484,7 +477,7 @@ const ReportsPage: React.FC = () => {
 
   const topCustomers = useMemo(() => {
     const customerSpending: { [key: string]: number } = {};
-    filteredData.transactions.forEach((t: Transaction) => {
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) => {
       customerSpending[t.customerId] = (customerSpending[t.customerId] || 0) + t.total;
     });
     return Object.entries(customerSpending)
@@ -514,7 +507,7 @@ const ReportsPage: React.FC = () => {
         totalDiscount: number;
       };
     } = {};
-    filteredData.transactions.forEach((t: Transaction) => {
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) => {
       if (!t.createdByUserId || !userMap[t.createdByUserId]) return;
       const user = userMap[t.createdByUserId];
       if (!stats[user.id])
@@ -538,7 +531,7 @@ const ReportsPage: React.FC = () => {
       Sepatu: 0,
       Karpet: 0,
     };
-    filteredData.transactions.forEach((t: Transaction) =>
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
       t.items.forEach((item: { serviceId: string; subtotal: number }) => {
         const service = serviceMap[item.serviceId];
         if (service) {
@@ -573,7 +566,7 @@ const ReportsPage: React.FC = () => {
     const currentYear = new Date().getFullYear();
     const yearTransactions = (allStoreTransactions as unknown[])
       .map(normalizeTransaction)
-      .filter((t): t is Transaction => !!t)
+      .filter((t): t is NormalizedTransaction => !!t)
       .filter((t) => new Date(t.createdAt).getFullYear() === currentYear);
     const yearExpenses = (allStoreExpenses as Expense[]).filter(
       (e) => new Date(e.date).getFullYear() === currentYear,
@@ -598,7 +591,7 @@ const ReportsPage: React.FC = () => {
       expenses: 0,
       profit: 0,
     }));
-    yearTransactions.forEach((t: Transaction) => {
+    yearTransactions.forEach((t) => {
       summary[new Date(t.createdAt).getMonth()].revenue += t.amountPaid;
     });
     yearExpenses.forEach((e) => {
