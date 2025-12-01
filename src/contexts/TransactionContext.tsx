@@ -84,11 +84,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
 
       let row = null;
       // 1. Jalankan RPC untuk update progress jika ada field terkait
-      if (
-        amountPaid !== undefined ||
-        paymentStatus !== undefined ||
-        orderStatus !== undefined
-      ) {
+      if (amountPaid !== undefined || paymentStatus !== undefined || orderStatus !== undefined) {
         const updated = await updateTransactionProgress(id, {
           amountPaid,
           change,

@@ -183,8 +183,6 @@ const NewTransactionPage: React.FC = () => {
     }
   }, [showKiloanToast, addToast]);
 
-
-
   // Only use grandTotal for payment, no partial payment
   const amountToPay = grandTotal;
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
@@ -195,7 +193,6 @@ const NewTransactionPage: React.FC = () => {
     }
     return tenderedAmount - amountToPay;
   }, [isPayingNow, paymentMethod, tenderedAmount, amountToPay]);
-
 
   const actualAmountPaid = useMemo(() => {
     if (!isPayingNow) return 0;
@@ -532,7 +529,32 @@ const NewTransactionPage: React.FC = () => {
           .eq('idempotencyKey', idempotencyKey)
           .single();
         if (existingTx) {
-          setNewlyCreatedTransaction(existingTx as any);
+          // Map Supabase transaction (JSON fields, dates) to app Transaction type
+          const tx: Transaction = {
+            ...existingTx,
+            customerId: existingTx.customerId ?? '',
+            createdByUserId: existingTx.createdByUserId ?? '',
+            storeId: existingTx.storeId ?? '',
+            notes: existingTx.notes ?? undefined,
+            idempotencyKey: existingTx.idempotencyKey ?? undefined,
+            items: Array.isArray(existingTx.items)
+              ? (existingTx.items as unknown as import('../../types').TransactionItem[]).map(
+                  (item) => ({
+                    ...item,
+                    itemDetails: item.itemDetails ?? [],
+                  })
+                )
+              : [],
+            createdAt: existingTx.createdAt ? new Date(existingTx.createdAt) : new Date(),
+            estimatedCompletionDate: existingTx.estimatedCompletionDate ?? '',
+            invoiceCode: existingTx.invoiceCode ?? undefined,
+            paymentStatus: existingTx.paymentStatus as PaymentStatus,
+            orderStatus: existingTx.orderStatus as OrderStatus,
+            paymentMethod: existingTx.paymentMethod
+              ? (existingTx.paymentMethod as PaymentMethod)
+              : undefined,
+          };
+          setNewlyCreatedTransaction(tx);
           setIsWhatsAppModalOpen(true);
         }
         updateToast(toastId, 'Transaksi berhasil disimpan (terdeteksi duplikat).', 'success');
@@ -599,7 +621,6 @@ const NewTransactionPage: React.FC = () => {
       setTenderedAmountStr('');
     }
   };
-
 
   // REMOVED: handleAmountToPayChange (no manual input for amount paid)
 
