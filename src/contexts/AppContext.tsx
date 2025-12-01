@@ -117,9 +117,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCurrentUser(null);
     }, [currentUser]);
 
+  // Konfigurasi waktu timeout (misal: 15 menit)
+  const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+
     // --- LOGIC AUTO LOGOUT ---
-    // Konfigurasi waktu timeout (misal: 15 menit)
-    const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
     useEffect(() => {
       // Hanya jalankan jika user sedang login
       if (!currentUser) return;

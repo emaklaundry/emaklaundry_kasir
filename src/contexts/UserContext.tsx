@@ -51,13 +51,25 @@ export function useUsers() {
 
   // Admin create user: gunakan Supabase Auth Admin API
   // Anda butuh service_role key, sebaiknya lakukan di backend/Edge Function
+  // createUser: pastikan metadata dikirim lengkap (full_name, role, store_id)
   const createUser = useMutation({
     mutationFn: async (newUser: UserCreateInput) => {
-      // Memanggil Edge Function Supabase (create-user)
+      // Kirim metadata sesuai kebutuhan backend
+      const { email, password, name, role, storeId } = newUser;
       const { data, error } = await supabase.functions.invoke('create-user', {
-        body: newUser,
+        body: {
+          email,
+          password,
+          name,
+          role: role || 'Kasir',
+          storeId,
+        },
       });
       if (error) throw error;
+      // Tangkap error dari Edge Function (misal: validasi SQL)
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
