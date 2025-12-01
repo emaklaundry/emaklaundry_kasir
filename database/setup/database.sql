@@ -1,3 +1,9 @@
+-- Cegah duplikasi nomor HP customer di cabang yang sama
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone_store 
+ON public.customers(phone, "storeId") 
+WHERE phone IS NOT NULL AND phone <> '';
+-- Aktifkan Supabase Realtime untuk tabel transaksi
+ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
 -- Tabel stores harus dibuat paling awal karena direferensikan oleh banyak tabel lain
 CREATE TABLE public.stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
