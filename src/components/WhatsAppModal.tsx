@@ -39,7 +39,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         const amountPaid = transaction.amountPaid || 0;
         const rawRemaining = total - amountPaid;
         const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
-        const invoiceNumber = transaction.invoice_code || transaction.id.slice(-6).toUpperCase();
+        const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
         if (transaction.orderStatus === OrderStatus.Processing) {
           defaultMessage =
             `Halo ${customer.name},\n\n` +
