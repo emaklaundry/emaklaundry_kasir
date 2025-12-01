@@ -1,9 +1,13 @@
+
 import React, { useState, ReactNode, useEffect, useRef, useCallback } from 'react';
 import AppContext from './AppContextContext';
 import { User, Store } from '../types/index';
 import { supabase } from '../utils/supabaseClient';
 import { useStores } from './StoreContext';
 import useToasts from './useToasts'; // 1. IMPOR useToasts
+
+// Konfigurasi waktu timeout (misal: 15 menit)
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
 export interface AppContextType {
   currentUser: User | null;
@@ -116,8 +120,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(null);
   }, [currentUser]);
 
-  // Konfigurasi waktu timeout (misal: 15 menit)
-  const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
   // --- LOGIC AUTO LOGOUT ---
   useEffect(() => {
