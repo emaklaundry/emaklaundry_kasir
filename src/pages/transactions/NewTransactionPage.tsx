@@ -16,7 +16,7 @@ import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerCon
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import useAppContext from '../../contexts/useAppContext';
-import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { formatRupiah, parseRupiah, roundPrice } from '../../utils/formatting';
 import CustomerSelector from '../../components/CustomerSelector';
 import ServiceSelector from '../../components/ServiceSelector';
 import CustomerFormModal from '../../components/CustomerFormModal';
@@ -183,8 +183,23 @@ const NewTransactionPage: React.FC = () => {
     }
   }, [showKiloanToast, addToast]);
 
-  // Only use grandTotal for payment, no partial payment
-  const amountToPay = grandTotal;
+
+  // LOGIKA PEMBULATAN
+  // Hitung total setelah pembulatan (Hanya berlaku jika Bayar Sekarang + Tunai)
+  const finalTotalToPay = useMemo(() => {
+    if (isPayingNow && paymentMethod === PaymentMethod.Cash) {
+      return roundPrice(grandTotal); // Membulatkan ke bawah ke ratusan terdekat
+    }
+    return grandTotal;
+  }, [grandTotal, isPayingNow, paymentMethod]);
+
+  // Hitung selisih pembulatan (untuk ditampilkan sebagai info)
+  const roundingDifference = useMemo(() => {
+    return grandTotal - finalTotalToPay;
+  }, [grandTotal, finalTotalToPay]);
+
+  // Only use finalTotalToPay for payment
+  const amountToPay = finalTotalToPay;
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
   const changeAmount = useMemo(() => {
@@ -196,16 +211,17 @@ const NewTransactionPage: React.FC = () => {
 
   const actualAmountPaid = useMemo(() => {
     if (!isPayingNow) return 0;
-    return grandTotal;
-  }, [isPayingNow, grandTotal]);
+    return amountToPay; // Menggunakan nilai yang sudah dibulatkan
+  }, [isPayingNow, amountToPay]);
 
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;
-    if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
-    if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
+    // Gunakan amountToPay untuk pengecekan status, bukan grandTotal mentah
+    // Karena jika dibulatkan ke bawah, actualAmountPaid pasti < grandTotal asli
+    if (actualAmountPaid > 0) return PaymentStatus.Paid;
     return PaymentStatus.Unpaid;
-  }, [isPayingNow, actualAmountPaid, grandTotal]);
+  }, [isPayingNow, grandTotal, actualAmountPaid]);
 
   const currentStoreId = useMemo(() => {
     return currentUser && currentUser.role === UserRole.SuperAdmin
@@ -448,13 +464,16 @@ const NewTransactionPage: React.FC = () => {
           ? item.itemDetails.slice(0, item.quantity).map((detail) => ({ note: detail.note || '' }))
           : [],
       }));
+      // Hitung diskon akhir (diskon input manual + selisih pembulatan jika tunai)
+      const finalDiscount = discountAmount + (isPayingNow && paymentMethod === PaymentMethod.Cash ? roundingDifference : 0);
+
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
         items: cleanedItems,
         subtotal,
-        discount: discountAmount,
+        discount: finalDiscount, // Gunakan diskon yang sudah ditambah pembulatan
         tax: taxAmount,
-        total: grandTotal,
+        total: grandTotal - (isPayingNow && paymentMethod === PaymentMethod.Cash ? roundingDifference : 0), // Total di DB juga menyesuaikan
         paymentStatus,
         orderStatus: OrderStatus.Processing,
         // --- UPDATE: Gunakan variabel waktu yang baru dihitung ---
@@ -894,9 +913,17 @@ const NewTransactionPage: React.FC = () => {
                       + Rp {taxAmount.toLocaleString('id-ID')}
                     </span>
                   </div>
+                  {/* TAMPILKAN PEMBULATAN DI SINI */}
+                  {isPayingNow && paymentMethod === PaymentMethod.Cash && roundingDifference > 0 && (
+                    <div className="flex justify-between items-center text-lg text-slate-500 italic">
+                      <span>Pembulatan:</span>
+                      <span>- Rp {roundingDifference.toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
-                    <span>Grand Total:</span>
-                    <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
+                    <span>Grand Total{isPayingNow && paymentMethod === PaymentMethod.Cash ? ' (Tunai)' : ''}:</span>
+                    <span>Rp {amountToPay.toLocaleString('id-ID')}</span>
                   </div>
                 </div>
 

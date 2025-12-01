@@ -1,4 +1,12 @@
 /**
+ * Membulatkan angka ke kelipatan terdekat (default: ratusan).
+ * Contoh: 15.150 -> 15.100 (jika floor) atau 15.200 (jika round/ceil)
+ * Di sini kita gunakan Math.floor agar menjadi pembulatan ke bawah (diskon receh)
+ */
+export const roundPrice = (amount: number, precision: number = 100): number => {
+  return Math.floor(amount / precision) * precision;
+};
+/**
  * Konversi string tanggal lokal (YYYY-MM-DD) ke ISO string (UTC midnight)
  * @param dateStr string tanggal lokal, misal '2023-11-15'
  */

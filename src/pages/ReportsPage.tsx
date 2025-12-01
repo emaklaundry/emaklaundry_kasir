@@ -747,8 +747,8 @@ const ReportsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topServices.map((s) => (
-                      <tr key={s.name} className="border-b dark:border-slate-700">
+                    {topServices.map((s, i) => (
+                      <tr key={s.name === 'Layanan Dihapus' ? `deleted-${i}` : s.name} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {s.name}
                         </td>
@@ -774,8 +774,8 @@ const ReportsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topCustomers.map((c) => (
-                      <tr key={c.name} className="border-b dark:border-slate-700">
+                    {topCustomers.map((c, i) => (
+                      <tr key={c.name === 'Pelanggan Dihapus' ? `deleted-${i}` : c.name} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {c.name}
                         </td>
