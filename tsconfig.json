@@ -35,5 +35,5 @@
     "src/**/*.test.ts",
     "src/**/*.test.tsx"
   ],
-  "exclude": ["dist", "data/mockData.ts", "env.d.ts", "src/types/shims.d.ts"]
+  "exclude": ["dist", "data/mockData.ts"]
 }
