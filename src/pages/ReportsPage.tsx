@@ -6,7 +6,7 @@ import { fetchCustomers } from '../contexts/CustomerContext';
 import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
-import { supabase } from '../utils/supabaseClient'; // TAMBAHAN: Import Supabase Client
+import { supabase } from '../utils/supabaseClient'; // PERBAIKAN: Import Supabase Client
 import { UserRole, Service, User, ServiceCategory } from '@/types';
 
 const StatCard: React.FC<{
@@ -38,7 +38,7 @@ const YearlySummaryChart: React.FC<{
 
   const maxValue = useMemo(() => {
     const maxVal = Math.max(...data.flatMap((d) => [d.revenue, d.expenses]));
-    return Math.ceil(maxVal / 100000) * 100000;
+    return Math.ceil(maxVal / 100000) * 100000; // Round up to nearest 100k
   }, [data]);
 
   const chartHeight = 300;
@@ -75,6 +75,7 @@ const YearlySummaryChart: React.FC<{
         ></div>
       )}
       <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
+        {/* Y-Axis Grid Lines and Labels */}
         {Array.from({ length: yAxisLabels }).map((_, i) => {
           const y = chartHeight - 20 - (i * (chartHeight - 30)) / (yAxisLabels - 1);
           const value = (i * maxValue) / (yAxisLabels - 1);
@@ -100,6 +101,7 @@ const YearlySummaryChart: React.FC<{
           );
         })}
 
+        {/* Bars and X-Axis Labels */}
         {data.map((d, i) => {
           const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
           const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
@@ -138,6 +140,7 @@ const YearlySummaryChart: React.FC<{
           );
         })}
 
+        {/* Axis Lines */}
         <line
           x1={yAxisWidth}
           y1={10}
@@ -156,6 +159,7 @@ const YearlySummaryChart: React.FC<{
         />
       </svg>
 
+      {/* --- Tabel ini HANYA akan muncul saat dicetak --- */}
       <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
         <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
           <tr className="print-only-row">
@@ -292,8 +296,6 @@ const ReportsPage: React.FC = () => {
     },
   });
 
-  // Logika filter lokal (opsional, karena query DB sudah memfilter tanggal, 
-  // tapi tetap dipertahankan untuk keamanan presisi waktu jika ada perbedaan zona waktu)
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
     const end = endDate.getTime();
@@ -301,7 +303,7 @@ const ReportsPage: React.FC = () => {
       const time = new Date(t.createdAt).getTime();
       return time >= start && time <= end;
     });
-    // Filter expenses juga di sisi client untuk memastikan akurasi jam/menit
+    // Filter expenses di sisi client untuk akurasi jam/menit jika perlu
     const expenses = allStoreExpenses.filter((e: any) => {
       const time = new Date(e.date).getTime();
       return time >= start && time <= end;
@@ -421,7 +423,6 @@ const ReportsPage: React.FC = () => {
     const yearTransactions = allStoreTransactions.filter(
       (t) => new Date(t.createdAt).getFullYear() === currentYear,
     );
-    // Gunakan allStoreExpenses untuk ringkasan tahunan juga
     const yearExpenses = allStoreExpenses.filter(
       (e: any) => new Date(e.date).getFullYear() === currentYear,
     );
