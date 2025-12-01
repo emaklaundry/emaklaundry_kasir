@@ -91,8 +91,10 @@ Backup otomatis harian ke folder `database/backup/` via GitHub Actions. Lihat `.
 ## 📝 Catatan Rilis (Changelog)
 
 
-### v1.2.0 - [Tanggal Rilis Berikutnya]
+
+### v1.2.0 - 2 Desember 2025
 - Tingkatkan versi aplikasi.
+- Perbaikan bug, pembaruan dependensi, dan peningkatan stabilitas.
 
 ### v1.1.9 - 2 Desember 2025
 - [Fix] Penanganan tanggal aset dan pengeluaran sudah timezone-safe (lokal, bukan UTC/ISO)
