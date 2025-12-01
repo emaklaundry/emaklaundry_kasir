@@ -17,13 +17,18 @@ serve(async (req) => {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
     );
 
     // 2. Cek siapa yang memanggil fungsi ini
-    const { data: { user: caller } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user: caller },
+    } = await supabaseClient.auth.getUser();
     if (!caller) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: corsHeaders,
+      });
     }
 
     // 3. Buat Supabase Client dengan Service Role Key (Admin privileges)
@@ -38,8 +43,15 @@ serve(async (req) => {
       .select('role, store_id')
       .eq('id', caller.id)
       .single();
-    if (profileError || !callerProfile || (callerProfile.role !== 'Super Admin' && callerProfile.role !== 'Admin')) {
-      return new Response(JSON.stringify({ error: 'Forbidden: Insufficient privileges' }), { status: 403, headers: corsHeaders });
+    if (
+      profileError ||
+      !callerProfile ||
+      (callerProfile.role !== 'Super Admin' && callerProfile.role !== 'Admin')
+    ) {
+      return new Response(JSON.stringify({ error: 'Forbidden: Insufficient privileges' }), {
+        status: 403,
+        headers: corsHeaders,
+      });
     }
 
     // 5. Ambil data dari body request
@@ -56,10 +68,16 @@ serve(async (req) => {
     // 6. (Opsional) Jika Admin Toko, pastikan dia tidak membuat Super Admin atau user di cabang lain
     if (callerProfile.role === 'Admin') {
       if (role === 'Super Admin') {
-        return new Response(JSON.stringify({ error: 'Admin cannot create Super Admin' }), { status: 403, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: 'Admin cannot create Super Admin' }), {
+          status: 403,
+          headers: corsHeaders,
+        });
       }
       if (storeId !== callerProfile.store_id) {
-        return new Response(JSON.stringify({ error: 'Admin can only create users for their own store' }), { status: 403, headers: corsHeaders });
+        return new Response(
+          JSON.stringify({ error: 'Admin can only create users for their own store' }),
+          { status: 403, headers: corsHeaders },
+        );
       }
     }
 
