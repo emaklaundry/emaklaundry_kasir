@@ -1,13 +1,15 @@
 -- === 1. MEMBUAT TABEL ===
 -- Skema tabel inti Anda sudah sangat baik.
 -- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
+CREATE TABLE public.settings (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  "receiptMessage" text,
+  "taxRate" numeric,
+  "discountRate" numeric
+);
 
-CREATE TABLE public.stores (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  address text,
-  phone text,
-  "isActive" boolean DEFAULT true,
+-- Aktifkan RLS pada tabel settings (wajib jika ada policy)
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
   created_at timestamp WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -121,6 +123,8 @@ CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON public.transactio
 CREATE OR REPLACE FUNCTION public.generate_invoice_code(length int DEFAULT 6)
 RETURNS text
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -137,6 +141,8 @@ $$;
 CREATE OR REPLACE FUNCTION public.set_invoice_code()
 RETURNS trigger
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   new_code text;
@@ -437,6 +443,7 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
+SET search_path = public
 AS $$
   SELECT
     s.name AS service_name,
@@ -464,6 +471,7 @@ CREATE OR REPLACE FUNCTION public.update_transaction_progress(
 RETURNS SETOF public.transactions
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   caller uuid := auth.uid();
@@ -520,8 +528,59 @@ $$;
 INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0);
 
 
--- Menghapus fungsi lama karena kita akan mengubah tipe parameternya dari UUID ke TEXT
-DROP FUNCTION IF EXISTS public.get_laundry_status(uuid);
+
+-- Tambahkan SET search_path = public ke fungsi lain yang terdeteksi oleh linter
+DROP FUNCTION IF EXISTS public.bulk_update_order_status;
+CREATE OR REPLACE FUNCTION public.bulk_update_order_status(
+  order_ids uuid[],
+  new_status text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.transactions
+  SET "orderStatus" = new_status
+  WHERE id = ANY(order_ids);
+END;
+$$;
+
+DROP FUNCTION IF EXISTS public.handle_new_user;
+CREATE OR REPLACE FUNCTION public.handle_new_user(
+  user_id uuid,
+  user_name text,
+  user_role text,
+  store_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name, role, store_id)
+  VALUES (user_id, user_name, user_role, store_id)
+  ON CONFLICT (id) DO NOTHING;
+END;
+$$;
+
+DROP FUNCTION IF EXISTS public.complete_scheduled_maintenance;
+CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
+  maintenance_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.scheduled_maintenances
+  SET "lastCompletedDate" = NOW(), "nextDueDate" = NOW() + INTERVAL '30 days'
+  WHERE id = maintenance_id;
+END;
+$$;
 
 -- Membuat fungsi baru yang menerima TEXT
 CREATE OR REPLACE FUNCTION public.get_laundry_status(
@@ -540,6 +599,7 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
+SET search_path = public
 AS $$
   SELECT
     t.id::text,
