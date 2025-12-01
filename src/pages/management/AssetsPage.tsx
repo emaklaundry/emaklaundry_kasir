@@ -30,7 +30,7 @@ import { Asset, MaintenanceLog, UserRole } from '@/types';
 const AssetsPage: React.FC = () => {
   const { assets, addAsset, updateAsset, deleteAsset } = useAssets();
   // Gunakan context expenses untuk mencatat biaya
-  const { addExpense } = useExpenses(); 
+  const { addExpense } = useExpenses();
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
@@ -93,7 +93,7 @@ const AssetsPage: React.FC = () => {
       } else {
         // Create Mode: Tambah aset & Catat Pengeluaran Pembelian
         await addAsset({ ...asset, maintenanceHistory: [], storeId });
-        
+
         // Integrasi Otomatis ke Pengeluaran (Jika ada biaya beli)
         if (asset.purchaseCost > 0) {
           try {
@@ -109,7 +109,7 @@ const AssetsPage: React.FC = () => {
               description: `Pembelian Aset: ${asset.name}`,
               category: 'Pembelian Aset', // Kategori khusus
               amount: asset.purchaseCost,
-              storeId: storeId
+              storeId: storeId,
             });
             addToast('Biaya pembelian aset otomatis dicatat ke pengeluaran.', 'success');
           } catch (expError) {
@@ -135,20 +135,20 @@ const AssetsPage: React.FC = () => {
     if (currentAsset) {
       const newLog = { ...log, id: Date.now().toString() };
       const updatedHistory = [...currentAsset.maintenanceHistory, newLog];
-      
+
       try {
         await updateAsset(currentAsset.id, { maintenanceHistory: updatedHistory });
-        
+
         // Integrasi Otomatis ke Pengeluaran (Jika ada biaya perawatan)
         if (log.cost > 0) {
           // Format tanggal log ke YYYY-MM-DD
           const dateStr = log.date.toISOString().split('T')[0];
           await addExpense({
-             date: dateStr,
-             description: `Perawatan Aset: ${currentAsset.name} (${log.description})`,
-             category: 'Perawatan Aset',
-             amount: log.cost,
-             storeId: currentAsset.storeId
+            date: dateStr,
+            description: `Perawatan Aset: ${currentAsset.name} (${log.description})`,
+            category: 'Perawatan Aset',
+            amount: log.cost,
+            storeId: currentAsset.storeId,
           });
           addToast('Biaya perawatan otomatis dicatat ke pengeluaran.', 'success');
         }
@@ -158,7 +158,7 @@ const AssetsPage: React.FC = () => {
           currentAsset.storeId,
         );
       } catch (error) {
-        console.error("Error updating asset maintenance:", error);
+        console.error('Error updating asset maintenance:', error);
         addToast('Gagal menyimpan log perawatan.', 'error');
       }
     }
@@ -243,7 +243,8 @@ const AssetsPage: React.FC = () => {
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
-  const canAddNewAsset = !!currentUser && !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+  const canAddNewAsset =
+    !!currentUser && !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
 
   const handleFilterChange = (filter: 'all' | 'due') => {
     setMaintenanceFilter(filter);
@@ -343,16 +344,18 @@ const AssetsPage: React.FC = () => {
                   Nama Aset {getSortIcon('name')}
                 </button>
               </th>
-              {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-4 py-3">
-                  <button
-                    onClick={() => requestSort('storeName')}
-                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                  >
-                    Toko {getSortIcon('storeName')}
-                  </button>
-                </th>
-              )}
+              {currentUser &&
+                currentUser.role === UserRole.SuperAdmin &&
+                selectedStoreId === 'all' && (
+                  <th className="px-4 py-3">
+                    <button
+                      onClick={() => requestSort('storeName')}
+                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                    >
+                      Toko {getSortIcon('storeName')}
+                    </button>
+                  </th>
+                )}
               <th className="px-4 py-3">
                 <button
                   onClick={() => requestSort('purchaseDate')}
@@ -387,9 +390,9 @@ const AssetsPage: React.FC = () => {
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {asset.name}
                   </td>
-                  {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                    <td className="px-4 py-3">{asset.storeName}</td>
-                  )}
+                  {currentUser &&
+                    currentUser.role === UserRole.SuperAdmin &&
+                    selectedStoreId === 'all' && <td className="px-4 py-3">{asset.storeName}</td>}
                   <td className="px-4 py-3">
                     {new Date(asset.purchaseDate).toLocaleDateString('id-ID')}
                   </td>
@@ -505,9 +508,11 @@ const AssetsPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">{asset.storeName}</p>
-              )}
+              {currentUser &&
+                currentUser.role === UserRole.SuperAdmin &&
+                selectedStoreId === 'all' && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{asset.storeName}</p>
+                )}
               <div className="mt-3 space-y-1 text-sm border-t dark:border-slate-600 pt-2">
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Tgl Beli:</span>

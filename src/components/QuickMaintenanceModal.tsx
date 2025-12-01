@@ -63,7 +63,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     }
 
     const toastId = addToast('Menyimpan laporan...', 'info');
-    
+
     try {
       // 1. Simpan Log ke Aset
       await updateAsset(selectedAssetId, {
@@ -79,7 +79,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             description: `Quick Maintenance: ${assetToUpdate.name} (${formData.description})`,
             category: 'Perawatan Aset',
             amount: formData.cost,
-            storeId: assetToUpdate.storeId
+            storeId: assetToUpdate.storeId,
           });
           addToast('Biaya perbaikan otomatis dicatat ke pengeluaran.', 'success');
         } catch (expError) {

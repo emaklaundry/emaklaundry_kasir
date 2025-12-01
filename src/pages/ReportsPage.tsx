@@ -1,5 +1,3 @@
-export default ReportsPage;
-
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
@@ -26,67 +24,6 @@ function isTransaction(obj: unknown): obj is Transaction {
     Array.isArray(t.items)
   );
 }
-
-const ReportsPage: React.FC = () => {
-  // All hooks must be called unconditionally and at the top level
-  const { transactions: allStoreTransactions } = useTransactions();
-  const customersRaw = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
-  });
-  const { currentUser, selectedStoreId, stores } = useAppContext();
-  const { services } = useServices();
-  const { users: allUsers } = useUsers();
-  const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
-  const today = new Date();
-  const [customStartDate, setCustomStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [customEndDate, setCustomEndDate] = useState(new Date(today.getFullYear(), today.getMonth() + 1, 0));
-
-
-  // Use all variables to avoid unused variable TypeScript errors
-  void allStoreTransactions;
-  void customersRaw;
-  void currentUser;
-  void selectedStoreId;
-  void stores;
-  void services;
-  void allUsers;
-  void setRangeType;
-  void setCustomStartDate;
-  void setCustomEndDate;
-
-  // --- MAIN RENDER (minimal, for error fix) ---
-  return <div>Reports Page</div>;
-
-
-  // Date range
-  const { startDate, endDate } = useMemo(() => {
-    const now = new Date();
-    now.setHours(23, 59, 59, 999);
-    if (rangeType === 'weekly') {
-      const firstDayOfWeek = new Date(now);
-      firstDayOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-      firstDayOfWeek.setHours(0, 0, 0, 0);
-      return { startDate: firstDayOfWeek, endDate: now };
-    }
-    if (rangeType === 'monthly') {
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { startDate: firstDay, endDate: now };
-    }
-    const endOfDay = new Date(customEndDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    return { startDate: customStartDate, endDate: endOfDay };
-  }, [rangeType, customStartDate, customEndDate]);
-
-  // Print header title must be after all hooks and state
-  const printHeaderTitle = useMemo(() => {
-    const startStr = startDate.toLocaleDateString('id-ID');
-    const endStr = endDate.toLocaleDateString('id-ID');
-    if (rangeType === 'custom') {
-      return `Laporan Kustom (${startStr} - ${endStr})`;
-    }
-    return `Laporan ${rangeType === 'weekly' ? 'Mingguan' : 'Bulanan'} (Hingga ${endStr})`;
-  }, [rangeType, startDate, endDate]);
 
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
@@ -271,7 +208,6 @@ const YearlySummaryChart: React.FC<{
   );
 };
 
-
 // --- Type Definitions ---
 type Expense = {
   id: string;
@@ -293,7 +229,6 @@ type Transaction = {
   items: Array<{ serviceId: string; subtotal: number }>;
 };
 
-
 const ReportsPage: React.FC = () => {
   // All hooks must be called unconditionally and at the top level
   const { transactions: allStoreTransactions } = useTransactions();
@@ -307,24 +242,14 @@ const ReportsPage: React.FC = () => {
   const [reportType] = useState<'range' | 'yearlySummary'>('range');
   const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
   const today = new Date();
-  const [customStartDate, setCustomStartDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [customEndDate, setCustomEndDate] = useState(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+  const [customStartDate, setCustomStartDate] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    new Date(today.getFullYear(), today.getMonth() + 1, 0),
+  );
 
-  // Customers
-  const customers = useMemo(() => {
-    const raw = customersRaw.data;
-    if (Array.isArray(raw)) return raw as { id: string; name: string }[];
-    if (raw && typeof raw === 'object' && raw !== null && Array.isArray((raw as { data?: unknown }).data)) {
-      return (raw as { data: { id: string; name: string }[] }).data;
-    }
-    if (raw && typeof raw === 'object' && raw !== null) {
-      const arr = Object.values(raw).find((v) => Array.isArray(v));
-      if (arr) return arr as { id: string; name: string }[];
-    }
-    return [];
-  }, [customersRaw.data]);
-
-  // Date range
+  // Date range for reports
   const { startDate, endDate } = useMemo(() => {
     const now = new Date();
     now.setHours(23, 59, 59, 999);
@@ -342,6 +267,25 @@ const ReportsPage: React.FC = () => {
     endOfDay.setHours(23, 59, 59, 999);
     return { startDate: customStartDate, endDate: endOfDay };
   }, [rangeType, customStartDate, customEndDate]);
+
+  // Customers
+  const customers = useMemo(() => {
+    const raw = customersRaw.data;
+    if (Array.isArray(raw)) return raw as { id: string; name: string }[];
+    if (
+      raw &&
+      typeof raw === 'object' &&
+      raw !== null &&
+      Array.isArray((raw as { data?: unknown }).data)
+    ) {
+      return (raw as { data: { id: string; name: string }[] }).data;
+    }
+    if (raw && typeof raw === 'object' && raw !== null) {
+      const arr = Object.values(raw).find((v) => Array.isArray(v));
+      if (arr) return arr as { id: string; name: string }[];
+    }
+    return [];
+  }, [customersRaw.data]);
 
   // --- PERBAIKAN: Fetch Combined Expenses (Operasional, Pembelian Aset, Pemeliharaan Aset) ---
   const { data: allStoreExpenses = [] } = useQuery<Expense[]>({
@@ -379,7 +323,7 @@ const ReportsPage: React.FC = () => {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          allOperationalExpenses = [...allOperationalExpenses, ...data as Expense[]];
+          allOperationalExpenses = [...allOperationalExpenses, ...(data as Expense[])];
           if (data.length < pageSize) {
             hasMore = false;
           }
@@ -400,7 +344,14 @@ const ReportsPage: React.FC = () => {
       const assetExpenses: Expense[] = [];
 
       // Type guard for asset
-      function isAsset(obj: unknown): obj is { id: string; name: string; purchaseDate: string | null; purchaseCost: number | null; storeId: string | null; maintenanceHistory?: unknown } {
+      function isAsset(obj: unknown): obj is {
+        id: string;
+        name: string;
+        purchaseDate: string | null;
+        purchaseCost: number | null;
+        storeId: string | null;
+        maintenanceHistory?: unknown;
+      } {
         if (!obj || typeof obj !== 'object') return false;
         const a = obj as Record<string, unknown>;
         return (
@@ -412,7 +363,7 @@ const ReportsPage: React.FC = () => {
         );
       }
       if (assetsData) {
-        (assetsData as unknown[]).forEach(assetRaw => {
+        (assetsData as unknown[]).forEach((assetRaw) => {
           if (!isAsset(assetRaw)) return;
           const asset = assetRaw;
           // A. Pembelian Aset (Diperlakukan sebagai Pengeluaran)
@@ -425,7 +376,7 @@ const ReportsPage: React.FC = () => {
                 description: `[Aset] Pembelian: ${asset.name}`,
                 category: 'Pembelian Aset',
                 amount: typeof asset.purchaseCost === 'number' ? asset.purchaseCost : 0,
-                storeId: typeof asset.storeId === 'string' ? asset.storeId : null
+                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
               });
             }
           }
@@ -437,7 +388,9 @@ const ReportsPage: React.FC = () => {
             } else if (typeof asset.maintenanceHistory === 'string') {
               try {
                 maintenanceHistory = JSON.parse(asset.maintenanceHistory) as MaintenanceLog[];
-              } catch { /* ignore parse error */ }
+              } catch {
+                /* ignore parse error */
+              }
             }
           }
           maintenanceHistory.forEach((log, index) => {
@@ -450,7 +403,7 @@ const ReportsPage: React.FC = () => {
                 description: `[Maintenance] ${asset.name}: ${log.description}`,
                 category: 'Pemeliharaan Aset',
                 amount: typeof log.cost === 'number' ? log.cost : 0,
-                storeId: typeof asset.storeId === 'string' ? asset.storeId : null
+                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
               });
             }
           });
@@ -463,7 +416,9 @@ const ReportsPage: React.FC = () => {
   });
 
   // Filtered Data
-  function normalizeTransaction(t: unknown): Omit<Transaction, 'createdAt'> & { createdAt: string } | null {
+  function normalizeTransaction(
+    t: unknown,
+  ): (Omit<Transaction, 'createdAt'> & { createdAt: string }) | null {
     if (!t || typeof t !== 'object') return null;
     const obj = t as Record<string, unknown>;
     let createdAt: string;
@@ -475,7 +430,9 @@ const ReportsPage: React.FC = () => {
       return null;
     }
     const tx = { ...obj, createdAt } as unknown;
-    return isTransaction(tx as unknown) ? (tx as Omit<Transaction, 'createdAt'> & { createdAt: string }) : null;
+    return isTransaction(tx as unknown)
+      ? (tx as Omit<Transaction, 'createdAt'> & { createdAt: string })
+      : null;
   }
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
@@ -540,7 +497,11 @@ const ReportsPage: React.FC = () => {
   }, [filteredData.transactions, customers]);
 
   const userMap = useMemo(
-    () => allUsers.reduce((map: Record<string, User>, user: User) => ({ ...map, [user.id]: user }), {} as Record<string, User>),
+    () =>
+      allUsers.reduce(
+        (map: Record<string, User>, user: User) => ({ ...map, [user.id]: user }),
+        {} as Record<string, User>,
+      ),
     [allUsers],
   );
 
@@ -618,10 +579,25 @@ const ReportsPage: React.FC = () => {
       (e) => new Date(e.date).getFullYear() === currentYear,
     );
     const monthNames = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
-    const summary = monthNames.map((name) => ({ month: name, revenue: 0, expenses: 0, profit: 0 }));
+    const summary = monthNames.map((name) => ({
+      month: name,
+      revenue: 0,
+      expenses: 0,
+      profit: 0,
+    }));
     yearTransactions.forEach((t: Transaction) => {
       summary[new Date(t.createdAt).getMonth()].revenue += t.amountPaid;
     });
@@ -634,11 +610,36 @@ const ReportsPage: React.FC = () => {
     return summary;
   }, [allStoreTransactions, allStoreExpenses]);
 
-
+  // --- TAMBAHAN: Teks header untuk laporan cetak ---
+  const printHeaderTitle = useMemo(() => {
+    // Untuk 'range'
+    const startStr = startDate.toLocaleDateString('id-ID');
+    const endStr = endDate.toLocaleDateString('id-ID');
+    if (reportType === 'range') {
+      if (rangeType === 'custom') {
+        return `Laporan Kustom (${startStr} - ${endStr})`;
+      }
+      if (rangeType === 'weekly') {
+        return `Laporan Mingguan (Hingga ${endStr})`;
+      }
+      if (rangeType === 'monthly') {
+        return `Laporan Bulanan (Hingga ${endStr})`;
+      }
+    }
+    // Untuk yearly summary
+    if (reportType === 'yearlySummary') {
+      return `Ringkasan Tahunan ${new Date().getFullYear()}`;
+    }
+    return '';
+  }, [reportType, rangeType, startDate, endDate]);
 
   // Early return for missing user context (after all hooks and useMemo)
   if (!currentUser) {
-    return <div className="flex justify-center items-center h-64 text-slate-500">User context not loaded.</div>;
+    return (
+      <div className="flex justify-center items-center h-64 text-slate-500">
+        User context not loaded.
+      </div>
+    );
   }
 
   const getStoreName = () => {
@@ -651,7 +652,6 @@ const ReportsPage: React.FC = () => {
   };
 
   const isRangeReport = reportType === 'range';
-
 
   return (
     <div className="space-y-6">
@@ -924,13 +924,15 @@ const ReportsPage: React.FC = () => {
                           {e.description}
                         </td>
                         <td className="px-4 py-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            e.category === 'Pembelian Aset' 
-                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' 
-                              : e.category === 'Pemeliharaan Aset'
-                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                              : 'bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200'
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              e.category === 'Pembelian Aset'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                                : e.category === 'Pemeliharaan Aset'
+                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200'
+                            }`}
+                          >
                             {e.category}
                           </span>
                         </td>
@@ -988,7 +990,6 @@ const ReportsPage: React.FC = () => {
       )}
     </div>
   );
-}
 };
 
 export default ReportsPage;
