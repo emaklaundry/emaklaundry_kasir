@@ -1,33 +1,36 @@
 import { useState, useMemo } from 'react';
-import {
-  PlusCircleIcon,
-  EditIcon,
-  Trash2Icon,
-  DollarSignIcon,
-  SearchIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-} from '../../components/icons';
-import EmptyState from '../../components/EmptyState';
+import { SearchIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
+import { useAssets } from '../../contexts/AssetContext';
 import ExpenseFormModal from '../../components/ExpenseFormModal';
 import useAppContext from '../../contexts/useAppContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
-import { useSortableData } from '../../hooks/useSortableData';
 import { Expense, UserRole } from '@/types';
+
+// Definisikan tipe gabungan untuk tampilan
+type CombinedExpenseItem = {
+  id: string;
+  date: string; // ISO string
+  description: string;
+  category: string;
+  amount: number;
+  source: 'expense' | 'asset'; // Penanda sumber data
+};
 
 const ExpensesPage: React.FC = () => {
   const { expenses, addExpense, updateExpense, deleteExpense } = useExpenses();
-  const { currentUser, selectedStoreId, stores } = useAppContext();
+  const { assets } = useAssets();
+  const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSavingExpense, setIsSavingExpense] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  // const [isSavingExpense, setIsSavingExpense] = useState(false); // Tidak dipakai lagi
 
   const handleOpenFormModal = (expense: Expense | null = null) => {
     setCurrentExpense(expense);
@@ -71,9 +74,7 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
-  const handleDelete = (expense: Expense) => {
-    setExpenseToDelete(expense);
-  };
+  // handleDelete tidak dipakai, hapus
 
   const confirmDelete = async () => {
     if (expenseToDelete) {
@@ -96,257 +97,236 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
-  const expensesWithStore = useMemo(
-    () =>
-      expenses.map((expense) => ({
-        ...expense,
-        storeName: stores.find((s) => s.id === expense.storeId)?.name || 'N/A',
-      })),
-    [expenses, stores],
+  // Gabungkan data expenses dan assets
+  const allFinancialItems: CombinedExpenseItem[] = useMemo(() => {
+    // Mapping data operasional
+    const operationalExpenses: CombinedExpenseItem[] = expenses.map((item) => ({
+      id: item.id,
+      date: item.date instanceof Date ? item.date.toISOString() : String(item.date),
+      description: item.description,
+      category: item.category,
+      amount: Number(item.amount),
+      source: 'expense',
+    }));
+
+    // Mapping data pembelian aset
+    const assetExpenses: CombinedExpenseItem[] = assets
+      .filter((asset) => asset.purchaseCost && asset.purchaseCost > 0)
+      .map((asset) => ({
+        id: asset.id,
+        date: asset.purchaseDate
+          ? new Date(asset.purchaseDate).toISOString()
+          : new Date().toISOString(),
+        description: `Pembelian Aset: ${asset.name}`,
+        category: 'Aset / Inventaris',
+        amount: Number(asset.purchaseCost),
+        source: 'asset',
+      }));
+
+    // Gabung dan urutkan berdasarkan tanggal (terbaru di atas)
+    return [...operationalExpenses, ...assetExpenses].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+  }, [expenses, assets]);
+
+  // Filter pencarian dan kategori
+  const filteredItems = useMemo(() => {
+    return allFinancialItems.filter((item) => {
+      const matchesSearch = item.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [allFinancialItems, searchTerm, categoryFilter]);
+
+  // Pagination dan summary
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
   );
+  const totalExpense = filteredItems.reduce((sum, item) => sum + item.amount, 0);
 
-  type ExpenseWithStore = (typeof expensesWithStore)[0];
-
-  const filteredExpenses = useMemo(
-    () =>
-      expensesWithStore.filter(
-        (expense) =>
-          expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          expense.category.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    [expensesWithStore, searchTerm],
-  );
-
-  const {
-    items: sortedExpenses,
-    requestSort,
-    sortConfig,
-  } = useSortableData<ExpenseWithStore>(filteredExpenses, { key: 'date', direction: 'descending' });
-
-  const getSortIcon = (key: keyof ExpenseWithStore) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
-    if (sortConfig.direction === 'ascending')
-      return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
-    return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
+  // Export ke Excel
+  const handleExport = () => {
+    const dataToExport = filteredItems.map((item) => ({
+      Tanggal: new Date(item.date).toLocaleDateString('id-ID'),
+      Keterangan: item.description,
+      Kategori: item.category,
+      Jumlah: item.amount,
+      Sumber: item.source === 'asset' ? 'Tabel Aset' : 'Tabel Pengeluaran',
+    }));
+    // @ts-expect-error: dynamic import xlsx for export only, type not needed
+    import('xlsx').then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Rincian Pengeluaran');
+      XLSX.writeFile(wb, 'Laporan_Pengeluaran_Lengkap.xlsx');
+    });
   };
 
-  const canAddNewExpense = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+  // TIDAK ada sorting manual, urut default by date desc
+
+  // const canAddNewExpense = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'); // Tidak dipakai
 
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      {isSavingExpense && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
-          <div className="flex items-center gap-3">
-            <svg
-              className="animate-spin h-6 w-6 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-            <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-          Manajemen Pengeluaran
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          Rincian Pengeluaran
+          <span className="block text-sm font-normal text-slate-500 mt-1">
+            Mencakup Operasional & Pembelian Aset
+          </span>
         </h1>
-        <div className="w-full md:w-auto flex items-center gap-4">
-          <div className="relative w-full md:w-64">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari pengeluaran..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700"
+          >
+            Download
+          </button>
           <button
             onClick={() => handleOpenFormModal()}
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 disabled:bg-blue-400 disabled:cursor-not-allowed"
-            disabled={!canAddNewExpense}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
             Tambah Pengeluaran
           </button>
         </div>
       </div>
-      {!canAddNewExpense && (
-        <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">
-          Pilih cabang spesifik di header untuk menambah pengeluaran baru.
-        </p>
-      )}
 
-      {/* Desktop Table View */}
-      <div className="overflow-x-auto hidden md:block">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-            <tr>
-              <th className="px-4 py-3">
-                <button
-                  onClick={() => requestSort('date')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Tanggal {getSortIcon('date')}
-                </button>
-              </th>
-              <th className="px-4 py-3">Deskripsi</th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-4 py-3">
-                  <button
-                    onClick={() => requestSort('storeName')}
-                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                  >
-                    Toko {getSortIcon('storeName')}
-                  </button>
-                </th>
-              )}
-              <th className="px-4 py-3">
-                <button
-                  onClick={() => requestSort('category')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Kategori {getSortIcon('category')}
-                </button>
-              </th>
-              <th className="px-4 py-3 text-right">
-                <button
-                  onClick={() => requestSort('amount')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
-                >
-                  Jumlah {getSortIcon('amount')}
-                </button>
-              </th>
-              <th className="px-4 py-3">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedExpenses.length > 0 ? (
-              sortedExpenses.map((expense) => (
-                <tr key={expense.id} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3">
-                    {new Date(expense.date).toLocaleDateString('id-ID')}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                    {expense.description}
-                  </td>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                    <td className="px-4 py-3">{expense.storeName}</td>
-                  )}
-                  <td className="px-4 py-3">{expense.category}</td>
-                  <td className="px-4 py-3 text-right">
-                    Rp {expense.amount.toLocaleString('id-ID')}
-                  </td>
-                  <td className="px-4 py-3 flex items-center space-x-2">
-                    <button
-                      onClick={() => handleOpenFormModal(expense)}
-                      className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <EditIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(expense)}
-                      className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <Trash2Icon className="w-5 h-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={
-                    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
-                  }
-                >
-                  <EmptyState
-                    icon={<DollarSignIcon className="mx-auto w-12 h-12 text-slate-400" />}
-                    title={searchTerm ? 'Pengeluaran Tidak Ditemukan' : 'Belum Ada Pengeluaran'}
-                    description={
-                      searchTerm
-                        ? 'Coba kata kunci lain atau tambahkan pengeluaran baru.'
-                        : 'Mulai dengan menambahkan data pengeluaran pertama Anda.'
-                    }
-                  />
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      {/* Summary Card */}
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+        <h3 className="text-slate-500 dark:text-slate-400 font-medium mb-2">
+          Total Pengeluaran (Filtered)
+        </h3>
+        <p className="text-3xl font-bold text-slate-900 dark:text-white">
+          Rp {totalExpense.toLocaleString('id-ID')}
+        </p>
       </div>
 
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
-        {sortedExpenses.length > 0 ? (
-          sortedExpenses.map((expense) => (
-            <div
-              key={expense.id}
-              className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
-                    {expense.description}
-                  </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{expense.category}</p>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                      {expense.storeName}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center space-x-1 flex-shrink-0">
-                  <button
-                    onClick={() => handleOpenFormModal(expense)}
-                    className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"
-                  >
-                    <EditIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(expense)}
-                    className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600"
-                  >
-                    <Trash2Icon className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-              <div className="mt-3 flex justify-between items-center text-sm border-t dark:border-slate-600 pt-2">
-                <span className="text-slate-500 dark:text-slate-400">
-                  {new Date(expense.date).toLocaleDateString('id-ID')}
-                </span>
-                <span className="font-semibold text-lg text-slate-800 dark:text-slate-200">
-                  Rp {expense.amount.toLocaleString('id-ID')}
-                </span>
-              </div>
-            </div>
-          ))
-        ) : (
-          <EmptyState
-            icon={<DollarSignIcon className="mx-auto w-12 h-12 text-slate-400" />}
-            title={searchTerm ? 'Pengeluaran Tidak Ditemukan' : 'Belum Ada Pengeluaran'}
-            description={
-              searchTerm
-                ? 'Coba kata kunci lain.'
-                : 'Mulai dengan menambahkan data pengeluaran pertama Anda.'
-            }
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari pengeluaran..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
           />
-        )}
+        </div>
+        <div className="relative w-full sm:w-48">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="w-full pl-3 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 appearance-none"
+          >
+            <option value="all">Semua Kategori</option>
+            <option value="Aset / Inventaris">Aset / Inventaris</option>
+            <option value="Operasional">Operasional</option>
+            <option value="Pemeliharaan">Pemeliharaan</option>
+            <option value="Gaji">Gaji</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 uppercase font-medium">
+              <tr>
+                <th className="px-6 py-3">Tanggal</th>
+                <th className="px-6 py-3">Keterangan</th>
+                <th className="px-6 py-3">Kategori</th>
+                <th className="px-6 py-3 text-right">Jumlah</th>
+                <th className="px-6 py-3 text-center">Sumber</th>
+                <th className="px-6 py-3 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+              {paginatedItems.length > 0 ? (
+                paginatedItems.map((item) => (
+                  <tr
+                    key={`${item.source}-${item.id}`}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-slate-900 dark:text-white whitespace-nowrap">
+                      {new Date(item.date).toLocaleDateString('id-ID')}
+                    </td>
+                    <td className="px-6 py-4 text-slate-900 dark:text-white">{item.description}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        ${
+                          item.category === 'Aset / Inventaris'
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                            : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {item.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium text-slate-900 dark:text-white">
+                      Rp {item.amount.toLocaleString('id-ID')}
+                    </td>
+                    <td className="px-6 py-4 text-center text-xs text-slate-500">
+                      {item.source === 'asset' ? 'Aset' : 'Pengeluaran'}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {item.source === 'expense' && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Hapus pengeluaran ini?')) {
+                              deleteExpense(item.id);
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium"
+                        >
+                          Hapus
+                        </button>
+                      )}
+                      {item.source === 'asset' && (
+                        <span className="text-slate-400 italic text-xs">Kelola di Aset</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-8 text-center text-slate-500 dark:text-slate-400"
+                  >
+                    Tidak ada data pengeluaran ditemukan
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-center mt-4">
+        <nav className="inline-flex -space-x-px">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-3 py-1 border border-slate-300 dark:border-slate-600 ${
+                currentPage === page
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+              } rounded-lg mx-1`}
+            >
+              {page}
+            </button>
+          ))}
+        </nav>
       </div>
 
       <ExpenseFormModal

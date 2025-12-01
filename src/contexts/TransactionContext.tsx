@@ -21,12 +21,14 @@ const fetchTransactions = async (
   const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
   let query = supabase.from('transactions').select('*', { count: 'exact' });
   if (dateRange) {
-    // CATATAN: Pastikan zona waktu konsisten antara browser dan database (Supabase default UTC).
-    // Untuk aplikasi lokal Indonesia, biasanya cukup. Jika ingin lebih aman, gunakan filter berbasis tanggal saja:
-    // query = query.gte('createdAt', dateRange.from).lte('createdAt', dateRange.to + 'T23:59:59.999+07:00');
+    // Atur Start Date (Awal Hari Lokal)
+    const fromDate = new Date(dateRange.from);
+    fromDate.setHours(0, 0, 0, 0);
+    // Atur End Date (Akhir Hari Lokal)
     const toDate = new Date(dateRange.to);
     toDate.setHours(23, 59, 59, 999);
-    query = query.gte('createdAt', dateRange.from).lte('createdAt', toDate.toISOString());
+    // Kirim sebagai ISO String (browser akan konversi ke UTC)
+    query = query.gte('createdAt', fromDate.toISOString()).lte('createdAt', toDate.toISOString());
   }
   if (storeId && storeId !== 'all') {
     query = query.eq('storeId', storeId);

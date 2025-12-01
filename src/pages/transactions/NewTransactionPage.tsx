@@ -113,15 +113,18 @@ const NewTransactionPage: React.FC = () => {
     } else {
       val = Number(discountValue) || 0;
     }
+    let rawDiscount = 0;
     if (type === 'percent') {
-      return subtotal * (val / 100);
+      rawDiscount = subtotal * (val / 100);
+    } else {
+      rawDiscount = Math.min(val, subtotal);
     }
-    return Math.min(val, subtotal);
+    return Math.round(rawDiscount);
   }, [subtotal, discountValue, discountType, canApplyDiscount, settings?.discountRate]);
 
   const taxAmount = useMemo(() => {
     const taxableAmount = subtotal - discountAmount;
-    return taxableAmount * ((settings?.taxRate ?? 0) / 100);
+    return Math.round(taxableAmount * ((settings?.taxRate ?? 0) / 100));
   }, [subtotal, discountAmount, settings?.taxRate]);
 
   const grandTotal = useMemo(() => {
@@ -146,6 +149,13 @@ const NewTransactionPage: React.FC = () => {
         const currentItem = updatedItems[existingItemIndex];
         currentItem.quantity += 1;
         currentItem.subtotal = currentItem.price * currentItem.quantity;
+        // FIX: Sinkronkan itemDetails jika kategori Satuan
+        if (!isKiloan && !isMeter) {
+          const currentNotes = currentItem.itemDetails || [];
+          if (currentNotes.length < currentItem.quantity) {
+            currentItem.itemDetails = [...currentNotes, { note: '' }];
+          }
+        }
         return updatedItems;
       } else {
         const newItem: ExtendedTransactionItem = {
@@ -157,6 +167,8 @@ const NewTransactionPage: React.FC = () => {
           subtotal: service.price * 1,
           length: isMeter ? 1 : undefined,
           width: isMeter ? 1 : undefined,
+          // Tambahkan itemDetails kosong jika Satuan
+          ...(!isKiloan && !isMeter ? { itemDetails: [{ note: '' }] } : {}),
         };
         return [...currentItems, newItem];
       }
