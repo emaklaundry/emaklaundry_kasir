@@ -259,9 +259,22 @@ CREATE POLICY "Users can update their own profile" ON public.profiles
     -- Mencegah user mengubah cabang mereka sendiri
     AND store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
   );
+DROP POLICY IF EXISTS "Admins can manage profiles in their store" ON public.profiles;
+
 CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
-  FOR ALL USING (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id())
-  WITH CHECK (public.get_my_role() = 'Admin' AND store_id = public.get_my_store_id());
+  FOR ALL 
+  USING (
+    public.get_my_role() = 'Admin' 
+    AND store_id = public.get_my_store_id()
+  )
+  WITH CHECK (
+    public.get_my_role() = 'Admin' 
+    AND store_id = public.get_my_store_id()
+    -- TAMBAHAN PENTING: Mencegah Admin membuat Super Admin
+    AND role IN ('Admin', 'Kasir') 
+    -- TAMBAHAN PENTING: Mencegah Admin memindahkan user ke toko lain
+    AND store_id = public.get_my_store_id() 
+  );
 CREATE POLICY "Super Admins can manage all profiles" ON public.profiles
   FOR ALL USING (public.get_my_role() = 'Super Admin')
   WITH CHECK (public.get_my_role() = 'Super Admin');
