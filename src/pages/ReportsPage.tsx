@@ -1,3 +1,5 @@
+// src/pages/ReportsPage.tsx
+
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
@@ -222,7 +224,6 @@ type Expense = {
 type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
 
 const ReportsPage: React.FC = () => {
-  // All hooks must be called unconditionally and at the top level
   const { transactions: allStoreTransactions } = useTransactions();
   const customersRaw = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -294,7 +295,7 @@ const ReportsPage: React.FC = () => {
       const startDateStr = formatDateStr(startDate);
       const endDateStr = formatDateStr(endDate);
 
-      // 1. Fetch Expenses (Operasional) dengan Pagination
+      // 1. Fetch Expenses (Operasional & Aset yang sudah tercatat di expenses)
       let allOperationalExpenses: Expense[] = [];
       let page = 0;
       const pageSize = 1000;
@@ -326,7 +327,7 @@ const ReportsPage: React.FC = () => {
         }
       }
 
-      // 2. Fetch Assets (Untuk Pembelian & Pemeliharaan)
+      // 2. Fetch Assets (Untuk Backfill Aset Lama yang belum tercatat di expenses)
       let assetQuery = supabase.from('assets').select('*');
       if (selectedStoreId && selectedStoreId !== 'all') {
         assetQuery = assetQuery.eq('storeId', selectedStoreId);
@@ -336,85 +337,87 @@ const ReportsPage: React.FC = () => {
 
       const assetExpenses: Expense[] = [];
 
-      // Type guard for asset
-      function isAsset(obj: unknown): obj is {
-        id: string;
-        name: string;
-        purchaseDate: string | null;
-        purchaseCost: number | null;
-        storeId: string | null;
-        maintenanceHistory?: unknown;
-      } {
-        if (!obj || typeof obj !== 'object') return false;
-        const a = obj as Record<string, unknown>;
-        return (
-          typeof a.id === 'string' &&
-          typeof a.name === 'string' &&
-          (typeof a.purchaseDate === 'string' || a.purchaseDate === null) &&
-          (typeof a.purchaseCost === 'number' || a.purchaseCost === null) &&
-          (typeof a.storeId === 'string' || a.storeId === null)
+      // Helper untuk mengecek duplikasi di tabel expenses
+      const isExpenseExist = (desc: string, date: string, amount: number) => {
+        return allOperationalExpenses.some(
+          (e) =>
+            e.description === desc &&
+            e.date === date &&
+            Math.abs(e.amount - amount) < 100 // Toleransi sedikit
         );
-      }
+      };
 
       if (assetsData) {
-        (assetsData as unknown[]).forEach((assetRaw) => {
-          if (!isAsset(assetRaw)) return;
-          const asset = assetRaw;
+        // Gunakan Type Assertion yang lebih longgar untuk data mentah DB
+        (assetsData as Record<string, unknown>[]).forEach((asset) => {
+          // Validasi minimal
+          if (!asset.id || !asset.name) return;
 
-          // A. Pembelian Aset (Diperlakukan sebagai Pengeluaran)
-          if (asset.purchaseDate && typeof asset.purchaseDate === 'string') {
-            // PERBAIKAN: Gunakan string langsung jika format YYYY-MM-DD, hindari toISOString() yang mengubah ke UTC
-            let purchaseDateStr = asset.purchaseDate;
-            // Jika format timestamp panjang, potong saja
+          // A. Pembelian Aset
+          if (asset.purchaseDate) {
+            let purchaseDateStr = String(asset.purchaseDate);
             if (purchaseDateStr.includes('T')) {
                purchaseDateStr = purchaseDateStr.split('T')[0];
             }
+            
+            // Filter tanggal sesuai range
             if (purchaseDateStr >= startDateStr && purchaseDateStr <= endDateStr) {
-              assetExpenses.push({
-                id: `asset-purchase-${asset.id}`,
-                date: asset.purchaseDate,
-                description: `[Aset] Pembelian: ${asset.name}`,
-                category: 'Pembelian Aset',
-                amount: typeof asset.purchaseCost === 'number' ? asset.purchaseCost : 0,
-                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
-              });
-            }
-          }
+              const cost = Number(asset.purchaseCost) || 0;
+              const description = `Pembelian Aset: ${asset.name}`;
 
-          // B. Pemeliharaan Aset (Maintenance History)
-          let maintenanceHistory: MaintenanceLog[] = [];
-          if (asset.maintenanceHistory) {
-            if (Array.isArray(asset.maintenanceHistory)) {
-              maintenanceHistory = asset.maintenanceHistory as MaintenanceLog[];
-            } else if (typeof asset.maintenanceHistory === 'string') {
-              try {
-                maintenanceHistory = JSON.parse(asset.maintenanceHistory) as MaintenanceLog[];
-              } catch {
-                /* ignore parse error */
+              // Cek apakah sudah ada di expenses (untuk mencegah duplikat data baru)
+              if (!isExpenseExist(description, purchaseDateStr, cost)) {
+                assetExpenses.push({
+                  id: `asset-purchase-${asset.id}`,
+                  date: purchaseDateStr,
+                  description: description,
+                  category: 'Pembelian Aset',
+                  amount: cost,
+                  storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+                });
               }
             }
           }
 
+          // B. Pemeliharaan Aset (History)
+          let maintenanceHistory: MaintenanceLog[] = [];
+          if (asset.maintenanceHistory) {
+            if (Array.isArray(asset.maintenanceHistory)) {
+              maintenanceHistory = asset.maintenanceHistory;
+            } else if (typeof asset.maintenanceHistory === 'string') {
+              try {
+                maintenanceHistory = JSON.parse(asset.maintenanceHistory);
+              } catch { /* ignore */ }
+            }
+          }
+
           maintenanceHistory.forEach((log, index) => {
-            // PERBAIKAN: Gunakan formatDateStr (Lokal) alih-alih toISOString (UTC)
             const logDate = new Date(log.date);
             const logDateStr = formatDateStr(logDate);
-
+            const cost = Number(log.cost) || 0;
+            
             if (logDateStr >= startDateStr && logDateStr <= endDateStr) {
-              assetExpenses.push({
-                id: `asset-maint-${asset.id}-${index}`,
-                date: typeof log.date === 'string' ? log.date : new Date(log.date).toISOString(),
-                description: `[Maintenance] ${asset.name}: ${log.description}`,
-                category: 'Pemeliharaan Aset',
-                amount: typeof log.cost === 'number' ? log.cost : 0,
-                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
-              });
+              // Format deskripsi harus dicek terhadap format yang disimpan AssetsPage
+              // AssetsPage format: "Perawatan Aset: [Nama] ([Desc])"
+              // Kita gunakan format yang sama untuk pengecekan
+              const expenseDescToCheck = `Perawatan Aset: ${asset.name} (${log.description})`;
+              
+              if (!isExpenseExist(expenseDescToCheck, logDateStr, cost)) {
+                assetExpenses.push({
+                  id: `asset-maint-${asset.id}-${index}`,
+                  date: logDateStr,
+                  description: `[Maintenance] ${asset.name}: ${log.description}`, // Penanda beda untuk log manual
+                  category: 'Pemeliharaan Aset',
+                  amount: cost,
+                  storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+                });
+              }
             }
           });
         });
       }
 
-      // Gabungkan semua pengeluaran
+      // Gabungkan: Expenses (Database) + AssetExpenses (Backfill Manual)
       return [...allOperationalExpenses, ...assetExpenses];
     },
   });
@@ -438,10 +441,11 @@ const ReportsPage: React.FC = () => {
       ? (tx as Omit<Transaction, 'createdAt'> & { createdAt: string })
       : null;
   }
+
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
     const end = endDate.getTime();
-    // Filter transaksi tetap dilakukan di client karena fetch-nya mengambil semua
+    
     const transactions = (allStoreTransactions as unknown[])
       .map(normalizeTransaction)
       .filter((t): t is Omit<Transaction, 'createdAt'> & { createdAt: string } => !!t)
@@ -450,9 +454,7 @@ const ReportsPage: React.FC = () => {
         return time >= start && time <= end;
       });
 
-    // PERBAIKAN: Hapus filter kedua untuk expenses.
-    // Data allStoreExpenses sudah difetch sesuai range tanggal secara spesifik di useQuery.
-    // Memfilter ulang di sini menyebabkan masalah timezone (data hilang).
+    // FILTER GANDA DIHAPUS: Gunakan data langsung dari query yang sudah valid
     const expenses = (allStoreExpenses as Expense[]) || [];
 
     return { transactions, expenses };
@@ -462,6 +464,8 @@ const ReportsPage: React.FC = () => {
   const totalExpenses = filteredData.expenses.reduce((acc: number, e) => acc + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
 
+  // ... (Kode selebihnya untuk chart, tabel, dll tetap sama) ...
+  
   const serviceMap = useMemo(
     () =>
       services.reduce(
@@ -616,9 +620,7 @@ const ReportsPage: React.FC = () => {
     return summary;
   }, [allStoreTransactions, allStoreExpenses]);
 
-  // --- Teks header untuk laporan cetak ---
   const printHeaderTitle = useMemo(() => {
-    // Untuk 'range'
     const startStr = startDate.toLocaleDateString('id-ID');
     const endStr = endDate.toLocaleDateString('id-ID');
     if (reportType === 'range') {
@@ -632,14 +634,12 @@ const ReportsPage: React.FC = () => {
         return `Laporan Bulanan (Hingga ${endStr})`;
       }
     }
-    // Untuk yearly summary
     if (reportType === 'yearlySummary') {
       return `Ringkasan Tahunan ${new Date().getFullYear()}`;
     }
     return '';
   }, [reportType, rangeType, startDate, endDate]);
 
-  // Early return for missing user context (after all hooks and useMemo)
   if (!currentUser) {
     return (
       <div className="flex justify-center items-center h-64 text-slate-500">
@@ -759,8 +759,8 @@ const ReportsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topServices.map((s, i) => (
-                      <tr key={s.name === 'Layanan Dihapus' ? `deleted-${i}` : s.name} className="border-b dark:border-slate-700">
+                    {topServices.map((s) => (
+                      <tr key={s.name} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {s.name}
                         </td>
@@ -786,8 +786,8 @@ const ReportsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topCustomers.map((c, i) => (
-                      <tr key={c.name === 'Pelanggan Dihapus' ? `deleted-${i}` : c.name} className="border-b dark:border-slate-700">
+                    {topCustomers.map((c) => (
+                      <tr key={c.name} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {c.name}
                         </td>

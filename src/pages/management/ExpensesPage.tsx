@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SearchIcon } from '../../components/icons';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
@@ -30,7 +30,9 @@ const ExpensesPage: React.FC = () => {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  // const [isSavingExpense, setIsSavingExpense] = useState(false); // Tidak dipakai lagi
+  
+  // Loading state for save/delete actions (used to disable buttons)
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
 
   const handleOpenFormModal = (expense: Expense | null = null) => {
     setCurrentExpense(expense);
@@ -43,6 +45,10 @@ const ExpensesPage: React.FC = () => {
   };
 
   const handleSaveExpense = async (expense: Omit<Expense, 'id' | 'storeId'>) => {
+    if (!currentUser) {
+      addToast('User context tidak tersedia.', 'error');
+      return;
+    }
     const storeId =
       currentExpense?.storeId ||
       (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
@@ -73,8 +79,6 @@ const ExpensesPage: React.FC = () => {
       setIsSavingExpense(false);
     }
   };
-
-  // handleDelete tidak dipakai, hapus
 
   const confirmDelete = async () => {
     if (expenseToDelete) {
@@ -166,10 +170,6 @@ const ExpensesPage: React.FC = () => {
     });
   };
 
-  // TIDAK ada sorting manual, urut default by date desc
-
-  // const canAddNewExpense = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'); // Tidak dipakai
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -189,8 +189,9 @@ const ExpensesPage: React.FC = () => {
           <button
             onClick={() => handleOpenFormModal()}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={isSavingExpense}
           >
-            Tambah Pengeluaran
+            {isSavingExpense ? 'Menyimpan...' : 'Tambah Pengeluaran'}
           </button>
         </div>
       </div>
@@ -279,11 +280,7 @@ const ExpensesPage: React.FC = () => {
                     <td className="px-6 py-4 text-center">
                       {item.source === 'expense' && (
                         <button
-                          onClick={() => {
-                            if (window.confirm('Hapus pengeluaran ini?')) {
-                              deleteExpense(item.id);
-                            }
-                          }}
+                          onClick={() => setExpenseToDelete(expenses.find(e => e.id === item.id) || null)}
                           className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium"
                         >
                           Hapus
