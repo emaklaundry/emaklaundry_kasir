@@ -1,6 +1,14 @@
--- === 1. MEMBUAT TABEL ===
--- Skema tabel inti Anda sudah sangat baik.
--- Perubahan kecil: Menambahkan ON DELETE SET NULL untuk stabilitas data.
+-- Tabel stores harus dibuat paling awal karena direferensikan oleh banyak tabel lain
+CREATE TABLE public.stores (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  address text,
+  "isActive" boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT NOW()
+);
+
+
+
 CREATE TABLE public.settings (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   "receiptMessage" text,
@@ -10,8 +18,6 @@ CREATE TABLE public.settings (
 
 -- Aktifkan RLS pada tabel settings (wajib jika ada policy)
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
-  created_at timestamp WITH TIME ZONE DEFAULT NOW()
-);
 
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -189,12 +195,7 @@ CREATE TABLE public.audit_logs (
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
-CREATE TABLE public.settings (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  "receiptMessage" text,
-  "taxRate" numeric,
-  "discountRate" numeric
-);
+
 
 -- === 2. AKTIFKAN RLS ===
 -- (Ini sama seperti skrip Anda, semua sudah benar)
@@ -529,25 +530,8 @@ INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate") VALUES
 
 
 
--- Tambahkan SET search_path = public ke fungsi lain yang terdeteksi oleh linter
-DROP FUNCTION IF EXISTS public.bulk_update_order_status;
-CREATE OR REPLACE FUNCTION public.bulk_update_order_status(
-  order_ids uuid[],
-  new_status text
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  UPDATE public.transactions
-  SET "orderStatus" = new_status
-  WHERE id = ANY(order_ids);
-END;
-$$;
 
-DROP FUNCTION IF EXISTS public.handle_new_user;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user(
   user_id uuid,
   user_name text,
@@ -566,7 +550,6 @@ BEGIN
 END;
 $$;
 
-DROP FUNCTION IF EXISTS public.complete_scheduled_maintenance;
 CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
   maintenance_id uuid
 )
