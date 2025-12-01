@@ -91,33 +91,8 @@ const AssetsPage: React.FC = () => {
         addAuditLog(`Memperbarui data aset: "${asset.name}".`, storeId);
         updateToast(toastId, 'Data aset berhasil diperbarui!', 'success');
       } else {
-        // Create Mode: Tambah aset & Catat Pengeluaran Pembelian
+        // Create Mode: Tambah aset saja, tidak perlu catat ke pengeluaran
         await addAsset({ ...asset, maintenanceHistory: [], storeId });
-
-        // Integrasi Otomatis ke Pengeluaran (Jika ada biaya beli)
-        if (asset.purchaseCost > 0) {
-          try {
-            // Format tanggal dari Date ke YYYY-MM-DD
-            let dateStr = '';
-            if (asset.purchaseDate && typeof asset.purchaseDate === 'string') {
-              dateStr = asset.purchaseDate.split('T')[0];
-            } else if (asset.purchaseDate instanceof Date) {
-              dateStr = asset.purchaseDate.toISOString().split('T')[0];
-            }
-            await addExpense({
-              date: dateStr,
-              description: `Pembelian Aset: ${asset.name}`,
-              category: 'Pembelian Aset', // Kategori khusus
-              amount: asset.purchaseCost,
-              storeId: storeId,
-            });
-            addToast('Biaya pembelian aset otomatis dicatat ke pengeluaran.', 'success');
-          } catch (expError) {
-            console.error('Gagal mencatat pengeluaran aset:', expError);
-            addToast('Gagal mencatat biaya ke pengeluaran otomatis.', 'error');
-          }
-        }
-
         addAuditLog(`Menambahkan aset baru: "${asset.name}".`, storeId);
         updateToast(toastId, 'Aset baru berhasil ditambahkan!', 'success');
       }
@@ -138,21 +113,6 @@ const AssetsPage: React.FC = () => {
 
       try {
         await updateAsset(currentAsset.id, { maintenanceHistory: updatedHistory });
-
-        // Integrasi Otomatis ke Pengeluaran (Jika ada biaya perawatan)
-        if (log.cost > 0) {
-          // Format tanggal log ke YYYY-MM-DD
-          const dateStr = log.date.toISOString().split('T')[0];
-          await addExpense({
-            date: dateStr,
-            description: `Perawatan Aset: ${currentAsset.name} (${log.description})`,
-            category: 'Perawatan Aset',
-            amount: log.cost,
-            storeId: currentAsset.storeId,
-          });
-          addToast('Biaya perawatan otomatis dicatat ke pengeluaran.', 'success');
-        }
-
         addAuditLog(
           `Menambahkan log pemeliharaan untuk aset "${currentAsset.name}": ${log.description}.`,
           currentAsset.storeId,

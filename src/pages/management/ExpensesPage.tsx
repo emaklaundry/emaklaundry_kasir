@@ -116,38 +116,29 @@ const ExpensesPage: React.FC = () => {
     const assetExpenses: CombinedExpenseItem[] = assets
       .filter((asset) => asset.purchaseCost && asset.purchaseCost > 0)
       .filter((asset) => {
-        // Cek apakah aset ini sudah tercatat otomatis di expenses
-        const assetDateStr = asset.purchaseDate
-          ? String(asset.purchaseDate).split('T')[0]
-          : '';
-        const expectedDesc = `Pembelian Aset: ${asset.name}`;
-        
-        // Cari duplikat di operationalExpenses
+        // Cek apakah aset ini sudah tercatat di expenses (berdasarkan nama & tanggal)
+        const assetDateStr = asset.purchaseDate ? String(asset.purchaseDate).split('T')[0] : '';
+        // Cari duplikat
         const existsInExpenses = operationalExpenses.some(exp => {
            const expDateStr = exp.date.split('T')[0];
-           // Cocokkan Tanggal, Deskripsi, dan Jumlah (dengan sedikit toleransi float)
+           // Cek kecocokan Tanggal DAN Deskripsi yang mengandung nama aset
            return (
              expDateStr === assetDateStr && 
-             exp.description === expectedDesc && 
-             Math.abs(exp.amount - Number(asset.purchaseCost)) < 100
+             exp.description.includes(asset.name)
            );
         });
-        
-        // Jika SUDAH ADA di expenses, jangan masukkan dari source 'asset'
-        return !existsInExpenses;
+        return !existsInExpenses; // Jika sudah ada, jangan masukkan lagi
       })
       .map((asset) => ({
         id: asset.id,
-        date: asset.purchaseDate
-          ? String(asset.purchaseDate) // Gunakan string langsung dari DB (YYYY-MM-DD)
-          : new Date().toISOString(),
+        date: asset.purchaseDate ? String(asset.purchaseDate) : new Date().toISOString(),
         description: `Pembelian Aset: ${asset.name}`,
         category: 'Aset / Inventaris',
         amount: Number(asset.purchaseCost),
         source: 'asset',
       }));
 
-    // Gabung dan urutkan berdasarkan tanggal (terbaru di atas)
+    // Gabung dan urutkan
     return [...operationalExpenses, ...assetExpenses].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );

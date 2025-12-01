@@ -3,8 +3,8 @@
 
 # Laundry Management System (Web Kasir)
 
-**Versi:** 1.1.8  
-**Update terakhir:** 1 Desember 2025
+**Versi:** 1.1.9  
+**Update terakhir:** 2 Desember 2025
 
 ---
 
@@ -23,6 +23,7 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 - Notifikasi, dark/light mode
 - Backup database otomatis/manual (Supabase)
 - Pengujian otomatis per-file (Vitest, Testing Library)
+- Penanganan tanggal aset dan pengeluaran sudah timezone-safe (lokal, bukan UTC/ISO)
 
 ---
 
@@ -34,74 +35,28 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 
 ---
 
-## 🚀 Perintah Backup
+## 🚀 Backup Database
 
-Jalankan perintah berikut di PowerShell.
+Jalankan perintah berikut di PowerShell:
 
-### 1. Backup Data Saja (Data Only)
-
-Gunakan ini jika Anda sudah memiliki struktur tabel (Schema) dan hanya ingin mem-backup isi datanya (baris-baris tabel).
-
+### Backup Data Saja (Data Only)
 ```powershell
 supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" --data-only -f database/backup/data.sql
 ```
+Output: `database/backup/data.sql`
 
-Output: File `database/backup/backup_schema.sql`.
-
-### 2. Backup Lengkap (Schema + Data)
-
-Gunakan ini untuk snapshot penuh database.
-
+### Backup Lengkap (Schema + Data)
 ```powershell
 supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" -f database/backup/full_backup.sql
 ```
-
-Output: File `database/backup/full_backup.sql`.
+Output: `database/backup/full_backup.sql`
 
 ---
 
-## 🔄 Backup Otomatis Database Supabase (GitHub Actions)
-
-Mulai v1.1.3, aplikasi ini mendukung backup otomatis database Supabase menggunakan GitHub Actions. Backup berjalan harian dan hasilnya akan otomatis disimpan di folder `backup/` (bisa diunduh dari tab Actions di GitHub).
-
-**Cara setup:**
-
-1. Pastikan file `.github/workflows/backup.yml` sudah ada (lihat repo ini).
-2. Di GitHub, buka Settings > Secrets and variables > Actions, lalu tambahkan secret baru:
-   - **Name:** `SUPABASE_DB_URL`
-   - **Value:** (isi dengan connection string Supabase Anda, format postgresql://...)
-3. Workflow akan berjalan otomatis setiap hari. Hasil backup akan berada di folder `database/backup/` dan dapat diunduh di tab Actions > run yang sukses > Artifacts.
-
-Contoh isi file workflow (backup otomatis ke folder `database/backup/`):
-
-```yaml
-name: Daily Supabase Backup
-on:
-  schedule:
-    - cron: '0 0 * * *'
 jobs:
-  backup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install PostgreSQL Client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-      - name: Create backup folder
-        run: mkdir -p database/backup
-      - name: Backup Database
-        run: |
-          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -f database/backup/backup_$(date +%Y-%m-%d).sql
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: db-backup
-          path: database/backup/*.sql
-          retention-days: 7
-```
+## 🔄 Backup Otomatis (GitHub Actions)
 
-> **Tips:** Connection string bisa didapat dari dashboard Supabase > Database > Connection Pooling/Settings. Jangan bagikan secret ke publik.
+Backup otomatis harian ke folder `database/backup/` via GitHub Actions. Lihat `.github/workflows/backup.yml` dan tambahkan secret `SUPABASE_DB_URL` di GitHub Settings. Hasil backup dapat diunduh dari tab Actions.
 
 ---
 
@@ -124,33 +79,24 @@ jobs:
 
 ## 📝 Catatan Pengembangan & Perubahan Terbaru
 
-- Mendukung pengembangan modular dan scalable
-- Siap di-deploy ke layanan hosting modern (Vercel, Netlify, dsb)
-- PWA siap untuk instalasi di perangkat mobile
-- Kode bersih, mudah dikembangkan, dan terdokumentasi
-- **Versioning Otomatis**: Versi aplikasi akan selalu tampil di seluruh halaman utama dan halaman login, mengikuti versi di `package.json`.
-
-### 🔒 Keamanan & Performa (v1.1.7)
-
-- Database siap multi-cabang: tabel `settings` kini punya kolom `storeId` dan RLS policy per store
-- Index storeId di semua tabel utama (transactions, customers, inventory_items, expenses, assets, settings) untuk performa optimal
-- Trigger otomatis handle_new_user: setiap user baru di Supabase Auth otomatis dibuatkan profil di tabel `profiles` (fail-safe RLS)
-- RLS (Row Level Security) dan RBAC sudah aktif dan aman untuk production
+- Modular & scalable, siap deploy ke Vercel/Netlify
+- PWA siap instalasi mobile
+- Kode bersih, mudah dikembangkan, terdokumentasi
+- **Versioning Otomatis**: Versi aplikasi tampil di seluruh halaman utama/login, mengikuti `package.json`
+- Penanganan tanggal aset & pengeluaran sudah timezone-safe (lokal, bukan UTC/ISO)
 - Semua pengujian, lint, dan format lolos tanpa error
-
-### ⚡️ Troubleshooting SQL Migration (v1.1.7)
-
-- Semua perintah `CREATE INDEX` dan `ALTER PUBLICATION` harus diletakkan setelah seluruh `CREATE TABLE` (DDL order wajib benar, jika tidak akan error "relation does not exist").
-- Pastikan tidak ada duplikasi `CREATE TABLE` (misal: `public.customers`) dalam file SQL.
-- Jika error `relation ... already exists`, cek dan hapus duplikat definisi tabel.
-- Semua migrasi sudah diuji dan berjalan tanpa error pada Supabase/PostgreSQL 15+.
 
 ---
 
 ## 📝 Catatan Rilis (Changelog)
 
-### v1.1.7 - 1 Desember 2025
+### v1.1.9 - 2 Desember 2025
+- [Fix] Penanganan tanggal aset dan pengeluaran sudah timezone-safe (lokal, bukan UTC/ISO)
+- [Fix] Semua error lint/TypeScript (no-unused-vars, null checks) sudah diperbaiki
+- [Docs] README diperbarui, lebih ringkas dan up-to-date
+- [Test] Semua pengujian, lint, dan format lolos tanpa error
 
+### v1.1.8 - 1 Desember 2025
 - [Security] Database siap multi-cabang: kolom dan index storeId di semua tabel utama
 - [Security] Trigger handle_new_user otomatis untuk fail-safe RLS
 - [Fix] Semua perintah CREATE INDEX dan ALTER PUBLICATION sudah diurutkan setelah seluruh CREATE TABLE (tidak ada lagi error "relation does not exist")
