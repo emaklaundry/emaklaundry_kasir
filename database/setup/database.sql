@@ -669,20 +669,22 @@ DECLARE
   v_freq_unit text;
   v_interval interval;
 BEGIN
-  -- Ambil konfigurasi frekuensi dari row terkait
+  -- 1. Ambil frekuensi dari row terkait
   SELECT "frequencyValue", "frequencyUnit"
   INTO v_freq_value, v_freq_unit
   FROM public.scheduled_maintenances
   WHERE id = maintenance_id;
 
-  -- Konversi unit ke interval PostgreSQL (asumsi frontend kirim: 'days', 'weeks', 'months', 'years')
-  BEGIN
-    v_interval := (v_freq_value || ' ' || v_freq_unit)::interval;
-  EXCEPTION WHEN OTHERS THEN
-    -- Fallback aman jika unit tidak valid
-    v_interval := INTERVAL '30 days';
-  END;
+  -- 2. Mapping unit dari frontend ke interval SQL
+  CASE v_freq_unit
+    WHEN 'days' THEN v_interval := (v_freq_value || ' days')::interval;
+    WHEN 'weeks' THEN v_interval := (v_freq_value || ' weeks')::interval;
+    WHEN 'months' THEN v_interval := (v_freq_value || ' months')::interval;
+    WHEN 'years' THEN v_interval := (v_freq_value || ' years')::interval;
+    ELSE v_interval := INTERVAL '30 days'; -- Fallback jika unit tidak dikenali
+  END CASE;
 
+  -- 3. Update data
   UPDATE public.scheduled_maintenances
   SET 
     "lastCompletedDate" = CURRENT_DATE, 

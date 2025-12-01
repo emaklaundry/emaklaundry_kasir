@@ -21,7 +21,9 @@ const fetchTransactions = async (
   const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
   let query = supabase.from('transactions').select('*', { count: 'exact' });
   if (dateRange) {
-    // Buat objek Date untuk batas akhir dan set ke jam 23:59:59.999
+    // CATATAN: Pastikan zona waktu konsisten antara browser dan database (Supabase default UTC).
+    // Untuk aplikasi lokal Indonesia, biasanya cukup. Jika ingin lebih aman, gunakan filter berbasis tanggal saja:
+    // query = query.gte('createdAt', dateRange.from).lte('createdAt', dateRange.to + 'T23:59:59.999+07:00');
     const toDate = new Date(dateRange.to);
     toDate.setHours(23, 59, 59, 999);
     query = query.gte('createdAt', dateRange.from).lte('createdAt', toDate.toISOString());
