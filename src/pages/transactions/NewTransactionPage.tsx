@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils';
+import { supabase } from '../../utils/supabaseClient';
 import { Trash2Icon, MessageSquareIcon, TagIcon, SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -71,7 +72,6 @@ const NewTransactionPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isPayingNow, setIsPayingNow] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
-  // REMOVED: amountPaidStr, setAmountPaidStr (partial payment logic removed)
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // State untuk idempotencyKey
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
@@ -622,9 +622,6 @@ const NewTransactionPage: React.FC = () => {
     }
   };
 
-  // REMOVED: handleAmountToPayChange (no manual input for amount paid)
-
-  // quickCashButtons removed (unused)
 
   return (
     <>
