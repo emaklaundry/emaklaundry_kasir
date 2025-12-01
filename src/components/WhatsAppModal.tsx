@@ -55,7 +55,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Dibayar: Rp${amountPaid.toLocaleString('id-ID')}\n` +
         `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
         `💳 *Status Bayar*: ${transaction.paymentStatus}\n` +
-        `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleDateString('id-ID')}\n` +
+        `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}\n` +
         `─────────────────────────────\n` +
         `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
         `Salam hangat,\nTim Emak Laundry`;

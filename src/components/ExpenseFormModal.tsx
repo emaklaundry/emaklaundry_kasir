@@ -38,6 +38,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   }, [expense]);
 
   const [formData, setFormData] = useState(initialFormData);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Reset formData when modal is opened or expense changes
   React.useEffect(() => {
@@ -55,11 +56,16 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Gunakan helper agar DRY
-    const iso = convertLocalDateToISOString(formData.date);
-    onSave({ ...formData, date: iso });
+    setIsSaving(true);
+    try {
+      const iso = convertLocalDateToISOString(formData.date);
+      await onSave({ ...formData, date: iso });
+      setFormData(initialFormData); // Reset form setelah sukses
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -73,24 +79,26 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           <button
             onClick={onClose}
             className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
+            disabled={isSaving}
           >
             Batal
           </button>
           <button
             type="submit"
             form="expense-form"
-            className="ml-2 text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-lg px-6 py-3"
+            className="ml-2 text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-lg px-6 py-3 disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={isSaving}
           >
-            Simpan
+            {isSaving ? 'Menyimpan...' : 'Simpan'}
           </button>
         </>
       }
     >
-      <form id="expense-form" onSubmit={handleSubmit} className="space-y-5">
-        <div>
+      <form id="expense-form" onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex flex-col gap-2">
           <label
             htmlFor="date"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+            className="block text-base font-medium text-slate-900 dark:text-white"
           >
             Tanggal
           </label>
@@ -100,14 +108,14 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
             required
           />
         </div>
-        <div>
+        <div className="flex flex-col gap-2">
           <label
             htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+            className="block text-base font-medium text-slate-900 dark:text-white"
           >
             Deskripsi Pengeluaran
           </label>
@@ -118,14 +126,14 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             value={formData.description}
             onChange={handleChange}
             placeholder="Contoh: Beli deterjen, bayar listrik, dll."
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
             required
           />
         </div>
-        <div>
+        <div className="flex flex-col gap-2">
           <label
             htmlFor="category"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+            className="block text-base font-medium text-slate-900 dark:text-white"
           >
             Kategori
           </label>
@@ -134,7 +142,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="category"
             value={formData.category}
             onChange={handleChange}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
             required
           >
             {categoryOptions.map((cat) => (
@@ -144,10 +152,10 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             ))}
           </select>
         </div>
-        <div>
+        <div className="flex flex-col gap-2">
           <label
             htmlFor="amount"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+            className="block text-base font-medium text-slate-900 dark:text-white"
           >
             Jumlah (Rp)
           </label>
@@ -158,7 +166,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             value={formatRupiah(formData.amount)}
             onChange={handleChange}
             placeholder="Contoh: 10000"
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
             required
           />
         </div>
