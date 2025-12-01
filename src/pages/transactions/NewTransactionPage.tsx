@@ -204,22 +204,7 @@ const NewTransactionPage: React.FC = () => {
   }, [showKiloanToast, addToast]);
 
 
-  // LOGIKA PEMBULATAN
-  // Hitung total setelah pembulatan (Hanya berlaku jika Bayar Sekarang + Tunai)
-  const finalTotalToPay = useMemo(() => {
-    if (isPayingNow && paymentMethod === PaymentMethod.Cash) {
-      return roundPrice(grandTotal); // Membulatkan ke bawah ke ratusan terdekat
-    }
-    return grandTotal;
-  }, [grandTotal, isPayingNow, paymentMethod]);
-
-  // Hitung selisih pembulatan (untuk ditampilkan sebagai info)
-  const roundingDifference = useMemo(() => {
-    return grandTotal - finalTotalToPay;
-  }, [grandTotal, finalTotalToPay]);
-
-  // Only use finalTotalToPay for payment
-  const amountToPay = finalTotalToPay;
+  // (Deklarasi duplikat finalTotalToPay, roundingDifference, amountToPay dihapus. Sudah ada di atas.)
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
   const changeAmount = useMemo(() => {
