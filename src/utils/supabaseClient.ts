@@ -69,7 +69,7 @@ export async function updateTransactionProgress(
 
   const { data, error } = await supabase.rpc('update_transaction_progress', {
     transaction_id_input: transactionId,
-    p_amount_paid: amountPaid ?? undefined,
+    p_amount_paid: amountPaid,
     p_change: change ?? undefined,
     p_payment_method: paymentMethod ?? undefined,
     p_payment_status: paymentStatus ?? undefined,

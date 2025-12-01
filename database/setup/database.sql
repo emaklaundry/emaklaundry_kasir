@@ -602,5 +602,8 @@ AS $$
     -- Pencarian Utama: Berdasarkan Kode Invoice (Case Insensitive agar huruf kecil/besar tidak masalah)
     t.invoice_code ILIKE input_identifier
     -- Pencarian Alternatif: Berdasarkan UUID (jika input formatnya valid UUID)
-    OR (input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' AND t.id::text = input_identifier);
+    OR (
+      input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      AND t.id = input_identifier::uuid
+    );
 $$;
