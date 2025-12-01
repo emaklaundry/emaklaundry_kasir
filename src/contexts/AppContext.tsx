@@ -101,60 +101,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [addToast]);
 
-
-    // Bungkus signOut dengan useCallback agar stabil di dalam useEffect dependency
-    const signOut = useCallback(async () => {
-      if (currentUser) {
-        const newLog = {
-          timestamp: new Date().toISOString(),
-          user: currentUser.name ?? null,
-          action: 'Melakukan logout.',
-          storeId: currentUser.storeId ?? null,
-        };
-        supabase.from('audit_logs').insert([newLog]).then();
-      }
-      await supabase.auth.signOut();
-      setCurrentUser(null);
-    }, [currentUser]);
+  // Bungkus signOut dengan useCallback agar stabil di dalam useEffect dependency
+  const signOut = useCallback(async () => {
+    if (currentUser) {
+      const newLog = {
+        timestamp: new Date().toISOString(),
+        user: currentUser.name ?? null,
+        action: 'Melakukan logout.',
+        storeId: currentUser.storeId ?? null,
+      };
+      supabase.from('audit_logs').insert([newLog]).then();
+    }
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+  }, [currentUser]);
 
   // Konfigurasi waktu timeout (misal: 15 menit)
   const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
-    // --- LOGIC AUTO LOGOUT ---
-    useEffect(() => {
-      // Hanya jalankan jika user sedang login
-      if (!currentUser) return;
+  // --- LOGIC AUTO LOGOUT ---
+  useEffect(() => {
+    // Hanya jalankan jika user sedang login
+    if (!currentUser) return;
 
-      let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout;
 
-      const handleInactivity = () => {
-        signOut();
-        addToast('Sesi Anda telah berakhir karena tidak ada aktivitas.', 'info');
-      };
+    const handleInactivity = () => {
+      signOut();
+      addToast('Sesi Anda telah berakhir karena tidak ada aktivitas.', 'info');
+    };
 
-      const resetTimer = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = setTimeout(handleInactivity, INACTIVITY_TIMEOUT);
-      };
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleInactivity, INACTIVITY_TIMEOUT);
+    };
 
-      // Event yang dianggap sebagai aktivitas
-      const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    // Event yang dianggap sebagai aktivitas
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach((event) => {
+      document.addEventListener(event, resetTimer);
+    });
+
+    // Mulai timer pertama kali
+    resetTimer();
+
+    // Cleanup saat unmount atau currentUser berubah (logout)
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
       events.forEach((event) => {
-        document.addEventListener(event, resetTimer);
+        document.removeEventListener(event, resetTimer);
       });
-
-      // Mulai timer pertama kali
-      resetTimer();
-
-      // Cleanup saat unmount atau currentUser berubah (logout)
-      return () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        events.forEach((event) => {
-          document.removeEventListener(event, resetTimer);
-        });
-      };
-    }, [currentUser, signOut, addToast]);
-    // -------------------------
+    };
+  }, [currentUser, signOut, addToast]);
+  // -------------------------
 
   return (
     <AppContext.Provider

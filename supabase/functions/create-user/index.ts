@@ -82,14 +82,15 @@ serve(async (req) => {
     }
 
     // 7. Buat User baru menggunakan Admin API
+    // Kirim metadata lengkap agar trigger handle_new_user_trigger berjalan dengan benar
     const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
       email_confirm: true,
       user_metadata: {
-        name: name,
+        full_name: name, // <--- WAJIB: agar trigger membaca full_name
         role: role || 'Kasir',
-        store_id: storeId || null,
+        store_id: storeId || null, // <--- WAJIB: agar trigger membaca store_id
       },
     });
 
