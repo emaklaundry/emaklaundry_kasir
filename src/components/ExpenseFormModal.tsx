@@ -16,6 +16,14 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const categoryOptions = [
+    'Operasional',
+    'Listrik',
+    'Air',
+    'Gaji',
+    'Perlengkapan',
+    'Lainnya',
+  ];
   const initialFormData = useMemo(() => {
     if (expense) {
       return {
@@ -85,9 +93,9 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
         </>
       }
     >
-      <form id="expense-form" onSubmit={handleSubmit} className="space-y-4">
+      <form id="expense-form" onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="date" className="block mb-1 font-medium">
+          <label htmlFor="date" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
             Tanggal
           </label>
           <input
@@ -96,13 +104,13 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
         <div>
-          <label htmlFor="description" className="block mb-1 font-medium">
-            Deskripsi
+          <label htmlFor="description" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+            Deskripsi Pengeluaran
           </label>
           <input
             id="description"
@@ -110,27 +118,31 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="description"
             value={formData.description}
             onChange={handleChange}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+            placeholder="Contoh: Beli deterjen, bayar listrik, dll."
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
         <div>
-          <label htmlFor="category" className="block mb-1 font-medium">
+          <label htmlFor="category" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
             Kategori
           </label>
-          <input
+          <select
             id="category"
-            type="text"
             name="category"
             value={formData.category}
             onChange={handleChange}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
             required
-          />
+          >
+            {categoryOptions.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
         </div>
         <div>
-          <label htmlFor="amount" className="block mb-1 font-medium">
-            Jumlah
+          <label htmlFor="amount" className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
+            Jumlah (Rp)
           </label>
           <input
             id="amount"
@@ -138,7 +150,8 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="amount"
             value={formatRupiah(formData.amount)}
             onChange={handleChange}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2"
+            placeholder="Contoh: 10000"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-3 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
