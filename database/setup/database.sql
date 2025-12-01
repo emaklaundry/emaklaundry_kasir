@@ -440,8 +440,8 @@ CREATE POLICY "Allow INSERT for all logged-in users" ON public.audit_logs
     WITH CHECK (auth.uid() IS NOT NULL);
 
 -- --- Tabel: settings ---
-CREATE POLICY "Allow all read access" ON public.settings
-  FOR SELECT USING (true);
+CREATE POLICY "Allow read for store users" ON public.settings
+  FOR SELECT USING ("storeId" = public.get_my_store_id() OR public.get_my_role() = 'Super Admin');
 CREATE POLICY "Allow ALL for Admins" ON public.settings
   FOR ALL USING (public.get_my_role() IN ('Super Admin', 'Admin'))
   WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));

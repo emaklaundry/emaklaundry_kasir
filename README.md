@@ -3,19 +3,23 @@
 
 # Laundry Management System (Web Kasir)
 
+
 **Versi:** 1.1.7  
 **Update terakhir:** 1 Desember 2025
 
 ---
 
-Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, dan backup database otomatis/manual.
+
+Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, backup database otomatis/manual, dan kini siap multi-cabang (multi-tenant) dengan performa dan keamanan optimal.
 
 ---
+
 
 ## ✨ Fitur Utama
 
 - Manajemen transaksi laundry (kiloan, satuan, sepatu, karpet) & invoice pendek
 - Manajemen pelanggan, layanan, inventaris, aset, pengeluaran
+- Multi-cabang: Pengaturan, transaksi, dan laporan per store/cabang
 - Multi-role: Super Admin, Admin, Kasir
 - Audit log, laporan, analitik
 - PWA: offline mode, installable
@@ -24,6 +28,7 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 - Pengujian otomatis per-file (Vitest, Testing Library)
 
 ---
+
 
 ## 🛠️ Teknologi
 
@@ -120,6 +125,7 @@ jobs:
 
 ---
 
+
 ## 🔒 Hak Akses & Role
 
 - **Super Admin**: Akses penuh seluruh fitur & pengaturan
@@ -127,6 +133,7 @@ jobs:
 - **Kasir**: Input transaksi, update status, akses terbatas
 
 ---
+
 
 ## 📝 Catatan Pengembangan & Perubahan Terbaru
 
@@ -136,12 +143,25 @@ jobs:
 - Kode bersih, mudah dikembangkan, dan terdokumentasi
 - **Versioning Otomatis**: Versi aplikasi akan selalu tampil di seluruh halaman utama dan halaman login, mengikuti versi di `package.json`.
 
+### 🔒 Keamanan & Performa (v1.1.7)
+- Database siap multi-cabang: tabel `settings` kini punya kolom `storeId` dan RLS policy per store
+- Index storeId di semua tabel utama (transactions, customers, inventory_items, expenses, assets, settings) untuk performa optimal
+- Trigger otomatis handle_new_user: setiap user baru di Supabase Auth otomatis dibuatkan profil di tabel `profiles` (fail-safe RLS)
+- RLS (Row Level Security) dan RBAC sudah aktif dan aman untuk production
+- Semua pengujian, lint, dan format lolos tanpa error
+
 ---
 
 ## 📝 Catatan Rilis (Changelog)
 
-### v1.1.5 - 1 Desember 2025
 
+### v1.1.7 - 1 Desember 2025
+- [Security] Database siap multi-cabang: kolom dan index storeId di semua tabel utama
+- [Security] Trigger handle_new_user otomatis untuk fail-safe RLS
+- [Docs] Update README, dokumentasi best practice production-ready
+- [Test] Semua pengujian, lint, dan format lolos tanpa error
+
+### v1.1.5 - 1 Desember 2025
 - [Release] Peningkatan versi aplikasi ke 1.1.5.
 - [Docs] Update README, status pengujian, dan coverage terbaru (Desember 2025).
 - [Test] Seluruh pengujian per-file, coverage >85%, dan tidak ada lagi error context/mocking.
