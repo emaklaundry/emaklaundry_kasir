@@ -279,7 +279,7 @@ const ReportsPage: React.FC = () => {
     return [];
   }, [customersRaw.data]);
 
-  // --- PERBAIKAN: Fetch Combined Expenses (Operasional, Pembelian Aset, Pemeliharaan Aset) ---
+  // --- Fetch Combined Expenses (Operasional, Pembelian Aset, Pemeliharaan Aset) ---
   const { data: allStoreExpenses = [] } = useQuery<Expense[]>({
     queryKey: ['report-expenses-combined', selectedStoreId, startDate, endDate],
     queryFn: async () => {
@@ -436,11 +436,14 @@ const ReportsPage: React.FC = () => {
         const time = new Date(t.createdAt).getTime();
         return time >= start && time <= end;
       });
-    // Expenses sudah difilter di queryFn, tapi filter ulang di client memastikan akurasi
-    const expenses = (allStoreExpenses as Expense[]).filter((e) => {
-      const time = new Date(e.date).getTime();
-      return time >= start && time <= end;
-    });
+    
+    // --- PERBAIKAN DI SINI ---
+    // Jangan filter expenses lagi berdasarkan timestamp karena allStoreExpenses 
+    // sudah difetch khusus untuk range tanggal ini dari Database/QueryFn.
+    // Filter ulang di sini berisiko bug timezone (UTC vs Local) yang menyebabkan
+    // data di batas tanggal (boundary) hilang.
+    const expenses = (allStoreExpenses as Expense[]) || [];
+
     return { transactions, expenses };
   }, [startDate, endDate, allStoreTransactions, allStoreExpenses]);
 
@@ -602,7 +605,7 @@ const ReportsPage: React.FC = () => {
     return summary;
   }, [allStoreTransactions, allStoreExpenses]);
 
-  // --- TAMBAHAN: Teks header untuk laporan cetak ---
+  // --- Teks header untuk laporan cetak ---
   const printHeaderTitle = useMemo(() => {
     // Untuk 'range'
     const startStr = startDate.toLocaleDateString('id-ID');
