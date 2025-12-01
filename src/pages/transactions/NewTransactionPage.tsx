@@ -71,7 +71,7 @@ const NewTransactionPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isPayingNow, setIsPayingNow] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
-  const [amountPaidStr, setAmountPaidStr] = useState('');
+  // REMOVED: amountPaidStr, setAmountPaidStr (partial payment logic removed)
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // State untuk idempotencyKey
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
@@ -182,13 +182,11 @@ const NewTransactionPage: React.FC = () => {
       setShowKiloanToast(false);
     }
   }, [showKiloanToast, addToast]);
-  useEffect(() => {
-    if (isPayingNow) {
-      setAmountPaidStr(formatRupiah(grandTotal));
-    }
-  }, [grandTotal, isPayingNow, addToast]);
 
-  const amountToPay = useMemo(() => parseRupiah(amountPaidStr), [amountPaidStr]);
+
+
+  // Only use grandTotal for payment, no partial payment
+  const amountToPay = grandTotal;
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
   const changeAmount = useMemo(() => {
@@ -198,24 +196,18 @@ const NewTransactionPage: React.FC = () => {
     return tenderedAmount - amountToPay;
   }, [isPayingNow, paymentMethod, tenderedAmount, amountToPay]);
 
+
   const actualAmountPaid = useMemo(() => {
     if (!isPayingNow) return 0;
-    return amountToPay;
-  }, [isPayingNow, amountToPay]);
+    return grandTotal;
+  }, [isPayingNow, grandTotal]);
 
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;
     if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
     if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
-    // Jika ada pembayaran sebagian
-    if (actualAmountPaid > 0 && actualAmountPaid < grandTotal) {
-      return PaymentStatus.Partial;
-    }
     return PaymentStatus.Unpaid;
-    // --- Sanitasi items sebelum submit (buang length/width jika tidak ingin ke DB) ---
-    // Contoh: const cleanedItems = items.map(({ length, width, ...item }) => ({ ...item }));
-    // Jika ingin simpan length/width, biarkan saja.
   }, [isPayingNow, actualAmountPaid, grandTotal]);
 
   const currentStoreId = useMemo(() => {
@@ -533,8 +525,18 @@ const NewTransactionPage: React.FC = () => {
         typeof (error as { message?: string }).message === 'string' &&
         (error as { message: string }).message.includes('idempotencyKey')
       ) {
+        // Fetch ulang transaksi existing berdasarkan idempotencyKey
+        const { data: existingTx } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('idempotencyKey', idempotencyKey)
+          .single();
+        if (existingTx) {
+          setNewlyCreatedTransaction(existingTx as any);
+          setIsWhatsAppModalOpen(true);
+        }
         updateToast(toastId, 'Transaksi berhasil disimpan (terdeteksi duplikat).', 'success');
-        setIsSuccessModalOpen(true);
+        // setIsSuccessModalOpen(true); // Tetap biarkan di handleCloseWhatsAppModal
       } else {
         let msg = 'Unknown error';
         if (
@@ -592,28 +594,14 @@ const NewTransactionPage: React.FC = () => {
 
   const handlePaymentOptionChange = (paying: boolean) => {
     setIsPayingNow(paying);
-    if (paying) {
-      setAmountPaidStr(formatRupiah(grandTotal));
-    } else {
-      setAmountPaidStr('');
+    if (!paying) {
       setPaymentMethod(undefined);
       setTenderedAmountStr('');
     }
   };
 
-  const handleAmountToPayChange = (valueStr: string) => {
-    const rawValue = parseRupiah(valueStr);
-    if (valueStr === '' || rawValue === 0) {
-      setAmountPaidStr('');
-      return;
-    }
-    if (rawValue > grandTotal) {
-      setAmountPaidStr('');
-      addToast('Jumlah pembayaran tidak boleh melebihi total tagihan.', 'error');
-      return;
-    }
-    setAmountPaidStr(formatRupiah(rawValue));
-  };
+
+  // REMOVED: handleAmountToPayChange (no manual input for amount paid)
 
   // quickCashButtons removed (unused)
 
@@ -931,7 +919,6 @@ const NewTransactionPage: React.FC = () => {
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
-                            // UPDATED: Style disamakan persis dengan tombol "Bayar Sekarang"
                             className={`p-3 rounded-lg text-base border-2 font-semibold transition-colors duration-200
                               ${
                                 paymentMethod === m
@@ -944,23 +931,6 @@ const NewTransactionPage: React.FC = () => {
                           </button>
                         ))}
                       </div>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="amountPaid"
-                        className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-                      >
-                        Jumlah Bayar (Rp)
-                      </label>
-                      <input
-                        type="text"
-                        id="amountPaid"
-                        value={amountPaidStr}
-                        onChange={(e) => handleAmountToPayChange(e.target.value)}
-                        className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                        placeholder="0"
-                        disabled={true}
-                      />
                     </div>
                     {paymentMethod === PaymentMethod.Cash && (
                       <div>
@@ -984,7 +954,6 @@ const NewTransactionPage: React.FC = () => {
                         />
                       </div>
                     )}
-                    {/* Tombol uang pas & quick cash dihapus, hanya input manual */}
                     {changeAmount > 0 && (
                       <div className="flex justify-between items-center text-lg">
                         <span className="text-slate-600 dark:text-slate-300">Kembalian:</span>

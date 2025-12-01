@@ -72,27 +72,43 @@ export function useTransactions(filter: TransactionFilter = {}) {
   const updateTransaction = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Transaction> }) => {
       const { id, data } = variables;
-      // Only allow status/progress fields to be updated via RPC
+      // Pisahkan data untuk RPC dan update biasa
       const {
         amountPaid = undefined,
         change = undefined,
         paymentMethod = undefined,
         paymentStatus = undefined,
         orderStatus = undefined,
+        ...otherFields
       } = data;
 
-      // Call the secure RPC for progress/status changes
-      const updated = await updateTransactionProgress(id, {
-        amountPaid,
-        change,
-        paymentMethod,
-        paymentStatus,
-        orderStatus,
-      });
-      // Map the result to Transaction type if present
       let row = null;
-      if (Array.isArray(updated) && updated[0]) row = updated[0];
-      else if (updated && typeof updated === 'object') row = updated;
+      // 1. Jalankan RPC untuk update progress jika ada field terkait
+      if (
+        amountPaid !== undefined ||
+        paymentStatus !== undefined ||
+        orderStatus !== undefined
+      ) {
+        const updated = await updateTransactionProgress(id, {
+          amountPaid,
+          change,
+          paymentMethod,
+          paymentStatus,
+          orderStatus,
+        });
+        if (Array.isArray(updated) && updated[0]) row = updated[0];
+        else if (updated && typeof updated === 'object') row = updated;
+      }
+      // 2. Jalankan update standar untuk field lain (notes, estimatedCompletionDate, dll)
+      if (Object.keys(otherFields).length > 0) {
+        const { data: updatedRow, error } = await supabase
+          .from('transactions')
+          .update(otherFields)
+          .eq('id', id)
+          .select();
+        if (error) throw error;
+        if (updatedRow && updatedRow[0]) row = updatedRow[0];
+      }
       if (!row) return null;
       // Explicitly map all required Transaction fields
       return {

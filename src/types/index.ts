@@ -8,7 +8,6 @@ export enum ServiceCategory {
 export enum PaymentStatus {
   Paid = 'Lunas',
   Unpaid = 'Belum Lunas',
-  Partial = 'Bayar Sebagian',
 }
 
 export enum OrderStatus {
