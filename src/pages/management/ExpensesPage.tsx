@@ -32,7 +32,7 @@ const ExpensesPage: React.FC = () => {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [isSavingExpense, setIsSavingExpense] = useState(false);
+  // (sudah dideklarasikan di atas)
 
   const handleOpenFormModal = (expense: Expense | null = null) => {
     setCurrentExpense(expense);
