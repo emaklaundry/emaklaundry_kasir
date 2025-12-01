@@ -71,6 +71,10 @@ const AssetsPage: React.FC = () => {
   };
 
   const handleSaveAsset = async (asset: Omit<Asset, 'id' | 'maintenanceHistory' | 'storeId'>) => {
+    if (!currentUser) {
+      addToast('User context belum siap.', 'error');
+      return;
+    }
     const storeId =
       currentAsset?.storeId ||
       (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
@@ -93,8 +97,13 @@ const AssetsPage: React.FC = () => {
         // Integrasi Otomatis ke Pengeluaran (Jika ada biaya beli)
         if (asset.purchaseCost > 0) {
           try {
-            // Format tanggal dari ISO string ke YYYY-MM-DD
-            const dateStr = asset.purchaseDate.split('T')[0];
+            // Format tanggal dari Date ke YYYY-MM-DD
+            let dateStr = '';
+            if (asset.purchaseDate && typeof asset.purchaseDate === 'string') {
+              dateStr = asset.purchaseDate.split('T')[0];
+            } else if (asset.purchaseDate instanceof Date) {
+              dateStr = asset.purchaseDate.toISOString().split('T')[0];
+            }
             await addExpense({
               date: dateStr,
               description: `Pembelian Aset: ${asset.name}`,
@@ -234,7 +243,7 @@ const AssetsPage: React.FC = () => {
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
-  const canAddNewAsset = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+  const canAddNewAsset = !!currentUser && !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
 
   const handleFilterChange = (filter: 'all' | 'due') => {
     setMaintenanceFilter(filter);
@@ -334,7 +343,7 @@ const AssetsPage: React.FC = () => {
                   Nama Aset {getSortIcon('name')}
                 </button>
               </th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+              {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                 <th className="px-4 py-3">
                   <button
                     onClick={() => requestSort('storeName')}
@@ -378,7 +387,7 @@ const AssetsPage: React.FC = () => {
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {asset.name}
                   </td>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                  {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                     <td className="px-4 py-3">{asset.storeName}</td>
                   )}
                   <td className="px-4 py-3">
@@ -496,7 +505,7 @@ const AssetsPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+              {currentUser && currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                 <p className="text-sm text-slate-500 dark:text-slate-400">{asset.storeName}</p>
               )}
               <div className="mt-3 space-y-1 text-sm border-t dark:border-slate-600 pt-2">
