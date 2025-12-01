@@ -11,9 +11,14 @@ interface ItemNotesModalProps {
   onSave: (notes: { note: string }[]) => void;
 }
 
-
-const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, notes, setNotes, onSave }) => {
-
+const ItemNotesModal: React.FC<ItemNotesModalProps> = ({
+  isOpen,
+  onClose,
+  item,
+  notes,
+  setNotes,
+  onSave,
+}) => {
   const handleNoteChange = (index: number, value: string) => {
     const newNotes = [...notes];
     newNotes[index] = { note: value };
@@ -52,7 +57,13 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, 
         </>
       }
     >
-      <form className="space-y-4" onSubmit={e => { e.preventDefault(); handleSave(); }}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
+      >
         {notes.map((n, i) => (
           <div key={i}>
             <label
@@ -66,7 +77,7 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, 
               id={`note-${i}`}
               value={n.note}
               placeholder="Noda di kerah, sobek, dsb."
-              onChange={e => handleNoteChange(i, e.target.value)}
+              onChange={(e) => handleNoteChange(i, e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               aria-label={`Item #${i + 1}`}
             />
@@ -74,8 +85,7 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({ isOpen, onClose, item, 
         ))}
       </form>
     </Modal>
-
   );
-}
+};
 
 export default ItemNotesModal;

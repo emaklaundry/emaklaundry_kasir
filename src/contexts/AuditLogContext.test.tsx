@@ -12,13 +12,16 @@ vi.mock('../utils/supabaseClient', () => ({
     order: vi.fn().mockReturnThis(),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
-      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      onAuthStateChange: vi
+        .fn()
+        .mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
   },
 }));
 
 vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const actual =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
   return {
     ...actual,
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),

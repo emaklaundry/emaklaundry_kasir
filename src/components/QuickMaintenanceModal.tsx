@@ -23,7 +23,6 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     cost: 0,
   }));
 
-
   // Ensure selectedAssetId and form defaults are in sync when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -81,7 +80,11 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
       onClose();
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'message' in error) {
-        updateToast(toastId, `Gagal menyimpan laporan: ${(error as { message: string }).message}`, 'error');
+        updateToast(
+          toastId,
+          `Gagal menyimpan laporan: ${(error as { message: string }).message}`,
+          'error',
+        );
       } else {
         updateToast(toastId, 'Gagal menyimpan laporan: Unknown error', 'error');
       }

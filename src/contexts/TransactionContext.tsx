@@ -111,7 +111,9 @@ export function useTransactions(filter: TransactionFilter = {}) {
         estimatedCompletionDate: row.estimatedCompletionDate ?? '',
         amountPaid: row.amountPaid ?? 0,
         change: row.change ?? 0,
-        paymentMethod: row.paymentMethod ? row.paymentMethod as import('../types').PaymentMethod : undefined,
+        paymentMethod: row.paymentMethod
+          ? (row.paymentMethod as import('../types').PaymentMethod)
+          : undefined,
         createdByUserId: row.createdByUserId ?? '',
         storeId: row.storeId ?? '',
         notes: row.notes ?? undefined,

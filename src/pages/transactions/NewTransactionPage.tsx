@@ -7,12 +7,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils';
-import {
-  Trash2Icon,
-  MessageSquareIcon,
-  TagIcon,
-  SpinnerIcon,
-} from '../../components/icons';
+import { Trash2Icon, MessageSquareIcon, TagIcon, SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
@@ -332,7 +327,10 @@ const NewTransactionPage: React.FC = () => {
     setEditingItemIndex(index);
     const item = items[index];
     const allNotes = item?.itemDetails || [];
-    const initialNotes = Array.from({ length: item.quantity }, (_, i) => allNotes[i] || { note: '' });
+    const initialNotes = Array.from(
+      { length: item.quantity },
+      (_, i) => allNotes[i] || { note: '' },
+    );
     setEditingNotes(initialNotes);
     setIsNotesModalOpen(true);
   };
@@ -390,7 +388,12 @@ const NewTransactionPage: React.FC = () => {
       }
     } catch (error: unknown) {
       let msg = 'Unknown error';
-      if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: string }).message === 'string') {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof (error as { message?: string }).message === 'string'
+      ) {
         msg = (error as { message: string }).message;
       }
       updateToast(toastId, `Gagal menambah pelanggan: ${msg}`, 'error');
@@ -469,17 +472,21 @@ const NewTransactionPage: React.FC = () => {
           notes: savedTransaction.notes ?? undefined,
           idempotencyKey: savedTransaction.idempotencyKey ?? undefined,
           items: Array.isArray(savedTransaction.items)
-            ? (savedTransaction.items as unknown as import('../../types').TransactionItem[]).map((item) => ({
-                ...item,
-                itemDetails: item.itemDetails ?? [],
-              }))
+            ? (savedTransaction.items as unknown as import('../../types').TransactionItem[]).map(
+                (item) => ({
+                  ...item,
+                  itemDetails: item.itemDetails ?? [],
+                }),
+              )
             : [],
           createdAt: savedTransaction.createdAt ? new Date(savedTransaction.createdAt) : new Date(),
           estimatedCompletionDate: savedTransaction.estimatedCompletionDate ?? '',
           invoice_code: savedTransaction.invoice_code ?? undefined,
           paymentStatus: savedTransaction.paymentStatus as PaymentStatus,
           orderStatus: savedTransaction.orderStatus as OrderStatus,
-          paymentMethod: savedTransaction.paymentMethod ? savedTransaction.paymentMethod as PaymentMethod : undefined,
+          paymentMethod: savedTransaction.paymentMethod
+            ? (savedTransaction.paymentMethod as PaymentMethod)
+            : undefined,
         };
         addAuditLog(
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
@@ -499,7 +506,8 @@ const NewTransactionPage: React.FC = () => {
     } catch (error: unknown) {
       // Tangani error duplikat idempotencyKey
       if (
-        error && typeof error === 'object' &&
+        error &&
+        typeof error === 'object' &&
         'code' in error &&
         (error as { code?: string }).code === '23505' &&
         'message' in error &&
@@ -510,7 +518,12 @@ const NewTransactionPage: React.FC = () => {
         setIsSuccessModalOpen(true);
       } else {
         let msg = 'Unknown error';
-        if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: string }).message === 'string') {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'message' in error &&
+          typeof (error as { message?: string }).message === 'string'
+        ) {
           msg = (error as { message: string }).message;
         }
         updateToast(toastId, `Gagal menyimpan transaksi: ${msg}`, 'error');
@@ -1013,7 +1026,10 @@ const NewTransactionPage: React.FC = () => {
       />
       <ItemNotesModal
         isOpen={isNotesModalOpen}
-        onClose={() => { setIsNotesModalOpen(false); setEditingNotes([]); }}
+        onClose={() => {
+          setIsNotesModalOpen(false);
+          setEditingNotes([]);
+        }}
         item={editingItemIndex !== null ? items[editingItemIndex] : null!}
         notes={editingNotes}
         setNotes={setEditingNotes}

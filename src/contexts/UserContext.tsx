@@ -2,6 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../utils/supabaseClient';
 
 import { User } from '@/types';
+
+type UserCreateInput = {
+  email: string;
+  password: string;
+  name: string;
+  role?: string;
+  storeId?: string;
+};
 import type { Database } from '../types/supabase';
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
@@ -23,7 +31,7 @@ export function useUsers() {
   const queryClient = useQueryClient();
   const { data: users = [], ...query } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
 
-    const updateUser = useMutation({
+  const updateUser = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<User> }) => {
       const payload: Record<string, unknown> = {};
       if ('name' in data && typeof data.name === 'string') payload.name = data.name;
@@ -44,7 +52,7 @@ export function useUsers() {
   // Admin create user: gunakan Supabase Auth Admin API
   // Anda butuh service_role key, sebaiknya lakukan di backend/Edge Function
   const createUser = useMutation({
-    mutationFn: async (newUser: any) => {
+    mutationFn: async (newUser: UserCreateInput) => {
       // Memanggil Edge Function Supabase (create-user)
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: newUser,

@@ -25,7 +25,6 @@ vi.mock('../utils/supabaseClient', () => ({
 }));
 vi.mock('./StoreContext', () => ({ useStores: () => ({ stores: [] }) }));
 
-
 const TestComponent = () => {
   const ctx = useAppContext();
   return (

@@ -22,7 +22,7 @@ describe('ItemNotesModal', () => {
         notes={notes}
         setNotes={setNotes}
         onSave={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText(/catatan untuk cuci kering/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Item #1')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('ItemNotesModal', () => {
         notes={notes}
         setNotes={setNotes}
         onSave={vi.fn()}
-      />
+      />,
     );
     fireEvent.click(screen.getByText('Batal'));
     expect(onClose).toHaveBeenCalled();

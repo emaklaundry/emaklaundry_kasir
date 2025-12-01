@@ -17,7 +17,6 @@ export interface ToastContextType {
   removeToast: (id: number) => void;
 }
 
-
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -46,5 +45,3 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     </ToastContext.Provider>
   );
 };
-
-

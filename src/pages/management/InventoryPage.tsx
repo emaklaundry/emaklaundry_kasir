@@ -31,9 +31,7 @@ const InventoryPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const {
-    data: result = { data: [], count: 0 },
-  } = useQuery({
+  const { data: result = { data: [], count: 0 } } = useQuery({
     queryKey: [
       'inventory',
       { page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId },
@@ -134,7 +132,11 @@ const InventoryPage: React.FC = () => {
         updateToast(toastId, 'Item inventaris berhasil dihapus!', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
-          updateToast(toastId, `Gagal menghapus: ${(error as { message: string }).message}`, 'error');
+          updateToast(
+            toastId,
+            `Gagal menghapus: ${(error as { message: string }).message}`,
+            'error',
+          );
         } else {
           updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
         }

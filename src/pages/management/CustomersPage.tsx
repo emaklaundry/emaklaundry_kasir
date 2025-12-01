@@ -7,7 +7,7 @@ import {
   Trash2Icon,
   SearchIcon,
   UsersIcon,
-  ArrowUpIcon
+  ArrowUpIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -30,9 +30,7 @@ const CustomersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const {
-    data: result = { data: [], count: 0 },
-  } = useQuery({
+  const { data: result = { data: [], count: 0 } } = useQuery({
     queryKey: [
       'customers',
       { page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId },
@@ -181,7 +179,11 @@ const CustomersPage: React.FC = () => {
         updateToast(toastId, 'Pelanggan berhasil dihapus!', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
-          updateToast(toastId, `Gagal menghapus: ${(error as { message: string }).message}`, 'error');
+          updateToast(
+            toastId,
+            `Gagal menghapus: ${(error as { message: string }).message}`,
+            'error',
+          );
         } else {
           updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
         }

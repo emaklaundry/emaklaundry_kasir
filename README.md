@@ -1,6 +1,4 @@
 ---
-
-
 ---
 
 # Laundry Management System (Web Kasir)
@@ -10,11 +8,12 @@
 
 ---
 
-Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, dan backup database otomatis/manual. 
+Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, dan backup database otomatis/manual.
 
 ---
 
 ## ✨ Fitur Utama
+
 - Manajemen transaksi laundry (kiloan, satuan, sepatu, karpet) & invoice pendek
 - Manajemen pelanggan, layanan, inventaris, aset, pengeluaran
 - Multi-role: Super Admin, Admin, Kasir
@@ -27,6 +26,7 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 ---
 
 ## 🛠️ Teknologi
+
 - **Frontend:** React 19, TypeScript, Vite
 - **State:** React Context, React Query
 - **Styling:** Tailwind CSS
@@ -177,11 +177,12 @@ npm test
 
 ---
 
-Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, dan backup database otomatis/manual. 
+Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi, inventaris, pelanggan, aset, pengeluaran, penjadwalan perawatan, pelaporan, dan backup database otomatis/manual.
 
 ---
 
 ## ✨ Fitur Utama
+
 - Manajemen transaksi laundry (kiloan, satuan, sepatu, karpet) & invoice pendek
 - Manajemen pelanggan, layanan, inventaris, aset, pengeluaran
 - Multi-role: Super Admin, Admin, Kasir
@@ -194,6 +195,7 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 ---
 
 ## 🛠️ Teknologi
+
 - **Frontend:** React 19, TypeScript, Vite
 - **State:** React Context, React Query
 - **Styling:** Tailwind CSS
@@ -217,8 +219,6 @@ Gunakan ini jika Anda sudah memiliki struktur tabel (Schema) dan hanya ingin mem
 ```powershell
 supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" --data-only -f database/backup/data.sql
 ```
-
-
 
 Output: File `database/backup/backup_schema.sql`.
 

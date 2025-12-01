@@ -10,7 +10,6 @@ interface ExpenseFormModalProps {
   onSave: (expense: Omit<Expense, 'id' | 'storeId'>) => void;
 }
 
-
 const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   expense,
   isOpen,
@@ -88,7 +87,9 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     >
       <form id="expense-form" onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="date" className="block mb-1 font-medium">Tanggal</label>
+          <label htmlFor="date" className="block mb-1 font-medium">
+            Tanggal
+          </label>
           <input
             id="date"
             type="date"
@@ -100,7 +101,9 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           />
         </div>
         <div>
-          <label htmlFor="description" className="block mb-1 font-medium">Deskripsi</label>
+          <label htmlFor="description" className="block mb-1 font-medium">
+            Deskripsi
+          </label>
           <input
             id="description"
             type="text"
@@ -112,7 +115,9 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           />
         </div>
         <div>
-          <label htmlFor="category" className="block mb-1 font-medium">Kategori</label>
+          <label htmlFor="category" className="block mb-1 font-medium">
+            Kategori
+          </label>
           <input
             id="category"
             type="text"
@@ -124,7 +129,9 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           />
         </div>
         <div>
-          <label htmlFor="amount" className="block mb-1 font-medium">Jumlah</label>
+          <label htmlFor="amount" className="block mb-1 font-medium">
+            Jumlah
+          </label>
           <input
             id="amount"
             type="text"
@@ -138,6 +145,6 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       </form>
     </Modal>
   );
-}
+};
 
 export default ExpenseFormModal;

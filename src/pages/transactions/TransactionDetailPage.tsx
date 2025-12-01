@@ -67,9 +67,11 @@ const TransactionDetailPage: React.FC = () => {
         createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
         estimatedCompletionDate: data.estimatedCompletionDate ?? '',
         invoice_code: data.invoice_code ?? undefined,
-         paymentStatus: data.paymentStatus as import('../../types').PaymentStatus,
-         orderStatus: data.orderStatus as import('../../types').OrderStatus,
-         paymentMethod: data.paymentMethod ? data.paymentMethod as import('../../types').PaymentMethod : undefined,
+        paymentStatus: data.paymentStatus as import('../../types').PaymentStatus,
+        orderStatus: data.orderStatus as import('../../types').OrderStatus,
+        paymentMethod: data.paymentMethod
+          ? (data.paymentMethod as import('../../types').PaymentMethod)
+          : undefined,
       };
     },
     enabled: !!id,

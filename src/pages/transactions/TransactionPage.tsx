@@ -644,7 +644,9 @@ const TransactionPage: React.FC = () => {
                       </Link>
                       <button
                         onClick={() => {
-                          const foundCustomer = customers.find((c: Customer) => c.id === t.customerId);
+                          const foundCustomer = customers.find(
+                            (c: Customer) => c.id === t.customerId,
+                          );
                           if (foundCustomer) {
                             handleOpenWhatsAppModal(t);
                           } else {
@@ -779,7 +781,9 @@ const TransactionPage: React.FC = () => {
                     </Link>
                     <button
                       onClick={() => {
-                        const foundCustomer = customers.find((c: Customer) => c.id === t.customerId);
+                        const foundCustomer = customers.find(
+                          (c: Customer) => c.id === t.customerId,
+                        );
                         if (foundCustomer) {
                           handleOpenWhatsAppModal(t);
                         } else {

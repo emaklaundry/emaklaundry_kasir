@@ -109,7 +109,11 @@ const ServicesPage: React.FC = () => {
         updateToast(toastId, 'Layanan berhasil dihapus.', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
-          updateToast(toastId, `Gagal menghapus layanan: ${(error as { message: string }).message}`, 'error');
+          updateToast(
+            toastId,
+            `Gagal menghapus layanan: ${(error as { message: string }).message}`,
+            'error',
+          );
         } else {
           updateToast(toastId, 'Gagal menghapus layanan: Unknown error', 'error');
         }

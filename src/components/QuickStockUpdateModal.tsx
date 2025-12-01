@@ -18,7 +18,10 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     queryKey: ['inventory', { page: 1, pageSize: 1000, storeId: selectedStoreId }],
     queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId: selectedStoreId }),
   });
-  const inventory = React.useMemo(() => Array.isArray(inventoryRaw) ? inventoryRaw : (inventoryRaw?.data ?? []), [inventoryRaw]);
+  const inventory = React.useMemo(
+    () => (Array.isArray(inventoryRaw) ? inventoryRaw : (inventoryRaw?.data ?? [])),
+    [inventoryRaw],
+  );
   const { updateInventoryItem } = useInventoryMutations();
   const { addToast, updateToast } = useToasts();
   const [isSavingStock, setIsSavingStock] = useState(false);
@@ -80,7 +83,11 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
       updateToast(toastId, 'Semua stok berhasil diperbarui!', 'success');
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'message' in error) {
-        updateToast(toastId, `Gagal memperbarui beberapa stok: ${(error as { message: string }).message}`, 'error');
+        updateToast(
+          toastId,
+          `Gagal memperbarui beberapa stok: ${(error as { message: string }).message}`,
+          'error',
+        );
       } else {
         updateToast(toastId, 'Gagal memperbarui beberapa stok: Unknown error', 'error');
       }

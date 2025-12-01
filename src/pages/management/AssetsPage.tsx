@@ -125,7 +125,11 @@ const AssetsPage: React.FC = () => {
         updateToast(toastId, 'Aset berhasil dihapus!', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
-          updateToast(toastId, `Gagal menghapus: ${(error as { message: string }).message}`, 'error');
+          updateToast(
+            toastId,
+            `Gagal menghapus: ${(error as { message: string }).message}`,
+            'error',
+          );
         } else {
           updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
         }

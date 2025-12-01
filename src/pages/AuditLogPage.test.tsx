@@ -10,7 +10,6 @@ import { vi } from 'vitest';
 
 const queryClient = new QueryClient();
 
-
 const mockStores = [{ id: 'test-store', name: 'Test Store', address: 'Jl. Test', isActive: true }];
 
 describe('AuditLogPage', () => {

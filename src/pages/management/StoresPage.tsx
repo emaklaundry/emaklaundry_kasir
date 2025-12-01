@@ -134,7 +134,11 @@ const StoresPage: React.FC = () => {
         );
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
-          updateToast(toastId, `Gagal mengubah status: ${(error as { message?: string }).message || error}`, 'error');
+          updateToast(
+            toastId,
+            `Gagal mengubah status: ${(error as { message?: string }).message || error}`,
+            'error',
+          );
         } else {
           updateToast(toastId, `Gagal mengubah status: ${String(error)}`, 'error');
         }
@@ -155,7 +159,11 @@ const StoresPage: React.FC = () => {
         updateToast(toastId, 'Cabang berhasil dihapus.', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
-          updateToast(toastId, `Gagal menghapus: ${(error as { message?: string }).message || error}`, 'error');
+          updateToast(
+            toastId,
+            `Gagal menghapus: ${(error as { message?: string }).message || error}`,
+            'error',
+          );
         } else {
           updateToast(toastId, `Gagal menghapus: ${String(error)}`, 'error');
         }

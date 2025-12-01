@@ -13,7 +13,6 @@ export interface AppContextType {
   setSelectedStoreId: (storeId: string) => void;
 }
 
-
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { stores } = useStores();
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
@@ -125,5 +124,3 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     </AppContext.Provider>
   );
 };
-
-
