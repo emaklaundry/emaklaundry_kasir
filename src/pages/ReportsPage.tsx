@@ -254,15 +254,30 @@ const ReportsPage: React.FC = () => {
     return { startDate: customStartDate, endDate: endOfDay };
   }, [rangeType, customStartDate, customEndDate]);
 
+  // Query pengeluaran langsung ke supabase sesuai filter tanggal & cabang (format tanggal saja)
   // Query pengeluaran langsung ke supabase sesuai filter tanggal & cabang
   const { data: allStoreExpenses = [], isLoading: isLoadingExpenses } = useQuery({
     queryKey: ['report-expenses', selectedStoreId, startDate, endDate],
     queryFn: async () => {
+      // PERBAIKAN: Format tanggal secara manual ke YYYY-MM-DD (Local Time)
+      // Jangan gunakan toISOString() langsung karena akan mengonversi ke UTC (bisa mundur sehari)
+      const formatDateStr = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const startDateStr = formatDateStr(startDate);
+      const endDateStr = formatDateStr(endDate);
+
       let query = supabase
         .from('expenses')
         .select('*')
-        .gte('date', startDate.toISOString())
-        .lte('date', endDate.toISOString());
+        // Gunakan string YYYY-MM-DD agar cocok dengan tipe kolom 'date' di DB
+        .gte('date', startDateStr)
+        .lte('date', endDateStr);
+
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
