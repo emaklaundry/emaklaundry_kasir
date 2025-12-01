@@ -424,11 +424,8 @@ const TransactionPage: React.FC = () => {
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             >
               <option value="all">Semua St. Bayar</option>
-              {Object.values(PaymentStatus).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value={PaymentStatus.Paid}>Lunas</option>
+              <option value={PaymentStatus.Unpaid}>Belum Lunas</option>
             </select>
           </div>
           <div>

@@ -28,7 +28,8 @@ export async function getLaundryStatus(identifier: string) {
   if (!data || (Array.isArray(data) && data.length === 0)) {
     throw new Error('Kode invoice tidak ditemukan atau data tidak valid.');
   }
-  return data;
+  // Return first element if array, else null
+  return Array.isArray(data) ? data[0] : data;
 }
 
 /**

@@ -52,7 +52,11 @@ BEGIN
   PERFORM public.handle_new_user(
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', 'New User'),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'Kasir'),
+    CASE 
+      WHEN NEW.raw_user_meta_data->>'role' = 'Admin' THEN 'Kasir'
+      WHEN NEW.raw_user_meta_data->>'role' = 'Super Admin' THEN 'Kasir'
+      ELSE COALESCE(NEW.raw_user_meta_data->>'role', 'Kasir')
+    END,
     NULLIF(NEW.raw_user_meta_data->>'store_id', '')::uuid
   );
   RETURN NEW;
