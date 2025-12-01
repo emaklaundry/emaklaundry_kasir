@@ -196,11 +196,14 @@ const NewTransactionPage: React.FC = () => {
     if (grandTotal <= 0) return PaymentStatus.Paid;
     if (actualAmountPaid <= 0) return PaymentStatus.Unpaid;
     if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
-    // Bayar sebagian hanya jika amountPaid > 0 dan < grandTotal
-    // Jika jumlah bayar sama atau lebih besar dari total, Lunas.
-    if (actualAmountPaid >= grandTotal) return PaymentStatus.Paid;
-    // Jika kurang, dianggap Belum Lunas (Unpaid).
+    // Jika ada pembayaran sebagian
+    if (actualAmountPaid > 0 && actualAmountPaid < grandTotal) {
+      return PaymentStatus.Partial;
+    }
     return PaymentStatus.Unpaid;
+    // --- Sanitasi items sebelum submit (buang length/width jika tidak ingin ke DB) ---
+    // Contoh: const cleanedItems = items.map(({ length, width, ...item }) => ({ ...item }));
+    // Jika ingin simpan length/width, biarkan saja.
   }, [isPayingNow, actualAmountPaid, grandTotal]);
 
   const currentStoreId = useMemo(() => {
