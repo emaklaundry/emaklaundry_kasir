@@ -20,6 +20,8 @@ type CombinedExpenseItem = {
 };
 
 const ExpensesPage: React.FC = () => {
+  // TAMBAHKAN BARIS INI:
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
   const { expenses, addExpense, updateExpense, deleteExpense } = useExpenses();
   const { assets } = useAssets();
   const { currentUser, selectedStoreId } = useAppContext();

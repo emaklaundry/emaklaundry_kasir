@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/supabase';
 
@@ -11,8 +12,19 @@ if (!supabaseAnonKey) {
   throw new Error('VITE_SUPABASE_ANON_KEY is not defined. Please check your .env file.');
 }
 
-// Pass Database type for full type safety
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Pola Singleton agar tidak terjadi multiple GoTrueClient instance (HMR/dev)
+const createSupabaseClient = () => createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+declare global {
+  // eslint-disable-next-line no-var
+  var supabase: ReturnType<typeof createSupabaseClient> | undefined;
+}
+
+export const supabase = globalThis.supabase ?? createSupabaseClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.supabase = supabase;
+}
 
 /**
  * Helper RPC call to fetch a minimal, safe projection of a transaction for public/customer-facing views.
