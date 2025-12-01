@@ -29,14 +29,16 @@ CREATE INDEX IF NOT EXISTS idx_inventory_store_id ON public.inventory_items("sto
 CREATE INDEX IF NOT EXISTS idx_expenses_store_id ON public.expenses("storeId");
 CREATE INDEX IF NOT EXISTS idx_assets_store_id ON public.assets("storeId");
 -- OPTIMASI: Trigger handle_new_user otomatis saat user baru di auth.users
+
+-- Penyempurnaan: handle_new_user_trigger kini membaca store_id dan role dari metadata
 CREATE OR REPLACE FUNCTION public.handle_new_user_trigger()
 RETURNS trigger AS $$
 BEGIN
   PERFORM public.handle_new_user(
     NEW.id,
-    NEW.raw_user_meta_data->>'full_name',
-    'Kasir',
-    NULL
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'New User'),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'Kasir'),
+    (NEW.raw_user_meta_data->>'store_id')::uuid
   );
   RETURN NEW;
 END;
@@ -440,8 +442,13 @@ CREATE POLICY "Allow INSERT for all logged-in users" ON public.audit_logs
     WITH CHECK (auth.uid() IS NOT NULL);
 
 -- --- Tabel: settings ---
-CREATE POLICY "Allow read for store users" ON public.settings
-  FOR SELECT USING ("storeId" = public.get_my_store_id() OR public.get_my_role() = 'Super Admin');
+DROP POLICY IF EXISTS "Allow read for store users" ON public.settings;
+CREATE POLICY "Allow read access for own store" ON public.settings
+  FOR SELECT USING (
+    "storeId" = public.get_my_store_id()
+    OR public.get_my_role() = 'Super Admin'
+    -- Tambahkan OR true jika halaman tracking publik perlu akses ini tanpa login
+  );
 CREATE POLICY "Allow ALL for Admins" ON public.settings
   FOR ALL USING (public.get_my_role() IN ('Super Admin', 'Admin'))
   WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
@@ -520,6 +527,8 @@ $$;
 -- === RPC: update_transaction_progress ===
 -- Atomically update allowed progress fields on a transaction and insert an audit_log entry.
 -- Caller must be authenticated. Super Admin can update any transaction; Admin/Kasir can only update transactions in their store.
+
+-- Penyempurnaan: Validasi status akhir transaksi agar tidak bisa Selesai jika belum Lunas, dan tidak bisa mengubah status bayar jadi Belum Lunas jika sudah Selesai
 CREATE OR REPLACE FUNCTION public.update_transaction_progress(
   transaction_id_input uuid,
   p_amount_paid numeric DEFAULT NULL,
@@ -538,7 +547,10 @@ DECLARE
   caller_role text;
   caller_store uuid;
   tx_store uuid;
-  tx_payment_status text; -- DITAMBAHKAN: Variabel untuk status bayar saat ini
+  current_payment_status text;
+  current_order_status text;
+  final_payment_status text;
+  final_order_status text;
 BEGIN
   -- Load caller profile
   SELECT role, store_id INTO caller_role, caller_store FROM public.profiles WHERE id = caller;
@@ -546,25 +558,34 @@ BEGIN
     RAISE EXCEPTION 'unauthorized';
   END IF;
 
-  -- Ensure transaction exists and get its store dan payment status
-  SELECT "storeId", "paymentStatus" INTO tx_store, tx_payment_status FROM public.transactions WHERE id = transaction_id_input;
+  -- Ambil status Payment DAN Order saat ini dari database
+  SELECT "storeId", "paymentStatus", "orderStatus"
+    INTO tx_store, current_payment_status, current_order_status
+    FROM public.transactions WHERE id = transaction_id_input;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'transaction not found';
   END IF;
 
-  -- Permission check: Super Admin bypasses store check
+  -- Permission check
   IF caller_role <> 'Super Admin' AND tx_store IS DISTINCT FROM caller_store THEN
     RAISE EXCEPTION 'permission denied';
   END IF;
 
-  -- DITAMBAHKAN: Pengecekan Logika Bisnis
-  -- Pesanan tidak boleh 'Selesai' jika status bayar (baik yang baru diinput atau yang sudah ada) BUKAN 'Lunas'.
-  IF p_order_status = 'Selesai' AND COALESCE(p_payment_status, tx_payment_status) <> 'Lunas' THEN
-    RAISE EXCEPTION 'Pesanan tidak dapat diselesaikan karena belum lunas.';
-  END IF;
-  -- AKHIR TAMBAHAN
+  -- Tentukan Status Akhir (Gunakan input baru jika ada, jika tidak pakai yang lama)
+  final_payment_status := COALESCE(p_payment_status, current_payment_status);
+  final_order_status := COALESCE(p_order_status, current_order_status);
 
-  -- Perform update (only allowed progress fields)
+  -- Validasi Menyeluruh
+  -- Tidak boleh ada kondisi dimana Order='Selesai' TAPI Payment!='Lunas'
+  IF final_order_status = 'Selesai' AND final_payment_status <> 'Lunas' THEN
+    RAISE EXCEPTION 'Inkonsistensi: Pesanan tidak boleh berstatus Selesai jika pembayaran belum Lunas.';
+  END IF;
+  -- Tidak boleh mengubah status bayar jadi Belum Lunas jika order sudah Selesai
+  IF current_order_status = 'Selesai' AND final_payment_status <> 'Lunas' THEN
+    RAISE EXCEPTION 'Inkonsistensi: Status pembayaran tidak boleh diubah menjadi belum lunas jika pesanan sudah selesai.';
+  END IF;
+
+  -- Perform update
   UPDATE public.transactions
   SET
     "amountPaid" = COALESCE(p_amount_paid, "amountPaid"),
@@ -574,7 +595,7 @@ BEGIN
     "orderStatus" = COALESCE(p_order_status, "orderStatus")
   WHERE id = transaction_id_input;
 
-  -- Best-effort audit log write (do not fail the function if audit fails)
+  -- Audit log
   INSERT INTO public.audit_logs("user", action, "storeId")
   VALUES ((SELECT name FROM public.profiles WHERE id = caller), concat('Update progress ', transaction_id_input), tx_store);
 

@@ -1,4 +1,4 @@
-import React, { useState, ReactNode, useEffect, useRef } from 'react';
+import React, { useState, ReactNode, useEffect, useRef, useCallback } from 'react';
 import AppContext from './AppContextContext';
 import { User, Store } from '../types/index';
 import { supabase } from '../utils/supabaseClient';
@@ -101,20 +101,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [addToast]);
 
-  const signOut = async () => {
-    // Tambahkan log logout sebelum currentUser dihapus
-    if (currentUser) {
-      const newLog = {
-        timestamp: new Date().toISOString(),
-        user: currentUser.name ?? null,
-        action: 'Melakukan logout.',
-        storeId: currentUser.storeId ?? null,
+
+    // Bungkus signOut dengan useCallback agar stabil di dalam useEffect dependency
+    const signOut = useCallback(async () => {
+      if (currentUser) {
+        const newLog = {
+          timestamp: new Date().toISOString(),
+          user: currentUser.name ?? null,
+          action: 'Melakukan logout.',
+          storeId: currentUser.storeId ?? null,
+        };
+        supabase.from('audit_logs').insert([newLog]).then();
+      }
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+    }, [currentUser]);
+
+    // --- LOGIC AUTO LOGOUT ---
+    // Konfigurasi waktu timeout (misal: 15 menit)
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+    useEffect(() => {
+      // Hanya jalankan jika user sedang login
+      if (!currentUser) return;
+
+      let timeoutId: NodeJS.Timeout;
+
+      const handleInactivity = () => {
+        signOut();
+        addToast('Sesi Anda telah berakhir karena tidak ada aktivitas.', 'info');
       };
-      supabase.from('audit_logs').insert([newLog]).then();
-    }
-    await supabase.auth.signOut();
-    setCurrentUser(null);
-  };
+
+      const resetTimer = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(handleInactivity, INACTIVITY_TIMEOUT);
+      };
+
+      // Event yang dianggap sebagai aktivitas
+      const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+      events.forEach((event) => {
+        document.addEventListener(event, resetTimer);
+      });
+
+      // Mulai timer pertama kali
+      resetTimer();
+
+      // Cleanup saat unmount atau currentUser berubah (logout)
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        events.forEach((event) => {
+          document.removeEventListener(event, resetTimer);
+        });
+      };
+    }, [currentUser, signOut, addToast]);
+    // -------------------------
 
   return (
     <AppContext.Provider
