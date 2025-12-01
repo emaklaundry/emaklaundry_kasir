@@ -14,7 +14,7 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
-import { useExpenses } from '../../contexts/ExpenseContext'; // IMPORT BARU
+// import { useExpenses } from '../../contexts/ExpenseContext';
 import useAppContext from '../../contexts/useAppContext';
 import AssetFormModal from '../../components/AssetFormModal';
 import MaintenanceFormModal from '../../components/MaintenanceFormModal';
@@ -29,8 +29,7 @@ import { Asset, MaintenanceLog, UserRole } from '@/types';
 
 const AssetsPage: React.FC = () => {
   const { assets, addAsset, updateAsset, deleteAsset } = useAssets();
-  // Gunakan context expenses untuk mencatat biaya
-  const { addExpense } = useExpenses();
+  // Tidak perlu lagi addExpense, pencatatan pengeluaran aset otomatis di laporan
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();

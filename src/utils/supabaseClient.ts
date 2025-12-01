@@ -56,11 +56,7 @@ export async function updateTransactionProgress(
     orderStatus?: string | null;
   },
 ) {
-  // Gunakan undefined sebagai default agar sesuai tipe Supabase
-
-  // Konversi null menjadi undefined agar sesuai tipe Supabase
   const { amountPaid, change, paymentMethod, paymentStatus, orderStatus } = params;
-
   const { data, error } = await supabase.rpc('update_transaction_progress', {
     transaction_id_input: transactionId,
     p_amount_paid: amountPaid,
@@ -69,7 +65,6 @@ export async function updateTransactionProgress(
     p_payment_status: paymentStatus ?? undefined,
     p_order_status: orderStatus ?? undefined,
   });
-
   if (error) throw error;
   return data;
 }

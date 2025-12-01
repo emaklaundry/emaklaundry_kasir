@@ -19,7 +19,9 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
       const day = String(now.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
-    if (typeof dateInput === 'string') return dateInput.split('T')[0];
+    if (typeof dateInput === 'string') {
+      return dateInput.split('T')[0];
+    }
     const d = dateInput;
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -49,7 +51,8 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Kirim string 'YYYY-MM-DD' langsung ke Supabase untuk kolom tipe DATE.
+    // --- PERBAIKAN 2: Jangan konversi ke ISOString! ---
+    // Kirim data apa adanya (string YYYY-MM-DD) agar tanggal tidak bergeser.
     onSave(formData);
   };
 
