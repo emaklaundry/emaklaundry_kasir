@@ -23,9 +23,19 @@ const ReceiptPage: React.FC = () => {
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
 
   const transaction = transactions.find((t) => t.id === id);
-  const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
+  const [fetchedTransaction, setFetchedTransaction] = React.useState(null);
+  React.useEffect(() => {
+    if (!transaction && id) {
+      supabase.from('transactions').select('*').eq('id', id).single().then(({ data }) => {
+        if (data) setFetchedTransaction(data);
+      });
+    }
+  }, [transaction, id]);
 
-  if (!transaction || !customer) {
+  const tx = transaction || fetchedTransaction;
+  const customer = tx ? customers.find((c) => c.id === tx.customerId) : null;
+
+  if (!tx || !customer) {
     return (
       <EmptyState
         icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
@@ -39,7 +49,7 @@ const ReceiptPage: React.FC = () => {
     );
   }
 
-  const remainingBalance = transaction.total - transaction.amountPaid;
+  const remainingBalance = tx.total - tx.amountPaid;
 
   return (
     <div className="max-w-md mx-auto bg-slate-50 dark:bg-slate-800 p-8 rounded-lg shadow-lg receipt-print">
@@ -52,13 +62,13 @@ const ReceiptPage: React.FC = () => {
         <div className="flex justify-between text-base">
           <span className="text-slate-500 dark:text-slate-400">No. Invoice</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            {transaction.invoiceCode || transaction.id}
+            {tx.invoiceCode || tx.id}
           </span>
         </div>
         <div className="flex justify-between text-base">
           <span className="text-slate-500 dark:text-slate-400">Tanggal</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            {new Date(transaction.createdAt).toLocaleString('id-ID')}
+            {new Date(tx.createdAt).toLocaleString('id-ID')}
           </span>
         </div>
         <div className="flex justify-between text-base">
@@ -68,13 +78,13 @@ const ReceiptPage: React.FC = () => {
         <div className="flex justify-between text-base">
           <span className="text-slate-500 dark:text-slate-400">Status Bayar</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            {transaction.paymentStatus}
+            {tx.paymentStatus}
           </span>
         </div>
       </div>
 
       <div className="space-y-2 mb-4">
-        {transaction.items.map((item, index) => (
+        {tx.items.map((item, index) => (
           <div key={index} className="flex flex-col text-base py-1">
             <div className="flex justify-between">
               <div>
@@ -115,39 +125,39 @@ const ReceiptPage: React.FC = () => {
       <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2">
         <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
           <span>Subtotal</span>
-          <span>Rp {transaction.subtotal.toLocaleString('id-ID')}</span>
+          <span>Rp {tx.subtotal.toLocaleString('id-ID')}</span>
         </div>
-        {transaction.discount > 0 && (
+        {tx.discount > 0 && (
           <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
             <span>Diskon</span>
-            <span>- Rp {transaction.discount.toLocaleString('id-ID')}</span>
+            <span>- Rp {tx.discount.toLocaleString('id-ID')}</span>
           </div>
         )}
-        {transaction.tax > 0 && (
+        {tx.tax > 0 && (
           <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
             <span>Pajak</span>
-            <span>+ Rp {transaction.tax.toLocaleString('id-ID')}</span>
+            <span>+ Rp {tx.tax.toLocaleString('id-ID')}</span>
           </div>
         )}
         <div className="flex justify-between font-bold text-xl text-slate-900 dark:text-white pt-2 border-t border-slate-300 dark:border-slate-600">
           <span>Total</span>
-          <span>Rp {transaction.total.toLocaleString('id-ID')}</span>
+          <span>Rp {tx.total.toLocaleString('id-ID')}</span>
         </div>
       </div>
 
       <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2">
         <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
           <span>Metode Bayar</span>
-          <span>{transaction.paymentMethod || '-'}</span>
+          <span>{tx.paymentMethod || '-'}</span>
         </div>
         <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
           <span>Dibayar</span>
-          <span>Rp {transaction.amountPaid.toLocaleString('id-ID')}</span>
+          <span>Rp {tx.amountPaid.toLocaleString('id-ID')}</span>
         </div>
-        {transaction.change > 0 && (
+        {tx.change > 0 && (
           <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
             <span>Kembalian</span>
-            <span>Rp {transaction.change.toLocaleString('id-ID')}</span>
+            <span>Rp {tx.change.toLocaleString('id-ID')}</span>
           </div>
         )}
         <div className="flex justify-between font-semibold text-lg text-slate-900 dark:text-white">
@@ -159,10 +169,12 @@ const ReceiptPage: React.FC = () => {
       <div className="text-center mt-8 text-sm text-slate-500 dark:text-slate-400">
         <p>
           Estimasi Selesai:{' '}
-          {new Date(transaction.estimatedCompletionDate).toLocaleString('id-ID', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          })}
+          {tx.estimatedCompletionDate
+            ? new Date(tx.estimatedCompletionDate).toLocaleString('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })
+            : '-'}
         </p>
         <p className="mt-2">
           {settings?.receiptMessage ?? 'Terima kasih telah menggunakan layanan kami.'}

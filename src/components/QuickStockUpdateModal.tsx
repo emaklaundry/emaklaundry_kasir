@@ -145,6 +145,7 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
+                    name={`stock-${item.id}`}
                     value={stockUpdates[item.id] || 0}
                     onChange={(e) => handleStockChange(item.id, parseInt(e.target.value, 10) || 0)}
                     className="w-28 bg-white border border-slate-300 text-slate-900 text-base rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right"
