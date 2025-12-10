@@ -3,8 +3,8 @@
 
 # Laundry Management System (Web Kasir)
 
-**Versi:** 1.2.0  
-**Update terakhir:** 2 Desember 2025
+**Versi:** 1.3.0  
+**Update terakhir:** 11 Desember 2025
 
 ---
 
@@ -88,9 +88,12 @@ Backup otomatis harian ke folder `database/backup/` via GitHub Actions. Lihat `.
 
 ---
 
+
 ## 📝 Catatan Rilis (Changelog)
 
-
+### v1.3.0 - 11 Desember 2025
+- Peningkatan versi aplikasi.
+- [Tambahkan highlight perubahan terbaru di sini jika ada]
 
 ### v1.2.0 - 2 Desember 2025
 - Tingkatkan versi aplikasi.
