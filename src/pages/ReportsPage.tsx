@@ -759,8 +759,8 @@ const ReportsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {topServices.map((s) => (
-                      <tr key={s.name} className="border-b dark:border-slate-700">
+                    {topServices.map((s, i) => (
+                      <tr key={s.serviceId ? s.serviceId : `${s.name}-${i}`} className="border-b dark:border-slate-700">
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {s.name}
                         </td>

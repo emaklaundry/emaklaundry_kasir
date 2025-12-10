@@ -102,11 +102,15 @@ const TransactionDetailPage: React.FC = () => {
   }
 
   if (transactionError || !transaction || !customer) {
+    // Optional: log error for analytics/debugging
+    // console.warn('Transaction detail error:', transactionError);
     return (
       <EmptyState
         icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
-        title="Transaksi tidak ditemukan"
-        description="Transaksi yang Anda cari tidak tersedia atau telah dihapus."
+        title={transactionError?.message === 'Transaction ID is missing' ? 'ID Transaksi tidak valid' : 'Transaksi tidak ditemukan'}
+        description={transactionError?.message === 'Transaction ID is missing'
+          ? 'ID transaksi tidak valid atau tidak diberikan.'
+          : 'Transaksi yang Anda cari tidak tersedia, telah dihapus, atau ID tidak ditemukan.'}
       >
         <Link to="/transactions" className="mt-4 inline-block text-blue-600 hover:underline">
           Kembali ke Daftar Transaksi
