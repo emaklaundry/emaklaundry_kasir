@@ -7,6 +7,8 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 
+import { supabase } from '../../utils/supabaseClient';
+
 const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
