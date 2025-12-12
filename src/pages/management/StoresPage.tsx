@@ -326,21 +326,21 @@ const StoresPage: React.FC = () => {
                 <button
                   onClick={() => handleOpenFormModal(store)}
                   title="Edit"
-                  className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                  className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   <EditIcon className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => handleToggleStatus(store)}
                   title={store.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                  className={`p-2 rounded-md ${store.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-200 dark:hover:bg-slate-600`}
+                  className={`p-2.5 rounded-md ${store.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-100 dark:hover:bg-slate-700`}
                 >
                   <PowerIcon className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => handleDelete(store)}
                   title="Hapus"
-                  className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                  className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   <Trash2Icon className="w-5 h-5" />
                 </button>

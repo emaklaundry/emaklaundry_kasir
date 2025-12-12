@@ -369,21 +369,21 @@ const AssetsPage: React.FC = () => {
                     <button
                       onClick={() => handleOpenAssetForm(asset)}
                       title="Edit Aset"
-                      className="p-2 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(asset)}
                       title="Hapus Aset"
-                      className="p-2 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <Trash2Icon className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleOpenMaintenanceForm(asset)}
                       title="Tambah Log Pemeliharaan"
-                      className="p-2 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <PlusCircleIcon className="w-5 h-5" />
                     </button>
@@ -397,7 +397,7 @@ const AssetsPage: React.FC = () => {
                     <button
                       onClick={() => handleOpenHistory(asset)}
                       title="Lihat Riwayat Pemeliharaan"
-                      className="p-2 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <HistoryIcon className="w-5 h-5" />
                     </button>
@@ -454,14 +454,14 @@ const AssetsPage: React.FC = () => {
                   <button
                     onClick={() => handleOpenAssetForm(asset)}
                     title="Edit Aset"
-                    className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                    className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <EditIcon className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleDelete(asset)}
                     title="Hapus Aset"
-                    className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                    className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <Trash2Icon className="w-5 h-5" />
                   </button>

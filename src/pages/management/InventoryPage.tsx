@@ -423,13 +423,13 @@ const InventoryPage: React.FC = () => {
                   <div className="flex items-center space-x-1 flex-shrink-0">
                     <button
                       onClick={() => handleOpenFormModal(item)}
-                      className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                      className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(item)}
-                      className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                      className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <Trash2Icon className="w-5 h-5" />
                     </button>

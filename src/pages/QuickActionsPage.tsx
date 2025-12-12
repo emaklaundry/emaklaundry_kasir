@@ -68,13 +68,13 @@ const QuickActionsPage: React.FC = () => {
       label: 'Transaksi Baru',
       to: '/transactions/new',
       icon: PlusIcon,
-      color: 'bg-blue-500 hover:bg-blue-600',
+      color: 'bg-blue-600 hover:bg-blue-700',
     },
     {
       label: 'Daftar Transaksi',
       to: '/transactions',
       icon: ReceiptIcon,
-      color: 'bg-green-500 hover:bg-green-600',
+      color: 'bg-green-600 hover:bg-green-700',
     },
   ];
 

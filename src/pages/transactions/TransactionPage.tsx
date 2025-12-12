@@ -372,7 +372,7 @@ const TransactionPage: React.FC = () => {
           </h1>
           <Link
             to="/transactions/new"
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5"
+            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-lg px-6 py-3"
           >
             <PlusCircleIcon className="h-5 w-5 mr-2" />
             Transaksi Baru
@@ -691,7 +691,7 @@ const TransactionPage: React.FC = () => {
                     >
                       <Link
                         to="/transactions/new"
-                        className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs"
+                        className="flex-shrink-0 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs"
                       >
                         <PlusCircleIcon className="h-5 w-5 mr-2" />
                         Buat Transaksi Baru

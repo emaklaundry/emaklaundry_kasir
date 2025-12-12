@@ -357,7 +357,7 @@ const UsersPage: React.FC = () => {
                       setIsFormModalOpen(true);
                     }}
                     title="Edit"
-                    className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                    className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <EditIcon className="w-5 h-5" />
                   </button>
@@ -371,7 +371,7 @@ const UsersPage: React.FC = () => {
                           : 'Aktifkan'
                     }
                     disabled={isSuperAdmin}
-                    className={`p-2 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50`}
+                    className={`p-2.5 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50`}
                   >
                     <PowerIcon className="w-5 h-5" />
                   </button>

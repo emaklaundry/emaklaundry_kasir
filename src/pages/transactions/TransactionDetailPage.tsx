@@ -518,7 +518,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         <button
           disabled={loading}
           onClick={handleOpenPaymentModal}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md disabled:bg-green-300 disabled:cursor-not-allowed"
+          className="bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-green-400 disabled:cursor-not-allowed"
           title="Input Pembayaran"
         >
           Bayar
@@ -532,7 +532,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           transaction.orderStatus === OrderStatus.Completed
         }
         onClick={handleMarkReady}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md disabled:bg-yellow-300 disabled:cursor-not-allowed"
+        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-yellow-300 disabled:cursor-not-allowed"
       >
         Tandai Siap Ambil
       </button>
@@ -544,7 +544,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           transaction.paymentStatus !== PaymentStatus.Paid
         }
         onClick={handleMarkCompleted}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:bg-blue-300 disabled:cursor-not-allowed"
+        className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-blue-400 disabled:cursor-not-allowed"
         title={
           transaction.paymentStatus !== PaymentStatus.Paid
             ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
