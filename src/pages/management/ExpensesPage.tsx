@@ -156,12 +156,32 @@ const ExpensesPage: React.FC = () => {
       Jumlah: item.amount,
       Sumber: item.source === 'asset' ? 'Tabel Aset' : 'Tabel Pengeluaran',
     }));
-    import('xlsx').then((XLSX) => {
-      // Gunakan sheet_add_json dan book_new/book_append_sheet dari root XLSX
-      const ws = XLSX.utils.sheet_add_json(XLSX.utils.aoa_to_sheet([]), dataToExport, { skipHeader: false, origin: 'A1' });
-      const wb = XLSX.book_new();
-      XLSX.book_append_sheet(wb, ws, 'Rincian Pengeluaran');
-      XLSX.writeFile(wb, 'Laporan_Pengeluaran.xlsx');
+    import('exceljs').then(({ Workbook }) => {
+      const workbook = new Workbook();
+      const worksheet = workbook.addWorksheet('Rincian Pengeluaran');
+      
+      // Set columns
+      worksheet.columns = [
+        { header: 'Tanggal', key: 'Tanggal', width: 15 },
+        { header: 'Deskripsi', key: 'Deskripsi', width: 30 },
+        { header: 'Kategori', key: 'Kategori', width: 20 },
+        { header: 'Jumlah', key: 'Jumlah', width: 15 },
+        { header: 'Sumber', key: 'Sumber', width: 20 }
+      ];
+      
+      // Add rows
+      worksheet.addRows(dataToExport);
+      
+      // Generate and download
+      workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Laporan_Pengeluaran.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
     });
   };
 
