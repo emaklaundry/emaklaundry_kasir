@@ -40,6 +40,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const rawRemaining = total - amountPaid;
     const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
     const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
+    const trackingLink = `https://www.emaklaundry.my.id/`;
+    
     if (transaction.orderStatus === OrderStatus.Processing) {
       defaultMessage =
         `Halo ${customer.name},\n\n` +
@@ -60,6 +62,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}\n` +
         `─────────────────────────────\n` +
         `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
+        `🔍 Cek status cucian Anda:\n${trackingLink}\n\n` +
         `Salam hangat,\nTim Emak Laundry`;
     } else if (transaction.orderStatus === OrderStatus.Ready) {
       defaultMessage =
@@ -72,6 +75,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
         `─────────────────────────────\n` +
         `Silakan datang ke toko kami untuk pengambilan.\n\n` +
+        `🔍 Cek status cucian Anda:\n${trackingLink}\n\n` +
         `Terima kasih,\nTim Emak Laundry`;
     } else {
       defaultMessage =
@@ -83,7 +87,9 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Total: Rp${total.toLocaleString('id-ID')}\n` +
         `Status: LUNAS\n` +
         `─────────────────────────────\n` +
-        `Terima kasih telah menggunakan layanan kami.\nTim Emak Laundry`;
+        `Terima kasih telah menggunakan layanan kami.\n\n` +
+        `🔍 Cek status cucian Anda:\n${trackingLink}\n\n` +
+        `Tim Emak Laundry`;
     }
     return defaultMessage;
   }, [transaction, customer]);
