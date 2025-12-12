@@ -3,6 +3,7 @@ import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { SendIcon } from './icons';
 import { Transaction, Customer, OrderStatus } from '@/types';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   customer,
 }) => {
   const { addToast } = useToasts();
+  const { addAuditLog } = useAuditLogs();
 
   const message = React.useMemo(() => {
     if (!transaction || !customer) return '';
@@ -102,6 +104,14 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const whatsappUrl = isMobile
       ? `https://wa.me/${phone}?text=${encodedMessage}`
       : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+    
+    if (transaction) {
+      addAuditLog(
+        `Mengirim notifikasi WhatsApp untuk transaksi ${transaction.id} kepada ${customer.name}.`,
+        transaction.storeId,
+      );
+    }
+    
     window.open(whatsappUrl, '_blank');
     onClose();
   };

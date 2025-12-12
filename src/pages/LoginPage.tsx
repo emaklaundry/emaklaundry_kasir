@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import VersionInfo from '../components/VersionInfo';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { addAuditLog } = useAuditLogs();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+      addAuditLog(`Percobaan login gagal untuk email: ${email}.`);
+    } else if (data.user) {
+      addAuditLog(`Login berhasil: ${data.user.email || email}.`);
+    }
     setLoading(false);
   };
 

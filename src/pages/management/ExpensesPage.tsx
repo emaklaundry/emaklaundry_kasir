@@ -155,8 +155,10 @@ const ExpensesPage: React.FC = () => {
       Kategori: item.category,
       Jumlah: item.amount,
       Sumber: item.source === 'asset' ? 'Tabel Aset' : 'Tabel Pengeluaran',
-    }));
-    import('exceljs').then(({ Workbook }) => {
+    }));    addAuditLog(
+      `Export data pengeluaran (${dataToExport.length} item) ke Excel.`,
+      storeId !== 'all' ? storeId : undefined,
+    );    import('exceljs').then(({ Workbook }) => {
       const workbook = new Workbook();
       const worksheet = workbook.addWorksheet('Rincian Pengeluaran');
       

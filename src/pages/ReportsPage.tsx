@@ -10,6 +10,7 @@ import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
 import { supabase } from '../utils/supabaseClient';
 import { UserRole, Service, User, ServiceCategory, MaintenanceLog, Transaction } from '@/types';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 // Type guard for Transaction
 function isTransaction(obj: unknown): obj is Transaction {
@@ -232,6 +233,7 @@ const ReportsPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { services } = useServices();
   const { users: allUsers } = useUsers();
+  const { addAuditLog } = useAuditLogs();
   const [reportType] = useState<'range' | 'yearlySummary'>('range');
   const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
   const today = new Date();
@@ -711,7 +713,13 @@ const ReportsPage: React.FC = () => {
           </div>
         )}
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            addAuditLog(
+              `Mencetak laporan ${reportType === 'yearly' ? 'Tahunan' : 'Rentang Tanggal'} untuk cabang: ${selectedStoreId === 'all' ? 'Semua Cabang' : selectedStoreId}.`,
+              selectedStoreId !== 'all' ? selectedStoreId : undefined,
+            );
+            window.print();
+          }}
           className="print-hide flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3"
         >
           Cetak Laporan

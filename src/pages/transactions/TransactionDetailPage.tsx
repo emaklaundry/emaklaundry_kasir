@@ -19,6 +19,7 @@ import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { OrderStatus, PaymentStatus, Transaction, Customer, TransactionItem } from '@/types';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({
   label,
@@ -38,6 +39,7 @@ const TransactionDetailPage: React.FC = () => {
 
   // Mengambil fungsi updateTransaction dari context
   const { updateTransaction } = useTransactions({ enabled: false });
+  const { addAuditLog } = useAuditLogs();
 
   // Query untuk mengambil SATU transaksi berdasarkan ID
   const {
@@ -414,6 +416,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         paymentMethod: updatedTransaction.paymentMethod ?? undefined,
         paymentStatus: updatedTransaction.paymentStatus,
       });
+      addAuditLog(
+        `Menerima pembayaran untuk transaksi ${transaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
+        transaction.storeId,
+      );
       await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
       updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
       if (shouldShowWhatsAppModal) {
@@ -433,6 +439,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
       await updateTransaction(transaction.id, { orderStatus: OrderStatus.Ready });
+      addAuditLog(
+        `Mengubah status transaksi ${transaction.id} menjadi "${OrderStatus.Ready}".`,
+        transaction.storeId,
+      );
       updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
       // Otomatis tawarkan kirim WA saat Ready
       setIsWhatsAppOpen(true);
@@ -457,6 +467,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
       await updateTransaction(transaction.id, { orderStatus: OrderStatus.Completed });
+      addAuditLog(
+        `Mengubah status transaksi ${transaction.id} menjadi "${OrderStatus.Completed}".`,
+        transaction.storeId,
+      );
       updateToast(toastId, 'Status pesanan diperbarui: Selesai', 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Gagal memperbarui status pesanan';

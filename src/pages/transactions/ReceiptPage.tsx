@@ -6,6 +6,7 @@ import EmptyState from '../../components/EmptyState';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 import { supabase } from '../../utils/supabaseClient';
 
@@ -15,6 +16,7 @@ const ReceiptPage: React.FC = () => {
   const { settings } = useSettings();
   const { transactions } = useTransactions();
   const navigate = useNavigate();
+  const { addAuditLog } = useAuditLogs();
 
   const { data: customersRaw = [] } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -192,7 +194,15 @@ const ReceiptPage: React.FC = () => {
           Kembali
         </button>
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            if (tx) {
+              addAuditLog(
+                `Mencetak receipt untuk transaksi ${tx.id}.`,
+                tx.storeId,
+              );
+            }
+            window.print();
+          }}
           className="flex-1 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5"
         >
           <PrinterIcon className="w-5 h-5 mr-2" />
