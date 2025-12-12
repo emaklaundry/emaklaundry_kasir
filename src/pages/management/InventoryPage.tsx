@@ -161,7 +161,8 @@ const InventoryPage: React.FC = () => {
     () =>
       inventoryWithStore.filter((item) => {
         if (filter === 'low_stock') {
-          return item.stock <= item.lowStockThreshold;
+          // FIXED: Exclude items with threshold=0 (monitoring disabled)
+          return item.lowStockThreshold > 0 && item.stock <= item.lowStockThreshold;
         }
         return true;
       }),

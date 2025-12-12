@@ -107,15 +107,16 @@ const ExpensesPage: React.FC = () => {
     const assetExpenses: CombinedExpenseItem[] = assets
       .filter((asset) => asset.purchaseCost && asset.purchaseCost > 0)
       .filter((asset) => {
-        // Cek Duplikasi: Apakah aset ini sudah tercatat di expenses?
+        // FIXED: More strict duplicate detection - require exact description match or ID
         const assetDateStr = asset.purchaseDate ? String(asset.purchaseDate).split('T')[0] : '';
         
         const isDuplicate = operationalExpenses.some(exp => {
            const expDateStr = exp.date.split('T')[0];
-           // Jika tanggal sama DAN deskripsi mengandung nama aset, anggap duplikat
+           const assetDescription = `Pembelian Aset: ${asset.name}`;
+           // Exact match on date AND (exact description OR contains asset ID)
            return (
              expDateStr === assetDateStr && 
-             exp.description.toLowerCase().includes(asset.name.toLowerCase())
+             (exp.description === assetDescription || exp.description.includes(asset.id))
            );
         });
         return !isDuplicate; // Tampilkan hanya jika BUKAN duplikat

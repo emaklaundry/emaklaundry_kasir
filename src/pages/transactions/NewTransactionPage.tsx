@@ -303,7 +303,8 @@ const NewTransactionPage: React.FC = () => {
       if (field === 'width') item.width = val;
       const l = item.length || 0;
       const w = item.width || 0;
-      const area = parseFloat((l * w).toFixed(2));
+      // FIXED: Prevent submitting with zero area
+      const area = l > 0 && w > 0 ? parseFloat((l * w).toFixed(2)) : 0;
       item.quantity = area;
       item.subtotal = item.price * item.quantity;
     } else if (field === 'quantity' && typeof value === 'number') {
@@ -429,18 +430,22 @@ const NewTransactionPage: React.FC = () => {
       addToast('Minimal satu layanan harus ditambahkan.', 'warning');
       return;
     }
+    
+    // FIXED: Set isSaving early to prevent double submission race condition
+    setIsSaving(true);
+    
     if (isPayingNow) {
       if (!paymentMethod) {
         addToast('Pilih metode pembayaran.', 'error');
+        setIsSaving(false);
         return;
       }
       if (paymentMethod === PaymentMethod.Cash && tenderedAmount < grandTotal) {
         addToast('Jumlah uang diterima tidak boleh kurang dari total tagihan.', 'error');
+        setIsSaving(false);
         return;
       }
     }
-
-    setIsSaving(true);
     const toastId = addToast('Menyimpan transaksi...', 'info');
     try {
       // --- PERBAIKAN: Hitung waktu saat tombol ditekan ---
@@ -478,9 +483,9 @@ const NewTransactionPage: React.FC = () => {
         customerId: selectedCustomer.id,
         items: cleanedItems,
         subtotal,
-        discount: finalDiscount, // Gunakan finalDiscount
+        discount: finalDiscount,
         tax: taxAmount,
-        total: finalTotal,       // Gunakan finalTotal (agar match dengan amountPaid)
+        total: subtotal - finalDiscount + taxAmount, // FIXED: Calculate total consistently with displayed grandTotal
         paymentStatus,
         orderStatus: OrderStatus.Processing,
         // --- UPDATE: Gunakan variabel waktu yang baru dihitung ---

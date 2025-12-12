@@ -293,14 +293,18 @@ const TransactionPage: React.FC = () => {
     if (!bulkActionStatus) return;
 
     const transactionsToUpdate = transactions.filter((t: Transaction) => selectedIds.has(t.id));
-    const unpaidAndNotReady = transactionsToUpdate.filter(
+    
+    // FIXED: Extended guard clause - prevent marking unpaid transactions as Ready or Completed
+    const unpaidTransactions = transactionsToUpdate.filter(
       (t: Transaction) =>
-        bulkActionStatus === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid,
+        (bulkActionStatus === OrderStatus.Ready || bulkActionStatus === OrderStatus.Completed) &&
+        t.paymentStatus !== PaymentStatus.Paid,
     );
 
-    if (unpaidAndNotReady.length > 0) {
+    if (unpaidTransactions.length > 0) {
+      const statusText = bulkActionStatus === OrderStatus.Ready ? 'siap' : 'diselesaikan';
       addToast(
-        `${unpaidAndNotReady.length} transaksi belum lunas dan tidak dapat diselesaikan.`,
+        `${unpaidTransactions.length} transaksi belum lunas dan tidak dapat ditandai ${statusText}.`,
         'error',
       );
       setIsBulkConfirmOpen(false);

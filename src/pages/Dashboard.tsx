@@ -58,7 +58,7 @@ const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }>
   }>({ visible: false, content: '', x: 0, y: 0 });
 
   const maxValue = useMemo(() => {
-    const maxVal = Math.max(...data.map((d) => d.revenue));
+    const maxVal = Math.max(...data.map((d) => d.revenue), 0); // FIXED: Ensure minimum of 0
     return maxVal === 0 ? 100000 : Math.ceil(maxVal / 10000) * 10000;
   }, [data]);
 
@@ -191,14 +191,17 @@ const Dashboard: React.FC = () => {
     if (Array.isArray(raw)) return raw;
     if (raw && Array.isArray(raw.data)) return raw.data;
     if (raw && typeof raw === 'object' && raw !== null) {
-      // Try to extract array from any property that is an array
-      const arr = Object.values(raw).find((v) => Array.isArray(v));
+      // FIXED: Add type-safe array extraction
+      const arr = Object.values(raw).find((v): v is Customer[] => Array.isArray(v));
       if (arr) return arr;
+      // Log unexpected structure for debugging
+      console.warn('Unexpected customersQuery.data structure (no array found):', {
+        type: typeof raw,
+        keys: Object.keys(raw),
+      });
     }
     if (raw !== undefined && raw !== null) {
-      // Log unexpected structure for debugging
-
-      console.warn('Unexpected customersQuery.data structure:', raw);
+      console.warn('Unexpected customersQuery.data type:', typeof raw);
     }
     return [];
   }, [customersQuery.data]);
@@ -294,6 +297,10 @@ const Dashboard: React.FC = () => {
   const customerMap = useMemo(() => {
     return customers.reduce(
       (map: Record<string, Customer>, customer: Customer) => {
+        // FIXED: Warn about duplicate customer IDs
+        if (map[customer.id]) {
+          console.warn(`Duplicate customer ID detected: ${customer.id}`);
+        }
         map[customer.id] = customer;
         return map;
       },

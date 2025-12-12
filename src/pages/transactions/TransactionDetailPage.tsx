@@ -92,10 +92,8 @@ const TransactionDetailPage: React.FC = () => {
 
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
 
-  // State untuk WhatsApp manual dari header (opsional, jika ingin tombol di header)
-  // const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false); // Unused
-
-  if (isTransactionLoading) {
+  // FIXED: Add loading state guard to prevent premature error display
+  if (isTransactionLoading || customersQuery.isLoading) {
     return (
       <div className="text-center py-12 text-slate-500 dark:text-slate-400">
         Memuat detail transaksi...
@@ -103,21 +101,40 @@ const TransactionDetailPage: React.FC = () => {
     );
   }
 
-  if (transactionError || !transaction || !customer) {
-    // Optional: log error for analytics/debugging
-    // console.warn('Transaction detail error:', transactionError);
+  // FIXED: More comprehensive null checks with better error handling
+  if (transactionError) {
+    console.error('Transaction detail error:', transactionError);
     return (
       <EmptyState
-        icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
-        title={transactionError?.message === 'Transaction ID is missing' ? 'ID Transaksi tidak valid' : 'Transaksi tidak ditemukan'}
-        description={transactionError?.message === 'Transaction ID is missing'
-          ? 'ID transaksi tidak valid atau tidak diberikan.'
-          : 'Transaksi yang Anda cari tidak tersedia, telah dihapus, atau ID tidak ditemukan.'}
-      >
-        <Link to="/transactions" className="mt-4 inline-block text-blue-600 hover:underline">
-          Kembali ke Daftar Transaksi
-        </Link>
-      </EmptyState>
+        icon={AlertCircle}
+        message="Terjadi kesalahan saat memuat transaksi"
+        action={{ label: 'Kembali', onClick: () => navigate('/transactions') }}
+      />
+    );
+  }
+
+  if (!transaction) {
+    console.warn('Transaction not found for ID:', id);
+    return (
+      <EmptyState
+        icon={AlertCircle}
+        message="Transaksi tidak ditemukan"
+        action={{ label: 'Kembali', onClick: () => navigate('/transactions') }}
+      />
+    );
+  }
+
+  if (!customer) {
+    console.warn('Customer not found for transaction:', {
+      transactionId: transaction.id,
+      customerId: transaction.customerId,
+    });
+    return (
+      <EmptyState
+        icon={AlertCircle}
+        message="Data pelanggan tidak ditemukan"
+        action={{ label: 'Kembali', onClick: () => navigate('/transactions') }}
+      />
     );
   }
 

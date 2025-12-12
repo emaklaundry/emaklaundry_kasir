@@ -247,20 +247,22 @@ const ReportsPage: React.FC = () => {
   // Date range for reports
   const { startDate, endDate } = useMemo(() => {
     const now = new Date();
-    now.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    
     if (rangeType === 'weekly') {
       const firstDayOfWeek = new Date(now);
       firstDayOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
       firstDayOfWeek.setHours(0, 0, 0, 0);
-      return { startDate: firstDayOfWeek, endDate: now };
+      return { startDate: firstDayOfWeek, endDate: endOfDay };
     }
     if (rangeType === 'monthly') {
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { startDate: firstDay, endDate: now };
+      return { startDate: firstDay, endDate: endOfDay };
     }
-    const endOfDay = new Date(customEndDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    return { startDate: customStartDate, endDate: endOfDay };
+    const customEnd = new Date(customEndDate);
+    customEnd.setHours(23, 59, 59, 999);
+    return { startDate: customStartDate, endDate: customEnd };
   }, [rangeType, customStartDate, customEndDate]);
 
   // Customers
@@ -345,7 +347,7 @@ const ReportsPage: React.FC = () => {
           (e) =>
             e.description === desc &&
             e.date === date &&
-            Math.abs(e.amount - amount) < 100 // Toleransi sedikit
+            Math.abs(e.amount - amount) < Math.max(100, amount * 0.01) // Toleransi 100 rupiah atau 1%, mana yang lebih besar
         );
       };
 
@@ -389,7 +391,9 @@ const ReportsPage: React.FC = () => {
             } else if (typeof asset.maintenanceHistory === 'string') {
               try {
                 maintenanceHistory = JSON.parse(asset.maintenanceHistory);
-              } catch { /* ignore */ }
+              } catch (error) {
+                console.error(`Failed to parse maintenanceHistory for asset ${asset.id}:`, error);
+              }
             }
           }
 
@@ -399,16 +403,14 @@ const ReportsPage: React.FC = () => {
             const cost = Number(log.cost) || 0;
             
             if (logDateStr >= startDateStr && logDateStr <= endDateStr) {
-              // Format deskripsi harus dicek terhadap format yang disimpan AssetsPage
-              // AssetsPage format: "Perawatan Aset: [Nama] ([Desc])"
-              // Kita gunakan format yang sama untuk pengecekan
-              const expenseDescToCheck = `Perawatan Aset: ${asset.name} (${log.description})`;
+              // Format deskripsi HARUS SAMA dengan yang di-push untuk duplikasi detection
+              const description = `Perawatan Aset: ${asset.name} (${log.description})`;
               
-              if (!isExpenseExist(expenseDescToCheck, logDateStr, cost)) {
+              if (!isExpenseExist(description, logDateStr, cost)) {
                 assetExpenses.push({
                   id: `asset-maint-${asset.id}-${index}`,
                   date: logDateStr,
-                  description: `[Maintenance] ${asset.name}: ${log.description}`, // Penanda beda untuk log manual
+                  description: description, // FIXED: Gunakan format yang sama
                   category: 'Pemeliharaan Aset',
                   amount: cost,
                   storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
@@ -486,6 +488,7 @@ const ReportsPage: React.FC = () => {
     );
     return Object.entries(serviceRevenue)
       .map(([serviceId, revenue]) => ({
+        serviceId, // FIXED: Tambahkan serviceId untuk key yang unik
         name: serviceMap[serviceId]?.name || 'Layanan Dihapus',
         revenue,
       }))
