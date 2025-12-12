@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Customer } from '../../types';
 import Modal from './Modal';
+import useToasts from '../contexts/useToasts';
 
 interface CustomerFormModalProps {
   customer: Customer | null;
@@ -15,6 +16,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   onSave,
   disabled,
 }) => {
+  const { addToast } = useToasts();
   const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId'>>({
     name: customer?.name || '',
     phone: customer?.phone || '',
@@ -35,6 +37,21 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e && 'preventDefault' in e) e.preventDefault();
+    
+    // Validate required fields with user-friendly error messages
+    if (!formData.name || formData.name.trim() === '') {
+      addToast('Nama pelanggan harus diisi.', 'error');
+      return;
+    }
+    if (!formData.phone || formData.phone.trim() === '') {
+      addToast('Nomor telepon harus diisi.', 'error');
+      return;
+    }
+    if (formData.defaultDiscount < 0 || formData.defaultDiscount > 100) {
+      addToast('Diskon default harus antara 0-100%.', 'error');
+      return;
+    }
+    
     await onSave(formData);
   };
 

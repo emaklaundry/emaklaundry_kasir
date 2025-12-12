@@ -139,6 +139,10 @@ const CustomersPage: React.FC = () => {
     );
     if (existingCustomers.length > 0) {
       addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
+      addAuditLog(
+        `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${existingCustomers[0].name}".`,
+        storeId,
+      );
       return;
     }
 

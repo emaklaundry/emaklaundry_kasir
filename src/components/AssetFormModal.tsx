@@ -51,6 +51,25 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate before save
+    if (!formData.name || formData.name.trim() === '') {
+      addToast('Nama aset harus diisi.', 'error');
+      return;
+    }
+    if (!formData.purchaseDate) {
+      addToast('Tanggal pembelian harus diisi.', 'error');
+      return;
+    }
+    if (formData.purchaseCost <= 0) {
+      addToast('Harga pembelian harus lebih dari 0.', 'error');
+      return;
+    }
+    if (!formData.status || !['Active', 'Under Maintenance', 'Decommissioned'].includes(formData.status)) {
+      addToast('Status aset tidak valid.', 'error');
+      return;
+    }
+    
     // --- PERBAIKAN 2: Jangan konversi ke ISOString! ---
     // Kirim data apa adanya (string YYYY-MM-DD) agar tanggal tidak bergeser.
     onSave(formData);

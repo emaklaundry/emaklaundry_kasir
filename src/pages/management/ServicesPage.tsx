@@ -108,6 +108,9 @@ const ServicesPage: React.FC = () => {
         `Layanan "${service.name}" tidak dapat dihapus karena masih digunakan dalam ${transactionsWithService.length} transaksi.`,
         'error',
       );
+      addAuditLog(
+        `Gagal menghapus layanan "${service.name}" - masih digunakan dalam ${transactionsWithService.length} transaksi.`
+      );
       return;
     }
 

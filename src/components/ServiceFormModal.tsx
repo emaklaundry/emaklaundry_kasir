@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import Modal from './Modal';
 import { Service, ServiceCategory } from '@/types';
+import useToasts from '../contexts/useToasts';
 
 interface ServiceFormModalProps {
   service: Service | null;
@@ -10,6 +11,7 @@ interface ServiceFormModalProps {
 }
 
 const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, onSave }) => {
+  const { addToast } = useToasts();
   const [formData, setFormData] = useState<Omit<Service, 'id' | 'storeId'>>({
     name: service?.name || '',
     category: service?.category || ServiceCategory.Kiloan,
@@ -37,12 +39,15 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     e.preventDefault();
     // FIXED: Add validation before save
     if (!formData.name || formData.name.trim() === '') {
-      return; // HTML required attribute will show error
+      addToast('Nama layanan harus diisi.', 'error');
+      return;
     }
     if (formData.price <= 0) {
-      return; // Input is already constrained to min 1
+      addToast('Harga layanan harus lebih dari 0.', 'error');
+      return;
     }
     if (formData.durationDays < 0) {
+      addToast('Durasi tidak boleh negatif.', 'error');
       return;
     }
     onSave(formData);

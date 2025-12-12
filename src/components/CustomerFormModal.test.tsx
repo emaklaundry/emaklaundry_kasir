@@ -2,6 +2,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CustomerFormModal from './CustomerFormModal';
 import React from 'react';
 import { vi } from 'vitest';
+import { ToastProvider } from '../contexts/ToastContext';
+
+const Wrapper = ({ children }: { children: React.ReactNode }) => (
+  <ToastProvider>{children}</ToastProvider>
+);
 
 describe('CustomerFormModal', () => {
   const baseProps = {
@@ -12,7 +17,7 @@ describe('CustomerFormModal', () => {
   };
 
   it('renders form fields and buttons', () => {
-    render(<CustomerFormModal {...baseProps} />);
+    render(<CustomerFormModal {...baseProps} />, { wrapper: Wrapper });
     expect(screen.getByRole('textbox', { name: /nama pelanggan/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /nomor telepon/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /alamat/i })).toBeInTheDocument();
@@ -24,14 +29,14 @@ describe('CustomerFormModal', () => {
 
   it('calls onClose when Batal is clicked', () => {
     const onClose = vi.fn();
-    render(<CustomerFormModal {...baseProps} onClose={onClose} />);
+    render(<CustomerFormModal {...baseProps} onClose={onClose} />, { wrapper: Wrapper });
     fireEvent.click(screen.getByText('Batal'));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('calls onSave with form data when Simpan is clicked', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
-    render(<CustomerFormModal {...baseProps} onSave={onSave} />);
+    render(<CustomerFormModal {...baseProps} onSave={onSave} />, { wrapper: Wrapper });
     fireEvent.change(screen.getByRole('textbox', { name: /nama pelanggan/i }), {
       target: { value: 'John Doe' },
     });
@@ -62,7 +67,7 @@ describe('CustomerFormModal', () => {
   });
 
   it('disables Simpan button when disabled is true', () => {
-    render(<CustomerFormModal {...baseProps} disabled={true} />);
+    render(<CustomerFormModal {...baseProps} disabled={true} />, { wrapper: Wrapper });
     expect(screen.getByText('Simpan')).toBeDisabled();
   });
 });
