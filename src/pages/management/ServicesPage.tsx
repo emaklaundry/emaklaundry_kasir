@@ -11,6 +11,7 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
+import { useTransactions } from '../../contexts/TransactionContext';
 import useToasts from '../../contexts/useToasts';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
@@ -20,6 +21,7 @@ import { Service, UserRole } from '@/types';
 
 const ServicesPage: React.FC = () => {
   const { services, addService, updateService, deleteService } = useServices();
+  const { transactions } = useTransactions();
   const { addAuditLog } = useAuditLogs();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
@@ -96,6 +98,19 @@ const ServicesPage: React.FC = () => {
   };
 
   const handleDelete = (service: Service) => {
+    // FIXED: Check if service is used in any transaction
+    const transactionsWithService = transactions.filter((tx) =>
+      tx.items?.some((item) => item.serviceId === service.id)
+    );
+
+    if (transactionsWithService.length > 0) {
+      addToast(
+        `Layanan "${service.name}" tidak dapat dihapus karena masih digunakan dalam ${transactionsWithService.length} transaksi.`,
+        'error',
+      );
+      return;
+    }
+
     setServiceToDelete(service);
   };
 

@@ -53,6 +53,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handleSave = async () => {
     if (!transaction) return;
 
+    // FIXED: Lock values immediately to prevent race conditions
+    const lockedAmountToPay = amountToPay;
+    const lockedRemainingBalance = remainingBalance;
+    const lockedTenderedAmount = tenderedAmount;
+    const lockedChange = change;
+
     // Jika total 0 (karena diskon penuh atau pajak), atau amountPaid >= total, status harus Lunas
     if (transaction.total === 0 || transaction.amountPaid >= transaction.total) {
       await onSave({
@@ -64,33 +70,33 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       return;
     }
 
-    if (amountToPay <= 0) {
+    if (lockedAmountToPay <= 0) {
       addToast('Jumlah pembayaran harus lebih dari nol.', 'error');
       return;
     }
 
     // Semua metode pembayaran: harus bayar penuh, tidak boleh kurang dari sisa tagihan
-    if (amountToPay < remainingBalance) {
+    if (lockedAmountToPay < lockedRemainingBalance) {
       addToast('Pembayaran harus sama dengan sisa tagihan. Tidak boleh bayar sebagian.', 'error');
       return;
     }
-    if (amountToPay > remainingBalance) {
+    if (lockedAmountToPay > lockedRemainingBalance) {
       addToast('Jumlah pembayaran tidak boleh melebihi sisa tagihan.', 'error');
       return;
     }
-    if (method === PaymentMethod.Cash && tenderedAmount < amountToPay) {
+    if (method === PaymentMethod.Cash && lockedTenderedAmount < lockedAmountToPay) {
       addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
       return;
     }
 
-    const newAmountPaid = transaction.amountPaid + amountToPay;
+    const newAmountPaid = transaction.amountPaid + lockedAmountToPay;
     let newStatus = PaymentStatus.Unpaid;
     if (newAmountPaid >= transaction.total) {
       newStatus = PaymentStatus.Paid;
     } else if (newAmountPaid > 0) {
       newStatus = PaymentStatus.Unpaid;
     }
-    const finalChange = newStatus === PaymentStatus.Paid ? change : 0;
+    const finalChange = newStatus === PaymentStatus.Paid ? lockedChange : 0;
 
     await onSave({
       ...transaction,

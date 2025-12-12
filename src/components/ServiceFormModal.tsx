@@ -22,9 +22,11 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     const { name, value } = e.target;
     if (name === 'price' || name === 'durationDays') {
       const numericValue = name === 'price' ? parseRupiah(value) : parseInt(value, 10);
+      // FIXED: For price, enforce minimum of 1 instead of 0
+      const minValue = name === 'price' ? 1 : 0;
       setFormData((prev) => ({
         ...prev,
-        [name]: Math.max(0, isNaN(numericValue) ? 0 : numericValue),
+        [name]: Math.max(minValue, isNaN(numericValue) ? minValue : numericValue),
       }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -33,6 +35,16 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // FIXED: Add validation before save
+    if (!formData.name || formData.name.trim() === '') {
+      return; // HTML required attribute will show error
+    }
+    if (formData.price <= 0) {
+      return; // Input is already constrained to min 1
+    }
+    if (formData.durationDays < 0) {
+      return;
+    }
     onSave(formData);
   };
 

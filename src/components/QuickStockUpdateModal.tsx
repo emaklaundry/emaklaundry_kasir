@@ -46,13 +46,22 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
   }, [isOpen, inventory]);
 
   const handleStockChange = (itemId: string, newStock: number) => {
+    // FIXED: Strict validation - ensure non-negative integer
+    const validatedStock = Math.max(0, Math.floor(isNaN(newStock) ? 0 : newStock));
     setStockUpdates((prev) => ({
       ...prev,
-      [itemId]: newStock >= 0 ? newStock : 0,
+      [itemId]: validatedStock,
     }));
   };
 
   const handleSave = async () => {
+    // FIXED: Validate all stock values are non-negative before save
+    const hasNegativeStock = Object.values(stockUpdates).some((stock) => stock < 0);
+    if (hasNegativeStock) {
+      addToast('Stok tidak boleh bernilai negatif.', 'error');
+      return;
+    }
+
     const toastId = addToast('Memperbarui stok...', 'info');
     setIsSavingStock(true);
     const storeId = currentUser.storeId || selectedStoreId;

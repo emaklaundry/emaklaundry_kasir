@@ -132,6 +132,16 @@ const CustomersPage: React.FC = () => {
     } else if (phone.startsWith('8')) {
       phone = '62' + phone;
     }
+
+    // FIXED: Check for duplicate phone number
+    const existingCustomers = customers.filter(
+      (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id
+    );
+    if (existingCustomers.length > 0) {
+      addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
+      return;
+    }
+
     const toastId = addToast('Menyimpan pelanggan...', 'info');
     setIsSaving(true);
     try {
