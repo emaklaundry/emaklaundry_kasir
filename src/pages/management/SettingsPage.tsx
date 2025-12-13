@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
+import ChangePasswordModal from '../../components/ChangePasswordModal';
+import { KeyIcon } from '../../components/icons';
 
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings } = useSettings();
@@ -9,6 +11,7 @@ const SettingsPage: React.FC = () => {
   const { addToast, updateToast } = useToasts();
 
   const [formData, setFormData] = useState(settings);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -81,9 +84,21 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
-      <h1 className="text-2xl font-semibold mb-6 text-slate-900 dark:text-white">
-        Pengaturan Aplikasi
-      </h1>
+      
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+          Pengaturan Aplikasi
+        </h1>
+        <button
+          type="button"
+          onClick={() => setIsPasswordModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm sm:text-base transition-colors touch-target"
+        >
+          <KeyIcon className="w-5 h-5" />
+          <span className="hidden sm:inline">Ubah Password</span>
+          <span className="sm:hidden">Password</span>
+        </button>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isSaving}>
         <div>
           <label
@@ -168,6 +183,11 @@ const SettingsPage: React.FC = () => {
           <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
         </button>
       </form>
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 };

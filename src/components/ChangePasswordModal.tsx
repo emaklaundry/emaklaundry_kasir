@@ -1,0 +1,281 @@
+import React, { useState } from 'react';
+import Modal from './Modal';
+import { supabase } from '../utils/supabaseClient';
+import useToasts from '../contexts/useToasts';
+import { useAuditLogs } from '../contexts/AuditLogContext';
+import useAppContext from '../contexts/useAppContext';
+
+interface ChangePasswordModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose }) => {
+  const { addToast } = useToasts();
+  const { addAuditLog } = useAuditLogs();
+  const { currentUser } = useAppContext();
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [isChanging, setIsChanging] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validasi
+    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+      addToast('Semua field harus diisi.', 'error');
+      return;
+    }
+
+    if (formData.newPassword.length < 6) {
+      addToast('Password baru minimal 6 karakter.', 'error');
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      addToast('Password baru dan konfirmasi tidak cocok.', 'error');
+      return;
+    }
+
+    if (formData.currentPassword === formData.newPassword) {
+      addToast('Password baru harus berbeda dari password lama.', 'error');
+      return;
+    }
+
+    setIsChanging(true);
+
+    try {
+      // Verifikasi password lama dengan mencoba sign in ulang
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user?.email) {
+        addToast('Sesi tidak valid. Silakan login ulang.', 'error');
+        setIsChanging(false);
+        return;
+      }
+
+      // Coba sign in dengan password lama untuk verifikasi
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: formData.currentPassword,
+      });
+
+      if (signInError) {
+        addToast('Password lama tidak sesuai.', 'error');
+        setIsChanging(false);
+        return;
+      }
+
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: formData.newPassword,
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      addAuditLog(
+        `Mengubah password akun.`,
+        currentUser?.storeId || '',
+      );
+      addToast('Password berhasil diubah!', 'success');
+
+      // Reset form
+      setFormData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      onClose();
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      addToast(`Gagal mengubah password: ${errMsg}`, 'error');
+    } finally {
+      setIsChanging(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isChanging) {
+      setFormData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      onClose();
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Ubah Password"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isChanging}
+            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-base sm:text-lg px-5 py-3.5 sm:px-6 sm:py-3.5 touch-target dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isChanging}
+            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-base sm:text-lg px-5 py-3.5 sm:px-6 sm:py-3.5 touch-target disabled:bg-blue-400 disabled:cursor-not-allowed"
+          >
+            {isChanging ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+                Mengubah...
+              </>
+            ) : (
+              'Ubah Password'
+            )}
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Password Lama */}
+        <div>
+          <label
+            htmlFor="currentPassword"
+            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
+          >
+            Password Lama <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showCurrentPassword ? 'text' : 'password'}
+              id="currentPassword"
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={handleChange}
+              disabled={isChanging}
+              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 input-mobile disabled:opacity-50"
+              placeholder="Masukkan password lama"
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            >
+              {showCurrentPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+        </div>
+
+        {/* Password Baru */}
+        <div>
+          <label
+            htmlFor="newPassword"
+            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
+          >
+            Password Baru <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showNewPassword ? 'text' : 'password'}
+              id="newPassword"
+              name="newPassword"
+              value={formData.newPassword}
+              onChange={handleChange}
+              disabled={isChanging}
+              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 input-mobile disabled:opacity-50"
+              placeholder="Minimal 6 karakter"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            >
+              {showNewPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Minimal 6 karakter
+          </p>
+        </div>
+
+        {/* Konfirmasi Password Baru */}
+        <div>
+          <label
+            htmlFor="confirmPassword"
+            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
+          >
+            Konfirmasi Password Baru <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              disabled={isChanging}
+              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 input-mobile disabled:opacity-50"
+              placeholder="Ketik ulang password baru"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            >
+              {showConfirmPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+        </div>
+
+        {/* Info keamanan */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+          <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300">
+            <strong>Tips keamanan:</strong> Gunakan kombinasi huruf besar, huruf kecil, angka,
+            dan simbol untuk password yang lebih aman.
+          </p>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+export default ChangePasswordModal;

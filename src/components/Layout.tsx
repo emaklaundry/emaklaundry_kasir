@@ -7,7 +7,6 @@ import ToastContainer from './ToastContainer';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import BottomNavBar from './BottomNavBar';
-import VersionInfo from './VersionInfo';
 import { Customer, UserRole } from '@/types';
 
 const getPageTitle = (
@@ -93,7 +92,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </a>
           </p>
         </footer>
-        <VersionInfo />
       </div>
       {isCashier && <BottomNavBar />}
       <ToastContainer />
