@@ -5,6 +5,41 @@ import useCommandPalette from '../hooks/useCommandPalette';
 import { SunIcon, MoonIcon, CommandIcon } from './icons';
 import { UserRole } from '@/types';
 
+const ConnectionStatus: React.FC = () => {
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+
+  React.useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium ${
+        isOnline
+          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+      }`}
+      title={isOnline ? 'Koneksi Internet Aktif' : 'Mode Offline'}
+    >
+      <span
+        className={`w-2 h-2 rounded-full ${
+          isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+        }`}
+      />
+      <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
+    </div>
+  );
+};
+
 const ThemeToggleButton: React.FC = () => {
   const { theme, setTheme } = useTheme();
 
@@ -35,25 +70,26 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
   const activeStores = stores.filter((s) => s.isActive);
 
   return (
-    <header className="print-hide bg-slate-50 dark:bg-slate-800 shadow-sm p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-2xl md:text-3xl font-semibold text-slate-800 dark:text-white">
+    <header className="print-hide bg-slate-50 dark:bg-slate-800 shadow-sm p-2 sm:p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
+        <h1 className="text-lg sm:text-2xl md:text-3xl font-semibold text-slate-800 dark:text-white truncate">
           {pageTitle}
         </h1>
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
+          <ConnectionStatus />
           <button
             onClick={open}
-            className="flex items-center gap-2 p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="flex items-center gap-1 sm:gap-2 p-2.5 sm:p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 touch-target"
             aria-label="Buka pencarian global"
           >
-            <CommandIcon className="w-5 h-5" />
+            <CommandIcon className="w-6 h-6 sm:w-5 sm:h-5" />
             <kbd className="hidden md:inline-flex h-5 items-center justify-center rounded border bg-slate-100 px-1.5 text-xs font-mono font-medium text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
               ⌘K
             </kbd>
           </button>
           <ThemeToggleButton />
           {currentUser.role === UserRole.SuperAdmin && (
-            <div>
+            <div className="w-32 sm:w-auto">
               <label htmlFor="store-filter" className="sr-only">
                 Filter Toko
               </label>
@@ -61,7 +97,7 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
                 id="store-filter"
                 value={selectedStoreId}
                 onChange={(e) => setSelectedStoreId(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                className="bg-slate-50 border border-slate-300 text-slate-900 text-sm sm:text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 sm:p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white input-mobile"
               >
                 <option value="all">Semua Cabang</option>
                 {activeStores.map((store) => (
@@ -74,20 +110,21 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
           )}
           {/* Dropdown user dinonaktifkan karena allUsers/setCurrentUser tidak tersedia */}
           {/* Info profil user */}
-          <div className="flex flex-col items-end mr-2 text-right">
-            <span className="font-semibold text-slate-700 dark:text-slate-200">
+          <div className="hidden sm:flex flex-col items-end mr-2 text-right">
+            <span className="font-semibold text-sm md:text-base text-slate-700 dark:text-slate-200">
               {currentUser.name}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+            <span className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
               {currentUser.role}
             </span>
           </div>
           <button
             onClick={signOut}
-            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-base font-medium"
+            className="px-3 py-2.5 sm:px-4 sm:py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 active:bg-red-800 transition-colors text-sm sm:text-base font-medium touch-target min-w-[80px] sm:min-w-[90px]"
             aria-label="Logout"
           >
-            Logout
+            <span className="hidden sm:inline">Logout</span>
+            <span className="sm:hidden">✕</span>
           </button>
         </div>
       </div>

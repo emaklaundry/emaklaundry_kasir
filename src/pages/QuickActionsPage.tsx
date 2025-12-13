@@ -79,28 +79,28 @@ const QuickActionsPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">Aksi Cepat</h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="p-3 sm:p-4 pb-20 sm:pb-4">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-slate-900 dark:text-white">Aksi Cepat</h1>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {actions.map((action) =>
           action.onClick ? (
             <button
               key={action.label}
               onClick={action.onClick}
               disabled={isActionDisabled}
-              className={`${action.color} text-white rounded-lg p-6 flex flex-col items-center justify-center text-center shadow-lg transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`${action.color} text-white rounded-xl p-5 sm:p-6 flex flex-col items-center justify-center text-center shadow-lg transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[140px] sm:min-h-[160px] touch-target`}
             >
-              <action.icon className="w-10 h-10 mb-2" />
-              <span className="text-lg font-semibold">{action.label}</span>
+              <action.icon className="w-12 h-12 sm:w-14 sm:h-14 mb-3" />
+              <span className="text-base sm:text-lg font-semibold leading-tight">{action.label}</span>
             </button>
           ) : (
             <Link
               key={action.to}
               to={action.to!}
-              className={`${action.color} text-white rounded-lg p-6 flex flex-col items-center justify-center text-center shadow-lg transition-transform transform hover:scale-105`}
+              className={`${action.color} text-white rounded-xl p-5 sm:p-6 flex flex-col items-center justify-center text-center shadow-lg transition-all transform active:scale-95 min-h-[140px] sm:min-h-[160px] touch-target`}
             >
-              <action.icon className="w-10 h-10 mb-2" />
-              <span className="text-lg font-semibold">{action.label}</span>
+              <action.icon className="w-12 h-12 sm:w-14 sm:h-14 mb-3" />
+              <span className="text-base sm:text-lg font-semibold leading-tight">{action.label}</span>
             </Link>
           ),
         )}

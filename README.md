@@ -121,12 +121,74 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 
 ---
 
+## 🎨 Standar UI Design System
+
+### Color Palette
+
+#### Primary Colors
+- **Blue (Primary)**: bg-blue-600 hover:bg-blue-700
+- **Green (Success)**: bg-green-600 hover:bg-green-700
+- **Red (Danger)**: bg-red-600 hover:bg-red-700
+- **Yellow (Warning)**: bg-yellow-500 hover:bg-yellow-600
+- **Slate (Secondary)**: bg-white border-slate-300 hover:bg-slate-100
+
+#### Dark Mode
+- **Primary Dark**: dark:bg-blue-700 dark:hover:bg-blue-600
+- **Card Dark**: dark:bg-slate-800
+- **Text Dark**: dark:text-white
+
+### Button Styles
+
+1. **Primary Button** (Simpan, Submit): `bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-6 py-3 text-lg`
+2. **Secondary Button** (Batal): `bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600`
+3. **Success Button** (Bayar): `bg-green-600 hover:bg-green-700 text-white`
+4. **Danger Button** (Hapus): `bg-red-600 hover:bg-red-700 text-white`
+
+### Card/Container
+- **Main Container**: `bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md`
+- **Table Header**: `bg-slate-50 dark:bg-slate-700 text-sm uppercase`
+
+### Input Styles
+- **Text Input**: `bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-base rounded-lg p-3`
+- **Checkbox**: `w-5 h-5 text-blue-600 bg-slate-100 rounded`
+
+---
+
+## 📱 Optimasi Mobile
+
+### Fitur Optimasi Mobile
+- ✅ **Responsive Layout**: Grid adaptif (1 kolom mobile, 2 tablet, 4 desktop)
+- ✅ **Touch Targets**: Minimum 44x44px untuk semua elemen interaktif
+- ✅ **Font Responsif**: `text-sm sm:text-base md:text-lg`
+- ✅ **Bottom Navigation**: Fixed navbar di mobile dengan akses cepat
+- ✅ **Table Overflow**: Scroll horizontal untuk tabel di mobile
+- ✅ **Prevent Zoom iOS**: Input font-size 16px minimum
+
+### Meta Tags Mobile
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+```
+
+### Breakpoints
+- **sm**: 640px (Mobile landscape)
+- **md**: 768px (Tablet)
+- **lg**: 1024px (Desktop)
+- **xl**: 1280px (Large desktop)
+
+### Komponen Responsif
+1. **Header**: Padding `p-2 sm:p-4`, Font `text-lg sm:text-2xl md:text-3xl`
+2. **Dashboard Cards**: Padding `p-4 sm:p-6`, Grid responsif
+3. **Tabel**: Font `text-sm sm:text-base`, Padding cell responsif
+4. **Modal**: Max-height 95vh, rounded adaptif
+5. **Bottom Nav**: Tampil di mobile (`sm:hidden`), 5 menu utama
 
 ---
 
 ## ⚠️ Catatan Keamanan & Dependency
 
-- Ekspor Excel menggunakan library `xlsx`. Terdapat 1 high severity vulnerability pada versi terbaru (per 2 Desember 2025), namun **tidak ada perbaikan resmi** dari maintainer. Selama hanya digunakan untuk ekspor data lokal (bukan upload file dari user), risiko sangat minimal.
+- Ekspor Excel menggunakan library `exceljs` (migrasi dari `xlsx` untuk alasan keamanan).
 - Selalu cek update dependency secara berkala dan lakukan audit dengan `npm audit`.
 
 ---

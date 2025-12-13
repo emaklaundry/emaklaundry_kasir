@@ -1,33 +1,33 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
-import useToasts from './src/contexts/useToasts';
-import { UserRole } from './src/types';
-import useAppContext from './src/contexts/useAppContext';
-import Layout from './src/components/Layout';
+import useToasts from './contexts/useToasts';
+import { UserRole } from './types';
+import useAppContext from './contexts/useAppContext';
+import Layout from './components/Layout';
 
-import useTheme from './src/hooks/useTheme';
-import { AppProviders } from './src/contexts/AppProviders';
-import CommandPalette from './src/components/CommandPalette';
-import QuickActionsPage from './src/pages/QuickActionsPage';
+import useTheme from './hooks/useTheme';
+import { AppProviders } from './contexts/AppProviders';
+import CommandPalette from './components/CommandPalette';
+import QuickActionsPage from './pages/QuickActionsPage';
 
 // Lazy load pages for code splitting
-const Dashboard = lazy(() => import('./src/pages/Dashboard'));
-const TransactionPage = lazy(() => import('./src/pages/transactions/TransactionPage'));
-const NewTransactionPage = lazy(() => import('./src/pages/transactions/NewTransactionPage'));
-const ServicesPage = lazy(() => import('./src/pages/management/ServicesPage'));
-const InventoryPage = lazy(() => import('./src/pages/management/InventoryPage'));
-const AssetsPage = lazy(() => import('./src/pages/management/AssetsPage'));
-const ExpensesPage = lazy(() => import('./src/pages/management/ExpensesPage'));
-const UsersPage = lazy(() => import('./src/pages/management/UsersPage'));
-const ReportsPage = lazy(() => import('./src/pages/ReportsPage'));
-const AuditLogPage = lazy(() => import('./src/pages/AuditLogPage'));
-const SettingsPage = lazy(() => import('./src/pages/management/SettingsPage'));
-const CustomersPage = lazy(() => import('./src/pages/management/CustomersPage'));
-const CustomerDetailPage = lazy(() => import('./src/pages/management/CustomerDetailPage'));
-const ReceiptPage = lazy(() => import('./src/pages/transactions/ReceiptPage'));
-const TransactionDetailPage = lazy(() => import('./src/pages/transactions/TransactionDetailPage'));
-const StoresPage = lazy(() => import('./src/pages/management/StoresPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const TransactionPage = lazy(() => import('./pages/transactions/TransactionPage'));
+const NewTransactionPage = lazy(() => import('./pages/transactions/NewTransactionPage'));
+const ServicesPage = lazy(() => import('./pages/management/ServicesPage'));
+const InventoryPage = lazy(() => import('./pages/management/InventoryPage'));
+const AssetsPage = lazy(() => import('./pages/management/AssetsPage'));
+const ExpensesPage = lazy(() => import('./pages/management/ExpensesPage'));
+const UsersPage = lazy(() => import('./pages/management/UsersPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
+const SettingsPage = lazy(() => import('./pages/management/SettingsPage'));
+const CustomersPage = lazy(() => import('./pages/management/CustomersPage'));
+const CustomerDetailPage = lazy(() => import('./pages/management/CustomerDetailPage'));
+const ReceiptPage = lazy(() => import('./pages/transactions/ReceiptPage'));
+const TransactionDetailPage = lazy(() => import('./pages/transactions/TransactionDetailPage'));
+const StoresPage = lazy(() => import('./pages/management/StoresPage'));
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAppContext();
@@ -53,30 +53,25 @@ const PageLoader: React.FC = () => (
   </div>
 );
 
-const LoginPage = lazy(() => import('./src/pages/LoginPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 
-// Komponen untuk menangani pendaftaran PWA dan notifikasi
+// Komponen untuk menangani pendaftaran PWA
 const PwaStatusHandler: React.FC = () => {
-  const { addToast } = useToasts();
-
   React.useEffect(() => {
     registerSW({
       onOfflineReady() {
-        addToast(
-          'Mode Offline Aktif: Aplikasi kini siap digunakan tanpa koneksi internet.',
-          'info',
-        );
+        // PWA ready for offline use - status ditampilkan di Header
       },
       onNeedRefresh() {},
     });
-  }, [addToast]);
+  }, []);
 
   return null;
 };
 
 // Versi aplikasi otomatis dari package.json
 // Pastikan resolveJsonModule diaktifkan di tsconfig.json
-import pkg from './package.json';
+import pkg from '../package.json';
 const APP_VERSION = `v${pkg.version}`;
 
 const AppRoutes: React.FC = () => {

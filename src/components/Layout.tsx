@@ -80,6 +80,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         >
           {children}
         </main>
+        <footer className="print-hide bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-3 px-4 text-center">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            © {new Date().getFullYear()} Laundry Management System. Developed by{' '}
+            <a
+              href="https://novionics.web.id"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            >
+              Novionics
+            </a>
+          </p>
+        </footer>
         <VersionInfo />
       </div>
       {isCashier && <BottomNavBar />}

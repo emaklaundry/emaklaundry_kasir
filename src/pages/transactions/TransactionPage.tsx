@@ -383,7 +383,7 @@ const TransactionPage: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
             <label htmlFor="searchTerm" className="sr-only">
               Cari Transaksi
@@ -395,7 +395,7 @@ const TransactionPage: React.FC = () => {
               placeholder="Cari ID, Invoice, Nama, atau No. HP..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="bg-slate-50 border border-slate-300 text-slate-900 text-sm sm:text-base rounded-lg block w-full pl-10 p-2 sm:p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               autoComplete="off"
             />
           </div>
@@ -496,11 +496,13 @@ const TransactionPage: React.FC = () => {
           </div>
         )}
 
-        <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+        {/* Transactions Table */}
+        <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm sm:text-base text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-xs sm:text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
-                <th className="px-2 py-3 w-10 text-center">
+                <th className="px-1 sm:px-2 py-2 sm:py-3 w-8 sm:w-10 text-center">
                   <input
                     type="checkbox"
                     onChange={handleSelectAll}
@@ -508,26 +510,26 @@ const TransactionPage: React.FC = () => {
                       sortedTransactions.length > 0 &&
                       selectedIds.size === sortedTransactions.length
                     }
-                    className="w-5 h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-4 py-3">
+                <th className="px-2 sm:px-4 py-2 sm:py-3">
                   <button
                     onClick={() => requestSort('id')}
-                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
                   >
                     ID Transaksi {getSortIcon('id')}
                   </button>
                 </th>
-                <th className="px-4 py-3">
+                <th className="px-2 sm:px-4 py-2 sm:py-3">
                   <button
                     onClick={() => requestSort('customerName')}
-                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
                   >
                     Pelanggan {getSortIcon('customerName')}
                   </button>
                 </th>
-                <th className="px-4 py-3">
+                <th className="px-2 sm:px-4 py-2 sm:py-3">
                   <button
                     onClick={() => requestSort('createdAt')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -569,19 +571,19 @@ const TransactionPage: React.FC = () => {
                     key={t.id}
                     className={`border-b dark:border-slate-700 ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                   >
-                    <td className="px-2 py-3 text-center">
+                    <td className="px-1 sm:px-2 py-2 sm:py-3 text-center">
                       <input
                         type="checkbox"
                         onChange={() => handleSelectOne(t.id)}
                         checked={selectedIds.has(t.id)}
-                        className="w-5 h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                    <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-slate-900 dark:text-white text-xs sm:text-sm">
                       {t.invoiceCode || `#${t.id.substring(0, 8)}`}
                     </td>
-                    <td className="px-4 py-3">{t.customerName}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{t.customerName}</td>
+                    <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                       {t.createdAt
                         ? new Date(t.createdAt).toLocaleString('id-ID', {
                             year: 'numeric',
@@ -592,8 +594,8 @@ const TransactionPage: React.FC = () => {
                           })
                         : '-'}
                     </td>
-                    <td className="px-4 py-3 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">Rp {t.total.toLocaleString('id-ID')}</td>
+                    <td className="px-2 sm:px-4 py-2 sm:py-3">
                       <select
                         value={t.orderStatus}
                         onChange={(e) =>
@@ -706,6 +708,7 @@ const TransactionPage: React.FC = () => {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="md:hidden space-y-4">

@@ -24,21 +24,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const prevLoggedInRef = useRef(false);
 
-  // Notifikasi Online/Offline
-  useEffect(() => {
-    const handleOnline = () => {
-      addToast('Koneksi internet terhubung kembali.', 'success');
-    };
-    const handleOffline = () => {
-      addToast('Koneksi internet terputus. Anda dalam mode offline.', 'error');
-    };
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [addToast]);
+  // Online/Offline detection dipindahkan ke Header component (persistent indicator)
 
   useEffect(() => {
     const getProfile = async () => {

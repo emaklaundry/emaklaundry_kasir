@@ -136,17 +136,17 @@ const StatCard: React.FC<{
 }> = ({ icon: Icon, title, value, color, to, trendData }) => {
   const content = (
     <div
-      className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors' : ''}`}
+      className={`bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-[0.98]' : ''}`}
     >
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
-          <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 truncate mb-1">{title}</p>
+          <p className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 dark:text-white break-all">{value}</p>
         </div>
         <div
-          className={`p-3 rounded-full ${color.replace('border-', 'bg-').replace('-500', '-100')} dark:${color.replace('border-', 'bg-').replace('-500', '-900/50')}`}
+          className={`p-3 sm:p-3 rounded-full flex-shrink-0 ${color.replace('border-', 'bg-').replace('-500', '-100')} dark:${color.replace('border-', 'bg-').replace('-500', '-900/50')}`}
         >
-          <Icon className={`w-7 h-7 ${color.replace('border-', 'text-')}`} />
+          <Icon className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 ${color.replace('border-', 'text-')}`} />
         </div>
       </div>
       <TrendIndicator trendData={trendData} />
@@ -464,9 +464,9 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-medium text-slate-600 dark:text-slate-400">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-0 pb-20 sm:pb-0">
+        <div className="mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-xl font-medium text-slate-600 dark:text-slate-400">
             Tampilan Data:{' '}
             <span className="font-semibold text-slate-800 dark:text-slate-200">
               {getStoreName()}
@@ -476,7 +476,7 @@ const Dashboard: React.FC = () => {
 
         {/* Trend Stats - Admin View */}
         <div
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}
+          className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}
         >
           <StatCard
             icon={PackageIcon}
@@ -518,28 +518,28 @@ const Dashboard: React.FC = () => {
 
         {/* Weekly Chart - Admin View */}
         <div
-          className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}
+          className={`bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}
         >
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+          <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white mb-4">
             Pendapatan 7 Hari Terakhir
           </h2>
           <WeeklyRevenueChart data={weeklyRevenueData} />
         </div>
 
         <div
-          className={`bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}
+          className={`bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}
         >
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Aksi Cepat</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">Aksi Cepat</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             <button
               onClick={() => setIsStockModalOpen(true)}
               disabled={isActionDisabled}
-              className="p-4 rounded-lg border dark:border-slate-700 flex items-center gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-3 rounded-full bg-teal-100 dark:bg-teal-900/50">
-                <WrenchIcon className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-teal-100 dark:bg-teal-900/50 flex-shrink-0">
+                <WrenchIcon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 dark:text-teal-400" />
               </div>
-              <span className="font-semibold text-lg text-slate-700 dark:text-slate-200">
+              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Update Stok
               </span>
             </button>
@@ -547,12 +547,12 @@ const Dashboard: React.FC = () => {
             <button
               onClick={() => setIsExpenseModalOpen(true)}
               disabled={isActionDisabled}
-              className="p-4 rounded-lg border dark:border-slate-700 flex items-center gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/50">
-                <DollarSignIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-purple-100 dark:bg-purple-900/50 flex-shrink-0">
+                <DollarSignIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <span className="font-semibold text-lg text-slate-700 dark:text-slate-200">
+              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Catat Pengeluaran
               </span>
             </button>
@@ -560,24 +560,24 @@ const Dashboard: React.FC = () => {
             <button
               onClick={() => setIsMaintenanceModalOpen(true)}
               disabled={isActionDisabled}
-              className="p-4 rounded-lg border dark:border-slate-700 flex items-center gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/50">
-                <PlusCircleIcon className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-orange-100 dark:bg-orange-900/50 flex-shrink-0">
+                <PlusCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <span className="font-semibold text-lg text-slate-700 dark:text-slate-200">
+              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Lapor Kerusakan
               </span>
             </button>
           </div>
           {isActionDisabled && (
-            <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-3">
+            <p className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 mt-3">
               Pilih cabang spesifik untuk melakukan aksi cepat.
             </p>
           )}
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
               Progres Pesanan Aktif
