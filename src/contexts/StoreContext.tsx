@@ -10,7 +10,14 @@ const fetchStores = async (): Promise<Store[]> => {
 
 export function useStores() {
   const queryClient = useQueryClient();
-  const { data: stores = [], ...query } = useQuery({ queryKey: ['stores'], queryFn: fetchStores });
+  const { data: stores = [], ...query } = useQuery({ 
+    queryKey: ['stores'], 
+    queryFn: fetchStores,
+    // Data stores jarang berubah, cache 10 menit
+    staleTime: 10 * 60 * 1000,
+    // Jangan auto-refetch saat window focus (mencegah gangguan saat input)
+    refetchOnWindowFocus: false,
+  });
 
   const addStore = useMutation({
     mutationFn: async (store: Omit<Store, 'id'>) => {

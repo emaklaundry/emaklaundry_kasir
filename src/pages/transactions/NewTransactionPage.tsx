@@ -46,6 +46,9 @@ const NewTransactionPage: React.FC = () => {
   const { data: customersData } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    // PENTING: nonaktifkan auto-refetch saat user sedang input data
+    refetchOnWindowFocus: false,
+    staleTime: 10 * 60 * 1000, // 10 menit - data customer jarang berubah
   });
   const customers: Customer[] = Array.isArray(customersData)
     ? customersData

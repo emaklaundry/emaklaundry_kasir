@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
-import { usePagination } from '../../hooks/usePagination';
 
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
@@ -77,16 +76,26 @@ const TransactionPage: React.FC = () => {
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
 
-  // State untuk halaman
-  // page and setPage are assigned a value but never used
+  // State untuk server-side pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
-  // Proses sort dan pagination di client
-  // These hooks must be declared before any useEffect or code that references their variables
+  // Build date range dari selectedDate
+  const dateRange = useMemo(() => {
+    if (!selectedDate) return undefined;
+    return {
+      from: selectedDate,
+      to: selectedDate,
+    };
+  }, [selectedDate]);
 
-  // Ambil data transaksi dari server (tanpa filter parsial, biarkan filter client-side yang mengatur)
-  const { transactions, updateTransaction } = useTransactions({
-    page: 1,
-    pageSize: 1000,
+  // Ambil data transaksi dengan server-side filtering dan pagination
+  const { transactions, totalCount, updateTransaction } = useTransactions({
+    page: currentPage,
+    pageSize: pageSize,
+    dateRange: dateRange,
+    orderStatus: statusFilter !== 'all' ? statusFilter : undefined,
+    paymentStatus: paymentFilter !== 'all' ? paymentFilter : undefined,
   });
 
   const transactionsWithCustomer = useMemo(() => {
@@ -100,28 +109,13 @@ const TransactionPage: React.FC = () => {
     });
   }, [transactions, customers]);
 
+  // Filter hanya untuk customer filter dan search (server sudah handle date, status, payment)
   const filteredTransactions = useMemo(() => {
     return transactionsWithCustomer.filter((t: TransactionWithCustomer) => {
-      const transactionDate = new Date(t.createdAt);
-
-      if (statusFilter !== 'all' && t.orderStatus !== statusFilter) return false;
-      if (paymentFilter !== 'all' && t.paymentStatus !== paymentFilter) return false;
+      // Customer filter
       if (customerFilter !== 'all' && t.customerId !== customerFilter) return false;
 
-      if (selectedDate) {
-        const parts = selectedDate.split('-').map((p) => parseInt(p, 10));
-        // Validate date parts to prevent invalid dates
-        if (parts.length !== 3 || parts.some((p) => isNaN(p) || p <= 0)) {
-          return false; // Skip invalid dates
-        }
-        const [year, month, day] = parts;
-        const startOfDay = new Date(year, month - 1, day);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(startOfDay);
-        endOfDay.setHours(23, 59, 59, 999);
-        if (transactionDate < startOfDay || transactionDate > endOfDay) return false;
-      }
-
+      // Search term (client-side untuk invoice, customer name, phone)
       if (!debouncedSearchTerm) return true;
       const term = debouncedSearchTerm.toLowerCase();
       return (
@@ -134,13 +128,10 @@ const TransactionPage: React.FC = () => {
   }, [
     transactionsWithCustomer,
     debouncedSearchTerm,
-    selectedDate,
-    statusFilter,
-    paymentFilter,
     customerFilter,
   ]);
 
-  // Hanya satu deklarasi useSortableData di sini
+  // Client-side sorting untuk hasil yang sudah di-filter
   const {
     items: sortedTransactions,
     requestSort,
@@ -149,12 +140,10 @@ const TransactionPage: React.FC = () => {
     key: 'createdAt',
     direction: 'descending',
   });
-  const {
-    currentData: paginatedTransactions,
-    currentPage,
-    totalPages,
-    onPageChange,
-  } = usePagination(sortedTransactions, 15);
+
+  // Total pages dari server
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const paginatedTransactions = sortedTransactions;
 
   const getSortIcon = (key: keyof TransactionWithCustomer) => {
     if (!sortConfig || sortConfig.key !== key) return null;
@@ -264,10 +253,22 @@ const TransactionPage: React.FC = () => {
     setStatusFilter('all');
     setPaymentFilter('all');
     setCustomerFilter('all');
+    setCurrentPage(1);
     // Reset searchParams in URL
     const params = new URLSearchParams();
     setSearchParams(params);
   };
+
+  // Handler untuk pagination
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Reset ke halaman 1 saat filter berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, paymentFilter, selectedDate, customerFilter, debouncedSearchTerm]);
 
   const customerForWhatsApp = useMemo(() => {
     if (!transactionForWhatsApp) return null;
@@ -851,7 +852,7 @@ const TransactionPage: React.FC = () => {
             </EmptyState>
           )}
         </div>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </div>
       {isPaymentModalOpen && (
         <PaymentModal

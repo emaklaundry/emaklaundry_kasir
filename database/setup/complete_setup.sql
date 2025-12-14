@@ -202,15 +202,29 @@ CREATE TABLE public.transactions (
   "paymentStatus" text NOT NULL,
   "orderStatus" text NOT NULL,
   "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "estimatedCompletionDate" timestamp with time zone,
   "amountPaid" numeric NOT NULL,
   change numeric NOT NULL,
   "paymentMethod" text,
   "createdByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  "updatedByUserId" uuid REFERENCES profiles(id) ON DELETE SET NULL,
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL,
   notes text,
   "idempotencyKey" uuid UNIQUE
 );
+
+-- MIGRATION: Pastikan kolom updatedAt dan updatedByUserId ada (untuk database existing)
+ALTER TABLE public.transactions 
+ADD COLUMN IF NOT EXISTS "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW();
+
+ALTER TABLE public.transactions 
+ADD COLUMN IF NOT EXISTS "updatedByUserId" uuid REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+-- Update nilai updatedAt untuk record lama (jika ada)
+UPDATE public.transactions 
+SET "updatedAt" = "createdAt"
+WHERE "updatedAt" IS NULL;
 
 
 -- === SEMUA INDEX DAN PUBLIKASI DILETAKKAN DI BAWAH SETELAH SEMUA TABEL DIBUAT ===
@@ -710,10 +724,9 @@ DECLARE
   updated_count integer := 0;
 BEGIN
   -- Update semua transaksi dalam satu transaksi database
+  -- updatedAt akan diupdate otomatis oleh trigger
   UPDATE public.transactions
-  SET "orderStatus" = p_new_status,
-      "updatedAt" = now(),
-      "updatedByUserId" = p_user_id
+  SET "orderStatus" = p_new_status
   WHERE id = ANY(p_transaction_ids);
   GET DIAGNOSTICS updated_count = ROW_COUNT;
   RETURN updated_count;
@@ -986,18 +999,16 @@ BEGIN
     END;
   END IF;
 
-  -- Update transaksi
+  -- Update transaksi (updatedAt akan di-set otomatis oleh trigger)
   IF new_payment_status IS NOT NULL THEN
     UPDATE public.transactions
-    SET "paymentStatus" = new_payment_status,
-        "updatedAt" = NOW()
+    SET "paymentStatus" = new_payment_status
     WHERE id = transaction_id_input;
   END IF;
 
   IF new_order_status IS NOT NULL THEN
     UPDATE public.transactions
-    SET "orderStatus" = new_order_status,
-        "updatedAt" = NOW()
+    SET "orderStatus" = new_order_status
     WHERE id = transaction_id_input;
   END IF;
 
@@ -1190,32 +1201,67 @@ GRANT EXECUTE ON FUNCTION public.cleanup_old_audit_logs TO authenticated;
 
 
 -- ============================================
--- SECTION 5: MAINTENANCE MODE
+-- SECTION 5: ADDITIONAL FEATURES
 -- ============================================
 
--- Migration: Add Maintenance Mode to Settings
--- Date: December 14, 2025
--- Description: Tambah kolom isMaintenanceMode dan maintenanceMessage ke tabel settings
+-- ---------------------------------------------
+-- 5.1 Maintenance Mode
+-- ---------------------------------------------
+-- Migration Date: December 14, 2025
+-- Description: Menambahkan fitur maintenance mode untuk sistem maintenance
 
 -- Tambah kolom isMaintenanceMode (default FALSE)
 ALTER TABLE public.settings 
-ADD COLUMN IF NOT EXISTS "isMaintenanceMode" boolean DEFAULT FALSE;
+  ADD COLUMN IF NOT EXISTS "isMaintenanceMode" boolean DEFAULT FALSE;
 
 -- Tambah kolom maintenanceMessage (opsional)
 ALTER TABLE public.settings 
-ADD COLUMN IF NOT EXISTS "maintenanceMessage" text;
+  ADD COLUMN IF NOT EXISTS "maintenanceMessage" text;
 
--- Tambah comment untuk dokumentasi
-COMMENT ON COLUMN public.settings."isMaintenanceMode" IS 'Flag untuk mengaktifkan mode pemeliharaan sistem. Hanya Super Admin yang dapat akses saat aktif.';
-COMMENT ON COLUMN public.settings."maintenanceMessage" IS 'Pesan custom yang ditampilkan saat sistem dalam mode pemeliharaan.';
+-- Tambah dokumentasi
+COMMENT ON COLUMN public.settings."isMaintenanceMode" IS 
+  'Flag untuk mengaktifkan mode pemeliharaan sistem. Hanya Super Admin yang dapat akses saat aktif.';
+COMMENT ON COLUMN public.settings."maintenanceMessage" IS 
+  'Pesan custom yang ditampilkan saat sistem dalam mode pemeliharaan.';
 
--- Update existing settings row jika ada (set default values)
+-- Set default value untuk existing rows
 UPDATE public.settings 
-SET "isMaintenanceMode" = FALSE
-WHERE "isMaintenanceMode" IS NULL;
+  SET "isMaintenanceMode" = FALSE
+  WHERE "isMaintenanceMode" IS NULL;
 
--- Verifikasi
-SELECT id, "isMaintenanceMode", "maintenanceMessage" 
+
+-- ---------------------------------------------
+-- 5.2 WhatsApp Custom Footer
+-- ---------------------------------------------
+-- Migration Date: December 15, 2025
+-- Description: Menambahkan custom footer untuk pesan WhatsApp
+
+-- Tambah kolom whatsappFooter untuk custom footer pesan WhatsApp
+ALTER TABLE public.settings 
+  ADD COLUMN IF NOT EXISTS "whatsappFooter" text;
+
+-- Tambah dokumentasi
+COMMENT ON COLUMN public.settings."whatsappFooter" IS 
+  'Footer custom untuk pesan WhatsApp (tracking link & feedback form). Jika kosong, akan menggunakan default.';
+
+-- Set default WhatsApp footer template untuk existing rows
+UPDATE public.settings 
+  SET "whatsappFooter" = '🔍 Cek status cucian Anda:
+https://www.emaklaundry.my.id/
+
+💬 Bantu kami lebih baik! Berikan kritik & saran:
+https://forms.gle/8JnjZZ4cu5oTXGYr9'
+  WHERE "whatsappFooter" IS NULL OR "whatsappFooter" = '';
+
+
+-- ---------------------------------------------
+-- 5.3 Verifikasi Final
+-- ---------------------------------------------
+SELECT 
+  id, 
+  "isMaintenanceMode", 
+  "maintenanceMessage", 
+  "whatsappFooter" 
 FROM public.settings 
 LIMIT 1;
 

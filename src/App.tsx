@@ -60,12 +60,27 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 // Komponen untuk menangani pendaftaran PWA
 const PwaStatusHandler: React.FC = () => {
   React.useEffect(() => {
-    registerSW({
+    const updateSW = registerSW({
       onOfflineReady() {
         // PWA ready for offline use - status ditampilkan di Header
       },
-      onNeedRefresh() {},
+      onNeedRefresh() {
+        // Auto update service worker saat ada versi baru
+        if (updateSW) {
+          updateSW(true); // true = reload page after update
+        }
+      },
+      immediate: true, // Check for updates immediately
     });
+
+    // Check for updates setiap 1 jam
+    const interval = setInterval(() => {
+      if (updateSW) {
+        updateSW();
+      }
+    }, 60 * 60 * 1000); // 1 hour
+
+    return () => clearInterval(interval);
   }, []);
 
   return null;
@@ -77,16 +92,32 @@ import pkg from '../package.json';
 const APP_VERSION = `v${pkg.version}`;
 
 const AppRoutes: React.FC = () => {
-  const { currentUser } = useAppContext();
-  const { settings } = useSettings();
+  const { currentUser, signOut } = useAppContext();
+  const { settings, isLoading: isLoadingSettings } = useSettings();
+  const [isAuthChecking, setIsAuthChecking] = React.useState(true);
 
-  // Tampilkan maintenance mode jika aktif, kecuali untuk Super Admin
-  const isMaintenanceMode = settings?.isMaintenanceMode && currentUser?.role !== UserRole.SuperAdmin;
+  // Tunggu auth check selesai
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      // Beri waktu untuk auth check selesai
+      await new Promise(resolve => setTimeout(resolve, 100));
+      setIsAuthChecking(false);
+    };
+    checkAuth();
+  }, []);
 
-  if (isMaintenanceMode) {
-    return <MaintenanceMode message={settings?.maintenanceMessage} />;
+  // Handler untuk logout dari maintenance mode
+  const handleMaintenanceLogout = React.useCallback(async () => {
+    await signOut();
+    window.location.href = '/login';
+  }, [signOut]);
+
+  // Tampilkan loader saat checking auth ATAU loading settings
+  if (isAuthChecking || isLoadingSettings) {
+    return <PageLoader />;
   }
 
+  // Jika belum login, tampilkan halaman login (jangan cek maintenance mode)
   if (currentUser === null) {
     return (
       <Suspense fallback={<PageLoader />}>
@@ -98,6 +129,14 @@ const AppRoutes: React.FC = () => {
       </Suspense>
     );
   }
+
+  // Setelah login, cek maintenance mode (kecuali Super Admin)
+  const isMaintenanceMode = settings?.isMaintenanceMode && currentUser?.role !== UserRole.SuperAdmin;
+
+  if (isMaintenanceMode) {
+    return <MaintenanceMode message={settings?.maintenanceMessage} onLogout={handleMaintenanceLogout} />;
+  }
+
   return (
     <>
       <Layout>

@@ -13,6 +13,10 @@ export function useServices() {
   const { data: services = [], ...query } = useQuery({
     queryKey: ['services'],
     queryFn: fetchServices,
+    // Data services jarang berubah, cache 10 menit
+    staleTime: 10 * 60 * 1000,
+    // Jangan auto-refetch saat window focus (mencegah gangguan saat input)
+    refetchOnWindowFocus: false,
   });
 
   const addService = useMutation({

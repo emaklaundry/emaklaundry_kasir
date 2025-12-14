@@ -156,6 +156,7 @@ export interface Settings {
   discountRate: number;
   isMaintenanceMode?: boolean;
   maintenanceMessage?: string;
+  whatsappFooter?: string;
 }
 
 export interface ScheduledMaintenance {

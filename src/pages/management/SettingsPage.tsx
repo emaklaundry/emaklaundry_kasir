@@ -8,6 +8,13 @@ import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
 import { UserRole } from '../../types';
 
+// Template default untuk WhatsApp footer
+const DEFAULT_WHATSAPP_FOOTER = `🔍 Cek status cucian Anda:
+https://www.emaklaundry.my.id/
+
+💬 Bantu kami lebih baik! Berikan kritik & saran:
+https://forms.gle/8JnjZZ4cu5oTXGYr9`;
+
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings } = useSettings();
   const { addAuditLog } = useAuditLogs();
@@ -22,7 +29,11 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     if (settings) {
-      setFormData(settings);
+      // Set default template untuk whatsappFooter jika kosong
+      setFormData({
+        ...settings,
+        whatsappFooter: settings.whatsappFooter || DEFAULT_WHATSAPP_FOOTER,
+      });
     }
   }, [settings]);
 
@@ -205,6 +216,37 @@ const SettingsPage: React.FC = () => {
             disabled={isSaving}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           />
+        </div>
+
+        <div>
+          <label
+            htmlFor="whatsappFooter"
+            className="block mb-2 text-lg font-medium text-slate-900 dark:text-white"
+          >
+            Footer Pesan WhatsApp
+          </label>
+          <textarea
+            id="whatsappFooter"
+            name="whatsappFooter"
+            value={formData.whatsappFooter || DEFAULT_WHATSAPP_FOOTER}
+            onChange={handleChange}
+            disabled={isSaving}
+            rows={4}
+            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white font-mono text-sm"
+          />
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Pesan ini akan ditampilkan di akhir pesan WhatsApp kepada pelanggan.
+            </p>
+            <button
+              type="button"
+              onClick={() => setFormData(prev => prev ? { ...prev, whatsappFooter: DEFAULT_WHATSAPP_FOOTER } : null)}
+              disabled={isSaving}
+              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium disabled:opacity-50"
+            >
+              Reset Template
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>

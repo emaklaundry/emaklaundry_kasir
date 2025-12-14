@@ -5,8 +5,8 @@ import { supabase } from '../utils/supabaseClient';
 import { useStores } from './StoreContext';
 import useToasts from './useToasts'; // 1. IMPOR useToasts
 
-// Konfigurasi waktu timeout (misal: 15 menit)
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+// Konfigurasi waktu timeout (5 menit)
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 menit = 300000ms
 
 export interface AppContextType {
   currentUser: User | null;
@@ -139,6 +139,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     };
   }, [currentUser, signOut, addToast]);
+  // -------------------------
+
+  // --- AUTO LOGOUT SAAT TUTUP BROWSER/TAB ---
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Track jika sedang refresh/reload
+    let isRefreshing = false;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Set flag bahwa user sedang refresh/reload
+      isRefreshing = true;
+      sessionStorage.setItem('isRefreshing', 'true');
+    };
+
+    const handleUnload = async () => {
+      // Tunggu sebentar untuk cek apakah ini refresh atau close
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      const wasRefreshing = sessionStorage.getItem('isRefreshing');
+      
+      // Jika bukan refresh, logout
+      if (!wasRefreshing) {
+        await signOut();
+      }
+      
+      // Clear flag refresh
+      sessionStorage.removeItem('isRefreshing');
+    };
+
+    const handleVisibilityChange = () => {
+      // Clear refresh flag saat page visible lagi (setelah refresh selesai)
+      if (!document.hidden) {
+        sessionStorage.removeItem('isRefreshing');
+      }
+    };
+
+    // Clear refresh flag saat component mount (setelah refresh selesai)
+    sessionStorage.removeItem('isRefreshing');
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentUser, signOut]);
   // -------------------------
 
   return (

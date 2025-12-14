@@ -1,11 +1,12 @@
 import React from 'react';
-import { Wrench, AlertTriangle } from 'lucide-react';
+import { Wrench, AlertTriangle, LogOut } from 'lucide-react';
 
 interface MaintenanceModeProps {
   message?: string;
+  onLogout?: () => void;
 }
 
-const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ message }) => {
+const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ message, onLogout }) => {
   const defaultMessage = 'Sistem sedang dalam perbaikan. Mohon tunggu beberapa saat.';
 
   return (
@@ -125,27 +126,37 @@ const MaintenanceMode: React.FC<MaintenanceModeProps> = ({ message }) => {
               </div>
             </div>
 
-            {/* Refresh Button */}
+            {/* Logout Button */}
             <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-              <button
-                onClick={() => window.location.reload()}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {onLogout ? (
+                <button
+                  onClick={onLogout}
+                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                <span>Muat Ulang Halaman</span>
-              </button>
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout & Kembali ke Login</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  <span>Muat Ulang Halaman</span>
+                </button>
+              )}
             </div>
           </div>
 
