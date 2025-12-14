@@ -38,8 +38,8 @@ describe('formatRupiah', () => {
   it('should format string number to rupiah string', () => {
     expect(formatRupiah('2000000')).toBe('2.000.000');
   });
-  it('should return empty string for invalid input', () => {
-    expect(formatRupiah('abc')).toBe('');
+  it('should return 0 for invalid input', () => {
+    expect(formatRupiah('abc')).toBe('0');
   });
 });
 

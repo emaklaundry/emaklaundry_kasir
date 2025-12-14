@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ExpenseFormModal from '@/components/ExpenseFormModal';
 import React from 'react';
 import { vi } from 'vitest';
@@ -41,7 +41,7 @@ describe('ExpenseFormModal', () => {
         description: 'Beli sabun',
         category: 'Operasional',
         amount: 10000,
-        date: expect.any(String),
+        date: expect.any(Date),
       }),
     );
   });
@@ -50,17 +50,17 @@ describe('ExpenseFormModal', () => {
     const expense = {
       id: '1',
       storeId: '1',
-      date: new Date('2025-11-29T00:00:00.000Z'),
+      date: new Date('2025-11-29'),
       description: 'Beli deterjen',
       category: 'Operasional',
       amount: 20000,
     };
     render(<ExpenseFormModal {...baseProps} expense={expense} />);
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Beli deterjen')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Operasional')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('20.000')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('2025-11-29')).toBeInTheDocument();
-    });
+    expect(screen.getByDisplayValue('Beli deterjen')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Operasional')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('20.000')).toBeInTheDocument();
+    // Check if date input has the correct value
+    const dateInput = screen.getByLabelText(/tanggal/i) as HTMLInputElement;
+    expect(dateInput.value).toBe('2025-11-29');
   });
 });

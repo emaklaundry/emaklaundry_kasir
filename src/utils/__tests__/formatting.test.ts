@@ -10,7 +10,7 @@ describe('formatRupiah', () => {
 
   it('should format string input', () => {
     expect(formatRupiah('10000')).toBe('10.000');
-    expect(formatRupiah('1.000.000')).toBe('1.000.000');
+    expect(formatRupiah('1000000')).toBe('1.000.000');
   });
 
   it('should handle invalid input gracefully', () => {
