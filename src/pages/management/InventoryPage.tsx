@@ -248,7 +248,7 @@ const InventoryPage: React.FC = () => {
                 unit: item.unit!,
                 lowStockThreshold: item.lowStockThreshold!,
                 storeId: selectedStoreId === 'all' ? undefined : selectedStoreId!,
-              },
+              } as InventoryInput,
             });
             successCount++;
           } else {
@@ -277,7 +277,7 @@ const InventoryPage: React.FC = () => {
               stock: item.stock!,
               unit: item.unit!,
               lowStockThreshold: item.lowStockThreshold!,
-              storeId: storeId,
+              storeId: storeId!,
             });
             successCount++;
           }
@@ -636,3 +636,6 @@ const InventoryPage: React.FC = () => {
 };
 
 export default InventoryPage;
+
+
+

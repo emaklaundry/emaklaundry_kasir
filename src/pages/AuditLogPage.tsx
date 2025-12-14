@@ -11,7 +11,7 @@ import { UserRole } from '@/types';
 const AuditLogPage: React.FC = () => {
   const { logs: allLogs, isLoading } = useAuditLogs();
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const logs = useStoreFilteredData(allLogs) as unknown as typeof allLogs;
+  const logs = useStoreFilteredData(allLogs as any) as unknown as typeof allLogs;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');

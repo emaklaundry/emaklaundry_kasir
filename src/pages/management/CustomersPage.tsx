@@ -263,7 +263,7 @@ const CustomersPage: React.FC = () => {
             // Update existing customer
             await updateCustomer(customer.id, {
               name: customer.name!,
-              phone: customer.phone,
+              phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
               storeId: selectedStoreId === 'all' ? undefined : selectedStoreId!,
@@ -296,11 +296,11 @@ const CustomersPage: React.FC = () => {
             // Add new customer
             await addCustomer({
               name: customer.name!,
-              phone: customer.phone,
+              phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
-              storeId: storeId as string,
-            });
+              storeId: storeId!,
+            } as Omit<Customer, 'id'>);
             successCount++;
           }
         } catch (error) {
@@ -631,3 +631,5 @@ const CustomersPage: React.FC = () => {
 };
 
 export default CustomersPage;
+
+
