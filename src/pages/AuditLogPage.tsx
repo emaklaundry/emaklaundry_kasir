@@ -11,7 +11,7 @@ import { UserRole } from '@/types';
 const AuditLogPage: React.FC = () => {
   const { logs: allLogs, isLoading } = useAuditLogs();
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const logs = useStoreFilteredData(allLogs);
+  const logs = useStoreFilteredData(allLogs) as unknown as typeof allLogs;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -175,7 +175,7 @@ const AuditLogPage: React.FC = () => {
                   Pengguna {getSortIcon('user')}
                 </button>
               </th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+              {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                 <th className="px-4 py-3">
                   <button
                     onClick={() => requestSort('storeName')}
@@ -199,7 +199,7 @@ const AuditLogPage: React.FC = () => {
                     })}
                   </td>
                   <td className="px-4 py-3">{log.user}</td>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                  {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                     <td className="px-4 py-3">{getStoreName(log.storeId)}</td>
                   )}
                   <td className="px-4 py-3">{log.action}</td>
@@ -209,7 +209,7 @@ const AuditLogPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 4 : 3
+                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 4 : 3
                   }
                   className="text-center py-12"
                 >

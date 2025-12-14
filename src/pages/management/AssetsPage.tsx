@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   PlusCircleIcon,
@@ -10,7 +10,14 @@ import {
   SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  DownloadIcon,
+  UploadIcon,
 } from '../../components/icons';
+import {
+  exportAssetsToExcel,
+  importAssetsFromExcel,
+  downloadAssetTemplate,
+} from '../../utils/excelUtils';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
@@ -35,6 +42,7 @@ const AssetsPage: React.FC = () => {
   const { addToast, updateToast } = useToasts();
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const { scheduledMaintenances } = useScheduledMaintenances();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [isAssetFormModalOpen, setIsAssetFormModalOpen] = useState(false);
@@ -215,87 +223,225 @@ const AssetsPage: React.FC = () => {
     setSearchParams(searchParams);
   };
 
+  // Excel Export
+  const handleExportToExcel = async () => {
+    try {
+      await exportAssetsToExcel(assets);
+      addToast('Data aset berhasil di-export ke Excel', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      addToast('Gagal export data ke Excel', 'error');
+    }
+  };
+
+  // Excel Import
+  const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsSavingAsset(true);
+    const toastId = addToast('Memproses import data...', 'info');
+
+    try {
+      const importedAssets = await importAssetsFromExcel(file);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      let skipCount = 0;
+
+      for (const asset of importedAssets) {
+        try {
+          if (asset.id) {
+            // Validate UUID format before UPDATE
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(asset.id)) {
+              console.warn('Invalid UUID skipped:', asset.id);
+              skipCount++;
+              continue;
+            }
+            
+            // Update existing asset
+            await updateAsset(asset.id, {
+              name: asset.name!,
+              serialNumber: asset.serialNumber,
+              purchaseDate: asset.purchaseDate!,
+              purchaseCost: asset.purchaseCost!,
+              status: asset.status!,
+              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
+            });
+            successCount++;
+          } else {
+            // Check for duplicate before adding new asset
+            const existingAsset = assets.find((a) => {
+              if (asset.serialNumber) {
+                return a.serialNumber === asset.serialNumber;
+              } else {
+                return a.name.toLowerCase() === asset.name!.toLowerCase();
+              }
+            });
+            if (existingAsset) {
+              console.warn('Duplicate asset skipped:', asset.name);
+              skipCount++;
+              continue;
+            }
+            
+            // Ensure storeId is set for INSERT (RLS policy requirement)
+            const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
+            
+            if (!storeId) {
+              console.error('storeId is required for new assets');
+              errorCount++;
+              continue;
+            }
+            
+            // Add new asset
+            await addAsset({
+              name: asset.name!,
+              serialNumber: asset.serialNumber,
+              purchaseDate: asset.purchaseDate!,
+              purchaseCost: asset.purchaseCost!,
+              status: asset.status!,
+              maintenanceHistory: [],
+              storeId: storeId,
+            });
+            successCount++;
+          }
+        } catch (error) {
+          console.error('Error importing asset:', asset, error);
+          errorCount++;
+        }
+      }
+
+      if (skipCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
+          'warning'
+        );
+      } else if (errorCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
+          'warning'
+        );
+      } else {
+        updateToast(toastId, `Berhasil import ${successCount} aset`, 'success');
+      }
+
+      addAuditLog(
+        `Import ${successCount} aset dari Excel`,
+        selectedStoreId === 'all' ? undefined : selectedStoreId
+      );
+    } catch (error) {
+      console.error('Import error:', error);
+      updateToast(toastId, 'Gagal import data dari Excel', 'error');
+    } finally {
+      setIsSavingAsset(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Download Template
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadAssetTemplate();
+      addToast('Template Excel berhasil didownload', 'success');
+    } catch (error) {
+      console.error('Download template error:', error);
+      addToast('Gagal download template', 'error');
+    }
+  };
+
   return (
-    <div className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      {isSavingAsset && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
-          <div className="flex items-center gap-3">
-            <svg
-              className="animate-spin h-6 w-6 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-            <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
           Manajemen Aset & Pemeliharaan
         </h1>
-        <div className="w-full md:w-auto flex items-center gap-4">
-          <div className="relative w-full md:w-64">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari aset..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
+        <div className="flex gap-2">
+          {/* Excel Import/Export Buttons */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+            title="Download Template Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Template</span>
+          </button>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImportFromExcel}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!canAddNewAsset}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            title="Import dari Excel"
+          >
+            <UploadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Import</span>
+          </button>
+          
+          <button
+            onClick={handleExportToExcel}
+            disabled={assets.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            title="Export ke Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Export</span>
+          </button>
+          
           <button
             onClick={() => handleOpenAssetForm()}
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
             disabled={!canAddNewAsset}
           >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
             Tambah Aset
           </button>
         </div>
       </div>
       {!canAddNewAsset && (
-        <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">
+        <p className="text-sm text-yellow-600 dark:text-yellow-400">
           Pilih cabang spesifik di header untuk menambah aset baru.
         </p>
       )}
 
-      <div className="flex items-center gap-2 flex-wrap mb-4">
-        <button
-          onClick={() => handleFilterChange('all')}
-          className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${maintenanceFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari aset..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          />
+        </div>
+        <select
+          value={maintenanceFilter}
+          onChange={(e) => handleFilterChange(e.target.value as 'all' | 'due')}
+          className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
         >
-          Semua Aset
-        </button>
-        <button
-          onClick={() => handleFilterChange('due')}
-          className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${maintenanceFilter === 'due' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
-        >
-          Perawatan Jatuh Tempo
-        </button>
+          <option value="all">Semua Aset</option>
+          <option value="due">Perawatan Jatuh Tempo</option>
+        </select>
       </div>
 
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
       {/* Desktop Table View */}
-      <div className="overflow-x-auto hidden md:block">
+        <div className="overflow-x-auto hidden md:block">
         <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
           <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
             <tr>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -306,7 +452,7 @@ const AssetsPage: React.FC = () => {
               {currentUser &&
                 currentUser.role === UserRole.SuperAdmin &&
                 selectedStoreId === 'all' && (
-                  <th className="px-4 py-3">
+                  <th className="px-6 py-3">
                     <button
                       onClick={() => requestSort('storeName')}
                       className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -315,7 +461,7 @@ const AssetsPage: React.FC = () => {
                     </button>
                   </th>
                 )}
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('purchaseDate')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -323,7 +469,7 @@ const AssetsPage: React.FC = () => {
                   Tanggal Beli {getSortIcon('purchaseDate')}
                 </button>
               </th>
-              <th className="px-4 py-3 text-right">
+              <th className="px-6 py-3 text-right">
                 <button
                   onClick={() => requestSort('purchaseCost')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
@@ -331,7 +477,7 @@ const AssetsPage: React.FC = () => {
                   Biaya Beli {getSortIcon('purchaseCost')}
                 </button>
               </th>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('status')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -339,33 +485,34 @@ const AssetsPage: React.FC = () => {
                   Status {getSortIcon('status')}
                 </button>
               </th>
-              <th className="px-4 py-3">Aksi</th>
+              <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {sortedAssets.length > 0 ? (
               sortedAssets.map((asset) => (
                 <tr key={asset.id} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     {asset.name}
                   </td>
                   {currentUser &&
                     currentUser.role === UserRole.SuperAdmin &&
-                    selectedStoreId === 'all' && <td className="px-4 py-3">{asset.storeName}</td>}
-                  <td className="px-4 py-3">
-                    {new Date(asset.purchaseDate).toLocaleDateString('id-ID')}
+                    selectedStoreId === 'all' && <td className="px-6 py-4">{asset.storeName}</td>}
+                  <td className="px-6 py-4">
+                    {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString('id-ID') : '-'}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    Rp {asset.purchaseCost.toLocaleString('id-ID')}
+                  <td className="px-6 py-4 text-right">
+                    {asset.purchaseCost ? `Rp ${asset.purchaseCost.toLocaleString('id-ID')}` : '-'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-4">
                     <span
                       className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}
                     >
                       {asset.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 flex items-center space-x-1">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleOpenAssetForm(asset)}
                       title="Edit Aset"
@@ -401,6 +548,7 @@ const AssetsPage: React.FC = () => {
                     >
                       <HistoryIcon className="w-5 h-5" />
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -408,7 +556,7 @@ const AssetsPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
+                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
                   }
                 >
                   <EmptyState
@@ -476,13 +624,13 @@ const AssetsPage: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Tgl Beli:</span>
                   <span className="font-medium">
-                    {new Date(asset.purchaseDate).toLocaleDateString('id-ID')}
+                    {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString('id-ID') : '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Biaya:</span>
                   <span className="font-medium">
-                    Rp {asset.purchaseCost.toLocaleString('id-ID')}
+                    {asset.purchaseCost ? `Rp ${asset.purchaseCost.toLocaleString('id-ID')}` : '-'}
                   </span>
                 </div>
               </div>
@@ -521,6 +669,7 @@ const AssetsPage: React.FC = () => {
             }
           />
         )}
+      </div>
       </div>
 
       {isAssetFormModalOpen && (

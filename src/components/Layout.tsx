@@ -67,7 +67,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
   const { currentUser } = useAppContext();
   const pageTitle = getPageTitle(location.pathname, params, customers);
-  const isCashier = currentUser.role === UserRole.Cashier;
+  const isCashier = currentUser?.role === UserRole.Cashier;
 
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col">

@@ -719,7 +719,7 @@ const ReportsPage: React.FC = () => {
         <button
           onClick={() => {
             addAuditLog(
-              `Mencetak laporan ${reportType === 'yearly' ? 'Tahunan' : 'Rentang Tanggal'} untuk cabang: ${selectedStoreId === 'all' ? 'Semua Cabang' : selectedStoreId}.`,
+              `Mencetak laporan ${reportType === 'yearlySummary' ? 'Tahunan' : 'Rentang Tanggal'} untuk cabang: ${selectedStoreId === 'all' ? 'Semua Cabang' : selectedStoreId}.`,
               selectedStoreId !== 'all' ? selectedStoreId : undefined,
             );
             window.print();

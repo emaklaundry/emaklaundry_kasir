@@ -52,12 +52,20 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
   };
 
   const handleSaveSchedule = async (
-    data: Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate'>,
+    data: Omit<ScheduledMaintenance, 'id' | 'assetId' | 'lastCompletedDate' | 'nextDueDate'> & {
+      nextDueDate: string;
+    },
   ) => {
     try {
+      // Convert nextDueDate string to Date
+      const scheduleData = {
+        ...data,
+        nextDueDate: new Date(data.nextDueDate),
+      };
+
       if (editingSchedule) {
         // Editing existing
-        await updateScheduledMaintenance(editingSchedule.id, data);
+        await updateScheduledMaintenance(editingSchedule.id, scheduleData);
         addAuditLog(
           `Memperbarui jadwal perawatan "${data.description}" untuk aset "${asset.name}".`,
           asset.storeId,
@@ -65,7 +73,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
       } else {
         // Adding new
         const newScheduleData = {
-          ...data,
+          ...scheduleData,
           assetId: asset.id,
           lastCompletedDate: null,
         };

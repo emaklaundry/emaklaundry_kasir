@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { supabase } from '../../utils/supabaseClient';
@@ -68,7 +69,7 @@ const TransactionDetailPage: React.FC = () => {
           : [],
         createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
         estimatedCompletionDate: data.estimatedCompletionDate ?? '',
-        invoiceCode: data.invoiceCode ?? undefined,
+        invoiceCode: data.invoice_code ?? undefined,
         paymentStatus: data.paymentStatus as import('../../types').PaymentStatus,
         orderStatus: data.orderStatus as import('../../types').OrderStatus,
         paymentMethod: data.paymentMethod
@@ -106,9 +107,9 @@ const TransactionDetailPage: React.FC = () => {
     console.error('Transaction detail error:', transactionError);
     return (
       <EmptyState
-        icon={AlertCircle}
-        message="Terjadi kesalahan saat memuat transaksi"
-        action={{ label: 'Kembali', onClick: () => navigate('/transactions') }}
+        icon={<AlertCircle className="w-12 h-12" />}
+        title="Terjadi Kesalahan"
+        description="Terjadi kesalahan saat memuat transaksi"
       />
     );
   }
@@ -117,9 +118,9 @@ const TransactionDetailPage: React.FC = () => {
     console.warn('Transaction not found for ID:', id);
     return (
       <EmptyState
-        icon={AlertCircle}
-        message="Transaksi tidak ditemukan"
-        action={{ label: 'Kembali', onClick: () => navigate('/transactions') }}
+        icon={<AlertCircle className="w-12 h-12" />}
+        title="Tidak Ditemukan"
+        description="Transaksi tidak ditemukan"
       />
     );
   }
@@ -131,9 +132,9 @@ const TransactionDetailPage: React.FC = () => {
     });
     return (
       <EmptyState
-        icon={AlertCircle}
-        message="Data pelanggan tidak ditemukan"
-        action={{ label: 'Kembali', onClick: () => navigate('/transactions') }}
+        icon={<AlertCircle className="w-12 h-12" />}
+        title="Tidak Ditemukan"
+        description="Data pelanggan tidak ditemukan"
       />
     );
   }
@@ -403,6 +404,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 }) => {
   const { currentUser } = useAppContext();
   const { addToast, updateToast } = useToasts();
+  const { addAuditLog } = useAuditLogs();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);

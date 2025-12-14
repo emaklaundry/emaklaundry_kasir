@@ -61,8 +61,8 @@ const Sidebar: React.FC = () => {
   };
 
   const hasAdminAccess =
-    currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.Admin;
-  const isSuperAdmin = currentUser.role === UserRole.SuperAdmin;
+    currentUser?.role === UserRole.SuperAdmin || currentUser?.role === UserRole.Admin;
+  const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
 
   const renderNavLinks = (items: NavItem[]) => {
     return items

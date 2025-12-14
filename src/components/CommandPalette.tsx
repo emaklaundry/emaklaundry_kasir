@@ -35,10 +35,10 @@ const CommandPalette: React.FC = () => {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 400);
   const customersQuery = useQuery({
-    queryKey: ['customers', { search: debouncedQuery }],
+    queryKey: ['customers', { searchTerm: debouncedQuery }],
     queryFn: async () => {
       if (!debouncedQuery) return { data: [], count: 0 };
-      return fetchCustomers({ search: debouncedQuery });
+      return fetchCustomers({ searchTerm: debouncedQuery });
     },
     enabled: !!debouncedQuery,
     staleTime: 1000 * 60,

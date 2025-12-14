@@ -184,7 +184,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   ${
                     method === m
                       ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
-                      : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'
+                      : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:border-slate-600 dark:text-white'
                   }
                 `}
               >

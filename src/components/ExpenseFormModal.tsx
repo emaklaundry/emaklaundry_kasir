@@ -45,7 +45,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     setFormData(initialFormData);
   }, [initialFormData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'amount') {
       setFormData((prev) => ({ ...prev, amount: parseRupiah(value) }));
@@ -61,7 +61,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     setIsSaving(true);
     try {
       const iso = convertLocalDateToISOString(formData.date);
-      await onSave({ ...formData, date: iso });
+      await onSave({ ...formData, date: new Date(iso) });
       setFormData(initialFormData); // Reset form setelah sukses
     } finally {
       setIsSaving(false);

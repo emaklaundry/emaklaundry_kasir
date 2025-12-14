@@ -26,11 +26,11 @@ const QuickActionsPage: React.FC = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
 
-  const isActionDisabled = currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all';
+  const isActionDisabled = currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all';
 
   const handleSaveExpense = async (expense: Omit<Expense, 'id' | 'storeId'>) => {
     const storeId =
-      currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId;
+      currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId;
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk mencatat pengeluaran.', 'warning');
       return;

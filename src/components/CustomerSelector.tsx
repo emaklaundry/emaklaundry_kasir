@@ -20,14 +20,10 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredCustomers = useMemo(() => {
-    const arr = Array.isArray(customers)
-      ? customers
-      : customers && Array.isArray(customers.data)
-        ? customers.data
-        : [];
-    return arr.filter(
-      (c) =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm),
+    // customers is always an array based on the prop type
+    return customers.filter(
+      (c: Customer) =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone?.includes(searchTerm),
     );
   }, [customers, searchTerm]);
 
@@ -94,7 +90,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           {isDropdownOpen && filteredCustomers.length > 0 && (
             <div className="absolute z-40 w-full mt-1 bg-white rounded-md shadow-lg dark:bg-slate-700 border dark:border-slate-600 max-h-60 overflow-auto">
               <ul>
-                {filteredCustomers.map((customer) => (
+                {filteredCustomers.map((customer: Customer) => (
                   <li
                     key={customer.id}
                     className="px-4 py-2 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"

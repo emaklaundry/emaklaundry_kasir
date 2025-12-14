@@ -5,7 +5,11 @@ import { supabase } from '../utils/supabaseClient';
 const fetchStores = async (): Promise<Store[]> => {
   const { data, error } = await supabase.from('stores').select('*');
   if (error) throw error;
-  return data || [];
+  return (data || []).map(s => ({
+    ...s,
+    address: s.address ?? undefined,
+    isActive: s.isActive ?? true,
+  })) as Store[];
 };
 
 export function useStores() {

@@ -12,6 +12,8 @@ const useStoreFilteredData = function <T extends StoreDataItem>(data: T[]): T[] 
   const { currentUser, selectedStoreId } = useAppContext();
 
   return useMemo(() => {
+    if (!currentUser) return data;
+    
     if (currentUser.role === UserRole.SuperAdmin) {
       if (selectedStoreId === 'all') {
         return data;
@@ -19,11 +21,8 @@ const useStoreFilteredData = function <T extends StoreDataItem>(data: T[]): T[] 
       return data.filter((item) => item.storeId === selectedStoreId);
     }
     // Untuk Admin/Kasir, pastikan storeId ada
-    if (currentUser.storeId) {
-      return data.filter((item) => item.storeId === currentUser.storeId);
-    }
-    // Jika tidak ada storeId, jangan tampilkan data apa pun
-    return [];
+    if (!currentUser.storeId) return [];
+    return data.filter((item) => item.storeId === currentUser.storeId);
   }, [data, currentUser, selectedStoreId]);
 };
 

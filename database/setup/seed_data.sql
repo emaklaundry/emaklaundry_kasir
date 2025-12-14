@@ -10,6 +10,9 @@
 -- - Users (profiles)  
 -- - Services (daftar layanan)
 -- - Settings (pengaturan awal)
+-- - Inventory Items (stok barang)
+-- - Assets (aset & peralatan)
+-- - Scheduled Maintenances (jadwal pemeliharaan)
 --
 -- GUNAKAN untuk:
 -- - Development & Testing
@@ -222,6 +225,250 @@ ON CONFLICT ON CONSTRAINT settings_pkey DO UPDATE SET
 
 
 -- ============================================
+-- 5. INVENTORY ITEMS (Stok Barang)
+-- ============================================
+
+-- ID 1: Sabun Soklin Liquid
+INSERT INTO public.inventory_items (id, name, stock, "lowStockThreshold", unit, "storeId")
+VALUES 
+  ('a1b2c3d4-1111-4444-8888-111111111111', 'Sabun Soklin Liquid', 18, 4, 'Jerigen (5 Liter)', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  stock = EXCLUDED.stock,
+  "lowStockThreshold" = EXCLUDED."lowStockThreshold",
+  unit = EXCLUDED.unit;
+
+-- ID 2: Parfum Laundry Sakura
+INSERT INTO public.inventory_items (id, name, stock, "lowStockThreshold", unit, "storeId")
+VALUES 
+  ('a1b2c3d4-1111-4444-8888-111111111112', 'Parfum Laundry Sakura', 25, 5, 'Botol (1 Liter)', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  stock = EXCLUDED.stock,
+  "lowStockThreshold" = EXCLUDED."lowStockThreshold",
+  unit = EXCLUDED.unit;
+
+-- ID 3: Plastik Packing 35x50
+INSERT INTO public.inventory_items (id, name, stock, "lowStockThreshold", unit, "storeId")
+VALUES 
+  ('a1b2c3d4-1111-4444-8888-111111111113', 'Plastik Packing 35x50', 5, 2, 'Pack (50 lembar)', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  stock = EXCLUDED.stock,
+  "lowStockThreshold" = EXCLUDED."lowStockThreshold",
+  unit = EXCLUDED.unit;
+
+-- ID 4: Gas LPG 3kg
+INSERT INTO public.inventory_items (id, name, stock, "lowStockThreshold", unit, "storeId")
+VALUES 
+  ('a1b2c3d4-1111-4444-8888-111111111114', 'Gas LPG 3kg', 6, 2, 'Tabung', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  stock = EXCLUDED.stock,
+  "lowStockThreshold" = EXCLUDED."lowStockThreshold",
+  unit = EXCLUDED.unit;
+
+-- ID 5: Label Tag Anti Air
+INSERT INTO public.inventory_items (id, name, stock, "lowStockThreshold", unit, "storeId")
+VALUES 
+  ('a1b2c3d4-1111-4444-8888-111111111115', 'Label Tag Anti Air', 10, 2, 'Roll', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  stock = EXCLUDED.stock,
+  "lowStockThreshold" = EXCLUDED."lowStockThreshold",
+  unit = EXCLUDED.unit;
+
+
+-- ============================================
+-- 6. ASSETS (Aset & Peralatan)
+-- ============================================
+
+-- ID 101: Mesin Cuci LG Front Load 20kg (dengan maintenance history)
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "maintenanceHistory", "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222101', 'Mesin Cuci LG Front Load 20kg', 'LG-COM-101', '2023-01-15', 18500000, 'Active', 
+   '[{"date": "2023-11-05", "description": "Servis berkala deep cleaning drum (descaling)", "cost": 200000, "technician": "Internal Staff", "status": "Completed"}]'::jsonb, 
+   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status,
+  "maintenanceHistory" = EXCLUDED."maintenanceHistory";
+
+-- ID 102: Mesin Pengering Maytag Commercial (dengan maintenance history)
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "maintenanceHistory", "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222102', 'Mesin Pengering Maytag Commercial', 'MAYTAG-MDG20-102', '2023-01-20', 22000000, 'Active', 
+   '[{"date": "2023-06-15", "description": "Pembersihan lint filter dan pengecekan selang gas", "cost": 150000, "technician": "Budi Teknik", "status": "Completed"}]'::jsonb, 
+   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status,
+  "maintenanceHistory" = EXCLUDED."maintenanceHistory";
+
+-- ID 103: Setrika Uap Boiler 15L Maomoto (dengan maintenance history)
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "maintenanceHistory", "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222103', 'Setrika Uap Boiler 15L Maomoto', 'MAOMOTO-15L-103', '2023-02-10', 3500000, 'Under Maintenance', 
+   '[{"date": "2023-08-20", "description": "Penggantian safety valve yang lemah", "cost": 250000, "technician": "Service Maomoto", "status": "Completed"}, {"date": "2024-01-12", "description": "Kebocoran pada kran output uap", "cost": 0, "technician": "Pending", "status": "Scheduled"}]'::jsonb, 
+   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status,
+  "maintenanceHistory" = EXCLUDED."maintenanceHistory";
+
+-- ID 104: Komputer Kasir & Printer
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222104', 'Komputer Kasir & Printer (Paket POS Epson)', 'EPSON-POS-104', '2023-01-10', 4500000, 'Active', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status;
+
+-- ID 105: Mesin Cuci Samsung WW70T3020WW (Unit 1)
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222105', 'Mesin Cuci Samsung WW70T3020WW', 'SAM-WW70-105', '2024-05-01', 3800000, 'Active', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status;
+
+-- ID 106: Mesin Cuci Samsung WW70T3020WW (Unit 2)
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222106', 'Mesin Cuci Samsung WW70T3020WW', 'SAM-WW70-106', '2024-05-01', 3800000, 'Active', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status;
+
+-- ID 107: Mesin Cuci Electrolux EWF800 (Unit 1)
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222107', 'Mesin Cuci Electrolux EWF800', 'ELX-EWF800-107', '2024-06-10', 5500000, 'Active', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status;
+
+-- ID 108: Mesin Cuci Electrolux EWF800 (Unit 2)
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222108', 'Mesin Cuci Electrolux EWF800', 'ELX-EWF800-108', '2024-06-10', 5500000, 'Active', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status;
+
+-- ID 109: Mesin Polisher Karpet
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222109', 'Mesin Polisher Karpet', 'BRANDX-POLISH-109', '2024-07-20', 7500000, 'Active', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status;
+
+-- ID 110: Vacuum Cleaner Wet and Dry
+INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "storeId")
+VALUES 
+  ('b2c3d4e5-2222-5555-9999-222222222110', 'Vacuum Cleaner Wet and Dry Flexio Power 1400W', 'FLEXIO-1400-110', '2024-07-20', 1100000, 'Active', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  "serialNumber" = EXCLUDED."serialNumber",
+  status = EXCLUDED.status;
+
+
+-- ============================================
+-- 7. SCHEDULED MAINTENANCES (Jadwal Pemeliharaan)
+-- ============================================
+
+-- Maintenance Mesin Cuci LG 20kg
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333331', 'b2c3d4e5-2222-5555-9999-222222222101', 'Deep cleaning drum dan descaling', 3, 'months', '2025-02-05', '2023-11-05')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Mesin Pengering Maytag
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333332', 'b2c3d4e5-2222-5555-9999-222222222102', 'Pembersihan lint filter dan pengecekan selang gas', 2, 'months', '2025-01-15', '2023-06-15')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Setrika Uap Boiler (Pending repair)
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333333', 'b2c3d4e5-2222-5555-9999-222222222103', 'Perbaikan kebocoran kran output uap', 1, 'weeks', '2024-01-19', NULL)
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Mesin Cuci Samsung (Unit 1)
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333334', 'b2c3d4e5-2222-5555-9999-222222222105', 'Pembersihan filter dan drum', 2, 'months', '2025-01-01', '2024-11-01')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Mesin Cuci Samsung (Unit 2)
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333335', 'b2c3d4e5-2222-5555-9999-222222222106', 'Pembersihan filter dan drum', 2, 'months', '2025-01-01', '2024-11-01')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Mesin Cuci Electrolux (Unit 1)
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333336', 'b2c3d4e5-2222-5555-9999-222222222107', 'Pembersihan filter dan drum', 2, 'months', '2025-02-10', '2024-12-10')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Mesin Cuci Electrolux (Unit 2)
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333337', 'b2c3d4e5-2222-5555-9999-222222222108', 'Pembersihan filter dan drum', 2, 'months', '2025-02-10', '2024-12-10')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Mesin Polisher Karpet
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333338', 'b2c3d4e5-2222-5555-9999-222222222109', 'Pembersihan brush dan filter', 1, 'months', '2025-02-20', '2025-01-20')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Vacuum Cleaner
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333339', 'b2c3d4e5-2222-5555-9999-222222222110', 'Pembersihan filter dan cek motor', 1, 'months', '2025-02-20', '2025-01-20')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+-- Maintenance Komputer Kasir & Printer
+INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
+VALUES 
+  ('c3d4e5f6-3333-6666-aaaa-333333333340', 'b2c3d4e5-2222-5555-9999-222222222104', 'Cleaning printer head dan system check', 6, 'months', '2025-07-10', '2025-01-10')
+ON CONFLICT (id) DO UPDATE SET 
+  description = EXCLUDED.description,
+  "nextDueDate" = EXCLUDED."nextDueDate";
+
+
+-- ============================================
 -- VERIFICATION
 -- ============================================
 
@@ -233,6 +480,9 @@ BEGIN
   RAISE NOTICE '- Profiles: % records', (SELECT COUNT(*) FROM public.profiles);
   RAISE NOTICE '- Services: % records', (SELECT COUNT(*) FROM public.services);
   RAISE NOTICE '- Settings: % records', (SELECT COUNT(*) FROM public.settings);
+  RAISE NOTICE '- Inventory Items: % records', (SELECT COUNT(*) FROM public.inventory_items);
+  RAISE NOTICE '- Assets: % records', (SELECT COUNT(*) FROM public.assets);
+  RAISE NOTICE '- Scheduled Maintenances: % records', (SELECT COUNT(*) FROM public.scheduled_maintenances);
 END $$;
 
 -- Query untuk cek data
@@ -242,4 +492,10 @@ SELECT 'Profiles', COUNT(*)::text FROM public.profiles
 UNION ALL
 SELECT 'Services', COUNT(*)::text FROM public.services
 UNION ALL
-SELECT 'Settings', COUNT(*)::text FROM public.settings;
+SELECT 'Settings', COUNT(*)::text FROM public.settings
+UNION ALL
+SELECT 'Inventory Items', COUNT(*)::text FROM public.inventory_items
+UNION ALL
+SELECT 'Assets', COUNT(*)::text FROM public.assets
+UNION ALL
+SELECT 'Scheduled Maintenances', COUNT(*)::text FROM public.scheduled_maintenances;

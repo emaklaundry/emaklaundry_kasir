@@ -55,7 +55,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       return;
     }
     
-    if (formData.defaultDiscount < 0 || formData.defaultDiscount > 100) {
+    const discount = formData.defaultDiscount ?? 0;
+    if (discount < 0 || discount > 100) {
       addToast('Diskon default harus antara 0-100%.', 'error');
       return;
     }

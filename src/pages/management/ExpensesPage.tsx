@@ -1,6 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
-import { SearchIcon } from '../../components/icons';
+import React, { useState, useMemo, useRef } from 'react';
+import { SearchIcon, DownloadIcon, UploadIcon } from '../../components/icons';
+import {
+  exportExpensesToExcel,
+  importExpensesFromExcel,
+  downloadExpenseTemplate,
+} from '../../utils/excelUtils';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import { useAssets } from '../../contexts/AssetContext';
@@ -25,6 +30,7 @@ const ExpensesPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
@@ -149,6 +155,133 @@ const ExpensesPage: React.FC = () => {
   const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalExpense = filteredItems.reduce((sum, item) => sum + item.amount, 0);
 
+  // Excel Export
+  const handleExportToExcel = async () => {
+    try {
+      await exportExpensesToExcel(expenses);
+      addToast('Data pengeluaran berhasil di-export ke Excel', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      addToast('Gagal export data ke Excel', 'error');
+    }
+  };
+
+  // Excel Import
+  const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsSavingExpense(true);
+    const toastId = addToast('Memproses import data...', 'info');
+
+    try {
+      const importedExpenses = await importExpensesFromExcel(file);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      let skipCount = 0;
+
+      for (const expense of importedExpenses) {
+        try {
+          if (expense.id) {
+            // Validate UUID format before UPDATE
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(expense.id)) {
+              console.warn('Invalid UUID skipped:', expense.id);
+              skipCount++;
+              continue;
+            }
+            
+            // Update existing expense
+            await updateExpense(expense.id, {
+              date: expense.date!,
+              description: expense.description!,
+              category: expense.category!,
+              amount: expense.amount!,
+              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
+            });
+            successCount++;
+          } else {
+            // Check for duplicate before adding new expense
+            const existingExpense = expenses.find(
+              (e) =>
+                e.date === expense.date! &&
+                e.description.toLowerCase() === expense.description!.toLowerCase()
+            );
+            if (existingExpense) {
+              console.warn('Duplicate expense skipped:', expense.description);
+              skipCount++;
+              continue;
+            }
+            
+            // Ensure storeId is set for INSERT (RLS policy requirement)
+            const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
+            
+            if (!storeId) {
+              console.error('storeId is required for new expenses');
+              errorCount++;
+              continue;
+            }
+            
+            // Add new expense
+            await addExpense({
+              date: expense.date!,
+              description: expense.description!,
+              category: expense.category!,
+              amount: expense.amount!,
+              storeId: storeId,
+            });
+            successCount++;
+          }
+        } catch (error) {
+          console.error('Error importing expense:', expense, error);
+          errorCount++;
+        }
+      }
+
+      if (skipCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
+          'warning'
+        );
+      } else if (errorCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
+          'warning'
+        );
+      } else {
+        updateToast(toastId, `Berhasil import ${successCount} pengeluaran`, 'success');
+      }
+
+      addAuditLog(
+        `Import ${successCount} pengeluaran dari Excel`,
+        selectedStoreId === 'all' ? undefined : selectedStoreId
+      );
+    } catch (error) {
+      console.error('Import error:', error);
+      updateToast(toastId, 'Gagal import data dari Excel', 'error');
+    } finally {
+      setIsSavingExpense(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Download Template
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadExpenseTemplate();
+      addToast('Template Excel berhasil didownload', 'success');
+    } catch (error) {
+      console.error('Download template error:', error);
+      addToast('Gagal download template', 'error');
+    }
+  };
+
   const handleExport = () => {
     const dataToExport = filteredItems.map((item) => ({
       Tanggal: new Date(item.date).toLocaleDateString('id-ID'),
@@ -158,7 +291,7 @@ const ExpensesPage: React.FC = () => {
       Sumber: item.source === 'asset' ? 'Tabel Aset' : 'Tabel Pengeluaran',
     }));    addAuditLog(
       `Export data pengeluaran (${dataToExport.length} item) ke Excel.`,
-      storeId !== 'all' ? storeId : undefined,
+      selectedStoreId !== 'all' ? selectedStoreId : undefined,
     );    import('exceljs').then(({ Workbook }) => {
       const workbook = new Workbook();
       const worksheet = workbook.addWorksheet('Rincian Pengeluaran');
@@ -192,10 +325,45 @@ const ExpensesPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Rincian Pengeluaran <span className="block text-sm font-normal text-slate-500 mt-1">Mencakup Operasional & Aset</span>
+          Manajemen Pengeluaran
         </h1>
         <div className="flex gap-2">
-          <button onClick={handleExport} className="px-4 py-2 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-white">Download</button>
+          {/* Excel Import/Export Buttons */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+            title="Download Template Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Template</span>
+          </button>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImportFromExcel}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+            title="Import dari Excel"
+          >
+            <UploadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Import</span>
+          </button>
+          
+          <button
+            onClick={handleExportToExcel}
+            disabled={expenses.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            title="Export ke Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Export</span>
+          </button>
+          
           <button onClick={() => handleOpenFormModal()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Pengeluaran</button>
         </div>
       </div>
@@ -249,7 +417,7 @@ const ExpensesPage: React.FC = () => {
                   <td className="px-6 py-4">{new Date(item.date).toLocaleDateString('id-ID')}</td>
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{item.description}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs ${item.category.includes('Aset') ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                    <span className={`px-2 py-1 rounded-full text-xs ${item.category.includes('Aset') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'}`}>
                       {item.category}
                     </span>
                   </td>

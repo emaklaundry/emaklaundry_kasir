@@ -234,7 +234,7 @@ const NewTransactionPage: React.FC = () => {
     
     if (Math.abs(paid - total) < 0.01) return PaymentStatus.Paid;
     if (paid >= total) return PaymentStatus.Paid;
-    if (paid > 0) return PaymentStatus.PartiallyPaid;
+    if (paid > 0) return PaymentStatus.Unpaid; // Partial payment still counts as Unpaid
     
     return PaymentStatus.Unpaid;
   }, [isPayingNow, grandTotal, actualAmountPaid]);
@@ -538,7 +538,7 @@ const NewTransactionPage: React.FC = () => {
             : [],
           createdAt: savedTransaction.createdAt ? new Date(savedTransaction.createdAt) : new Date(),
           estimatedCompletionDate: savedTransaction.estimatedCompletionDate ?? '',
-          invoiceCode: savedTransaction.invoiceCode ?? undefined,
+          invoiceCode: savedTransaction.invoice_code ?? undefined,
           paymentStatus: savedTransaction.paymentStatus as PaymentStatus,
           orderStatus: savedTransaction.orderStatus as OrderStatus,
           paymentMethod: savedTransaction.paymentMethod
@@ -592,7 +592,7 @@ const NewTransactionPage: React.FC = () => {
               : [],
             createdAt: existingTx.createdAt ? new Date(existingTx.createdAt) : new Date(),
             estimatedCompletionDate: existingTx.estimatedCompletionDate ?? '',
-            invoiceCode: existingTx.invoiceCode ?? undefined,
+            invoiceCode: existingTx.invoice_code ?? undefined,
             paymentStatus: existingTx.paymentStatus as PaymentStatus,
             orderStatus: existingTx.orderStatus as OrderStatus,
             paymentMethod: existingTx.paymentMethod
@@ -644,7 +644,6 @@ const NewTransactionPage: React.FC = () => {
     setIsSaving(false);
     setIsPayingNow(false);
     setPaymentMethod(undefined);
-    setAmountPaidStr('');
     setTenderedAmountStr('');
     setIdempotencyKey(generateUUID()); // Generate kunci baru untuk transaksi berikutnya
   };

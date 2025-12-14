@@ -586,7 +586,7 @@ const TransactionPage: React.FC = () => {
                         type="checkbox"
                         onChange={() => handleSelectOne(t.id)}
                         checked={selectedIds.has(t.id)}
-                        className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
                       />
                     </td>
                     <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-slate-900 dark:text-white text-xs sm:text-sm">

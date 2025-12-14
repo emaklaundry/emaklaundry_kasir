@@ -20,11 +20,11 @@ const fetchUsers = async (): Promise<User[]> => {
     id: p.id,
     name: p.name,
     role: p.role,
-    storeId: p.store_id,
-    isActive: p.isActive,
-    canGiveDiscount: p.canGiveDiscount,
+    storeId: p.store_id ?? undefined,
+    isActive: p.isActive ?? true,
+    canGiveDiscount: p.canGiveDiscount ?? false,
     createdAt: p.created_at ? new Date(p.created_at) : undefined,
-  }));
+  })) as unknown as User[];
 };
 
 export function useUsers() {

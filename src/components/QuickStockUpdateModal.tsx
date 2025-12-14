@@ -64,7 +64,7 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
 
     const toastId = addToast('Memperbarui stok...', 'info');
     setIsSavingStock(true);
-    const storeId = currentUser.storeId || selectedStoreId;
+    const storeId = currentUser?.storeId || selectedStoreId;
     const updates: Promise<void>[] = [];
     const originalInventoryMap = new Map<string, InventoryItem>(
       inventory.map((i) => [i.id, i] as [string, InventoryItem]),

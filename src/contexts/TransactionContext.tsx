@@ -75,7 +75,15 @@ const fetchTransactions = async (
     const { data, error, count } = await query;
     if (error) throw error;
     
-    return { data: data || [], count: count || 0 };
+    // Convert null to undefined for optional fields
+    const transactions = (data || []).map(t => ({
+      ...t,
+      customerId: t.customerId ?? undefined,
+      createdByUserId: t.createdByUserId ?? undefined,
+      paymentMethod: t.paymentMethod ?? undefined,
+    })) as unknown as Transaction[];
+    
+    return { data: transactions, count: count || 0 };
   } catch (error) {
     console.error('Error fetching transactions:', error);
     throw error;
@@ -102,9 +110,18 @@ export function useTransactions(filter: TransactionFilter = {}) {
   const addTransaction = useMutation({
     mutationFn: async (transaction: Omit<Transaction, 'id'>) => {
       try {
+        // Convert undefined to null and Date to string for Supabase
+        const dbTransaction = {
+          ...transaction,
+          customerId: transaction.customerId ?? null,
+          createdByUserId: transaction.createdByUserId ?? null,
+          estimatedCompletionDate: transaction.estimatedCompletionDate ?? null,
+          paymentMethod: transaction.paymentMethod ?? null,
+        };
+        
         // Retry operation untuk memastikan sukses
         const savedTransaction = await retrySupabaseOperation(async () => {
-          const { data, error } = await supabase.from('transactions').insert([transaction]).select();
+          const { data, error } = await supabase.from('transactions').insert([dbTransaction as any]).select();
           if (error) throw error;
           if (!data || data.length === 0) {
             throw new Error('No data returned after insert');
@@ -153,7 +170,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
         ...otherFields
       } = data;
 
-      let row = null;
+      let row: any = null;
       // 1. Jalankan RPC untuk update progress jika ada field terkait
       if (amountPaid !== undefined || paymentStatus !== undefined || orderStatus !== undefined) {
         const updated = await updateTransactionProgress(id, {
@@ -168,9 +185,19 @@ export function useTransactions(filter: TransactionFilter = {}) {
       }
       // 2. Jalankan update standar untuk field lain (notes, estimatedCompletionDate, dll)
       if (Object.keys(otherFields).length > 0) {
+        // Convert undefined to null and Date to string for Supabase
+        const dbOtherFields: Record<string, unknown> = {};
+        for (const key in otherFields) {
+          const value = (otherFields as Record<string, unknown>)[key];
+          if (value instanceof Date) {
+            dbOtherFields[key] = value.toISOString();
+          } else {
+            dbOtherFields[key] = value ?? null;
+          }
+        }
         const { data: updatedRow, error } = await supabase
           .from('transactions')
-          .update(otherFields)
+          .update(dbOtherFields)
           .eq('id', id)
           .select();
         if (error) throw error;
@@ -227,7 +254,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
               // Verify semua field yang diupdate
               return Object.keys(variables.data).every((key) => {
                 const expectedValue = variables.data[key as keyof typeof variables.data];
-                const actualValue = data[key];
+                const actualValue = (data as Record<string, unknown>)[key];
                 return expectedValue === undefined || actualValue === expectedValue;
               });
             },

@@ -69,7 +69,7 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
   // Dropdown user dinonaktifkan karena allUsers/setCurrentUser tidak tersedia
   // const handleUserChange = ...
 
-  const currentStore = stores.find((s) => s.id === currentUser.storeId);
+  const currentStore = stores.find((s) => s.id === currentUser?.storeId);
   const activeStores = stores.filter((s) => s.isActive);
 
   return (
@@ -100,7 +100,7 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
           </div>
 
           {/* Store Selector (SuperAdmin only) */}
-          {currentUser.role === UserRole.SuperAdmin && (
+          {currentUser?.role === UserRole.SuperAdmin && (
             <>
               <div className="h-6 w-px bg-slate-300 dark:bg-slate-600 hidden sm:block" />
               <div className="w-32 sm:w-40">
@@ -130,10 +130,10 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
             {/* User Profile Info */}
             <div className="hidden sm:flex flex-col items-end text-right">
               <span className="font-semibold text-sm text-slate-700 dark:text-slate-200">
-                {currentUser.name}
+                {currentUser?.name}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                {currentUser.role}
+                {currentUser?.role}
               </span>
             </div>
             
@@ -159,7 +159,7 @@ const Header: React.FC<{ pageTitle: string }> = ({ pageTitle }) => {
           </div>
         </div>
       </div>
-      {currentUser.role !== UserRole.SuperAdmin && currentStore && (
+      {currentUser?.role !== UserRole.SuperAdmin && currentStore && (
         <div className="text-right text-sm text-slate-500 dark:text-slate-400 mt-1">
           Cabang: {currentStore.name}
         </div>

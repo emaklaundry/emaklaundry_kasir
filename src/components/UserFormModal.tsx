@@ -48,7 +48,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
   };
 
   const showStoreSelector =
-    formData.role === UserRole.BranchAdmin || formData.role === UserRole.Cashier;
+    formData.role === UserRole.Admin || formData.role === UserRole.Cashier;
 
   return (
     <Modal
@@ -147,7 +147,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
               checked={formData.isActive}
               onChange={handleChange}
               disabled={isEditingSuperAdmin}
-              className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
             />
             <label
               htmlFor="user-isActive"
@@ -164,7 +164,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
               checked={formData.canGiveDiscount}
               onChange={handleChange}
               disabled={isEditingSuperAdmin}
-              className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
             />
             <label
               htmlFor="user-canGiveDiscount"

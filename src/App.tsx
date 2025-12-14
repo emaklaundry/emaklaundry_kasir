@@ -67,7 +67,7 @@ const PwaStatusHandler: React.FC = () => {
       onNeedRefresh() {
         // Auto update service worker saat ada versi baru
         if (updateSW) {
-          updateSW(true); // true = reload page after update
+          updateSW(); // Trigger update (reloadPage is configured in vite.config.ts)
         }
       },
       immediate: true, // Check for updates immediately
@@ -76,7 +76,7 @@ const PwaStatusHandler: React.FC = () => {
     // Check for updates setiap 1 jam
     const interval = setInterval(() => {
       if (updateSW) {
-        updateSW();
+        updateSW(); // Check for updates without forcing reload
       }
     }, 60 * 60 * 1000); // 1 hour
 

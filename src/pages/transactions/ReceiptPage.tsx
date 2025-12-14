@@ -27,7 +27,7 @@ const ReceiptPage: React.FC = () => {
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
 
   const transaction = transactions.find((t) => t.id === id);
-  const [fetchedTransaction, setFetchedTransaction] = React.useState(null);
+  const [fetchedTransaction, setFetchedTransaction] = React.useState<any>(null);
   React.useEffect(() => {
     if (!transaction && id) {
       supabase.from('transactions').select('*').eq('id', id).single().then(({ data }) => {
@@ -88,7 +88,7 @@ const ReceiptPage: React.FC = () => {
       </div>
 
       <div className="space-y-2 mb-4">
-        {tx.items.map((item, index) => (
+        {tx.items.map((item: any, index: number) => (
           <div key={index} className="flex flex-col text-base py-1">
             <div className="flex justify-between">
               <div>
@@ -103,10 +103,9 @@ const ReceiptPage: React.FC = () => {
                 Rp {item.subtotal.toLocaleString('id-ID')}
               </p>
             </div>
-            {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
+            {item.itemDetails?.slice(0, item.quantity).some((d: any) => d.note) && (
               <div className="pl-4 mt-1 space-y-0.5">
-                {item.itemDetails?.slice(0, item.quantity).map(
-                  (detail, detailIndex) =>
+                {item.itemDetails?.slice(0, item.quantity).map((detail: any, detailIndex: number) =>
                     detail.note && (
                       <p key={detailIndex} className="text-sm text-slate-500 dark:text-slate-400">
                         - Item #{detailIndex + 1}: {detail.note}
@@ -214,3 +213,4 @@ const ReceiptPage: React.FC = () => {
 };
 
 export default ReceiptPage;
+
