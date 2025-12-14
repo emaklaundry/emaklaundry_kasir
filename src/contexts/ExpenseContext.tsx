@@ -5,7 +5,7 @@ import { supabase } from '../utils/supabaseClient';
 const fetchExpenses = async (): Promise<Expense[]> => {
   const { data, error } = await supabase.from('expenses').select('*');
   if (error) throw error;
-  return (data || []).map(e => ({
+  return (data || []).map((e) => ({
     ...e,
     date: new Date(e.date),
     storeId: e.storeId ?? undefined,
@@ -24,7 +24,8 @@ export function useExpenses() {
       // Convert Date to string and undefined to null for Supabase
       const dbExpense = {
         ...expense,
-        date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
+        date:
+          expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
         storeId: expense.storeId ?? null,
       };
       const { error } = await supabase.from('expenses').insert([dbExpense]);

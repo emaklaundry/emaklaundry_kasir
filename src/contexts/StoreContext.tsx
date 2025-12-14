@@ -5,7 +5,7 @@ import { supabase } from '../utils/supabaseClient';
 const fetchStores = async (): Promise<Store[]> => {
   const { data, error } = await supabase.from('stores').select('*');
   if (error) throw error;
-  return (data || []).map(s => ({
+  return (data || []).map((s) => ({
     ...s,
     address: s.address ?? undefined,
     isActive: s.isActive ?? true,
@@ -14,8 +14,8 @@ const fetchStores = async (): Promise<Store[]> => {
 
 export function useStores() {
   const queryClient = useQueryClient();
-  const { data: stores = [], ...query } = useQuery({ 
-    queryKey: ['stores'], 
+  const { data: stores = [], ...query } = useQuery({
+    queryKey: ['stores'],
     queryFn: fetchStores,
     // Data stores jarang berubah, cache 10 menit
     staleTime: 10 * 60 * 1000,

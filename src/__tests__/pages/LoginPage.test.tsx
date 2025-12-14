@@ -10,7 +10,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
       queries: { retry: false },
     },
   });
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>

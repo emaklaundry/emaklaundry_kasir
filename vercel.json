@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
+    {
+      "source": "/manifest.webmanifest",
+      "destination": "/manifest.webmanifest"
+    },
     { "source": "/favicon/:match*", "destination": "/favicon/:match*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],

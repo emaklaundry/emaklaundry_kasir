@@ -29,9 +29,7 @@ class PerformanceMonitor {
     this.recordMetric(name, duration);
 
     if (duration > this.slowThreshold) {
-      console.warn(
-        `⚠️ Slow operation detected: "${name}" took ${duration.toFixed(2)}ms`
-      );
+      console.warn(`⚠️ Slow operation detected: "${name}" took ${duration.toFixed(2)}ms`);
     }
 
     return result;
@@ -52,9 +50,7 @@ class PerformanceMonitor {
     this.recordMetric(name, duration);
 
     if (duration > this.slowThreshold) {
-      console.warn(
-        `⚠️ Slow async operation detected: "${name}" took ${duration.toFixed(2)}ms`
-      );
+      console.warn(`⚠️ Slow async operation detected: "${name}" took ${duration.toFixed(2)}ms`);
     }
 
     return result;
@@ -67,16 +63,14 @@ class PerformanceMonitor {
    */
   start(name: string): () => void {
     const start = performance.now();
-    
+
     return () => {
       const end = performance.now();
       const duration = end - start;
       this.recordMetric(name, duration);
-      
+
       if (duration > this.slowThreshold) {
-        console.warn(
-          `⚠️ Slow operation detected: "${name}" took ${duration.toFixed(2)}ms`
-        );
+        console.warn(`⚠️ Slow operation detected: "${name}" took ${duration.toFixed(2)}ms`);
       }
     };
   }
@@ -111,7 +105,7 @@ class PerformanceMonitor {
    * @param name - Nama operasi
    */
   getMetricsByName(name: string): PerformanceMetric[] {
-    return this.metrics.filter(m => m.name === name);
+    return this.metrics.filter((m) => m.name === name);
   }
 
   /**
@@ -121,7 +115,7 @@ class PerformanceMonitor {
   getAverageDuration(name: string): number {
     const metrics = this.getMetricsByName(name);
     if (metrics.length === 0) return 0;
-    
+
     const total = metrics.reduce((sum, m) => sum + m.duration, 0);
     return total / metrics.length;
   }
@@ -131,9 +125,7 @@ class PerformanceMonitor {
    * @param limit - Jumlah operasi yang ditampilkan (default: 10)
    */
   getSlowestOperations(limit: number = 10): PerformanceMetric[] {
-    return [...this.metrics]
-      .sort((a, b) => b.duration - a.duration)
-      .slice(0, limit);
+    return [...this.metrics].sort((a, b) => b.duration - a.duration).slice(0, limit);
   }
 
   /**
@@ -152,26 +144,26 @@ class PerformanceMonitor {
     }
 
     const slowest = this.getSlowestOperations(5);
-    const uniqueOperations = [...new Set(this.metrics.map(m => m.name))];
-    
+    const uniqueOperations = [...new Set(this.metrics.map((m) => m.name))];
+
     let report = '📊 Performance Report\n';
     report += '='.repeat(50) + '\n\n';
-    
+
     report += `Total Operations: ${this.metrics.length}\n`;
     report += `Unique Operations: ${uniqueOperations.length}\n\n`;
-    
+
     report += '🐌 Top 5 Slowest Operations:\n';
     slowest.forEach((m, i) => {
       report += `  ${i + 1}. ${m.name}: ${m.duration.toFixed(2)}ms\n`;
     });
-    
+
     report += '\n📈 Average Duration by Operation:\n';
-    uniqueOperations.forEach(name => {
+    uniqueOperations.forEach((name) => {
       const avg = this.getAverageDuration(name);
       const count = this.getMetricsByName(name).length;
       report += `  ${name}: ${avg.toFixed(2)}ms (${count} calls)\n`;
     });
-    
+
     return report;
   }
 }
@@ -181,9 +173,14 @@ export const performanceMonitor = new PerformanceMonitor();
 /**
  * Decorator untuk measure performance (untuk development)
  */
-export function measurePerformance(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function measurePerformance(
+  target: object,
+  propertyKey: string,
+  descriptor: PropertyDescriptor,
+) {
   const originalMethod = descriptor.value;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   descriptor.value = async function (...args: any[]) {
     const stop = performanceMonitor.start(`${target.constructor.name}.${propertyKey}`);
     try {

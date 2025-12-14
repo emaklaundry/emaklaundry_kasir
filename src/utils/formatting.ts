@@ -26,7 +26,7 @@ export function calculateNextDueDate(
 ): Date {
   try {
     const newDate = new Date(currentDueDate);
-    
+
     if (isNaN(newDate.getTime())) {
       throw new Error('Invalid date');
     }

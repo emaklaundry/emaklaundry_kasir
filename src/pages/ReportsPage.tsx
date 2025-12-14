@@ -250,7 +250,7 @@ const ReportsPage: React.FC = () => {
     const now = new Date();
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
-    
+
     if (rangeType === 'weekly') {
       const firstDayOfWeek = new Date(now);
       firstDayOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
@@ -348,7 +348,7 @@ const ReportsPage: React.FC = () => {
           (e) =>
             e.description === desc &&
             e.date === date &&
-            Math.abs(e.amount - amount) < Math.max(100, amount * 0.01) // Toleransi 100 rupiah atau 1%, mana yang lebih besar
+            Math.abs(e.amount - amount) < Math.max(100, amount * 0.01), // Toleransi 100 rupiah atau 1%, mana yang lebih besar
         );
       };
 
@@ -362,9 +362,9 @@ const ReportsPage: React.FC = () => {
           if (asset.purchaseDate) {
             let purchaseDateStr = String(asset.purchaseDate);
             if (purchaseDateStr.includes('T')) {
-               purchaseDateStr = purchaseDateStr.split('T')[0];
+              purchaseDateStr = purchaseDateStr.split('T')[0];
             }
-            
+
             // Filter tanggal sesuai range
             if (purchaseDateStr >= startDateStr && purchaseDateStr <= endDateStr) {
               const cost = Number(asset.purchaseCost) || 0;
@@ -402,11 +402,11 @@ const ReportsPage: React.FC = () => {
             const logDate = new Date(log.date);
             const logDateStr = formatDateStr(logDate);
             const cost = Number(log.cost) || 0;
-            
+
             if (logDateStr >= startDateStr && logDateStr <= endDateStr) {
               // Format deskripsi HARUS SAMA dengan yang di-push untuk duplikasi detection
               const description = `Perawatan Aset: ${asset.name} (${log.description})`;
-              
+
               if (!isExpenseExist(description, logDateStr, cost)) {
                 assetExpenses.push({
                   id: `asset-maint-${asset.id}-${index}`,
@@ -450,7 +450,7 @@ const ReportsPage: React.FC = () => {
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
     const end = endDate.getTime();
-    
+
     const transactions = (allStoreTransactions as unknown[])
       .map(normalizeTransaction)
       .filter((t): t is Omit<Transaction, 'createdAt'> & { createdAt: string } => !!t)
@@ -470,7 +470,7 @@ const ReportsPage: React.FC = () => {
   const netProfit = totalRevenue - totalExpenses;
 
   // ... (Kode selebihnya untuk chart, tabel, dll tetap sama) ...
-  
+
   const serviceMap = useMemo(
     () =>
       services.reduce(
@@ -772,7 +772,10 @@ const ReportsPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {topServices.map((s, i) => (
-                      <tr key={s.serviceId ? s.serviceId : `${s.name}-${i}`} className="border-b dark:border-slate-700">
+                      <tr
+                        key={s.serviceId ? s.serviceId : `${s.name}-${i}`}
+                        className="border-b dark:border-slate-700"
+                      >
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {s.name}
                         </td>

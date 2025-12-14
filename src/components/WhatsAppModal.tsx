@@ -42,11 +42,11 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const rawRemaining = total - amountPaid;
     const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
     const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
-    
+
     // Footer custom dari settings atau default
     const defaultFooter = `🔍 Cek status cucian Anda:\nhttps://www.emaklaundry.my.id/\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9`;
     const footer = settings?.whatsappFooter || defaultFooter;
-    
+
     if (transaction.orderStatus === OrderStatus.Processing) {
       defaultMessage =
         `Halo ${customer.name},\n\n` +
@@ -115,14 +115,14 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const whatsappUrl = isMobile
       ? `https://wa.me/${phone}?text=${encodedMessage}`
       : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
-    
+
     if (transaction) {
       addAuditLog(
         `Mengirim notifikasi WhatsApp untuk transaksi ${transaction.id} kepada ${customer.name}.`,
         transaction.storeId,
       );
     }
-    
+
     window.open(whatsappUrl, '_blank');
     onClose();
   };

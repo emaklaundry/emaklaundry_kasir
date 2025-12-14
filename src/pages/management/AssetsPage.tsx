@@ -40,7 +40,6 @@ const AssetsPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
-  const [isSavingAsset, setIsSavingAsset] = useState(false);
   const { scheduledMaintenances } = useScheduledMaintenances();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -90,7 +89,6 @@ const AssetsPage: React.FC = () => {
       return;
     }
     const toastId = addToast('Menyimpan aset...', 'info');
-    setIsSavingAsset(true);
     try {
       if (currentAsset && currentAsset.id) {
         // Edit Mode: Hanya update data aset
@@ -109,7 +107,6 @@ const AssetsPage: React.FC = () => {
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
     } finally {
-      setIsSavingAsset(false);
     }
   };
 
@@ -140,7 +137,6 @@ const AssetsPage: React.FC = () => {
   const confirmDelete = async () => {
     if (assetToDelete) {
       const toastId = addToast('Menghapus aset...', 'info');
-      setIsSavingAsset(true);
       try {
         await deleteAsset(assetToDelete.id);
         addAuditLog(`Menghapus aset: "${assetToDelete.name}".`, assetToDelete.storeId);
@@ -157,8 +153,7 @@ const AssetsPage: React.FC = () => {
         }
       } finally {
         setAssetToDelete(null);
-        setIsSavingAsset(false);
-      }
+        }
     }
   };
 
@@ -239,12 +234,11 @@ const AssetsPage: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsSavingAsset(true);
     const toastId = addToast('Memproses import data...', 'info');
 
     try {
       const importedAssets = await importAssetsFromExcel(file);
-      
+
       let successCount = 0;
       let errorCount = 0;
       let skipCount = 0;
@@ -259,7 +253,7 @@ const AssetsPage: React.FC = () => {
               skipCount++;
               continue;
             }
-            
+
             // Update existing asset
             await updateAsset(asset.id, {
               name: asset.name!,
@@ -284,16 +278,16 @@ const AssetsPage: React.FC = () => {
               skipCount++;
               continue;
             }
-            
+
             // Ensure storeId is set for INSERT (RLS policy requirement)
             const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
-            
+
             if (!storeId) {
               console.error('storeId is required for new assets');
               errorCount++;
               continue;
             }
-            
+
             // Add new asset
             await addAsset({
               name: asset.name!,
@@ -316,13 +310,13 @@ const AssetsPage: React.FC = () => {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
-          'warning'
+          'warning',
         );
       } else if (errorCount > 0) {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
-          'warning'
+          'warning',
         );
       } else {
         updateToast(toastId, `Berhasil import ${successCount} aset`, 'success');
@@ -330,13 +324,12 @@ const AssetsPage: React.FC = () => {
 
       addAuditLog(
         `Import ${successCount} aset dari Excel`,
-        selectedStoreId === 'all' ? undefined : selectedStoreId
+        selectedStoreId === 'all' ? undefined : selectedStoreId,
       );
     } catch (error) {
       console.error('Import error:', error);
       updateToast(toastId, 'Gagal import data dari Excel', 'error');
     } finally {
-      setIsSavingAsset(false);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -371,7 +364,7 @@ const AssetsPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Template</span>
           </button>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -388,7 +381,7 @@ const AssetsPage: React.FC = () => {
             <UploadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Import</span>
           </button>
-          
+
           <button
             onClick={handleExportToExcel}
             disabled={assets.length === 0}
@@ -398,7 +391,7 @@ const AssetsPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Export</span>
           </button>
-          
+
           <button
             onClick={() => handleOpenAssetForm()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
@@ -436,240 +429,250 @@ const AssetsPage: React.FC = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
-      {/* Desktop Table View */}
+        {/* Desktop Table View */}
         <div className="overflow-x-auto hidden md:block">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-            <tr>
-              <th className="px-6 py-3">
-                <button
-                  onClick={() => requestSort('name')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Nama Aset {getSortIcon('name')}
-                </button>
-              </th>
-              {currentUser &&
-                currentUser.role === UserRole.SuperAdmin &&
-                selectedStoreId === 'all' && (
-                  <th className="px-6 py-3">
-                    <button
-                      onClick={() => requestSort('storeName')}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                    >
-                      Toko {getSortIcon('storeName')}
-                    </button>
-                  </th>
-                )}
-              <th className="px-6 py-3">
-                <button
-                  onClick={() => requestSort('purchaseDate')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Tanggal Beli {getSortIcon('purchaseDate')}
-                </button>
-              </th>
-              <th className="px-6 py-3 text-right">
-                <button
-                  onClick={() => requestSort('purchaseCost')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
-                >
-                  Biaya Beli {getSortIcon('purchaseCost')}
-                </button>
-              </th>
-              <th className="px-6 py-3">
-                <button
-                  onClick={() => requestSort('status')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Status {getSortIcon('status')}
-                </button>
-              </th>
-              <th className="px-6 py-3">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedAssets.length > 0 ? (
-              sortedAssets.map((asset) => (
-                <tr key={asset.id} className="border-b dark:border-slate-700">
-                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                    {asset.name}
+          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+              <tr>
+                <th className="px-6 py-3">
+                  <button
+                    onClick={() => requestSort('name')}
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                  >
+                    Nama Aset {getSortIcon('name')}
+                  </button>
+                </th>
+                {currentUser &&
+                  currentUser.role === UserRole.SuperAdmin &&
+                  selectedStoreId === 'all' && (
+                    <th className="px-6 py-3">
+                      <button
+                        onClick={() => requestSort('storeName')}
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                      >
+                        Toko {getSortIcon('storeName')}
+                      </button>
+                    </th>
+                  )}
+                <th className="px-6 py-3">
+                  <button
+                    onClick={() => requestSort('purchaseDate')}
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                  >
+                    Tanggal Beli {getSortIcon('purchaseDate')}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-right">
+                  <button
+                    onClick={() => requestSort('purchaseCost')}
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
+                  >
+                    Biaya Beli {getSortIcon('purchaseCost')}
+                  </button>
+                </th>
+                <th className="px-6 py-3">
+                  <button
+                    onClick={() => requestSort('status')}
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                  >
+                    Status {getSortIcon('status')}
+                  </button>
+                </th>
+                <th className="px-6 py-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedAssets.length > 0 ? (
+                sortedAssets.map((asset) => (
+                  <tr key={asset.id} className="border-b dark:border-slate-700">
+                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                      {asset.name}
+                    </td>
+                    {currentUser &&
+                      currentUser.role === UserRole.SuperAdmin &&
+                      selectedStoreId === 'all' && <td className="px-6 py-4">{asset.storeName}</td>}
+                    <td className="px-6 py-4">
+                      {asset.purchaseDate
+                        ? new Date(asset.purchaseDate).toLocaleDateString('id-ID')
+                        : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {asset.purchaseCost
+                        ? `Rp ${asset.purchaseCost.toLocaleString('id-ID')}`
+                        : '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}
+                      >
+                        {asset.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleOpenAssetForm(asset)}
+                          title="Edit Aset"
+                          className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <EditIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(asset)}
+                          title="Hapus Aset"
+                          className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <Trash2Icon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenMaintenanceForm(asset)}
+                          title="Tambah Log Pemeliharaan"
+                          className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <PlusCircleIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenSchedule(asset)}
+                          title="Jadwal Perawatan"
+                          className="p-2 rounded-md text-purple-600 hover:text-purple-900 dark:text-purple-500 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <CalendarIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenHistory(asset)}
+                          title="Lihat Riwayat Pemeliharaan"
+                          className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <HistoryIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={
+                      currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
+                    }
+                  >
+                    <EmptyState
+                      icon={<WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                      title={
+                        searchTerm || maintenanceFilter !== 'all'
+                          ? 'Aset Tidak Ditemukan'
+                          : 'Belum Ada Aset'
+                      }
+                      description={
+                        searchTerm || maintenanceFilter !== 'all'
+                          ? 'Coba kata kunci atau filter lain.'
+                          : 'Mulai dengan menambahkan aset pertama Anda.'
+                      }
+                    />
                   </td>
-                  {currentUser &&
-                    currentUser.role === UserRole.SuperAdmin &&
-                    selectedStoreId === 'all' && <td className="px-6 py-4">{asset.storeName}</td>}
-                  <td className="px-6 py-4">
-                    {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString('id-ID') : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {asset.purchaseCost ? `Rp ${asset.purchaseCost.toLocaleString('id-ID')}` : '-'}
-                  </td>
-                  <td className="px-6 py-4">
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {sortedAssets.length > 0 ? (
+            sortedAssets.map((asset) => (
+              <div
+                key={asset.id}
+                className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
+                      {asset.name}
+                    </p>
                     <span
-                      className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}
+                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadge(asset.status)}`}
                     >
                       {asset.status}
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                  </div>
+                  <div className="flex items-center space-x-0">
                     <button
                       onClick={() => handleOpenAssetForm(asset)}
                       title="Edit Aset"
-                      className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(asset)}
                       title="Hapus Aset"
-                      className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <Trash2Icon className="w-5 h-5" />
                     </button>
-                    <button
-                      onClick={() => handleOpenMaintenanceForm(asset)}
-                      title="Tambah Log Pemeliharaan"
-                      className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <PlusCircleIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenSchedule(asset)}
-                      title="Jadwal Perawatan"
-                      className="p-2 rounded-md text-purple-600 hover:text-purple-900 dark:text-purple-500 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <CalendarIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenHistory(asset)}
-                      title="Lihat Riwayat Pemeliharaan"
-                      className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <HistoryIcon className="w-5 h-5" />
-                    </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={
-                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
-                  }
-                >
-                  <EmptyState
-                    icon={<WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />}
-                    title={
-                      searchTerm || maintenanceFilter !== 'all'
-                        ? 'Aset Tidak Ditemukan'
-                        : 'Belum Ada Aset'
-                    }
-                    description={
-                      searchTerm || maintenanceFilter !== 'all'
-                        ? 'Coba kata kunci atau filter lain.'
-                        : 'Mulai dengan menambahkan aset pertama Anda.'
-                    }
-                  />
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
-        {sortedAssets.length > 0 ? (
-          sortedAssets.map((asset) => (
-            <div
-              key={asset.id}
-              className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
-                    {asset.name}
-                  </p>
-                  <span
-                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadge(asset.status)}`}
-                  >
-                    {asset.status}
-                  </span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-0">
+                {currentUser &&
+                  currentUser.role === UserRole.SuperAdmin &&
+                  selectedStoreId === 'all' && (
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{asset.storeName}</p>
+                  )}
+                <div className="mt-3 space-y-1 text-sm border-t dark:border-slate-600 pt-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Tgl Beli:</span>
+                    <span className="font-medium">
+                      {asset.purchaseDate
+                        ? new Date(asset.purchaseDate).toLocaleDateString('id-ID')
+                        : '-'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Biaya:</span>
+                    <span className="font-medium">
+                      {asset.purchaseCost
+                        ? `Rp ${asset.purchaseCost.toLocaleString('id-ID')}`
+                        : '-'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-2 text-sm">
                   <button
-                    onClick={() => handleOpenAssetForm(asset)}
-                    title="Edit Aset"
-                    className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    onClick={() => handleOpenMaintenanceForm(asset)}
+                    className="flex items-center gap-1 py-1 px-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
                   >
-                    <EditIcon className="w-5 h-5" />
+                    <PlusCircleIcon className="w-4 h-4" /> Log
                   </button>
                   <button
-                    onClick={() => handleDelete(asset)}
-                    title="Hapus Aset"
-                    className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    onClick={() => handleOpenSchedule(asset)}
+                    className="flex items-center gap-1 py-1 px-3 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300"
                   >
-                    <Trash2Icon className="w-5 h-5" />
+                    <CalendarIcon className="w-4 h-4" /> Jadwal
+                  </button>
+                  <button
+                    onClick={() => handleOpenHistory(asset)}
+                    className="flex items-center gap-1 py-1 px-3 rounded-md bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-200"
+                  >
+                    <HistoryIcon className="w-4 h-4" /> Riwayat
                   </button>
                 </div>
               </div>
-              {currentUser &&
-                currentUser.role === UserRole.SuperAdmin &&
-                selectedStoreId === 'all' && (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{asset.storeName}</p>
-                )}
-              <div className="mt-3 space-y-1 text-sm border-t dark:border-slate-600 pt-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Tgl Beli:</span>
-                  <span className="font-medium">
-                    {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString('id-ID') : '-'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Biaya:</span>
-                  <span className="font-medium">
-                    {asset.purchaseCost ? `Rp ${asset.purchaseCost.toLocaleString('id-ID')}` : '-'}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-end gap-2 text-sm">
-                <button
-                  onClick={() => handleOpenMaintenanceForm(asset)}
-                  className="flex items-center gap-1 py-1 px-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                >
-                  <PlusCircleIcon className="w-4 h-4" /> Log
-                </button>
-                <button
-                  onClick={() => handleOpenSchedule(asset)}
-                  className="flex items-center gap-1 py-1 px-3 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300"
-                >
-                  <CalendarIcon className="w-4 h-4" /> Jadwal
-                </button>
-                <button
-                  onClick={() => handleOpenHistory(asset)}
-                  className="flex items-center gap-1 py-1 px-3 rounded-md bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-200"
-                >
-                  <HistoryIcon className="w-4 h-4" /> Riwayat
-                </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <EmptyState
-            icon={<WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />}
-            title={
-              searchTerm || maintenanceFilter !== 'all' ? 'Aset Tidak Ditemukan' : 'Belum Ada Aset'
-            }
-            description={
-              searchTerm || maintenanceFilter !== 'all'
-                ? 'Coba kata kunci atau filter lain.'
-                : 'Mulai dengan menambahkan aset pertama Anda.'
-            }
-          />
-        )}
-      </div>
+            ))
+          ) : (
+            <EmptyState
+              icon={<WrenchIcon className="mx-auto w-12 h-12 text-slate-400" />}
+              title={
+                searchTerm || maintenanceFilter !== 'all'
+                  ? 'Aset Tidak Ditemukan'
+                  : 'Belum Ada Aset'
+              }
+              description={
+                searchTerm || maintenanceFilter !== 'all'
+                  ? 'Coba kata kunci atau filter lain.'
+                  : 'Mulai dengan menambahkan aset pertama Anda.'
+              }
+            />
+          )}
+        </div>
       </div>
 
       {isAssetFormModalOpen && (
@@ -713,3 +716,5 @@ const AssetsPage: React.FC = () => {
 };
 
 export default AssetsPage;
+
+

@@ -1,7 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
-import useToasts from './contexts/useToasts';
 import { UserRole } from './types';
 import useAppContext from './contexts/useAppContext';
 import Layout from './components/Layout';
@@ -74,11 +73,14 @@ const PwaStatusHandler: React.FC = () => {
     });
 
     // Check for updates setiap 1 jam
-    const interval = setInterval(() => {
-      if (updateSW) {
-        updateSW(); // Check for updates without forcing reload
-      }
-    }, 60 * 60 * 1000); // 1 hour
+    const interval = setInterval(
+      () => {
+        if (updateSW) {
+          updateSW(); // Check for updates without forcing reload
+        }
+      },
+      60 * 60 * 1000,
+    ); // 1 hour
 
     return () => clearInterval(interval);
   }, []);
@@ -100,7 +102,7 @@ const AppRoutes: React.FC = () => {
   React.useEffect(() => {
     const checkAuth = async () => {
       // Beri waktu untuk auth check selesai
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       setIsAuthChecking(false);
     };
     checkAuth();
@@ -131,10 +133,13 @@ const AppRoutes: React.FC = () => {
   }
 
   // Setelah login, cek maintenance mode (kecuali Super Admin)
-  const isMaintenanceMode = settings?.isMaintenanceMode && currentUser?.role !== UserRole.SuperAdmin;
+  const isMaintenanceMode =
+    settings?.isMaintenanceMode && currentUser?.role !== UserRole.SuperAdmin;
 
   if (isMaintenanceMode) {
-    return <MaintenanceMode message={settings?.maintenanceMessage} onLogout={handleMaintenanceLogout} />;
+    return (
+      <MaintenanceMode message={settings?.maintenanceMessage} onLogout={handleMaintenanceLogout} />
+    );
   }
 
   return (
@@ -278,3 +283,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

@@ -36,9 +36,9 @@ self.addEventListener('fetch', (event) => {
         headers: {
           ...event.request.headers,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
+          Pragma: 'no-cache',
         },
-      })
+      }),
     );
     return;
   }
@@ -68,10 +68,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For static assets (js, css, images), use cache-first strategy
-  if (event.request.destination === 'script' || 
-      event.request.destination === 'style' || 
-      event.request.destination === 'image' ||
-      event.request.destination === 'font') {
+  if (
+    event.request.destination === 'script' ||
+    event.request.destination === 'style' ||
+    event.request.destination === 'image' ||
+    event.request.destination === 'font'
+  ) {
     event.respondWith(
       (async () => {
         const cached = await caches.match(event.request);

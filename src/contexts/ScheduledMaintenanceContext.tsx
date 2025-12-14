@@ -7,7 +7,7 @@ import { useAssets } from './AssetContext';
 const fetchScheduledMaintenances = async (): Promise<ScheduledMaintenance[]> => {
   const { data, error } = await supabase.from('scheduled_maintenances').select('*');
   if (error) throw error;
-  return (data || []).map(s => ({
+  return (data || []).map((s) => ({
     ...s,
     assetId: s.assetId ?? undefined,
     lastCompletedDate: s.lastCompletedDate ? new Date(s.lastCompletedDate) : undefined,
@@ -35,8 +35,14 @@ export function useScheduledMaintenances() {
       const dbSM = {
         ...sm,
         assetId: sm.assetId ?? null,
-        nextDueDate: sm.nextDueDate instanceof Date ? sm.nextDueDate.toISOString().split('T')[0] : sm.nextDueDate,
-        lastCompletedDate: sm.lastCompletedDate instanceof Date ? sm.lastCompletedDate.toISOString().split('T')[0] : (sm.lastCompletedDate ?? null),
+        nextDueDate:
+          sm.nextDueDate instanceof Date
+            ? sm.nextDueDate.toISOString().split('T')[0]
+            : sm.nextDueDate,
+        lastCompletedDate:
+          sm.lastCompletedDate instanceof Date
+            ? sm.lastCompletedDate.toISOString().split('T')[0]
+            : (sm.lastCompletedDate ?? null),
       };
       const { error } = await supabase.from('scheduled_maintenances').insert([dbSM]);
       if (error) throw error;

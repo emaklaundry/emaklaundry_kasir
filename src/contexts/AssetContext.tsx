@@ -6,13 +6,12 @@ const fetchAssets = async (): Promise<Asset[]> => {
   const { data, error } = await supabase.from('assets').select('*');
   if (error) throw error;
   // Convert null to undefined for optional fields
-  return (data || []).map(a => ({
+  return (data || []).map((a) => ({
     ...a,
     purchaseDate: a.purchaseDate ?? undefined,
     serialNumber: a.serialNumber ?? undefined,
     purchaseCost: a.purchaseCost ?? undefined,
-    storeId: a.storeId ?? undefined,
-  })) as unknown as Asset[];
+    storeId: a.storeId ?? undefined,    maintenanceHistory: Array.isArray(a.maintenanceHistory) ? a.maintenanceHistory : [],  })) as unknown as Asset[];
 };
 
 export function useAssets() {

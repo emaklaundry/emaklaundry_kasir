@@ -47,8 +47,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, st
     onSave(finalData);
   };
 
-  const showStoreSelector =
-    formData.role === UserRole.Admin || formData.role === UserRole.Cashier;
+  const showStoreSelector = formData.role === UserRole.Admin || formData.role === UserRole.Cashier;
 
   return (
     <Modal

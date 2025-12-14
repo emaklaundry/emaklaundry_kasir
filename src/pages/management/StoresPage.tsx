@@ -100,7 +100,9 @@ const StoresPage: React.FC = () => {
     }
 
     const isStoreInUse =
-      (Array.isArray(customers) ? customers : customers?.data || []).some((c: { storeId?: string }) => c.storeId === store.id) ||
+      (Array.isArray(customers) ? customers : customers?.data || []).some(
+        (c: { storeId?: string }) => c.storeId === store.id,
+      ) ||
       transactions.some((t) => t.storeId === store.id) ||
       inventory.some((i) => i.storeId === store.id) ||
       assets.some((a) => a.storeId === store.id) ||
@@ -394,4 +396,3 @@ const StoresPage: React.FC = () => {
 };
 
 export default StoresPage;
-

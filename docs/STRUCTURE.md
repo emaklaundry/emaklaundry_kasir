@@ -96,17 +96,19 @@ emaklaundry_kasir/
     ├── coverage/                    # Test coverage
     └── .supabase/                   # Supabase local data
 ```
-│   ├── vitest.config.ts             # Vitest test config
-│   ├── vitest.setup.ts              # Test setup
-│   └── vercel.json                  # Vercel deployment
+
+│ ├── vitest.config.ts # Vitest test config
+│ ├── vitest.setup.ts # Test setup
+│ └── vercel.json # Vercel deployment
 │
-├── 📄 README.md                     # Main project readme
-├── 📄 index.html                    # Entry HTML
+├── 📄 README.md # Main project readme
+├── 📄 index.html # Entry HTML
 │
 └── 🗑️ Generated (gitignored)
-    ├── node_modules/                # Dependencies
-    ├── dist/                        # Build output
-    └── coverage/                    # Test coverage
+├── node_modules/ # Dependencies
+├── dist/ # Build output
+└── coverage/ # Test coverage
+
 ```
 
 ---
@@ -122,14 +124,16 @@ emaklaundry_kasir/
 
 ### 2. **Logical Grouping**
 ```
+
 📦 Feature-based organization:
 src/
-├── components/     # Reusable UI components
-├── contexts/       # Global state
-├── hooks/          # Reusable logic
-├── pages/          # Route components
-├── types/          # Type definitions
-└── utils/          # Helper functions
+├── components/ # Reusable UI components
+├── contexts/ # Global state
+├── hooks/ # Reusable logic
+├── pages/ # Route components
+├── types/ # Type definitions
+└── utils/ # Helper functions
+
 ```
 
 ### 3. **Clear Naming Conventions**
@@ -182,21 +186,25 @@ src/
 
 ### File Count
 ```
-Documentation:        6 files
-Database scripts:     8 files
-Source files:       150+ files
-Test files:          78 test files (organized in __tests__/)
-Config files:        13 files
-Public assets:       10+ files
+
+Documentation: 6 files
+Database scripts: 8 files
+Source files: 150+ files
+Test files: 78 test files (organized in **tests**/)
+Config files: 13 files
+Public assets: 10+ files
+
 ```
 
 ### Code Organization
 ```
-Components:          70+ components
-Contexts:            15+ contexts
-Pages:               10+ pages
-Hooks:               15+ custom hooks
-Utils:               10+ utilities
+
+Components: 70+ components
+Contexts: 15+ contexts
+Pages: 10+ pages
+Hooks: 15+ custom hooks
+Utils: 10+ utilities
+
 ```
 
 ---
@@ -220,5 +228,6 @@ Utils:               10+ utilities
 
 ---
 
-**Structure organized:** December 14, 2025  
+**Structure organized:** December 14, 2025
 **Documentation:** Complete & up-to-date
+```

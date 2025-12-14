@@ -87,12 +87,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         addToast('Pembayaran harus sama dengan sisa tagihan. Tidak boleh bayar sebagian.', 'error');
         return;
       }
-      
+
       if (lockedAmountToPay > lockedRemainingBalance) {
         addToast('Jumlah pembayaran tidak boleh melebihi sisa tagihan.', 'error');
         return;
       }
-      
+
       if (method === PaymentMethod.Cash && lockedTenderedAmount < lockedAmountToPay) {
         addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
         return;
@@ -100,13 +100,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
       const newAmountPaid = Math.min(transaction.amountPaid + lockedAmountToPay, transaction.total);
       let newStatus = PaymentStatus.Unpaid;
-      
+
       if (newAmountPaid >= transaction.total) {
         newStatus = PaymentStatus.Paid;
       } else if (newAmountPaid > 0) {
         newStatus = PaymentStatus.Unpaid;
       }
-      
+
       const finalChange = newStatus === PaymentStatus.Paid ? lockedChange : 0;
 
       await onSave({
@@ -116,14 +116,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         paymentMethod: method,
         change: finalChange,
       });
-      
+
       onClose();
     } catch (error) {
       console.error('Error saving payment:', error);
-      addToast(
-        'Terjadi kesalahan saat menyimpan pembayaran. Silakan coba lagi.',
-        'error'
-      );
+      addToast('Terjadi kesalahan saat menyimpan pembayaran. Silakan coba lagi.', 'error');
     }
   };
 

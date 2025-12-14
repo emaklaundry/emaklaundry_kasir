@@ -25,7 +25,7 @@ export async function fetchInventory(
   query = query.range(from, to);
   const { data, error, count } = await query;
   if (error) throw error;
-  const items = (data || []).map(i => ({
+  const items = (data || []).map((i) => ({
     ...i,
     storeId: i.storeId ?? undefined,
   })) as InventoryItem[];

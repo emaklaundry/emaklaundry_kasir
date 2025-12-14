@@ -36,7 +36,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate before save
     if (!formData.name || formData.name.trim() === '') {
       addToast('Nama aset harus diisi.', 'error');
@@ -50,17 +50,20 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
       addToast('Harga pembelian harus lebih dari 0.', 'error');
       return;
     }
-    if (!formData.status || !['Active', 'Under Maintenance', 'Decommissioned'].includes(formData.status)) {
+    if (
+      !formData.status ||
+      !['Active', 'Under Maintenance', 'Decommissioned'].includes(formData.status)
+    ) {
       addToast('Status aset tidak valid.', 'error');
       return;
     }
-    
+
     // Convert purchaseDate string to Date object
     const assetData = {
       ...formData,
       purchaseDate: new Date(formData.purchaseDate),
     };
-    
+
     onSave(assetData);
   };
 

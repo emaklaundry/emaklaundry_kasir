@@ -13,7 +13,7 @@ export const getLocalDateString = (date?: string | Date): string => {
     const now = new Date();
     return formatDateToYMD(now);
   }
-  
+
   if (typeof date === 'string') {
     // Jika sudah dalam format YYYY-MM-DD, return langsung
     if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -22,7 +22,7 @@ export const getLocalDateString = (date?: string | Date): string => {
     // Jika ISO string, extract bagian tanggal
     return date.split('T')[0];
   }
-  
+
   return formatDateToYMD(date);
 };
 
@@ -78,25 +78,21 @@ export const getEndOfDay = (date: string | Date): Date => {
 export const isValidDateString = (dateStr: string): boolean => {
   // Check format first
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-  
+
   // Parse and validate date components
   const [year, month, day] = dateStr.split('-').map(Number);
-  
+
   // Validate ranges
   if (month < 1 || month > 12) return false;
   if (day < 1 || day > 31) return false;
-  
+
   // Create date and verify it matches input (catches invalid dates like Feb 30)
   const date = new Date(year, month - 1, day);
-  
+
   if (isNaN(date.getTime())) return false;
-  
+
   // Verify the date components match (catches rollover like Feb 30 -> Mar 2)
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 };
 
 /**

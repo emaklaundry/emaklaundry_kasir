@@ -3,36 +3,42 @@
 ## ✅ Security Best Practices Implemented
 
 ### 1. **Environment Variables**
+
 - ✅ `.env` files di-gitignore
 - ✅ `.env.example` tersedia untuk dokumentasi
 - ✅ Semua sensitive data menggunakan environment variables
 - ✅ Client-side variables menggunakan `VITE_` prefix
 
 ### 2. **Supabase Security**
+
 - ✅ Row Level Security (RLS) enabled di semua tabel
 - ✅ Anon key digunakan di client (public-safe)
 - ✅ Service key TIDAK di-commit ke repository
 - ✅ Database policies berdasarkan user role & store
 
 ### 3. **Authentication**
+
 - ✅ Login menggunakan Supabase Auth
 - ✅ Password tidak disimpan di client
 - ✅ Session management otomatis via Supabase
 - ✅ Role-based access control (SuperAdmin, Admin, Kasir)
 
 ### 4. **Code Security**
+
 - ✅ No hardcoded secrets
 - ✅ TypeScript strict mode enabled
 - ✅ ESLint configured dengan security rules
 - ✅ Dependencies audit: `npm audit` - 0 vulnerabilities
 
 ### 5. **API Security**
+
 - ✅ Supabase RLS policies untuk data access control
 - ✅ Input validation di forms
 - ✅ SQL injection protection (Supabase prepared statements)
 - ✅ HTTPS only (enforced di production)
 
 ### 6. **Data Privacy**
+
 - ✅ Multi-tenant isolation (per store/branch)
 - ✅ User data encrypted at rest (Supabase)
 - ✅ Sensitive data tidak di-log
@@ -43,6 +49,7 @@
 ## ⚠️ Security Warnings
 
 ### DO NOT:
+
 - ❌ Commit `.env` files ke Git
 - ❌ Share `SUPABASE_SERVICE_KEY` (service role key)
 - ❌ Hardcode API keys atau passwords
@@ -51,6 +58,7 @@
 - ❌ Log sensitive user data
 
 ### DO:
+
 - ✅ Gunakan `.env.example` untuk dokumentasi
 - ✅ Rotate Supabase keys jika ter-leak
 - ✅ Review RLS policies secara berkala

@@ -88,9 +88,9 @@ const CustomersPage: React.FC = () => {
   // Apply activity filter
   const filteredCustomers = useMemo(() => {
     if (activityFilter === 'active') {
-      return customerStats.filter(c => c.transactionCount > 0);
+      return customerStats.filter((c) => c.transactionCount > 0);
     } else if (activityFilter === 'inactive') {
-      return customerStats.filter(c => c.transactionCount === 0);
+      return customerStats.filter((c) => c.transactionCount === 0);
     }
     return customerStats;
   }, [customerStats, activityFilter]);
@@ -154,7 +154,7 @@ const CustomersPage: React.FC = () => {
 
     // FIXED: Check for duplicate phone number
     const existingCustomers = customers.filter(
-      (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id
+      (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
     );
     if (existingCustomers.length > 0) {
       addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
@@ -252,7 +252,7 @@ const CustomersPage: React.FC = () => {
 
     try {
       const importedCustomers = await importCustomersFromExcel(file);
-      
+
       let successCount = 0;
       let errorCount = 0;
       let skipCount = 0;
@@ -274,25 +274,26 @@ const CustomersPage: React.FC = () => {
             if (customer.phone) {
               const normalizedPhone = customer.phone.replace(/\D/g, '');
               const existingCustomer = customers.find(
-                (c) => c.phone?.replace(/\D/g, '') === normalizedPhone
+                (c) => c.phone?.replace(/\D/g, '') === normalizedPhone,
               );
-              
+
               if (existingCustomer) {
                 console.warn('Duplicate phone number skipped:', customer.name, customer.phone);
                 skipCount++;
                 continue;
               }
             }
-            
+
             // Determine storeId - must not be null for RLS policy
-            const storeId = (selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId) || '';
-            
+            const storeId =
+              (selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId) || '';
+
             if (!storeId) {
               console.error('storeId is required for new customers');
               errorCount++;
               continue;
             }
-            
+
             // Add new customer
             await addCustomer({
               name: customer.name!,
@@ -313,13 +314,13 @@ const CustomersPage: React.FC = () => {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat nomor HP)`,
-          'warning'
+          'warning',
         );
       } else if (errorCount > 0) {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
-          'warning'
+          'warning',
         );
       } else {
         updateToast(toastId, `Berhasil import ${successCount} pelanggan`, 'success');
@@ -327,7 +328,7 @@ const CustomersPage: React.FC = () => {
 
       addAuditLog(
         `Import ${successCount} pelanggan dari Excel.`,
-        selectedStoreId !== 'all' ? selectedStoreId : undefined
+        selectedStoreId !== 'all' ? selectedStoreId : undefined,
       );
     } catch (error) {
       console.error('Import error:', error);
@@ -376,9 +377,7 @@ const CustomersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Manajemen Pelanggan
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
         <div className="flex gap-2">
           {/* Excel Import/Export Buttons */}
           <button
@@ -389,7 +388,7 @@ const CustomersPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Template</span>
           </button>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -406,7 +405,7 @@ const CustomersPage: React.FC = () => {
             <UploadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Import</span>
           </button>
-          
+
           <button
             onClick={handleExportToExcel}
             disabled={customers.length === 0}
@@ -416,7 +415,7 @@ const CustomersPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Export</span>
           </button>
-          
+
           <button
             onClick={() => handleOpenFormModal()}
             disabled={!canAddNewCustomer}
@@ -499,7 +498,10 @@ const CustomersPage: React.FC = () => {
           <tbody>
             {paginatedCustomers.length > 0 ? (
               paginatedCustomers.map((customer) => (
-                <tr key={customer.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+                <tr
+                  key={customer.id}
+                  className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     <Link
                       to={`/management/customers/${customer.id}`}
@@ -631,5 +633,3 @@ const CustomersPage: React.FC = () => {
 };
 
 export default CustomersPage;
-
-

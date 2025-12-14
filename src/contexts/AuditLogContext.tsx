@@ -40,7 +40,7 @@ export function useAuditLogs() {
           storeId: newLog.storeId,
         },
       ]);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -54,13 +54,13 @@ export function useAuditLogs() {
 
   const addAuditLog = (action: string, storeId?: string) => {
     if (!currentUser) return;
-    
+
     const logData = {
       user: currentUser.name,
       action,
       storeId: storeId || currentUser.storeId || null,
     };
-    
+
     // Fire and forget - tidak block UI
     addLogMutation.mutate(logData);
   };

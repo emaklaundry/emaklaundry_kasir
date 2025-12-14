@@ -31,13 +31,13 @@ const AuditLogPage: React.FC = () => {
       logDate.setHours(0, 0, 0, 0); // Reset to start of day for comparison
 
       let matchesDateRange = true;
-      
+
       if (startDate) {
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         matchesDateRange = matchesDateRange && logDate >= start;
       }
-      
+
       if (endDate) {
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);

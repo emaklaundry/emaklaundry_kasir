@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import { SearchIcon, DownloadIcon, UploadIcon } from '../../components/icons';
 import {
@@ -37,7 +36,6 @@ const ExpensesPage: React.FC = () => {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [isSavingExpense, setIsSavingExpense] = useState(false);
 
   const handleOpenFormModal = (expense: Expense | null = null) => {
     setCurrentExpense(expense);
@@ -54,15 +52,16 @@ const ExpensesPage: React.FC = () => {
       addToast('User context tidak tersedia.', 'error');
       return;
     }
-    const storeId = currentExpense?.storeId || (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
-    
+    const storeId =
+      currentExpense?.storeId ||
+      (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik.', 'warning');
       return;
     }
 
     const toastId = addToast('Menyimpan pengeluaran...', 'info');
-    setIsSavingExpense(true);
     try {
       if (currentExpense && typeof currentExpense.id === 'string') {
         await updateExpense(currentExpense.id, { ...expense, storeId });
@@ -74,26 +73,23 @@ const ExpensesPage: React.FC = () => {
         updateToast(toastId, 'Berhasil disimpan!', 'success');
       }
       handleCloseFormModal();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       updateToast(toastId, `Gagal: ${error.message || 'Error'}`, 'error');
-    } finally {
-      setIsSavingExpense(false);
     }
   };
 
   const confirmDelete = async () => {
     if (!expenseToDelete) return;
     const toastId = addToast('Menghapus...', 'info');
-    setIsSavingExpense(true);
     try {
       await deleteExpense(expenseToDelete.id);
       addAuditLog(`Hapus pengeluaran: "${expenseToDelete.description}"`, expenseToDelete.storeId);
       setExpenseToDelete(null);
       updateToast(toastId, 'Berhasil dihapus!', 'success');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       updateToast(toastId, `Gagal: ${error.message}`, 'error');
-    } finally {
-      setIsSavingExpense(false);
     }
   };
 
@@ -115,15 +111,15 @@ const ExpensesPage: React.FC = () => {
       .filter((asset) => {
         // FIXED: More strict duplicate detection - require exact description match or ID
         const assetDateStr = asset.purchaseDate ? String(asset.purchaseDate).split('T')[0] : '';
-        
-        const isDuplicate = operationalExpenses.some(exp => {
-           const expDateStr = exp.date.split('T')[0];
-           const assetDescription = `Pembelian Aset: ${asset.name}`;
-           // Exact match on date AND (exact description OR contains asset ID)
-           return (
-             expDateStr === assetDateStr && 
-             (exp.description === assetDescription || exp.description.includes(asset.id))
-           );
+
+        const isDuplicate = operationalExpenses.some((exp) => {
+          const expDateStr = exp.date.split('T')[0];
+          const assetDescription = `Pembelian Aset: ${asset.name}`;
+          // Exact match on date AND (exact description OR contains asset ID)
+          return (
+            expDateStr === assetDateStr &&
+            (exp.description === assetDescription || exp.description.includes(asset.id))
+          );
         });
         return !isDuplicate; // Tampilkan hanya jika BUKAN duplikat
       })
@@ -152,7 +148,10 @@ const ExpensesPage: React.FC = () => {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
   const totalExpense = filteredItems.reduce((sum, item) => sum + item.amount, 0);
 
   // Excel Export
@@ -171,12 +170,11 @@ const ExpensesPage: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsSavingExpense(true);
     const toastId = addToast('Memproses import data...', 'info');
 
     try {
       const importedExpenses = await importExpensesFromExcel(file);
-      
+
       let successCount = 0;
       let errorCount = 0;
       let skipCount = 0;
@@ -191,7 +189,7 @@ const ExpensesPage: React.FC = () => {
               skipCount++;
               continue;
             }
-            
+
             // Update existing expense
             await updateExpense(expense.id, {
               date: expense.date!,
@@ -206,23 +204,23 @@ const ExpensesPage: React.FC = () => {
             const existingExpense = expenses.find(
               (e) =>
                 e.date === expense.date! &&
-                e.description.toLowerCase() === expense.description!.toLowerCase()
+                e.description.toLowerCase() === expense.description!.toLowerCase(),
             );
             if (existingExpense) {
               console.warn('Duplicate expense skipped:', expense.description);
               skipCount++;
               continue;
             }
-            
+
             // Ensure storeId is set for INSERT (RLS policy requirement)
             const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
-            
+
             if (!storeId) {
               console.error('storeId is required for new expenses');
               errorCount++;
               continue;
             }
-            
+
             // Add new expense
             await addExpense({
               date: expense.date!,
@@ -243,13 +241,13 @@ const ExpensesPage: React.FC = () => {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
-          'warning'
+          'warning',
         );
       } else if (errorCount > 0) {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
-          'warning'
+          'warning',
         );
       } else {
         updateToast(toastId, `Berhasil import ${successCount} pengeluaran`, 'success');
@@ -257,13 +255,12 @@ const ExpensesPage: React.FC = () => {
 
       addAuditLog(
         `Import ${successCount} pengeluaran dari Excel`,
-        selectedStoreId === 'all' ? undefined : selectedStoreId
+        selectedStoreId === 'all' ? undefined : selectedStoreId,
       );
     } catch (error) {
       console.error('Import error:', error);
       updateToast(toastId, 'Gagal import data dari Excel', 'error');
     } finally {
-      setIsSavingExpense(false);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -282,6 +279,7 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
+  /* Unused function - kept for future reference
   const handleExport = () => {
     const dataToExport = filteredItems.map((item) => ({
       Tanggal: new Date(item.date).toLocaleDateString('id-ID'),
@@ -289,28 +287,32 @@ const ExpensesPage: React.FC = () => {
       Kategori: item.category,
       Jumlah: item.amount,
       Sumber: item.source === 'asset' ? 'Tabel Aset' : 'Tabel Pengeluaran',
-    }));    addAuditLog(
+    }));
+    addAuditLog(
       `Export data pengeluaran (${dataToExport.length} item) ke Excel.`,
       selectedStoreId !== 'all' ? selectedStoreId : undefined,
-    );    import('exceljs').then(({ Workbook }) => {
+    );
+    import('exceljs').then(({ Workbook }) => {
       const workbook = new Workbook();
       const worksheet = workbook.addWorksheet('Rincian Pengeluaran');
-      
+
       // Set columns
       worksheet.columns = [
         { header: 'Tanggal', key: 'Tanggal', width: 15 },
         { header: 'Deskripsi', key: 'Deskripsi', width: 30 },
         { header: 'Kategori', key: 'Kategori', width: 20 },
         { header: 'Jumlah', key: 'Jumlah', width: 15 },
-        { header: 'Sumber', key: 'Sumber', width: 20 }
+        { header: 'Sumber', key: 'Sumber', width: 20 },
       ];
-      
+
       // Add rows
       worksheet.addRows(dataToExport);
-      
+
       // Generate and download
       workbook.xlsx.writeBuffer().then((buffer) => {
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const blob = new Blob([buffer], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -320,13 +322,12 @@ const ExpensesPage: React.FC = () => {
       });
     });
   };
+  */
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Manajemen Pengeluaran
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pengeluaran</h1>
         <div className="flex gap-2">
           {/* Excel Import/Export Buttons */}
           <button
@@ -337,7 +338,7 @@ const ExpensesPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Template</span>
           </button>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -353,7 +354,7 @@ const ExpensesPage: React.FC = () => {
             <UploadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Import</span>
           </button>
-          
+
           <button
             onClick={handleExportToExcel}
             disabled={expenses.length === 0}
@@ -363,14 +364,21 @@ const ExpensesPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Export</span>
           </button>
-          
-          <button onClick={() => handleOpenFormModal()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Pengeluaran</button>
+
+          <button
+            onClick={() => handleOpenFormModal()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Tambah Pengeluaran
+          </button>
         </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
         <h3 className="text-slate-500 dark:text-slate-400 font-medium mb-2">Total Pengeluaran</h3>
-        <p className="text-3xl font-bold text-slate-900 dark:text-white">Rp {totalExpense.toLocaleString('id-ID')}</p>
+        <p className="text-3xl font-bold text-slate-900 dark:text-white">
+          Rp {totalExpense.toLocaleString('id-ID')}
+        </p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -413,20 +421,33 @@ const ExpensesPage: React.FC = () => {
           <tbody>
             {paginatedItems.length > 0 ? (
               paginatedItems.map((item) => (
-                <tr key={`${item.source}-${item.id}`} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+                <tr
+                  key={`${item.source}-${item.id}`}
+                  className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
                   <td className="px-6 py-4">{new Date(item.date).toLocaleDateString('id-ID')}</td>
-                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{item.description}</td>
+                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                    {item.description}
+                  </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs ${item.category.includes('Aset') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'}`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${item.category.includes('Aset') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'}`}
+                    >
                       {item.category}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right text-slate-900 dark:text-white">Rp {item.amount.toLocaleString('id-ID')}</td>
-                  <td className="px-6 py-4 text-center">{item.source === 'asset' ? 'Aset' : 'Pengeluaran'}</td>
+                  <td className="px-6 py-4 text-right text-slate-900 dark:text-white">
+                    Rp {item.amount.toLocaleString('id-ID')}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    {item.source === 'asset' ? 'Aset' : 'Pengeluaran'}
+                  </td>
                   <td className="px-6 py-4 text-center">
                     {item.source === 'expense' ? (
-                      <button 
-                        onClick={() => setExpenseToDelete(expenses.find(e => e.id === item.id) || null)}
+                      <button
+                        onClick={() =>
+                          setExpenseToDelete(expenses.find((e) => e.id === item.id) || null)
+                        }
                         className="text-red-600 hover:underline"
                       >
                         Hapus
@@ -438,16 +459,20 @@ const ExpensesPage: React.FC = () => {
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={6} className="px-6 py-8 text-center">Tidak ada data.</td></tr>
+              <tr>
+                <td colSpan={6} className="px-6 py-8 text-center">
+                  Tidak ada data.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
-      
+
       {/* Simple Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
@@ -465,7 +490,7 @@ const ExpensesPage: React.FC = () => {
         onClose={handleCloseFormModal}
         onSave={handleSaveExpense}
       />
-      
+
       <ConfirmationModal
         isOpen={!!expenseToDelete}
         onClose={() => setExpenseToDelete(null)}
@@ -478,3 +503,6 @@ const ExpensesPage: React.FC = () => {
 };
 
 export default ExpensesPage;
+
+
+

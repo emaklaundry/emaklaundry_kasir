@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 /**
  * Unit Tests for Critical Business Logic
- * 
+ *
  * These tests validate the core business logic that was fixed:
  * - Financial calculations
  * - Validation rules
@@ -15,14 +15,14 @@ describe('Critical Flow: Payment Validation', () => {
     // Simulate the fix: lock values immediately
     const originalAmountToPay = 100000;
     const originalRemainingBalance = 100000;
-    
+
     // Lock values
     const lockedAmountToPay = originalAmountToPay;
     const lockedRemainingBalance = originalRemainingBalance;
-    
+
     // User tries to change during processing (simulated)
     const attemptedChange = 50000;
-    
+
     // Locked values should remain unchanged
     expect(lockedAmountToPay).toBe(originalAmountToPay);
     expect(lockedAmountToPay).not.toBe(attemptedChange);
@@ -33,11 +33,11 @@ describe('Critical Flow: Payment Validation', () => {
     const amountToPay = 100000;
     const tenderedAmount = 150000;
     const method = 'Cash';
-    
+
     // Validation from our fix
     const isValidTendered = !isNaN(tenderedAmount) && tenderedAmount >= amountToPay;
     const change = method === 'Cash' && isValidTendered ? tenderedAmount - amountToPay : 0;
-    
+
     expect(isValidTendered).toBe(true);
     expect(change).toBe(50000);
   });
@@ -45,29 +45,32 @@ describe('Critical Flow: Payment Validation', () => {
   it('should reject partial payment', () => {
     const amountToPay = 50000;
     const remainingBalance = 100000;
-    
+
     const isPartialPayment = amountToPay < remainingBalance;
-    
+
     expect(isPartialPayment).toBe(true); // Should be rejected
   });
 
   it('should reject overpayment', () => {
     const amountToPay = 150000;
     const remainingBalance = 100000;
-    
+
     const isOverpayment = amountToPay > remainingBalance;
-    
+
     expect(isOverpayment).toBe(true); // Should be rejected
   });
 
   it('should handle invalid tender amount gracefully', () => {
     const amountToPay = 100000;
     const invalidTenders = [NaN, -1000, null, undefined];
-    
+
     invalidTenders.forEach((tenderedAmount) => {
-      const isValid = tenderedAmount && !isNaN(tenderedAmount as number) && (tenderedAmount as number) >= amountToPay;
+      const isValid =
+        tenderedAmount &&
+        !isNaN(tenderedAmount as number) &&
+        (tenderedAmount as number) >= amountToPay;
       const change = isValid ? (tenderedAmount as number) - amountToPay : 0;
-      
+
       expect(change).toBe(0); // Invalid tender results in 0 change
     });
   });
@@ -77,18 +80,18 @@ describe('Critical Flow: Service Validation', () => {
   it('should reject service with price = 0', () => {
     const price = 0;
     const minPrice = 1;
-    
+
     const isValid = price >= minPrice;
-    
+
     expect(isValid).toBe(false); // Should be rejected
   });
 
   it('should enforce minimum price of 1', () => {
     const inputs = [-1000, -1, 0];
-    
+
     inputs.forEach((input) => {
       const validatedPrice = Math.max(1, isNaN(input) ? 1 : input);
-      
+
       expect(validatedPrice).toBeGreaterThanOrEqual(1);
     });
   });
@@ -96,7 +99,7 @@ describe('Critical Flow: Service Validation', () => {
   it('should validate required service fields', () => {
     const emptyName = '';
     const validName = 'Cuci Kering';
-    
+
     expect(emptyName.trim() === '').toBe(true); // Empty should fail
     expect(validName.trim() === '').toBe(false); // Valid should pass
   });
@@ -104,7 +107,7 @@ describe('Critical Flow: Service Validation', () => {
   it('should reject negative duration', () => {
     const negativeDuration = -5;
     const validDuration = 3;
-    
+
     expect(negativeDuration < 0).toBe(true); // Should be rejected
     expect(validDuration < 0).toBe(false); // Should be accepted
   });
@@ -114,36 +117,36 @@ describe('Critical Flow: Customer Validation', () => {
   it('should validate required customer name', () => {
     const emptyNames = ['', '   ', null, undefined];
     const validName = 'John Doe';
-    
+
     emptyNames.forEach((name) => {
       const isValid = name && (name as string).trim() !== '';
       expect(isValid).toBeFalsy(); // Should fail validation
     });
-    
+
     expect(validName.trim() !== '').toBe(true); // Should pass
   });
 
   it('should validate required phone number', () => {
     const emptyPhones = ['', '   ', null, undefined];
     const validPhone = '08123456789';
-    
+
     emptyPhones.forEach((phone) => {
       const isValid = phone && (phone as string).trim() !== '';
       expect(isValid).toBeFalsy();
     });
-    
+
     expect(validPhone.trim() !== '').toBe(true);
   });
 
   it('should validate discount range (0-100)', () => {
     const invalidDiscounts = [-10, 150, 200];
     const validDiscounts = [0, 50, 100];
-    
+
     invalidDiscounts.forEach((discount) => {
       const isValid = discount >= 0 && discount <= 100;
       expect(isValid).toBe(false);
     });
-    
+
     validDiscounts.forEach((discount) => {
       const isValid = discount >= 0 && discount <= 100;
       expect(isValid).toBe(true);
@@ -156,7 +159,7 @@ describe('Critical Flow: Customer Validation', () => {
       { input: '628123456789', expected: '628123456789' },
       { input: '8123456789', expected: '628123456789' },
     ];
-    
+
     testCases.forEach(({ input, expected }) => {
       let phone = input.replace(/\D/g, '');
       if (phone.startsWith('0')) {
@@ -166,7 +169,7 @@ describe('Critical Flow: Customer Validation', () => {
       } else if (phone.startsWith('8')) {
         phone = '62' + phone;
       }
-      
+
       expect(phone).toBe(expected);
     });
   });
@@ -193,7 +196,7 @@ describe('Critical Flow: Stock Update Validation', () => {
     };
 
     const hasNegativeStock = Object.values(stockUpdates).some((stock) => stock < 0);
-    
+
     expect(hasNegativeStock).toBe(true);
   });
 
@@ -205,7 +208,7 @@ describe('Critical Flow: Stock Update Validation', () => {
     };
 
     const hasNegativeStock = Object.values(stockUpdates).some((stock) => stock < 0);
-    
+
     expect(hasNegativeStock).toBe(false);
   });
 });

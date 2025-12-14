@@ -26,7 +26,7 @@ export async function fetchCustomers(
   const { data, error, count } = await query;
   if (error) throw error;
   // Convert null to undefined for optional fields
-  const customers = (data || []).map(c => ({
+  const customers = (data || []).map((c) => ({
     ...c,
     address: c.address ?? undefined,
     notes: c.notes ?? undefined,
@@ -51,7 +51,10 @@ export function useCustomerMutations() {
         defaultDiscount: customer.defaultDiscount ?? null,
         storeId: customer.storeId ?? null,
       };
-      const { data, error } = await supabase.from('customers').insert([dbCustomer as any]).select();
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([dbCustomer as any])
+        .select();
       if (error) throw error;
       return data?.[0] || null;
     },

@@ -27,17 +27,17 @@ describe('RateLimiter', () => {
 
     it('should allow execution after window expires', async () => {
       vi.useFakeTimers();
-      
+
       for (let i = 0; i < 5; i++) {
         rateLimiter.canExecute('test', 5, 1000);
       }
       expect(rateLimiter.canExecute('test', 5, 1000)).toBe(false);
-      
+
       // Advance time beyond window
       vi.advanceTimersByTime(1100);
-      
+
       expect(rateLimiter.canExecute('test', 5, 1000)).toBe(true);
-      
+
       vi.useRealTimers();
     });
 
@@ -53,10 +53,10 @@ describe('RateLimiter', () => {
   describe('getRemainingCalls', () => {
     it('should return correct remaining calls', () => {
       expect(rateLimiter.getRemainingCalls('test', 5, 1000)).toBe(5);
-      
+
       rateLimiter.canExecute('test', 5, 1000);
       expect(rateLimiter.getRemainingCalls('test', 5, 1000)).toBe(4);
-      
+
       rateLimiter.canExecute('test', 5, 1000);
       expect(rateLimiter.getRemainingCalls('test', 5, 1000)).toBe(3);
     });
@@ -75,7 +75,7 @@ describe('RateLimiter', () => {
         rateLimiter.canExecute('test', 5, 1000);
       }
       expect(rateLimiter.canExecute('test', 5, 1000)).toBe(false);
-      
+
       rateLimiter.reset('test');
       expect(rateLimiter.canExecute('test', 5, 1000)).toBe(true);
     });
@@ -85,23 +85,21 @@ describe('RateLimiter', () => {
     it('should execute function when within limit', async () => {
       const mockFn = vi.fn().mockResolvedValue('success');
       const result = await withRateLimit('test', mockFn, 5, 1000);
-      
+
       expect(result).toBe('success');
       expect(mockFn).toHaveBeenCalledTimes(1);
     });
 
     it('should throw error when limit exceeded', async () => {
       const mockFn = vi.fn().mockResolvedValue('success');
-      
+
       // Fill up the limit
       for (let i = 0; i < 5; i++) {
         await withRateLimit('test', mockFn, 5, 1000);
       }
-      
+
       // Should throw on next call
-      await expect(
-        withRateLimit('test', mockFn, 5, 1000)
-      ).rejects.toThrow(/Rate limit exceeded/);
+      await expect(withRateLimit('test', mockFn, 5, 1000)).rejects.toThrow(/Rate limit exceeded/);
     });
   });
 });

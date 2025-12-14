@@ -27,12 +27,18 @@ const ReceiptPage: React.FC = () => {
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
 
   const transaction = transactions.find((t) => t.id === id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [fetchedTransaction, setFetchedTransaction] = React.useState<any>(null);
   React.useEffect(() => {
     if (!transaction && id) {
-      supabase.from('transactions').select('*').eq('id', id).single().then(({ data }) => {
-        if (data) setFetchedTransaction(data);
-      });
+      supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', id)
+        .single()
+        .then(({ data }) => {
+          if (data) setFetchedTransaction(data);
+        });
     }
   }, [transaction, id]);
 
@@ -88,6 +94,7 @@ const ReceiptPage: React.FC = () => {
       </div>
 
       <div className="space-y-2 mb-4">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {tx.items.map((item: any, index: number) => (
           <div key={index} className="flex flex-col text-base py-1">
             <div className="flex justify-between">
@@ -103,9 +110,12 @@ const ReceiptPage: React.FC = () => {
                 Rp {item.subtotal.toLocaleString('id-ID')}
               </p>
             </div>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {item.itemDetails?.slice(0, item.quantity).some((d: any) => d.note) && (
               <div className="pl-4 mt-1 space-y-0.5">
-                {item.itemDetails?.slice(0, item.quantity).map((detail: any, detailIndex: number) =>
+                {item.itemDetails?.slice(0, item.quantity).map(
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (detail: any, detailIndex: number) =>
                     detail.note && (
                       <p key={detailIndex} className="text-sm text-slate-500 dark:text-slate-400">
                         - Item #{detailIndex + 1}: {detail.note}
@@ -195,10 +205,7 @@ const ReceiptPage: React.FC = () => {
         <button
           onClick={() => {
             if (tx) {
-              addAuditLog(
-                `Mencetak receipt untuk transaksi ${tx.id}.`,
-                tx.storeId,
-              );
+              addAuditLog(`Mencetak receipt untuk transaksi ${tx.id}.`, tx.storeId);
             }
             window.print();
           }}
@@ -213,4 +220,3 @@ const ReceiptPage: React.FC = () => {
 };
 
 export default ReceiptPage;
-

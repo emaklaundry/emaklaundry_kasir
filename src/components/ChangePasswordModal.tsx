@@ -88,10 +88,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
         throw updateError;
       }
 
-      addAuditLog(
-        `Mengubah password akun.`,
-        currentUser?.storeId || '',
-      );
+      addAuditLog(`Mengubah password akun.`, currentUser?.storeId || '');
       addToast('Password berhasil diubah!', 'success');
 
       // Reset form
@@ -231,9 +228,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               {showNewPassword ? '🙈' : '👁️'}
             </button>
           </div>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Minimal 6 karakter
-          </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Minimal 6 karakter</p>
         </div>
 
         {/* Konfirmasi Password Baru */}
@@ -269,8 +264,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
         {/* Info keamanan */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
           <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300">
-            <strong>Tips keamanan:</strong> Gunakan kombinasi huruf besar, huruf kecil, angka,
-            dan simbol untuk password yang lebih aman.
+            <strong>Tips keamanan:</strong> Gunakan kombinasi huruf besar, huruf kecil, angka, dan
+            simbol untuk password yang lebih aman.
           </p>
         </div>
       </form>

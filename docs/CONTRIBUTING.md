@@ -13,6 +13,7 @@ Terima kasih atas minat Anda untuk berkontribusi! 🎉
 ## 🔨 Development Workflow
 
 ### 1. Buat Branch Baru
+
 ```bash
 git checkout -b feature/nama-fitur
 # atau
@@ -20,15 +21,18 @@ git checkout -b fix/nama-bug
 ```
 
 ### 2. Coding Standards
+
 - **Format:** Run `npm run format` sebelum commit
 - **Lint:** Run `npm run lint` untuk cek errors
 - **Test:** Run `npm test` untuk cek semua test pass
 - **All checks:** Run `npm run test:all`
 
 ### 3. Commit Messages
+
 Format: `type: deskripsi singkat`
 
 **Types:**
+
 - `feat`: Fitur baru
 - `fix`: Bug fix
 - `docs`: Dokumentasi
@@ -38,6 +42,7 @@ Format: `type: deskripsi singkat`
 - `chore`: Maintenance
 
 **Examples:**
+
 ```bash
 git commit -m "feat: tambah fitur export laporan ke Excel"
 git commit -m "fix: perbaiki bug kalkulasi total transaksi"
@@ -45,6 +50,7 @@ git commit -m "docs: update README dengan setup database"
 ```
 
 ### 4. Testing
+
 ```bash
 # Run semua test
 npm test
@@ -57,6 +63,7 @@ npm test -- --watch
 ```
 
 Pastikan:
+
 - ✅ Semua test pass
 - ✅ Coverage tidak turun
 - ✅ Tambah test untuk fitur baru
@@ -64,22 +71,27 @@ Pastikan:
 ### 5. Pull Request
 
 **Before submitting:**
+
 ```bash
 npm run test:all  # Format + Lint + Test
 ```
 
 **PR Template:**
+
 ```markdown
 ## Deskripsi
+
 [Jelaskan perubahan yang dibuat]
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Checklist
+
 - [ ] Code mengikuti style guide
 - [ ] Sudah run `npm run test:all`
 - [ ] Semua test pass
@@ -90,22 +102,26 @@ npm run test:all  # Format + Lint + Test
 ## 🎯 Areas to Contribute
 
 ### 🐛 Bug Fixes
+
 - Cek [Issues](../../issues) dengan label `bug`
 - Reproduce bug terlebih dahulu
 - Tambahkan test untuk regression
 
 ### ✨ New Features
+
 - Diskusi di [Discussions](../../discussions) dulu
 - Pastikan align dengan roadmap
 - Update dokumentasi
 
 ### 📚 Documentation
+
 - Typo fixes
 - Improve clarity
 - Add examples
 - Translate to English
 
 ### 🧪 Testing
+
 - Increase coverage
 - Add edge cases
 - Integration tests
@@ -125,6 +141,7 @@ src/
 ## 🔒 Security
 
 Jika menemukan security vulnerability:
+
 - **JANGAN** buat public issue
 - Email: mhmdnvn18@gmail.com
 - Akan direspon dalam 48 jam
@@ -154,6 +171,7 @@ Jika menemukan security vulnerability:
 ## 📧 Contact
 
 Questions? Reach out:
+
 - Email: mhmdnvn18@gmail.com
 - [GitHub Discussions](../../discussions)
 

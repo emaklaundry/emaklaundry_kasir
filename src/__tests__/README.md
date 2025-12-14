@@ -111,11 +111,13 @@ Total: 78 test files
 ## 🚀 Running Tests
 
 ### Run All Tests
+
 ```bash
 npm run test
 ```
 
 ### Run Specific Category
+
 ```bash
 # Components only
 npm test -- __tests__/components
@@ -137,16 +139,19 @@ npm test -- __tests__/integration
 ```
 
 ### Run Single File
+
 ```bash
 npm test -- MaintenanceMode.test.tsx
 ```
 
 ### Watch Mode
+
 ```bash
 npm test -- --watch
 ```
 
 ### Coverage Report
+
 ```bash
 npm test -- --coverage
 ```
@@ -155,38 +160,40 @@ npm test -- --coverage
 
 ## 📊 Test Statistics
 
-| Category | Files | Description |
-|----------|-------|-------------|
-| **Components** | 34 | UI component unit tests |
-| **Contexts** | 13 | State management tests |
-| **Pages** | 14 | Page component tests |
-| **Utils** | 7 | Utility function tests |
-| **Hooks** | 5 | Custom React hooks tests |
-| **Types** | 3 | TypeScript type tests |
-| **Integration** | 2 | End-to-end flow tests |
-| **Total** | **78** | All test files |
+| Category        | Files  | Description              |
+| --------------- | ------ | ------------------------ |
+| **Components**  | 34     | UI component unit tests  |
+| **Contexts**    | 13     | State management tests   |
+| **Pages**       | 14     | Page component tests     |
+| **Utils**       | 7      | Utility function tests   |
+| **Hooks**       | 5      | Custom React hooks tests |
+| **Types**       | 3      | TypeScript type tests    |
+| **Integration** | 2      | End-to-end flow tests    |
+| **Total**       | **78** | All test files           |
 
 ---
 
 ## 🎯 Test Coverage Goals
 
-| Category | Current | Target |
-|----------|---------|--------|
-| Statements | TBD | >80% |
-| Branches | TBD | >75% |
-| Functions | TBD | >80% |
-| Lines | TBD | >80% |
+| Category   | Current | Target |
+| ---------- | ------- | ------ |
+| Statements | TBD     | >80%   |
+| Branches   | TBD     | >75%   |
+| Functions  | TBD     | >80%   |
+| Lines      | TBD     | >80%   |
 
 ---
 
 ## ✅ Testing Best Practices
 
 ### 1. **File Naming**
+
 - Component test: `ComponentName.test.tsx`
 - Hook test: `useHookName.test.ts`
 - Utility test: `utilityName.test.ts`
 
 ### 2. **Test Structure**
+
 ```typescript
 describe('ComponentName', () => {
   it('should render correctly', () => {
@@ -202,11 +209,13 @@ describe('ComponentName', () => {
 ```
 
 ### 3. **Test Organization**
+
 - Group related tests in `describe` blocks
 - Use descriptive test names
 - Follow AAA pattern (Arrange, Act, Assert)
 
 ### 4. **Mocking**
+
 - Mock external dependencies
 - Use `vi.fn()` for function mocks
 - Use `vi.mock()` for module mocks
@@ -216,6 +225,7 @@ describe('ComponentName', () => {
 ## 🔧 Test Configuration
 
 ### vitest.config.ts
+
 ```typescript
 export default defineConfig({
   test: {
@@ -232,6 +242,7 @@ export default defineConfig({
 ```
 
 ### vitest.setup.ts
+
 ```typescript
 import '@testing-library/jest-dom';
 ```
@@ -250,13 +261,17 @@ import '@testing-library/jest-dom';
 ## 🐛 Common Issues & Solutions
 
 ### Issue: Tests fail after moving files
+
 **Solution:** Import paths masih merujuk ke lokasi lama. File test tetap di lokasi lama tidak perlu update path karena file source tidak berubah.
 
 ### Issue: Cannot find module '@/...'
+
 **Solution:** Check `vitest.config.ts` dan pastikan alias `@` sudah terkonfigurasi.
 
 ### Issue: Test timeout
+
 **Solution:** Tambahkan timeout di test config atau individual test:
+
 ```typescript
 it('should load data', async () => {
   // test code
@@ -268,6 +283,7 @@ it('should load data', async () => {
 ## 📝 Writing New Tests
 
 ### Component Test Template
+
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -282,6 +298,7 @@ describe('ComponentName', () => {
 ```
 
 ### Hook Test Template
+
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
@@ -300,6 +317,7 @@ describe('useHookName', () => {
 ## 🎯 Test Checklist
 
 Before committing:
+
 - [ ] All tests pass (`npm test`)
 - [ ] No console errors/warnings
 - [ ] Code coverage maintained/improved

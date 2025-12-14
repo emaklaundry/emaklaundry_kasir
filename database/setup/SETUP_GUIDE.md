@@ -31,11 +31,13 @@
 File `complete_setup.sql` mencakup **SEMUA** yang dibutuhkan:
 
 ### ✅ Section 1: Drop Tables (Optional)
+
 - Drop semua tabel existing
 - **Default: COMMENTED OUT** (tidak akan drop data)
 - Uncomment jika ingin reset total
 
 ### ✅ Section 2: Create Tables & Functions
+
 - Stores, Settings, Profiles
 - Customers, Services
 - Transactions, Transaction Items
@@ -44,18 +46,21 @@ File `complete_setup.sql` mencakup **SEMUA** yang dibutuhkan:
 - Triggers & Helper Functions
 
 ### ✅ Section 3: RPC Functions & Seed Data
+
 - `get_laundry_status()` - Cek status transaksi
 - `update_transaction_status_safe()` - Update status dengan validasi
 - `bulk_update_order_status()` - Bulk update
 - **50+ services** pre-loaded (Kiloan, Satuan, Sepatu, Karpet)
 
 ### ✅ Section 4: Security & Performance
+
 - Row Level Security (RLS) policies
 - Performance indexes untuk query optimization
 - Composite indexes untuk filter kompleks
 - GIN index untuk full-text search
 
 ### ✅ Section 5: Maintenance Mode
+
 - Kolom `isMaintenanceMode` & `maintenanceMessage`
 - Default: `FALSE` (sistem aktif)
 - Comments untuk dokumentasi
@@ -67,30 +72,35 @@ File `complete_setup.sql` mencakup **SEMUA** yang dibutuhkan:
 Jika ingin kontrol penuh atau troubleshooting:
 
 ### Step 1: Reset (Opsional)
+
 ```bash
 # File: 0.droptable.sql
 # Hapus semua tabel existing
 ```
 
 ### Step 2: Schema & Tables
+
 ```bash
 # File: 1.database.sql
 # Buat semua tables, enums, triggers
 ```
 
 ### Step 3: Functions & Seed
+
 ```bash
 # File: 2.apply_rpc_and_seed.sql
 # RPC functions + 50+ services
 ```
 
 ### Step 4: Security & Index
+
 ```bash
 # File: 3.security_and_performance.sql
 # RLS policies + performance indexes
 ```
 
 ### Step 5: Maintenance Mode
+
 ```bash
 # File: 4.add_maintenance_mode.sql
 # Tambah fitur maintenance mode
@@ -101,9 +111,11 @@ Jika ingin kontrol penuh atau troubleshooting:
 ## ⚠️ Important Notes
 
 ### 1. **DROP TABLES Di-Comment Out**
+
 File `complete_setup.sql` **TIDAK** akan drop data existing secara default.
 
 Jika ingin reset total, uncomment section 1:
+
 ```sql
 -- Uncomment baris dibawah jika ingin reset:
 drop table if exists transaction_items cascade;
@@ -112,12 +124,15 @@ drop table if exists transactions cascade;
 ```
 
 ### 2. **Safe to Re-run**
+
 File menggunakan `IF NOT EXISTS` dan `CREATE OR REPLACE`:
+
 - ✅ Aman di-run ulang
 - ✅ Tidak akan duplicate data
 - ✅ Akan update functions jika ada perubahan
 
 ### 3. **Execution Time**
+
 - First time: ~30-60 detik
 - Re-run: ~10-20 detik
 
@@ -128,22 +143,26 @@ File menggunakan `IF NOT EXISTS` dan `CREATE OR REPLACE`:
 ### Cek di Supabase Dashboard:
 
 **1. Tables Created:**
+
 - Database → Tables
 - Harus ada: stores, settings, profiles, customers, services, transactions, dll.
 
 **2. Functions Available:**
+
 - Database → Functions
 - Harus ada: `get_laundry_status`, `update_transaction_status_safe`, `handle_new_user`
 
 **3. Seed Data:**
+
 ```sql
 SELECT COUNT(*) FROM services;
 -- Expected: 50+ services
 ```
 
 **4. Indexes:**
+
 ```sql
-SELECT * FROM pg_indexes 
+SELECT * FROM pg_indexes
 WHERE tablename IN ('transactions', 'customers', 'audit_logs');
 -- Harus ada beberapa indexes
 ```
@@ -153,22 +172,28 @@ WHERE tablename IN ('transactions', 'customers', 'audit_logs');
 ## 🐛 Troubleshooting
 
 ### Error: "relation already exists"
+
 **Cause:** Table sudah ada  
 **Fix:** Either:
+
 1. Drop manual via SQL Editor
 2. Uncomment section 1 di `complete_setup.sql`
 
 ### Error: "permission denied"
+
 **Cause:** Insufficient privileges  
 **Fix:** Pastikan run dengan user yang punya permission CREATE TABLE
 
 ### Error: "function does not exist"
+
 **Cause:** Functions belum dibuat  
 **Fix:** Re-run `complete_setup.sql`, pastikan section 2 & 3 ter-execute
 
 ### Seed Data Tidak Muncul
+
 **Cause:** Store belum ada  
 **Fix:** Buat store dulu atau update UUID di section 3:
+
 ```sql
 -- Cari baris ini di complete_setup.sql
 WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
@@ -180,6 +205,7 @@ WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
 ## 📊 File Statistics
 
 **complete_setup.sql:**
+
 - **Lines:** ~1000+ baris
 - **Size:** ~50-60 KB
 - **Sections:** 5 sections

@@ -3,12 +3,14 @@
 ## ✅ Status Implementasi
 
 ### Completed
+
 - ✅ ExcelJS library sudah terpasang (package.json)
 - ✅ Utility functions lengkap (`src/utils/excelUtils.ts`)
 - ✅ Icons (DownloadIcon, UploadIcon) ditambahkan
 - ✅ **CustomersPage** - Import/Export implemented
 
 ### In Progress
+
 - 🔄 ServicesPage
 - 🔄 InventoryPage
 - 🔄 AssetsPage
@@ -17,17 +19,20 @@
 ## 📋 Fitur yang Tersedia
 
 ### Export ke Excel
+
 - Export data existing ke file Excel
 - Format tabel terstruktur dengan header
 - Auto-width columns
 
 ### Import dari Excel
+
 - Import bulk data dari Excel
 - Support update (jika ID ada) dan insert (jika ID kosong)
 - Validation dan error handling
 - Progress notification
 
 ### Download Template
+
 - Template Excel kosong dengan format yang benar
 - Contoh data di baris pertama
 - Memudahkan user untuk prepare data
@@ -35,14 +40,17 @@
 ## 🎯 Implementasi per Halaman
 
 ### 1. ✅ Customers Page (SELESAI)
+
 **File:** `src/pages/management/CustomersPage.tsx`
 
 **Tombol yang ditambahkan:**
+
 - 📥 **Template** - Download template Excel kosong
 - ⬆️ **Import** - Import data dari Excel (update atau insert baru)
 - ⬇️ **Export** - Export semua data pelanggan ke Excel
 
 **Kolom Excel:**
+
 - ID
 - Nama
 - Nomor HP
@@ -52,9 +60,11 @@
 ---
 
 ### 2. Services Page
+
 **File:** `src/pages/management/ServicesPage.tsx`
 
 **Kolom Excel:**
+
 - ID
 - Nama Layanan
 - Kategori (Kiloan/Satuan/Express/Setrika)
@@ -64,9 +74,14 @@
 - Deskripsi
 
 **Implementasi:**
+
 ```tsx
 // Import statements
-import { exportServicesToExcel, importServicesFromExcel, downloadServiceTemplate } from '../../utils/excelUtils';
+import {
+  exportServicesToExcel,
+  importServicesFromExcel,
+  downloadServiceTemplate,
+} from '../../utils/excelUtils';
 import { DownloadIcon, UploadIcon } from '../../components/icons';
 
 // State
@@ -93,7 +108,7 @@ const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>)
 
   try {
     const importedServices = await importServicesFromExcel(file);
-    
+
     let successCount = 0;
     let errorCount = 0;
 
@@ -131,33 +146,57 @@ const handleDownloadTemplate = async () => {
 ```
 
 **Buttons di JSX:**
+
 ```tsx
-{/* Excel Import/Export Buttons */}
+{
+  /* Excel Import/Export Buttons */
+}
 <div className="flex items-center gap-2">
-  <button onClick={handleDownloadTemplate} className="flex items-center gap-2 px-3 py-3 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50" title="Download Template Excel">
+  <button
+    onClick={handleDownloadTemplate}
+    className="flex items-center gap-2 px-3 py-3 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+    title="Download Template Excel"
+  >
     <DownloadIcon className="w-4 h-4" />
     <span className="hidden sm:inline text-sm">Template</span>
   </button>
-  
-  <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImportFromExcel} className="hidden" />
-  <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-3 text-white bg-green-600 rounded-lg hover:bg-green-700" title="Import dari Excel">
+
+  <input
+    ref={fileInputRef}
+    type="file"
+    accept=".xlsx,.xls"
+    onChange={handleImportFromExcel}
+    className="hidden"
+  />
+  <button
+    onClick={() => fileInputRef.current?.click()}
+    className="flex items-center gap-2 px-3 py-3 text-white bg-green-600 rounded-lg hover:bg-green-700"
+    title="Import dari Excel"
+  >
     <UploadIcon className="w-4 h-4" />
     <span className="hidden sm:inline text-sm">Import</span>
   </button>
-  
-  <button onClick={handleExportToExcel} disabled={services.length === 0} className="flex items-center gap-2 px-3 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400" title="Export ke Excel">
+
+  <button
+    onClick={handleExportToExcel}
+    disabled={services.length === 0}
+    className="flex items-center gap-2 px-3 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+    title="Export ke Excel"
+  >
     <DownloadIcon className="w-4 h-4" />
     <span className="hidden sm:inline text-sm">Export</span>
   </button>
-</div>
+</div>;
 ```
 
 ---
 
 ### 3. Inventory Page
+
 **File:** `src/pages/management/InventoryPage.tsx`
 
 **Kolom Excel:**
+
 - ID
 - Nama Item
 - Stok
@@ -165,6 +204,7 @@ const handleDownloadTemplate = async () => {
 - Unit
 
 **Implementasi sama seperti Services**, hanya ganti:
+
 - `exportInventoryToExcel`
 - `importInventoryFromExcel`
 - `downloadInventoryTemplate`
@@ -173,9 +213,11 @@ const handleDownloadTemplate = async () => {
 ---
 
 ### 4. Assets Page
+
 **File:** `src/pages/management/AssetsPage.tsx`
 
 **Kolom Excel:**
+
 - ID
 - Nama Aset
 - Serial Number
@@ -184,6 +226,7 @@ const handleDownloadTemplate = async () => {
 - Status
 
 **Implementasi sama seperti Services**, hanya ganti:
+
 - `exportAssetsToExcel`
 - `importAssetsFromExcel`
 - `downloadAssetTemplate`
@@ -192,9 +235,11 @@ const handleDownloadTemplate = async () => {
 ---
 
 ### 5. Expenses Page
+
 **File:** `src/pages/management/ExpensesPage.tsx`
 
 **Kolom Excel:**
+
 - ID
 - Tanggal
 - Kategori
@@ -203,6 +248,7 @@ const handleDownloadTemplate = async () => {
 - Catatan
 
 **Implementasi sama seperti Services**, hanya ganti:
+
 - `exportExpensesToExcel`
 - `importExpensesFromExcel`
 - `downloadExpenseTemplate`
@@ -213,6 +259,7 @@ const handleDownloadTemplate = async () => {
 ## 🔧 Testing Checklist
 
 ### Per Halaman
+
 - [ ] Template download works
 - [ ] Export works dengan data existing
 - [ ] Import works untuk data baru (ID kosong)
@@ -224,6 +271,7 @@ const handleDownloadTemplate = async () => {
 - [ ] Loading state ditampilkan saat processing
 
 ### Edge Cases
+
 - [ ] Import file Excel kosong
 - [ ] Import dengan format salah
 - [ ] Import dengan sheet name salah

@@ -3,6 +3,13 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
+  "description": "Sistem manajemen laundry berbasis web untuk kasir dan admin dengan fitur multi-cabang",
+  "author": "mhmdnvn18@gmail.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mhmdnvn18/emaklaundry_kasir.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

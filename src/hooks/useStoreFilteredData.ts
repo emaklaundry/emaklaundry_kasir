@@ -13,7 +13,7 @@ const useStoreFilteredData = function <T extends StoreDataItem>(data: T[]): T[] 
 
   return useMemo(() => {
     if (!currentUser) return data;
-    
+
     if (currentUser.role === UserRole.SuperAdmin) {
       if (selectedStoreId === 'all') {
         return data;

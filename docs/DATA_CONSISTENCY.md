@@ -9,18 +9,21 @@ Aplikasi ini menggunakan **Conservative/Pessimistic Approach** untuk memastikan 
 ## 🎯 Prinsip Utama
 
 ### ✅ **Consistency Over Speed**
+
 - **UI hanya update setelah server confirm**
 - **Tidak ada optimistic update**
 - **Semua operasi diverifikasi**
 - **Retry otomatis untuk network failure**
 
 ### ✅ **Zero Data Loss**
+
 - **Automatic retry dengan exponential backoff**
 - **Verification setelah setiap save**
 - **Idempotency key untuk prevent duplicates**
 - **Transaction rollback pada error**
 
 ### ✅ **User Feedback**
+
 - **Clear loading states**
 - **Progress notifications**
 - **Detailed error messages**
@@ -44,6 +47,7 @@ await retrySupabaseOperation(async () => {
 ```
 
 **Features:**
+
 - Max 3 retries
 - Exponential backoff (1s, 2s, 4s)
 - Automatic network error detection
@@ -59,22 +63,19 @@ await retrySupabaseOperation(async () => {
 await verifyDataSaved(
   async () => {
     // Fetch data dari server
-    const { data } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('id', savedId)
-      .single();
+    const { data } = await supabase.from('transactions').select('*').eq('id', savedId).single();
     return data;
   },
   (data) => {
     // Validate data benar-benar tersimpan
     return data !== null && data.id === savedId;
   },
-  { maxAttempts: 3, pollInterval: 300 }
+  { maxAttempts: 3, pollInterval: 300 },
 );
 ```
 
 **Benefits:**
+
 - Memastikan data benar-benar di database
 - Detect silent failures
 - Catch replication lag issues
@@ -92,10 +93,7 @@ const addTransaction = useMutation({
   mutationFn: async (transaction) => {
     // 1. Retry operation
     const saved = await retrySupabaseOperation(async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .insert([transaction])
-        .select();
+      const { data, error } = await supabase.from('transactions').insert([transaction]).select();
       if (error) throw error;
       return data[0];
     }, 'Insert Transaction');
@@ -111,7 +109,7 @@ const addTransaction = useMutation({
         return data;
       },
       (data) => data !== null && data.id === saved.id,
-      { maxAttempts: 3, pollInterval: 300 }
+      { maxAttempts: 3, pollInterval: 300 },
     );
 
     return verified;
@@ -124,6 +122,7 @@ const addTransaction = useMutation({
 ```
 
 **Flow:**
+
 1. ⏳ User click "Simpan"
 2. 🔄 Retry insert (max 3x)
 3. ✅ Verify data tersimpan
@@ -167,7 +166,7 @@ const updateTransaction = useMutation({
         return Object.keys(variables.data).every((key) => {
           return data[key] === variables.data[key];
         });
-      }
+      },
     );
 
     // Force refresh
@@ -181,6 +180,7 @@ const updateTransaction = useMutation({
 ```
 
 **Flow:**
+
 1. ⏳ User update status/payment
 2. 🔄 Retry update (max 3x)
 3. ✅ Verify fields updated
@@ -198,7 +198,7 @@ const [isSaving, setIsSaving] = useState(false);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  
+
   // Prevent double submission
   if (isSaving) {
     addToast('Transaksi sedang disimpan, mohon tunggu...', 'warning');
@@ -210,9 +210,9 @@ const handleSubmit = async (e) => {
 
   try {
     const saved = await addTransaction(newTransaction);
-    
+
     updateToast(toastId, 'Memverifikasi data tersimpan...', 'info');
-    
+
     if (saved) {
       updateToast(toastId, '✓ Transaksi berhasil disimpan dan terverifikasi.', 'success');
     } else {
@@ -227,6 +227,7 @@ const handleSubmit = async (e) => {
 ```
 
 **UI States:**
+
 - `isSaving === true`: Button disabled, spinner shown
 - Toast shows progress: "Menyimpan..." → "Memverifikasi..." → "✓ Berhasil"
 - Error: Clear message dengan alasan kegagalan
@@ -249,6 +250,7 @@ const newTransaction = {
 ```
 
 **Benefits:**
+
 - Prevent double-submit
 - Safe retry on network error
 - Detect duplicate submissions
@@ -257,8 +259,8 @@ const newTransaction = {
 
 ```sql
 -- Database setup
-ALTER TABLE transactions 
-ADD CONSTRAINT unique_idempotency_key 
+ALTER TABLE transactions
+ADD CONSTRAINT unique_idempotency_key
 UNIQUE (idempotencyKey);
 ```
 
@@ -283,22 +285,21 @@ try {
 ### Network Errors
 
 **Auto-retry:**
+
 ```typescript
 // Network error → retry 3x dengan backoff
 try {
   await retrySupabaseOperation(fn, 'Operation Name');
 } catch (error) {
   // Setelah 3x retry gagal
-  throw new Error(
-    `Operasi gagal setelah 3 percobaan. ` +
-    `Periksa koneksi internet Anda.`
-  );
+  throw new Error(`Operasi gagal setelah 3 percobaan. ` + `Periksa koneksi internet Anda.`);
 }
 ```
 
 ### Validation Errors
 
 **Immediate feedback:**
+
 ```typescript
 if (!selectedCustomer) {
   addToast('Pelanggan harus dipilih.', 'warning');
@@ -314,14 +315,15 @@ if (items.length === 0) {
 ### Server Errors
 
 **Detailed message:**
+
 ```typescript
 catch (error) {
-  const message = error instanceof Error 
-    ? error.message 
+  const message = error instanceof Error
+    ? error.message
     : 'Unknown error';
-  
+
   addToast(`Gagal menyimpan transaksi: ${message}`, 'error');
-  
+
   // Log untuk debugging
   console.error('Transaction save failed:', error);
 }
@@ -334,11 +336,9 @@ catch (error) {
 ### Loading Indicators
 
 **1. Button State:**
+
 ```tsx
-<button 
-  disabled={isSaving}
-  className={isSaving ? 'opacity-50 cursor-not-allowed' : ''}
->
+<button disabled={isSaving} className={isSaving ? 'opacity-50 cursor-not-allowed' : ''}>
   {isSaving ? (
     <>
       <SpinnerIcon className="w-5 h-5 mr-2 animate-spin" />
@@ -351,6 +351,7 @@ catch (error) {
 ```
 
 **2. Toast Progress:**
+
 ```typescript
 const toastId = addToast('Menyimpan...', 'info');
 // ... operation ...
@@ -360,15 +361,18 @@ updateToast(toastId, '✓ Berhasil', 'success');
 ```
 
 **3. Full Page Loader** (optional):
+
 ```tsx
-{isSaving && (
-  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-    <div className="bg-white p-6 rounded-lg">
-      <SpinnerIcon className="w-12 h-12 animate-spin" />
-      <p>Menyimpan data...</p>
+{
+  isSaving && (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div className="bg-white p-6 rounded-lg">
+        <SpinnerIcon className="w-12 h-12 animate-spin" />
+        <p>Menyimpan data...</p>
+      </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 ---
@@ -376,21 +380,25 @@ updateToast(toastId, '✓ Berhasil', 'success');
 ## ✅ Benefits
 
 ### 1. **Data Integrity**
+
 - ✓ Zero data loss
 - ✓ No phantom writes
 - ✓ Consistent state
 
 ### 2. **Reliability**
+
 - ✓ Auto-retry network failures
 - ✓ Verification after save
 - ✓ Rollback on error
 
 ### 3. **User Trust**
+
 - ✓ Clear feedback
 - ✓ Progress visibility
 - ✓ Error transparency
 
 ### 4. **Debugging**
+
 - ✓ Detailed logging
 - ✓ Error tracing
 - ✓ Audit trail
@@ -402,12 +410,14 @@ updateToast(toastId, '✓ Berhasil', 'success');
 ### Conservative Approach
 
 **Pros:**
+
 - ✅ 100% data consistency
 - ✅ No ghost data
 - ✅ Clear user feedback
 - ✅ Easy to debug
 
 **Cons:**
+
 - ⏱️ Slightly slower UX (wait for server)
 - 🔄 More network calls (verification)
 - 💾 Higher bandwidth usage
@@ -415,14 +425,15 @@ updateToast(toastId, '✓ Berhasil', 'success');
 ### Why We Chose This
 
 **Laundry POS Context:**
+
 - **Financial transactions** - Zero tolerance untuk data loss
 - **Multi-user** - Consistency critical
 - **Audit trail** - Must be accurate
 - **Print receipts** - Data must be verified before print
 
 **User Expectation:**
-> "Saya lebih suka tunggu 2-3 detik dan yakin data tersimpan, ` +
-> `daripada cepat tapi ada risiko data hilang."
+
+> "Saya lebih suka tunggu 2-3 detik dan yakin data tersimpan, `+`daripada cepat tapi ada risiko data hilang."
 
 ---
 
@@ -434,7 +445,7 @@ updateToast(toastId, '✓ Berhasil', 'success');
    - Total saves: X
    - Successful: Y
    - Failed: Z
-   - Success rate: Y/X * 100%
+   - Success rate: Y/X \* 100%
 
 2. **Retry Statistics:**
    - Average retries per operation
@@ -468,6 +479,7 @@ Sentry.captureMessage('Transaction save retry', {
 ## 📝 Best Practices
 
 ### 1. **Always Use Retry Utilities**
+
 ```typescript
 // ❌ BAD
 const { data, error } = await supabase.from('table').insert(data);
@@ -481,6 +493,7 @@ const data = await retrySupabaseOperation(async () => {
 ```
 
 ### 2. **Verify Critical Operations**
+
 ```typescript
 // Critical: Transactions, Payments, Inventory changes
 await verifyDataSaved(fetchFn, validateFn);
@@ -490,6 +503,7 @@ await verifyDataSaved(fetchFn, validateFn);
 ```
 
 ### 3. **Show Progress**
+
 ```typescript
 // Update toast untuk visibility
 const toast = addToast('Saving...', 'info');
@@ -500,6 +514,7 @@ updateToast(toast, 'Success!', 'success');
 ```
 
 ### 4. **Handle All Errors**
+
 ```typescript
 try {
   await operation();
@@ -528,6 +543,7 @@ try {
 - ✅ Zero data loss tolerance
 
 **Perfect for:**
+
 - Financial applications
 - POS systems
 - Inventory management

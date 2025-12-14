@@ -1,5 +1,13 @@
 import ExcelJS from 'exceljs';
-import type { Customer, Service, InventoryItem, Asset, Expense, AssetStatus, ServiceCategory } from '../types';
+import type {
+  Customer,
+  Service,
+  InventoryItem,
+  Asset,
+  Expense,
+  AssetStatus,
+  ServiceCategory,
+} from '../types';
 
 // ============================================
 // EXCEL EXPORT FUNCTIONS
@@ -220,20 +228,20 @@ export async function exportExpensesToExcel(expenses: Expense[]): Promise<void> 
 export async function importCustomersFromExcel(file: File): Promise<Partial<Customer>[]> {
   const workbook = await readExcelFile(file);
   const worksheet = workbook.getWorksheet('Customers');
-  
+
   if (!worksheet) {
     throw new Error('Sheet "Customers" tidak ditemukan dalam file Excel');
   }
 
   const customers: Partial<Customer>[] = [];
-  
+
   worksheet.eachRow((row, rowNumber) => {
     // Skip header row
     if (rowNumber === 1) return;
-    
+
     const rawId = row.getCell(1).value?.toString();
     const customerId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
-    
+
     const customer: Partial<Customer> = {
       id: customerId,
       name: row.getCell(2).value?.toString() || '',
@@ -241,13 +249,13 @@ export async function importCustomersFromExcel(file: File): Promise<Partial<Cust
       address: row.getCell(4).value?.toString() || undefined,
       notes: row.getCell(5).value?.toString() || undefined,
     };
-    
+
     // Only add if name is not empty
     if (customer.name) {
       customers.push(customer);
     }
   });
-  
+
   return customers;
 }
 
@@ -257,20 +265,20 @@ export async function importCustomersFromExcel(file: File): Promise<Partial<Cust
 export async function importServicesFromExcel(file: File): Promise<Partial<Service>[]> {
   const workbook = await readExcelFile(file);
   const worksheet = workbook.getWorksheet('Services');
-  
+
   if (!worksheet) {
     throw new Error('Sheet "Services" tidak ditemukan dalam file Excel');
   }
 
   const services: Partial<Service>[] = [];
-  
+
   worksheet.eachRow((row, rowNumber) => {
     // Skip header row
     if (rowNumber === 1) return;
-    
+
     const rawId = row.getCell(1).value?.toString();
     const serviceId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
-    
+
     const service: Partial<Service> = {
       id: serviceId,
       name: row.getCell(2).value?.toString() || '',
@@ -279,13 +287,13 @@ export async function importServicesFromExcel(file: File): Promise<Partial<Servi
       unit: row.getCell(5).value?.toString() || 'Kg',
       durationDays: Number(row.getCell(6).value) || 3,
     };
-    
+
     // Only add if name is not empty
     if (service.name) {
       services.push(service);
     }
   });
-  
+
   return services;
 }
 
@@ -295,20 +303,20 @@ export async function importServicesFromExcel(file: File): Promise<Partial<Servi
 export async function importInventoryFromExcel(file: File): Promise<Partial<InventoryItem>[]> {
   const workbook = await readExcelFile(file);
   const worksheet = workbook.getWorksheet('Inventory');
-  
+
   if (!worksheet) {
     throw new Error('Sheet "Inventory" tidak ditemukan dalam file Excel');
   }
 
   const items: Partial<InventoryItem>[] = [];
-  
+
   worksheet.eachRow((row, rowNumber) => {
     // Skip header row
     if (rowNumber === 1) return;
-    
+
     const rawId = row.getCell(1).value?.toString();
     const itemId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
-    
+
     const item: Partial<InventoryItem> = {
       id: itemId,
       name: row.getCell(2).value?.toString() || '',
@@ -316,13 +324,13 @@ export async function importInventoryFromExcel(file: File): Promise<Partial<Inve
       lowStockThreshold: Number(row.getCell(4).value) || 0,
       unit: row.getCell(5).value?.toString() || 'pcs',
     };
-    
+
     // Only add if name is not empty
     if (item.name) {
       items.push(item);
     }
   });
-  
+
   return items;
 }
 
@@ -332,20 +340,20 @@ export async function importInventoryFromExcel(file: File): Promise<Partial<Inve
 export async function importAssetsFromExcel(file: File): Promise<Partial<Asset>[]> {
   const workbook = await readExcelFile(file);
   const worksheet = workbook.getWorksheet('Assets');
-  
+
   if (!worksheet) {
     throw new Error('Sheet "Assets" tidak ditemukan dalam file Excel');
   }
 
   const assets: Partial<Asset>[] = [];
-  
+
   worksheet.eachRow((row, rowNumber) => {
     // Skip header row
     if (rowNumber === 1) return;
-    
+
     const rawId = row.getCell(1).value?.toString();
     const assetId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
-    
+
     const purchaseDateValue = row.getCell(4).value;
     let purchaseDate: Date | undefined;
     if (purchaseDateValue instanceof Date) {
@@ -354,7 +362,7 @@ export async function importAssetsFromExcel(file: File): Promise<Partial<Asset>[
       const parsed = new Date(purchaseDateValue);
       purchaseDate = isNaN(parsed.getTime()) ? undefined : parsed;
     }
-    
+
     const asset: Partial<Asset> = {
       id: assetId,
       name: row.getCell(2).value?.toString() || '',
@@ -363,13 +371,13 @@ export async function importAssetsFromExcel(file: File): Promise<Partial<Asset>[
       purchaseCost: Number(row.getCell(5).value) || undefined,
       status: (row.getCell(6).value?.toString() || 'Active') as AssetStatus,
     };
-    
+
     // Only add if name is not empty
     if (asset.name) {
       assets.push(asset);
     }
   });
-  
+
   return assets;
 }
 
@@ -379,20 +387,20 @@ export async function importAssetsFromExcel(file: File): Promise<Partial<Asset>[
 export async function importExpensesFromExcel(file: File): Promise<Partial<Expense>[]> {
   const workbook = await readExcelFile(file);
   const worksheet = workbook.getWorksheet('Expenses');
-  
+
   if (!worksheet) {
     throw new Error('Sheet "Expenses" tidak ditemukan dalam file Excel');
   }
 
   const expenses: Partial<Expense>[] = [];
-  
+
   worksheet.eachRow((row, rowNumber) => {
     // Skip header row
     if (rowNumber === 1) return;
-    
+
     const rawId = row.getCell(1).value?.toString();
     const expenseId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
-    
+
     // Convert date to YYYY-MM-DD format
     const dateCell = row.getCell(2).value;
     let formattedDate: string;
@@ -401,11 +409,13 @@ export async function importExpensesFromExcel(file: File): Promise<Partial<Expen
     } else if (typeof dateCell === 'string') {
       // Try to parse if string
       const parsedDate = new Date(dateCell);
-      formattedDate = isNaN(parsedDate.getTime()) ? new Date().toISOString().split('T')[0] : parsedDate.toISOString().split('T')[0];
+      formattedDate = isNaN(parsedDate.getTime())
+        ? new Date().toISOString().split('T')[0]
+        : parsedDate.toISOString().split('T')[0];
     } else {
       formattedDate = new Date().toISOString().split('T')[0];
     }
-    
+
     const expense: Partial<Expense> = {
       id: expenseId,
       date: new Date(formattedDate),
@@ -413,13 +423,13 @@ export async function importExpensesFromExcel(file: File): Promise<Partial<Expen
       amount: Number(row.getCell(4).value) || 0,
       description: row.getCell(5).value?.toString() || '',
     };
-    
+
     // Only add if description is not empty
     if (expense.description) {
       expenses.push(expense);
     }
   });
-  
+
   return expenses;
 }
 

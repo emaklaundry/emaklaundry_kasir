@@ -16,15 +16,15 @@ class RateLimiter {
   canExecute(key: string, maxCalls: number, windowMs: number): boolean {
     const now = Date.now();
     const calls = this.timestamps.get(key) || [];
-    
+
     // Hapus timestamp yang sudah di luar window
-    const validCalls = calls.filter(timestamp => now - timestamp < windowMs);
-    
+    const validCalls = calls.filter((timestamp) => now - timestamp < windowMs);
+
     // Cek apakah sudah melebihi limit
     if (validCalls.length >= maxCalls) {
       return false;
     }
-    
+
     // Tambahkan timestamp baru
     validCalls.push(now);
     this.timestamps.set(key, validCalls);
@@ -56,8 +56,8 @@ class RateLimiter {
   getRemainingCalls(key: string, maxCalls: number, windowMs: number): number {
     const now = Date.now();
     const calls = this.timestamps.get(key) || [];
-    const validCalls = calls.filter(timestamp => now - timestamp < windowMs);
-    
+    const validCalls = calls.filter((timestamp) => now - timestamp < windowMs);
+
     return Math.max(0, maxCalls - validCalls.length);
   }
 
@@ -71,15 +71,15 @@ class RateLimiter {
   getRetryAfter(key: string, maxCalls: number, windowMs: number): number {
     const now = Date.now();
     const calls = this.timestamps.get(key) || [];
-    const validCalls = calls.filter(timestamp => now - timestamp < windowMs);
-    
+    const validCalls = calls.filter((timestamp) => now - timestamp < windowMs);
+
     if (validCalls.length < maxCalls) {
       return 0;
     }
-    
+
     // Waktu oldest call + window - sekarang
     const oldestCall = validCalls[0];
-    return Math.max(0, (oldestCall + windowMs) - now);
+    return Math.max(0, oldestCall + windowMs - now);
   }
 }
 
@@ -100,10 +100,8 @@ export async function withRateLimit<T>(
 ): Promise<T> {
   if (!rateLimiter.canExecute(key, maxCalls, windowMs)) {
     const retryAfter = rateLimiter.getRetryAfter(key, maxCalls, windowMs);
-    throw new Error(
-      `Rate limit exceeded. Silakan tunggu ${Math.ceil(retryAfter / 1000)} detik.`
-    );
+    throw new Error(`Rate limit exceeded. Silakan tunggu ${Math.ceil(retryAfter / 1000)} detik.`);
   }
-  
+
   return await fn();
 }

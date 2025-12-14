@@ -141,13 +141,19 @@ const StatCard: React.FC<{
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 truncate mb-1">{title}</p>
-          <p className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 dark:text-white break-all">{value}</p>
+          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 truncate mb-1">
+            {title}
+          </p>
+          <p className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 dark:text-white break-all">
+            {value}
+          </p>
         </div>
         <div
           className={`p-3 sm:p-3 rounded-full flex-shrink-0 ${color.replace('border-', 'bg-').replace('-500', '-100')} dark:${color.replace('border-', 'bg-').replace('-500', '-900/50')}`}
         >
-          <Icon className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 ${color.replace('border-', 'text-')}`} />
+          <Icon
+            className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 ${color.replace('border-', 'text-')}`}
+          />
         </div>
       </div>
       <TrendIndicator trendData={trendData} />
@@ -531,7 +537,9 @@ const Dashboard: React.FC = () => {
         <div
           className={`bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}
         >
-          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">Aksi Cepat</h2>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
+            Aksi Cepat
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             <button
               onClick={() => setIsStockModalOpen(true)}

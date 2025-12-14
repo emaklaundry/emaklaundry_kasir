@@ -9,6 +9,7 @@ Fitur maintenance mode memungkinkan Super Admin untuk menonaktifkan akses sistem
 **Toggle Location:** Settings Page (`/management/settings`) → Scroll ke bagian **Mode Pemeliharaan** (kuning)
 
 **How to Toggle:**
+
 1. Buka halaman **Settings** (`/management/settings`)
 2. Scroll ke bagian **Mode Pemeliharaan** (kotak kuning)
 3. Toggle switch untuk mengaktifkan/menonaktifkan
@@ -31,6 +32,7 @@ Fitur maintenance mode memungkinkan Super Admin untuk menonaktifkan akses sistem
 ### 1. Aktifkan Maintenance Mode
 
 **Via UI (Recommended):**
+
 1. Login sebagai **Super Admin**
 2. Buka menu **Pengaturan** (`/management/settings`)
 3. Scroll ke bagian **Mode Pemeliharaan** (section kuning dengan icon wrench)
@@ -39,8 +41,9 @@ Fitur maintenance mode memungkinkan Super Admin untuk menonaktifkan akses sistem
 6. Klik tombol **Simpan**
 
 **Via Database (Manual):**
+
 ```sql
-UPDATE public.settings 
+UPDATE public.settings
 SET "isMaintenanceMode" = TRUE,
     "maintenanceMessage" = 'Sistem sedang dalam perbaikan. Diperkirakan selesai dalam 30 menit.'
 WHERE id = 1;
@@ -49,14 +52,16 @@ WHERE id = 1;
 ### 2. Matikan Maintenance Mode
 
 **Via UI:**
+
 1. Login sebagai **Super Admin** (Anda tetap bisa akses)
 2. Buka menu **Pengaturan**
 3. Hilangkan centang pada checkbox **"Aktifkan Mode Pemeliharaan"**
 4. Klik tombol **Simpan**
 
 **Via Database:**
+
 ```sql
-UPDATE public.settings 
+UPDATE public.settings
 SET "isMaintenanceMode" = FALSE
 WHERE id = 1;
 ```
@@ -82,6 +87,7 @@ Ketika mode maintenance aktif, pengguna (kecuali Super Admin) akan melihat:
 ## 📋 Use Cases
 
 ### Scenario 1: Update Database
+
 ```
 1. Aktifkan maintenance mode dengan pesan:
    "Sedang melakukan update database. Estimasi 15 menit."
@@ -91,6 +97,7 @@ Ketika mode maintenance aktif, pengguna (kecuali Super Admin) akan melihat:
 ```
 
 ### Scenario 2: Perbaikan Bug Kritis
+
 ```
 1. Aktifkan maintenance mode dengan pesan:
    "Memperbaiki bug pada sistem pembayaran. Mohon tunggu."
@@ -100,6 +107,7 @@ Ketika mode maintenance aktif, pengguna (kecuali Super Admin) akan melihat:
 ```
 
 ### Scenario 3: Maintenance Terjadwal
+
 ```
 1. Informasikan ke pengguna sebelumnya
 2. Aktifkan maintenance mode dengan pesan:
@@ -113,11 +121,13 @@ Ketika mode maintenance aktif, pengguna (kecuali Super Admin) akan melihat:
 ## 🔒 Keamanan
 
 ### Akses Control
+
 - ✅ Hanya **Super Admin** yang melihat toggle maintenance di Settings
 - ✅ Hanya **Super Admin** yang dapat bypass maintenance mode
 - ✅ Admin dan Kasir tidak dapat mengubah setting ini
 
 ### Data Protection
+
 - ✅ Tidak ada data yang hilang saat maintenance mode aktif
 - ✅ User yang sedang bekerja akan di-redirect ke halaman maintenance
 - ✅ Setting tersimpan di database dan persist
@@ -127,6 +137,7 @@ Ketika mode maintenance aktif, pengguna (kecuali Super Admin) akan melihat:
 ## 🧪 Testing
 
 ### Manual Testing
+
 1. Login sebagai Super Admin
 2. Aktifkan maintenance mode
 3. Buka tab incognito/private
@@ -139,6 +150,7 @@ Ketika mode maintenance aktif, pengguna (kecuali Super Admin) akan melihat:
 10. Verifikasi sistem kembali normal
 
 ### Automated Testing
+
 ```bash
 npm run test MaintenanceMode.test.tsx
 ```
@@ -148,12 +160,14 @@ npm run test MaintenanceMode.test.tsx
 ## 📁 File Changes
 
 ### New Files:
+
 - `src/components/MaintenanceMode.tsx` - Komponen UI maintenance mode
 - `src/components/MaintenanceMode.test.tsx` - Unit tests
 - `database/setup/4.add_maintenance_mode.sql` - Database migration
 - `docs/MAINTENANCE_MODE.md` - Dokumentasi ini
 
 ### Modified Files:
+
 - `src/types/index.ts` - Tambah `isMaintenanceMode` & `maintenanceMessage` di Settings
 - `src/App.tsx` - Logic untuk check & tampilkan maintenance mode
 - `src/pages/management/SettingsPage.tsx` - UI toggle maintenance mode
@@ -165,10 +179,10 @@ npm run test MaintenanceMode.test.tsx
 
 ```sql
 -- Kolom baru di tabel settings
-ALTER TABLE public.settings 
+ALTER TABLE public.settings
 ADD COLUMN "isMaintenanceMode" boolean DEFAULT FALSE;
 
-ALTER TABLE public.settings 
+ALTER TABLE public.settings
 ADD COLUMN "maintenanceMessage" text;
 ```
 
@@ -188,15 +202,19 @@ ADD COLUMN "maintenanceMessage" text;
 ## 🐛 Troubleshooting
 
 **Q: Maintenance mode tidak muncul setelah diaktifkan?**
+
 - A: Refresh browser atau clear cache
 
 **Q: Super Admin juga kena maintenance mode?**
+
 - A: Periksa role user di database, pastikan `role = 'Super Admin'`
 
 **Q: Tidak bisa matikan maintenance mode?**
+
 - A: Gunakan database query manual atau restart aplikasi
 
 **Q: Pesan maintenance tidak update?**
+
 - A: Clear browser cache atau hard refresh (Ctrl+Shift+R)
 
 ---
@@ -204,6 +222,7 @@ ADD COLUMN "maintenanceMessage" text;
 ## 📞 Support
 
 Untuk pertanyaan atau masalah terkait maintenance mode:
+
 - Email: mhmdnvn18@gmail.com
 - Dokumentasi: [README.md](../README.md)
 

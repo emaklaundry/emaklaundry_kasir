@@ -38,7 +38,9 @@ const ServicesPage: React.FC = () => {
   const [isSavingService, setIsSavingService] = useState(false);
   const { currentUser, selectedStoreId } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'Kiloan' | 'Satuan' | 'Express' | 'Khusus'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<
+    'all' | 'Kiloan' | 'Satuan' | 'Express' | 'Khusus'
+  >('all');
 
   const filteredServices = useMemo(() => {
     let filtered = services.filter(
@@ -46,11 +48,11 @@ const ServicesPage: React.FC = () => {
         service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         service.category.toLowerCase().includes(searchTerm.toLowerCase()),
     );
-    
+
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(service => service.category === categoryFilter);
+      filtered = filtered.filter((service) => service.category === categoryFilter);
     }
-    
+
     return filtered;
   }, [services, searchTerm, categoryFilter]);
 
@@ -113,7 +115,7 @@ const ServicesPage: React.FC = () => {
   const handleDelete = (service: Service) => {
     // FIXED: Check if service is used in any transaction
     const transactionsWithService = transactions.filter((tx) =>
-      tx.items?.some((item) => item.serviceId === service.id)
+      tx.items?.some((item) => item.serviceId === service.id),
     );
 
     if (transactionsWithService.length > 0) {
@@ -122,7 +124,7 @@ const ServicesPage: React.FC = () => {
         'error',
       );
       addAuditLog(
-        `Gagal menghapus layanan "${service.name}" - masih digunakan dalam ${transactionsWithService.length} transaksi.`
+        `Gagal menghapus layanan "${service.name}" - masih digunakan dalam ${transactionsWithService.length} transaksi.`,
       );
       return;
     }
@@ -176,7 +178,7 @@ const ServicesPage: React.FC = () => {
 
     try {
       const importedServices = await importServicesFromExcel(file);
-      
+
       let successCount = 0;
       let errorCount = 0;
       let skipCount = 0;
@@ -191,7 +193,7 @@ const ServicesPage: React.FC = () => {
               skipCount++;
               continue;
             }
-            
+
             // Update existing service
             await updateService(service.id, {
               name: service.name!,
@@ -205,25 +207,26 @@ const ServicesPage: React.FC = () => {
           } else {
             // Check for duplicate service (same name + category)
             const existingService = services.find(
-              (s) => s.name.toLowerCase() === service.name?.toLowerCase() && 
-                     s.category === service.category
+              (s) =>
+                s.name.toLowerCase() === service.name?.toLowerCase() &&
+                s.category === service.category,
             );
-            
+
             if (existingService) {
               console.warn('Duplicate service skipped:', service.name, service.category);
               skipCount++;
               continue;
             }
-            
+
             // Ensure storeId is set for INSERT (RLS policy requirement)
             const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
-            
+
             if (!storeId) {
               console.error('storeId is required for new services');
               errorCount++;
               continue;
             }
-            
+
             // Add new service
             await addService({
               name: service.name!,
@@ -245,13 +248,13 @@ const ServicesPage: React.FC = () => {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
-          'warning'
+          'warning',
         );
       } else if (errorCount > 0) {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
-          'warning'
+          'warning',
         );
       } else {
         updateToast(toastId, `Berhasil import ${successCount} layanan`, 'success');
@@ -283,9 +286,7 @@ const ServicesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Manajemen Layanan
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Layanan</h1>
         <div className="flex gap-2">
           {/* Excel Import/Export Buttons */}
           <button
@@ -296,7 +297,7 @@ const ServicesPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Template</span>
           </button>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -313,7 +314,7 @@ const ServicesPage: React.FC = () => {
             <UploadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Import</span>
           </button>
-          
+
           <button
             onClick={handleExportToExcel}
             disabled={services.length === 0}
@@ -323,8 +324,13 @@ const ServicesPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Export</span>
           </button>
-          
-          <button onClick={() => handleOpenFormModal()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Layanan</button>
+
+          <button
+            onClick={() => handleOpenFormModal()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Tambah Layanan
+          </button>
         </div>
       </div>
 
@@ -394,7 +400,10 @@ const ServicesPage: React.FC = () => {
           <tbody>
             {sortedServices.length > 0 ? (
               sortedServices.map((service) => (
-                <tr key={service.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+                <tr
+                  key={service.id}
+                  className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     {service.name}
                   </td>
@@ -470,5 +479,3 @@ const ServicesPage: React.FC = () => {
 };
 
 export default ServicesPage;
-
-

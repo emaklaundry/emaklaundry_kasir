@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/supabase';
 
@@ -16,7 +15,7 @@ if (!supabaseAnonKey) {
 const createSupabaseClient = () => createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var supabase: ReturnType<typeof createSupabaseClient> | undefined;
 }
 
@@ -80,5 +79,3 @@ export async function updateTransactionProgress(
   if (error) throw error;
   return data;
 }
-
-

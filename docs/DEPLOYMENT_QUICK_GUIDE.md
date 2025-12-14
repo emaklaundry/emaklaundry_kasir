@@ -3,6 +3,7 @@
 ## ✅ PRE-DEPLOYMENT (5 Minutes)
 
 ### 1. Environment Setup
+
 ```bash
 # Copy template
 cp .env.example .env
@@ -13,11 +14,13 @@ cp .env.example .env
 ```
 
 **Get credentials:**
+
 - Login: https://supabase.com
 - Project → Settings → API
 - Copy URL & anon key
 
 ### 2. Database Setup
+
 ```sql
 -- Di Supabase SQL Editor:
 -- 1. Copy SEMUA isi file: database/setup/complete_setup.sql
@@ -27,6 +30,7 @@ cp .env.example .env
 ```
 
 ### 3. Final Verification
+
 ```bash
 # Test build
 npm run build
@@ -41,6 +45,7 @@ npm run build
 ## 🌐 DEPLOYMENT OPTIONS
 
 ### Option A: Vercel (Recommended)
+
 ```bash
 # 1. Push to GitHub
 git push origin main
@@ -57,6 +62,7 @@ git push origin main
 ```
 
 ### Option B: Netlify
+
 ```bash
 # 1. Push to GitHub
 git push origin main
@@ -77,6 +83,7 @@ git push origin main
 ## ✅ POST-DEPLOYMENT (10 Minutes)
 
 ### 1. Verify Core Functions
+
 - [ ] Login works
 - [ ] Create transaction
 - [ ] Add customer
@@ -85,6 +92,7 @@ git push origin main
 - [ ] PWA installable
 
 ### 2. Test Privacy Settings
+
 ```bash
 # Check robots.txt
 curl https://your-domain.com/robots.txt
@@ -96,6 +104,7 @@ site:your-domain.com
 ```
 
 ### 3. Monitor Performance
+
 ```bash
 # Lighthouse test
 # Chrome DevTools → Lighthouse → Run
@@ -112,6 +121,7 @@ site:your-domain.com
 ## 🔧 TROUBLESHOOTING
 
 ### Issue: Login doesn't work
+
 ```bash
 # Check:
 1. VITE_SUPABASE_URL correct?
@@ -125,6 +135,7 @@ site:your-domain.com
 ```
 
 ### Issue: Build fails
+
 ```bash
 # Fix:
 npm run build
@@ -135,6 +146,7 @@ npm run build
 ```
 
 ### Issue: 404 on refresh
+
 ```bash
 # Vercel: Already configured (vercel.json)
 # Netlify: Add _redirects file:
@@ -146,6 +158,7 @@ echo "/*    /index.html   200" > dist/_redirects
 ## 📊 MONITORING SETUP (Optional)
 
 ### Error Tracking - Sentry
+
 ```bash
 npm install @sentry/react
 
@@ -159,11 +172,10 @@ Sentry.init({
 ```
 
 ### Analytics - Plausible (Privacy-friendly)
+
 ```html
 <!-- Add to index.html: -->
-<script defer data-domain="yourdomain.com" 
-  src="https://plausible.io/js/script.js">
-</script>
+<script defer data-domain="yourdomain.com" src="https://plausible.io/js/script.js"></script>
 ```
 
 ---
@@ -171,12 +183,14 @@ Sentry.init({
 ## 🎯 LAUNCH DAY CHECKLIST
 
 **Morning:**
+
 - [ ] Final backup database
 - [ ] Review error logs
 - [ ] Test all features
 - [ ] Prepare rollback plan
 
 **During Launch:**
+
 - [ ] Deploy to production
 - [ ] Verify deployment
 - [ ] Test live site
@@ -184,6 +198,7 @@ Sentry.init({
 - [ ] Check performance
 
 **After Launch:**
+
 - [ ] Announce to team
 - [ ] Monitor for 1 hour
 - [ ] Check user feedback
@@ -206,6 +221,7 @@ Questions:        mhmdnvn18@gmail.com
 ## 🎉 SUCCESS CRITERIA
 
 **Week 1:**
+
 - [ ] 0 critical bugs
 - [ ] Uptime >99%
 - [ ] All features working
@@ -213,6 +229,7 @@ Questions:        mhmdnvn18@gmail.com
 - [ ] Performance good
 
 **Week 2-4:**
+
 - [ ] User feedback collected
 - [ ] Minor bugs fixed
 - [ ] Performance optimized
@@ -221,6 +238,7 @@ Questions:        mhmdnvn18@gmail.com
 ---
 
 **Remember:**
+
 - 🔒 Website is PRIVATE (noindex)
 - 📱 PWA can be installed
 - 🔐 Login required untuk access

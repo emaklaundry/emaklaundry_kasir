@@ -19,7 +19,7 @@ interface RetryOptions {
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
   const {
     maxRetries = 3,
@@ -57,7 +57,7 @@ export async function retryWithBackoff<T>(
   }
 
   throw new Error(
-    `Operation failed after ${maxRetries + 1} attempts. Last error: ${lastError!.message}`
+    `Operation failed after ${maxRetries + 1} attempts. Last error: ${lastError!.message}`,
   );
 }
 
@@ -67,16 +67,13 @@ export async function retryWithBackoff<T>(
  */
 export async function retrySupabaseOperation<T>(
   fn: () => Promise<T>,
-  operationName: string = 'operation'
+  operationName: string = 'operation',
 ): Promise<T> {
   return retryWithBackoff(fn, {
     maxRetries: 3,
     initialDelay: 1000,
     onRetry: (attempt, error) => {
-      console.warn(
-        `[Retry ${attempt}/3] ${operationName} failed:`,
-        error.message
-      );
+      console.warn(`[Retry ${attempt}/3] ${operationName} failed:`, error.message);
     },
   });
 }
@@ -92,25 +89,23 @@ export async function verifyDataSaved<T>(
     maxAttempts?: number;
     pollInterval?: number;
     timeoutMs?: number;
-  } = {}
+  } = {},
 ): Promise<T> {
-  const {
-    maxAttempts = 5,
-    pollInterval = 500,
-    timeoutMs = 5000,
-  } = options;
+  const { maxAttempts = 5, pollInterval = 500, timeoutMs = 5000 } = options;
 
   const startTime = Date.now();
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     // Check timeout
     if (Date.now() - startTime > timeoutMs) {
-      throw new Error('Verification timeout: Data tidak dapat diverifikasi dalam waktu yang ditentukan');
+      throw new Error(
+        'Verification timeout: Data tidak dapat diverifikasi dalam waktu yang ditentukan',
+      );
     }
 
     try {
       const data = await fetchFn();
-      
+
       if (validateFn(data)) {
         return data as T;
       }
@@ -133,26 +128,26 @@ export async function verifyDataSaved<T>(
  */
 export async function executeWithRollback<T>(
   operations: Array<{
-    execute: () => Promise<any>;
+    execute: () => Promise<unknown>;
     rollback?: () => Promise<void>;
     description: string;
-  }>
+  }>,
 ): Promise<T> {
   const completed: Array<() => Promise<void>> = [];
 
   try {
-    let lastResult: any;
+    let lastResult: unknown;
 
     for (const op of operations) {
       console.log(`Executing: ${op.description}`);
       lastResult = await op.execute();
-      
+
       if (op.rollback) {
         completed.push(op.rollback);
       }
     }
 
-    return lastResult;
+    return lastResult as T; // eslint-disable-line @typescript-eslint/no-unsafe-return
   } catch (error) {
     console.error('Transaction failed, rolling back...', error);
 
@@ -168,3 +163,4 @@ export async function executeWithRollback<T>(
     throw error;
   }
 }
+

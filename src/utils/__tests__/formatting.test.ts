@@ -88,11 +88,11 @@ describe('calculateNextDueDate', () => {
   it('should handle invalid date input with fallback', () => {
     const invalidDate = new Date('invalid');
     const result = calculateNextDueDate(invalidDate, 1, 'days');
-    
+
     // Should return a valid date (fallback to 30 days from now)
     expect(result instanceof Date).toBe(true);
     expect(!isNaN(result.getTime())).toBe(true);
-    
+
     // Should be in the future
     expect(result.getTime()).toBeGreaterThan(Date.now());
   });
@@ -100,7 +100,7 @@ describe('calculateNextDueDate', () => {
   it('should handle edge cases for month-end dates', () => {
     const date = new Date('2023-01-31');
     const result = calculateNextDueDate(date, 1, 'months');
-    
+
     // JavaScript Date handles this automatically
     // Jan 31 + 1 month = Feb 28/29 or Mar 3 depending on implementation
     expect(result.getMonth()).toBeGreaterThanOrEqual(1);

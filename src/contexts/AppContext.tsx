@@ -156,15 +156,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const handleUnload = async () => {
       // Tunggu sebentar untuk cek apakah ini refresh atau close
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       const wasRefreshing = sessionStorage.getItem('isRefreshing');
-      
+
       // Jika bukan refresh, logout
       if (!wasRefreshing) {
         await signOut();
       }
-      
+
       // Clear flag refresh
       sessionStorage.removeItem('isRefreshing');
     };
@@ -199,3 +199,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     </AppContext.Provider>
   );
 };
+
+
+

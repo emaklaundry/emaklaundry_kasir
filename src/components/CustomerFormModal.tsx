@@ -37,7 +37,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e && 'preventDefault' in e) e.preventDefault();
-    
+
     // Validate required fields with user-friendly error messages
     if (!formData.name || formData.name.trim() === '') {
       addToast('Nama pelanggan harus diisi.', 'error');
@@ -47,20 +47,23 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       addToast('Nomor telepon harus diisi.', 'error');
       return;
     }
-    
+
     // Validasi format nomor telepon (08xxx atau +62xxx)
     const phoneClean = formData.phone.replace(/\s/g, '');
     if (!/^(\+62|08|62)[0-9]{8,12}$/.test(phoneClean)) {
-      addToast('Format nomor telepon tidak valid (contoh: 081234567890 atau +6281234567890)', 'warning');
+      addToast(
+        'Format nomor telepon tidak valid (contoh: 081234567890 atau +6281234567890)',
+        'warning',
+      );
       return;
     }
-    
+
     const discount = formData.defaultDiscount ?? 0;
     if (discount < 0 || discount > 100) {
       addToast('Diskon default harus antara 0-100%.', 'error');
       return;
     }
-    
+
     await onSave(formData);
   };
 

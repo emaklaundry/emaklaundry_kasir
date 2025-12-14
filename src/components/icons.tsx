@@ -347,4 +347,3 @@ export const UploadIcon: React.FC<{ className?: string }> = ({ className }) => (
     <line x1="12" x2="12" y1="3" y2="15" />
   </Icon>
 );
-

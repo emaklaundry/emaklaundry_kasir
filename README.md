@@ -1,7 +1,7 @@
 # Laundry Management System (Web Kasir)
 
 **Versi:** 2.0.0  
-**Update terakhir:** 14 Desember 2025  
+**Update terakhir:** 14 Desember 2024  
 **Status:** ✅ Production Ready
 
 ---
@@ -16,7 +16,7 @@ Dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
 
 - **[FINAL_AUDIT_REPORT.md](./docs/FINAL_AUDIT_REPORT.md)** - Comprehensive code audit & security analysis
 - **[IMPROVEMENTS.md](./docs/IMPROVEMENTS.md)** - Implementation details & improvements
-- **[DATA_CONSISTENCY.md](./docs/DATA_CONSISTENCY.md)** - Conservative data consistency strategy  
+- **[DATA_CONSISTENCY.md](./docs/DATA_CONSISTENCY.md)** - Conservative data consistency strategy
 - **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Production deployment guide
 - **[MAINTENANCE_MODE.md](./docs/MAINTENANCE_MODE.md)** - 🔧 Maintenance mode guide
 - **[Database Setup & Backup](./database/README.md)** - Database scripts & backup guide
@@ -97,32 +97,36 @@ emaklaundry_kasir/
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ dan npm
 - Akun Supabase (gratis)
 
 ### Installation
 
 1. **Clone repository**
+
    ```bash
    git clone <repository-url>
    cd emaklaundry_kasir
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Setup environment variables**
+
    ```bash
    # Copy template .env
    cp .env.example .env
-   
+
    # Edit .env dan isi dengan Supabase credentials:
    # VITE_SUPABASE_URL=https://your-project.supabase.co
    # VITE_SUPABASE_ANON_KEY=your-anon-key
    ```
-   
+
    Dapatkan credentials dari: Supabase Dashboard → Settings → API
 
 4. **Setup database**
@@ -132,34 +136,40 @@ emaklaundry_kasir/
    - ✅ Database siap!
 
 5. **Run development server**
+
    ```bash
    npm run dev
    ```
-   
-   Buka http://localhost:5173
+
+   Buka http://localhost:3000
 
 ### Build
+
 ```bash
 npm run build
 npm run preview
 ```
 
 ### Testing
+
 ```bash
 npm run test
 npm run test:all  # Format, lint, dan test
 ```
 
 ### Database Setup & Backup
+
 Lihat panduan lengkap di [database/README.md](./database/README.md) atau [database/backup/database-backup.md](./database/backup/database-backup.md).
 
 **Quick Setup (⭐ RECOMMENDED):**
+
 ```bash
 # 1 file saja - copy & paste ke Supabase SQL Editor:
 database/setup/complete_setup.sql
 ```
 
 **Manual Setup (Step-by-step):**
+
 ```bash
 # Jalankan berurutan:
 1. database/setup/0.droptable.sql  # Reset (opsional)
@@ -194,10 +204,10 @@ Panduan lengkap: [database/setup/SETUP_GUIDE.md](./database/setup/SETUP_GUIDE.md
 
 ---
 
-
 ## 📝 Changelog
 
-### v2.0.0 - 14 Desember 2025
+### v2.0.0 - 14 Desember 2024
+
 - ✅ Production ready dengan comprehensive audit
 - ✅ Conservative data consistency (zero data loss)
 - ✅ Multi-tenant (multi-cabang) support
@@ -221,6 +231,7 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 ### Color Palette
 
 #### Primary Colors
+
 - **Blue (Primary)**: bg-blue-600 hover:bg-blue-700
 - **Green (Success)**: bg-green-600 hover:bg-green-700
 - **Red (Danger)**: bg-red-600 hover:bg-red-700
@@ -228,6 +239,7 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 - **Slate (Secondary)**: bg-white border-slate-300 hover:bg-slate-100
 
 #### Dark Mode
+
 - **Primary Dark**: dark:bg-blue-700 dark:hover:bg-blue-600
 - **Card Dark**: dark:bg-slate-800
 - **Text Dark**: dark:text-white
@@ -240,10 +252,12 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 4. **Danger Button** (Hapus): `bg-red-600 hover:bg-red-700 text-white`
 
 ### Card/Container
+
 - **Main Container**: `bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md`
 - **Table Header**: `bg-slate-50 dark:bg-slate-700 text-sm uppercase`
 
 ### Input Styles
+
 - **Text Input**: `bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-base rounded-lg p-3`
 - **Checkbox**: `w-5 h-5 text-blue-600 bg-slate-100 rounded`
 
@@ -252,6 +266,7 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 ## 📱 Optimasi Mobile
 
 ### Fitur Optimasi Mobile
+
 - ✅ **Responsive Layout**: Grid adaptif (1 kolom mobile, 2 tablet, 4 desktop)
 - ✅ **Touch Targets**: Minimum 44x44px untuk semua elemen interaktif
 - ✅ **Font Responsif**: `text-sm sm:text-base md:text-lg`
@@ -260,6 +275,7 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 - ✅ **Prevent Zoom iOS**: Input font-size 16px minimum
 
 ### Meta Tags Mobile
+
 ```html
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -267,12 +283,14 @@ Untuk kontribusi, bug report, atau pertanyaan, silakan hubungi [mhmdnvn18@gmail.
 ```
 
 ### Breakpoints
+
 - **sm**: 640px (Mobile landscape)
 - **md**: 768px (Tablet)
 - **lg**: 1024px (Desktop)
 - **xl**: 1280px (Large desktop)
 
 ### Komponen Responsif
+
 1. **Header**: Padding `p-2 sm:p-4`, Font `text-lg sm:text-2xl md:text-3xl`
 2. **Dashboard Cards**: Padding `p-4 sm:p-6`, Grid responsif
 3. **Tabel**: Font `text-sm sm:text-base`, Padding cell responsif

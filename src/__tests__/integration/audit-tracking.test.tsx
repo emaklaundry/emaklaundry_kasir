@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 /**
  * Integration Tests for Audit Logging & Analytics
- * 
+ *
  * These tests verify that critical operations are properly tracked:
  * - Duplicate phone attempts
  * - Service deletion rejections
@@ -55,7 +55,8 @@ describe('Audit Tracking: Rejected Operations', () => {
         phone: '628123456789', // Same phone
       };
 
-      const isDuplicate = customer.phone === updateAttempt.phone && customer.id !== updateAttempt.id;
+      const isDuplicate =
+        customer.phone === updateAttempt.phone && customer.id !== updateAttempt.id;
 
       expect(isDuplicate).toBe(false); // Should NOT be duplicate
     });
@@ -86,7 +87,7 @@ describe('Audit Tracking: Rejected Operations', () => {
 
       // Count transactions using this service
       const transactionsWithService = transactions.filter((tx) =>
-        tx.items.some((item) => item.serviceId === service.id)
+        tx.items.some((item) => item.serviceId === service.id),
       );
 
       expect(transactionsWithService.length).toBe(2);
@@ -113,7 +114,7 @@ describe('Audit Tracking: Rejected Operations', () => {
       ];
 
       const transactionsWithService = transactions.filter((tx) =>
-        tx.items.some((item) => item.serviceId === service.id)
+        tx.items.some((item) => item.serviceId === service.id),
       );
 
       expect(transactionsWithService.length).toBe(0); // Can be deleted
@@ -124,7 +125,7 @@ describe('Audit Tracking: Rejected Operations', () => {
     it('should track race condition prevention', () => {
       // Simulating locked values
       const originalAmountToPay = 100000;
-      let lockedAmountToPay = originalAmountToPay;
+      const lockedAmountToPay = originalAmountToPay;
 
       // Simulate user trying to change value during processing
       const userTriesToChange = 50000;
@@ -254,13 +255,15 @@ describe('Analytics: Operation Metrics', () => {
       'Stok tidak boleh bernilai negatif',
     ];
 
-    const errorCounts = validationErrors.reduce((acc, error) => {
-      acc[error] = (acc[error] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const errorCounts = validationErrors.reduce(
+      (acc, error) => {
+        acc[error] = (acc[error] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    const mostCommonError = Object.entries(errorCounts)
-      .sort(([, a], [, b]) => b - a)[0];
+    const mostCommonError = Object.entries(errorCounts).sort(([, a], [, b]) => b - a)[0];
 
     expect(mostCommonError[0]).toBe('Harga layanan harus lebih dari 0');
     expect(mostCommonError[1]).toBe(3); // Occurred 3 times

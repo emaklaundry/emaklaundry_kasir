@@ -25,7 +25,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between p-4 sm:p-5 border-b dark:border-slate-700 flex-shrink-0">
-          <h3 id="modal-title" className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">{title}</h3>
+          <h3
+            id="modal-title"
+            className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white"
+          >
+            {title}
+          </h3>
           <button
             type="button"
             className="text-slate-400 bg-transparent hover:bg-slate-200 hover:text-slate-900 rounded-lg text-sm w-10 h-10 sm:w-9 sm:h-9 ml-auto inline-flex justify-center items-center dark:hover:bg-slate-600 dark:hover:text-white touch-target"
@@ -49,7 +54,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer 
             <span className="sr-only">Close modal</span>
           </button>
         </div>
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto mobile-scroll flex-1" style={{ maxHeight: '65vh' }}>
+        <div
+          className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto mobile-scroll flex-1"
+          style={{ maxHeight: '65vh' }}
+        >
           {children}
         </div>
         {footer && (

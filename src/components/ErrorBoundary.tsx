@@ -45,7 +45,8 @@ class ErrorBoundary extends Component<Props, State> {
             </div>
             <h1 className="text-2xl font-bold text-red-600 mb-4">Terjadi Kesalahan</h1>
             <p className="text-slate-700 dark:text-slate-300 mb-6">
-              Aplikasi mengalami error yang tidak terduga. Silakan refresh halaman untuk melanjutkan.
+              Aplikasi mengalami error yang tidak terduga. Silakan refresh halaman untuk
+              melanjutkan.
             </p>
             {this.state.error && (
               <div className="mb-6 p-3 bg-slate-100 dark:bg-slate-700 rounded text-left">

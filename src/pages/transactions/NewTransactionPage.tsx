@@ -132,7 +132,6 @@ const NewTransactionPage: React.FC = () => {
     return Math.round(taxableAmount * ((settings?.taxRate ?? 0) / 100));
   }, [subtotal, discountAmount, settings?.taxRate]);
 
-
   const grandTotal = useMemo(() => {
     return subtotal - discountAmount + taxAmount;
   }, [subtotal, discountAmount, taxAmount]);
@@ -152,7 +151,7 @@ const NewTransactionPage: React.FC = () => {
   // ----------------------------------
 
   // GANTI baris ini:
-  // const amountToPay = grandTotal; 
+  // const amountToPay = grandTotal;
   // MENJADI:
   const amountToPay = finalTotalToPay;
 
@@ -208,7 +207,6 @@ const NewTransactionPage: React.FC = () => {
     }
   }, [showKiloanToast, addToast]);
 
-
   // (Deklarasi duplikat finalTotalToPay, roundingDifference, amountToPay dihapus. Sudah ada di atas.)
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
@@ -227,15 +225,15 @@ const NewTransactionPage: React.FC = () => {
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;
-    
+
     // Toleransi untuk floating point arithmetic
     const paid = actualAmountPaid;
     const total = grandTotal;
-    
+
     if (Math.abs(paid - total) < 0.01) return PaymentStatus.Paid;
     if (paid >= total) return PaymentStatus.Paid;
     if (paid > 0) return PaymentStatus.Unpaid; // Partial payment still counts as Unpaid
-    
+
     return PaymentStatus.Unpaid;
   }, [isPayingNow, grandTotal, actualAmountPaid]);
 
@@ -443,10 +441,10 @@ const NewTransactionPage: React.FC = () => {
       addToast('Minimal satu layanan harus ditambahkan.', 'warning');
       return;
     }
-    
+
     // Prevent double submission
     setIsSaving(true);
-    
+
     if (isPayingNow) {
       if (!paymentMethod) {
         addToast('Pilih metode pembayaran.', 'error');
@@ -459,7 +457,7 @@ const NewTransactionPage: React.FC = () => {
         return;
       }
     }
-    
+
     const toastId = addToast('Menyimpan transaksi ke database...', 'info');
     try {
       // --- PERBAIKAN: Hitung waktu saat tombol ditekan ---
@@ -515,10 +513,10 @@ const NewTransactionPage: React.FC = () => {
         idempotencyKey: idempotencyKey,
       };
       const savedTransaction = await addTransaction(newTransaction);
-      
+
       // Update toast untuk verifikasi
       updateToast(toastId, 'Memverifikasi data tersimpan...', 'info');
-      
+
       if (savedTransaction) {
         // Map Supabase transaction (JSON fields, dates) to app Transaction type
         const tx: Transaction = {
@@ -587,7 +585,7 @@ const NewTransactionPage: React.FC = () => {
                   (item) => ({
                     ...item,
                     itemDetails: item.itemDetails ?? [],
-                  })
+                  }),
                 )
               : [],
             createdAt: existingTx.createdAt ? new Date(existingTx.createdAt) : new Date(),
@@ -665,7 +663,6 @@ const NewTransactionPage: React.FC = () => {
       setTenderedAmountStr('');
     }
   };
-
 
   return (
     <>
@@ -939,12 +936,14 @@ const NewTransactionPage: React.FC = () => {
                     </span>
                   </div>
                   {/* Tambahkan blok ini di atas Grand Total */}
-                  {isPayingNow && paymentMethod === PaymentMethod.Cash && roundingDifference > 0 && (
-                    <div className="flex justify-between items-center text-lg text-slate-500 dark:text-slate-400 italic">
-                      <span>Pembulatan:</span>
-                      <span>- Rp {formatRupiah(roundingDifference)}</span>
-                    </div>
-                  )}
+                  {isPayingNow &&
+                    paymentMethod === PaymentMethod.Cash &&
+                    roundingDifference > 0 && (
+                      <div className="flex justify-between items-center text-lg text-slate-500 dark:text-slate-400 italic">
+                        <span>Pembulatan:</span>
+                        <span>- Rp {formatRupiah(roundingDifference)}</span>
+                      </div>
+                    )}
 
                   <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
                     <span>Grand Total:</span>
@@ -1110,3 +1109,5 @@ const NewTransactionPage: React.FC = () => {
 };
 
 export default NewTransactionPage;
+
+

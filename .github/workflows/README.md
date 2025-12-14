@@ -9,16 +9,18 @@ Workflow otomatis untuk backup database Supabase setiap hari.
 **1. Setup GitHub Secret:**
 
 Di repository GitHub:
+
 1. Buka **Settings** → **Secrets and variables** → **Actions**
 2. Klik **New repository secret**
 3. Buat secret dengan detail:
    - **Name:** `SUPABASE_DB_URL`
-   - **Value:** 
+   - **Value:**
      ```
      postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
      ```
 
 **Cara mendapatkan connection string:**
+
 1. Buka Supabase Dashboard → project Anda
 2. Pilih **Settings** → **Database**
 3. Scroll ke **Connection string**
@@ -28,12 +30,14 @@ Di repository GitHub:
 ### 🚀 Cara Kerja
 
 **Automatic (Scheduled):**
+
 - Jalan otomatis setiap hari jam **00:00 UTC** (07:00 WIB)
 - Membuat file backup: `auto_backup_2025-12-14.sql`
 - Commit & push ke folder `database/backup/`
 - Upload juga ke GitHub Artifacts (30 hari retention)
 
 **Manual Trigger:**
+
 1. Buka tab **Actions** di GitHub
 2. Pilih workflow **Daily Supabase Backup**
 3. Klik **Run workflow**
@@ -61,7 +65,6 @@ database/backup/
 
 1. **File size limit:** GitHub repo maksimal 100MB per file
    - Jika database >50MB, pertimbangkan upload ke cloud storage
-   
 2. **Secrets security:**
    - Jangan commit `SUPABASE_DB_URL` ke code
    - Gunakan GitHub Secrets
@@ -73,11 +76,13 @@ database/backup/
 ### 🔍 Monitoring
 
 **Cek status workflow:**
+
 1. Tab **Actions** di GitHub
 2. Lihat run history
 3. Cek log jika ada error
 
 **Common issues:**
+
 - ❌ **Secret not found:** Setup `SUPABASE_DB_URL` di GitHub Secrets
 - ❌ **Connection failed:** Cek password & connection string
 - ❌ **Permission denied:** Pastikan GitHub Actions punya write access

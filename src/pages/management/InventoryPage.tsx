@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  PlusCircleIcon,
   EditIcon,
   Trash2Icon,
   PackageIcon,
@@ -223,7 +222,7 @@ const InventoryPage: React.FC = () => {
 
     try {
       const importedItems = await importInventoryFromExcel(file);
-      
+
       let successCount = 0;
       let errorCount = 0;
       let skipCount = 0;
@@ -238,7 +237,7 @@ const InventoryPage: React.FC = () => {
               skipCount++;
               continue;
             }
-            
+
             // Update existing item
             await updateInventoryMutation.mutateAsync({
               id: item.id,
@@ -254,23 +253,23 @@ const InventoryPage: React.FC = () => {
           } else {
             // Check for duplicate before adding new item
             const existingItem = inventory?.find(
-              (i) => i.name.toLowerCase() === item.name!.toLowerCase()
+              (i) => i.name.toLowerCase() === item.name!.toLowerCase(),
             );
             if (existingItem) {
               console.warn('Duplicate item skipped:', item.name);
               skipCount++;
               continue;
             }
-            
+
             // Ensure storeId is set for INSERT (RLS policy requirement)
             const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
-            
+
             if (!storeId) {
               console.error('storeId is required for new items');
               errorCount++;
               continue;
             }
-            
+
             // Add new item
             await addInventoryMutation.mutateAsync({
               name: item.name!,
@@ -291,13 +290,13 @@ const InventoryPage: React.FC = () => {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
-          'warning'
+          'warning',
         );
       } else if (errorCount > 0) {
         updateToast(
           toastId,
           `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
-          'warning'
+          'warning',
         );
       } else {
         updateToast(toastId, `Berhasil import ${successCount} item inventaris`, 'success');
@@ -305,7 +304,7 @@ const InventoryPage: React.FC = () => {
 
       addAuditLog(
         `Import ${successCount} item inventaris dari Excel`,
-        selectedStoreId === 'all' ? undefined : selectedStoreId
+        selectedStoreId === 'all' ? undefined : selectedStoreId,
       );
     } catch (error) {
       console.error('Import error:', error);
@@ -332,9 +331,7 @@ const InventoryPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Manajemen Inventaris
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Inventaris</h1>
         <div className="flex gap-2">
           {/* Excel Import/Export Buttons */}
           <button
@@ -345,7 +342,7 @@ const InventoryPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Template</span>
           </button>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -362,7 +359,7 @@ const InventoryPage: React.FC = () => {
             <UploadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Import</span>
           </button>
-          
+
           <button
             onClick={handleExportToExcel}
             disabled={inventory.length === 0}
@@ -372,7 +369,7 @@ const InventoryPage: React.FC = () => {
             <DownloadIcon className="w-4 h-4" />
             <span className="hidden sm:inline text-sm">Export</span>
           </button>
-          
+
           <button
             onClick={() => handleOpenFormModal()}
             disabled={!canAddNewItem}
@@ -464,7 +461,10 @@ const InventoryPage: React.FC = () => {
                     'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
                 }
                 return (
-                  <tr key={item.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+                  <tr
+                    key={item.id}
+                    className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  >
                     <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                       {item.name}
                     </td>
@@ -485,21 +485,21 @@ const InventoryPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleOpenFormModal(item)}
-                        className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        <EditIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        <Trash2Icon className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                        <button
+                          onClick={() => handleOpenFormModal(item)}
+                          className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <EditIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <Trash2Icon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 );
               })
             ) : (
@@ -636,6 +636,4 @@ const InventoryPage: React.FC = () => {
 };
 
 export default InventoryPage;
-
-
 
