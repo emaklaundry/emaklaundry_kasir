@@ -1,19 +1,22 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
--- All-in-One Setup Script
--- Version: 2.0.0
--- Date: December 14, 2025
+-- Complete Schema & Functions Setup
+-- Version: 3.0.0
+-- Date: December 15, 2025
 -- ============================================
 -- 
 -- IMPORTANT: Jalankan script ini di Supabase SQL Editor
--- Urutan eksekusi sudah teroptimasi untuk menghindari error
+-- File ini HANYA berisi schema, functions, RPC, dan security
+-- TIDAK berisi data sample/seed
 -- 
 -- Sections:
 -- 1. DROP TABLES (Reset) - COMMENTED OUT by default
 -- 2. CREATE TABLES & FUNCTIONS
--- 3. RPC FUNCTIONS & SEED DATA
+-- 3. RPC FUNCTIONS
 -- 4. SECURITY & PERFORMANCE
--- 5. MAINTENANCE MODE
+-- 5. TRIGGERS & AUTOMATION
+-- 
+-- Untuk data sample/testing, jalankan seed_data.sql setelah ini
 -- ============================================
 
 -- ============================================
@@ -562,46 +565,9 @@ CREATE POLICY "Allow ALL for Admins" ON public.settings
   WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
 
 
--- === 5. DATA CONTOH (SAMPLE DATA) ===
-
--- user dengan id ini ada di auth.users
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL);
-
--- cabang: Kota Banjar
--- UUID: 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
-INSERT INTO public.stores (id, name, address, "isActive")
-VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banjar', true);
-
--- admin: admin_banjar (cabang Kota Banjar)
--- nama: emaklaundry, 
--- role: Admin
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('0bbe08f0-2cbc-40d9-b2ec-5a2d3ba99c0e', 'emaklaundry', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
--- kasir: yopi (cabang Kota Banjar)
--- nama: yopi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
--- kasir: ani (cabang Kota Banjar)
--- nama: ani, password: 12345678 (diasumsikan dibuat di Supabase Auth)
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
--- kasir: didi (cabang Kota Banjar)
--- nama: didi, password: 12345678 (diasumsikan dibuat di Supabase Auth)
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
--- kasir: lilis (cabang Kota Banjar)
--- nama: lilis, password: 12345678 (diasumsikan dibuat di Supabase Auth)
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
--- Note: SECURITY DEFINER allows this function to run with the function owner's privileges
--- so it can read rows even when restrictive RLS policies exist. Keep the function
--- body minimal and review ownership/permissions after deployment.
+-- ============================================
+-- SECTION 3: RPC FUNCTIONS
+-- ============================================
 
 -- === RPC: get_public_services ===
 -- Return a safe list of services (no pricing) for a given store
@@ -734,16 +700,11 @@ END;
 $$;
 
 
--- === 7. PENGATURAN AWAL (Initial Settings) ===
+-- ============================================
+-- SECTION 4: SECURITY & PERFORMANCE
+-- ============================================
 
--- Contoh data settings untuk satu cabang (storeId wajib diisi)
-INSERT INTO public.settings ("receiptMessage", "taxRate", "discountRate", "storeId") VALUES ('Terima kasih telah laundry di tempat kami!', 0, 0, '9b7e1c2a-1234-4bcd-8e9f-abcdef123456');
-
-
-
-
-
-
+-- Security and performance enhancements untuk production
 
 CREATE OR REPLACE FUNCTION public.complete_scheduled_maintenance(
   maintenance_id uuid
@@ -823,103 +784,6 @@ AS $$
       AND t.id = input_identifier::uuid
     );
 $$;
-
--- ============================================
--- SECTION 3: RPC FUNCTIONS & SEED DATA
--- ============================================
-
--- apply_rpc_and_seed.sql
-
-
--- Seed services: upsert a large list of services into the target store (Cabang Kota Banjar)
-CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx ON public.services (lower(name), "storeId");
-
-WITH target_store AS (
-  SELECT id FROM public.stores
-  WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456' OR name ILIKE 'Cabang Kota Banjar'
-  LIMIT 1
-)
-INSERT INTO public.services (name, category, price, unit, "durationDays", "storeId")
-SELECT v.name, v.category::public.service_category, v.price, v.unit, v.duration, ts.id
-FROM (
-  VALUES
-    ('Campuran','Kiloan',10000,'kg',1),
-    ('Cuci dan lipat (min. 3 kg) - 1 hari','Kiloan',8000,'kg',1),
-    ('Cuci dan lipat (min. 3 kg) - 2 hari','Kiloan',6000,'kg',2),
-    ('Cuci dan setrika (min. 3 kg) - 3 hari','Kiloan',5000,'kg',3),
-    ('Cuci dan setrika (min. 2 kg) - 2 hari','Kiloan',13000,'kg',2),
-    ('Cuci dan setrika (min. 2 kg) - 3 hari','Kiloan',7500,'kg',3),
-    ('Cuci dan setrika (min. 2 kg) - 6 jam (ekspres)','Kiloan',20000,'kg',0),
-    ('Cuci ekspres - 3 jam','Kiloan',25000,'kg',0),
-    ('Cuci lipat mitra laundry','Kiloan',4000,'kg',1),
-    ('Cuci dan setrika (min. 2 kg) - 1 hari','Kiloan',15000,'kg',1),
-    ('Fitrase','Kiloan',15000,'kg',1),
-    ('Gorden','Kiloan',10000,'kg',1),
-    ('Karpet cendol','Kiloan',10000,'kg',1),
-    ('Karpet permadani','Kiloan',15000,'kg',1),
-    ('Karpet tipis','Kiloan',10000,'kg',1),
-    ('Kasur busa/lantai','Kiloan',10000,'kg',1),
-    ('Kasur Palembang','Kiloan',10000,'kg',1),
-    ('Lain-lain','Kiloan',8000,'kg',1),
-    ('Mitra cuci komplit','Kiloan',5500,'kg',1),
-    ('Mitra setrika','Kiloan',3000,'kg',1),
-    ('Setrika saja (min. 3 kg)','Kiloan',5000,'kg',1),
-    ('Sprei (kiloan)','Kiloan',10000,'kg',1),
-    ('Surpet','Kiloan',10000,'kg',1),
-    ('Tikar','Kiloan',10000,'kg',1),
-    ('Karpet tebal (per m)','Karpet',12000,'m2',2),
-    ('Karpet tipis / masjid (per m)','Karpet',7000,'m2',2),
-    ('Bantal','Satuan',15000,'pcs',1),
-    ('Bed cover','Satuan',18000,'pcs',1),
-    ('Bed cover jumbo/besar','Satuan',25000,'pcs',1),
-    ('Bedcover','Satuan',25000,'pcs',1),
-    ('Blus','Satuan',20000,'pcs',1),
-    ('Boneka/bantal bulu','Satuan',12000,'pcs',1),
-    ('Boneka besar','Satuan',25000,'pcs',1),
-    ('Boneka jumbo','Satuan',30000,'pcs',1),
-    ('Boneka kecil','Satuan',10000,'pcs',1),
-    ('Boneka sedang','Satuan',15000,'pcs',1),
-    ('Celana panjang','Satuan',15000,'pcs',1),
-    ('Celana pendek','Satuan',7500,'pcs',1),
-    ('Gamis panjang / dress','Satuan',25000,'pcs',1),
-    ('Guling','Satuan',15000,'pcs',1),
-    ('Guling kecil','Satuan',6000,'pcs',1),
-    ('Jaket jeans','Satuan',15000,'pcs',1),
-    ('Jaket kain','Satuan',15000,'pcs',1),
-    ('Jaket kulit','Satuan',20000,'pcs',1),
-    ('Jas Kaos','Satuan',10000,'pcs',1),
-    ('Jas pendek','Satuan',18000,'pcs',1),
-    ('Kaus oblong','Satuan',8000,'pcs',1),
-    ('Kaus singlet','Satuan',7500,'pcs',1),
-    ('Kemeja','Satuan',15000,'pcs',1),
-    ('Keset','Satuan',12000,'pcs',1),
-    ('Keset besar','Satuan',20000,'pcs',1),
-    ('Menghilangkan noda (tinta, darah, minyak)','Satuan',10000,'pcs',1),
-    ('Mukena','Satuan',10000,'pcs',1),
-    ('Noda di baju','Satuan',15000,'pcs',1),
-    ('Rompi','Satuan',15000,'pcs',1),
-    ('Sajadah tebal','Satuan',10000,'pcs',1),
-    ('Selimut','Satuan',17000,'pcs',1),
-    ('Selimut jumbo','Satuan',25000,'pcs',1),
-    ('Sepatu','Satuan',20000,'pcs',1),
-    ('Sepatu (Kets)','Satuan',20000,'pcs',1),
-    ('Setelan jas lengan panjang','Satuan',25000,'pcs',1),
-    ('Setelan jas lengan pendek','Satuan',20000,'pcs',1),
-    ('Sprei satuan','Satuan',15000,'pcs',1),
-    ('Tas besar','Satuan',20000,'pcs',1),
-    ('Tas kecil','Satuan',12000,'pcs',1),
-    ('Pakaian dalam','Satuan',2500,'pcs',1)
-  )
-  AS v(name, category, price, unit, duration)
-  CROSS JOIN target_store ts
-
-ON CONFLICT (lower(name), "storeId") DO UPDATE SET
-  price = EXCLUDED.price,
-  unit = EXCLUDED.unit,
-  "durationDays" = EXCLUDED."durationDays",
-  category = EXCLUDED.category;
-
-COMMIT;
 
 
 -- ============================================
@@ -1201,67 +1065,86 @@ GRANT EXECUTE ON FUNCTION public.cleanup_old_audit_logs TO authenticated;
 
 
 -- ============================================
--- SECTION 5: ADDITIONAL FEATURES
+-- SECTION 5: TRIGGERS & AUTOMATION
 -- ============================================
 
 -- ---------------------------------------------
--- 5.1 Maintenance Mode
+-- 5.1 Auto-update updatedAt Column
 -- ---------------------------------------------
--- Migration Date: December 14, 2025
--- Description: Menambahkan fitur maintenance mode untuk sistem maintenance
 
--- Tambah kolom isMaintenanceMode (default FALSE)
+-- Trigger untuk auto-update updatedAt pada transactions
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  NEW."updatedAt" = NOW();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS update_transactions_updated_at ON public.transactions;
+CREATE TRIGGER update_transactions_updated_at
+  BEFORE UPDATE ON public.transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+
+-- ---------------------------------------------
+-- 5.2 Additional Features Configuration
+-- ---------------------------------------------
+
+-- Maintenance Mode
 ALTER TABLE public.settings 
   ADD COLUMN IF NOT EXISTS "isMaintenanceMode" boolean DEFAULT FALSE;
 
--- Tambah kolom maintenanceMessage (opsional)
 ALTER TABLE public.settings 
   ADD COLUMN IF NOT EXISTS "maintenanceMessage" text;
 
--- Tambah dokumentasi
 COMMENT ON COLUMN public.settings."isMaintenanceMode" IS 
   'Flag untuk mengaktifkan mode pemeliharaan sistem. Hanya Super Admin yang dapat akses saat aktif.';
 COMMENT ON COLUMN public.settings."maintenanceMessage" IS 
   'Pesan custom yang ditampilkan saat sistem dalam mode pemeliharaan.';
 
--- Set default value untuk existing rows
-UPDATE public.settings 
-  SET "isMaintenanceMode" = FALSE
-  WHERE "isMaintenanceMode" IS NULL;
 
-
--- ---------------------------------------------
--- 5.2 WhatsApp Custom Footer
--- ---------------------------------------------
--- Migration Date: December 15, 2025
--- Description: Menambahkan custom footer untuk pesan WhatsApp
-
--- Tambah kolom whatsappFooter untuk custom footer pesan WhatsApp
+-- WhatsApp Custom Footer
 ALTER TABLE public.settings 
   ADD COLUMN IF NOT EXISTS "whatsappFooter" text;
 
--- Tambah dokumentasi
 COMMENT ON COLUMN public.settings."whatsappFooter" IS 
   'Footer custom untuk pesan WhatsApp (tracking link & feedback form). Jika kosong, akan menggunakan default.';
-
--- Set default WhatsApp footer template untuk existing rows
-UPDATE public.settings 
-  SET "whatsappFooter" = '🔍 Cek status cucian Anda:
-https://www.emaklaundry.my.id/
-
-💬 Bantu kami lebih baik! Berikan kritik & saran:
-https://forms.gle/8JnjZZ4cu5oTXGYr9'
-  WHERE "whatsappFooter" IS NULL OR "whatsappFooter" = '';
 
 
 -- ---------------------------------------------
 -- 5.3 Verifikasi Final
 -- ---------------------------------------------
-SELECT 
-  id, 
-  "isMaintenanceMode", 
-  "maintenanceMessage", 
-  "whatsappFooter" 
-FROM public.settings 
-LIMIT 1;
+
+-- Verifikasi semua tables, functions, dan features
+DO $$
+DECLARE
+  table_count INTEGER;
+  function_count INTEGER;
+  trigger_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO table_count 
+  FROM information_schema.tables 
+  WHERE table_schema = 'public';
+  
+  SELECT COUNT(*) INTO function_count 
+  FROM information_schema.routines 
+  WHERE routine_schema = 'public';
+  
+  SELECT COUNT(*) INTO trigger_count 
+  FROM information_schema.triggers 
+  WHERE trigger_schema = 'public';
+  
+  RAISE NOTICE '=== Database Setup Complete ===';
+  RAISE NOTICE 'Tables: %', table_count;
+  RAISE NOTICE 'Functions: %', function_count;
+  RAISE NOTICE 'Triggers: %', trigger_count;
+  RAISE NOTICE '';
+  RAISE NOTICE 'Next step: Run seed_data.sql untuk sample data';
+END $$;
 
