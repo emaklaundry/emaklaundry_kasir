@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Customer } from '../../types';
+import { Customer } from '@/types';
 import Modal from './Modal';
-import useToasts from '../contexts/useToasts';
+import useToasts from '@/contexts/useToasts';
 
 interface CustomerFormModalProps {
   customer: Customer | null;
@@ -47,6 +47,14 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       addToast('Nomor telepon harus diisi.', 'error');
       return;
     }
+    
+    // Validasi format nomor telepon (08xxx atau +62xxx)
+    const phoneClean = formData.phone.replace(/\s/g, '');
+    if (!/^(\+62|08|62)[0-9]{8,12}$/.test(phoneClean)) {
+      addToast('Format nomor telepon tidak valid (contoh: 081234567890 atau +6281234567890)', 'warning');
+      return;
+    }
+    
     if (formData.defaultDiscount < 0 || formData.defaultDiscount > 100) {
       addToast('Diskon default harus antara 0-100%.', 'error');
       return;

@@ -63,6 +63,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `─────────────────────────────\n` +
         `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
         `🔍 Cek status cucian Anda:\n${trackingLink}\n\n` +
+        `💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9\n\n` +
         `Salam hangat,\nTim Emak Laundry`;
     } else if (transaction.orderStatus === OrderStatus.Ready) {
       defaultMessage =
@@ -76,6 +77,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `─────────────────────────────\n` +
         `Silakan datang ke toko kami untuk pengambilan.\n\n` +
         `🔍 Cek status cucian Anda:\n${trackingLink}\n\n` +
+        `💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9\n\n` +
         `Terima kasih,\nTim Emak Laundry`;
     } else {
       defaultMessage =
@@ -89,6 +91,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `─────────────────────────────\n` +
         `Terima kasih telah menggunakan layanan kami.\n\n` +
         `🔍 Cek status cucian Anda:\n${trackingLink}\n\n` +
+        `💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9\n\n` +
         `Tim Emak Laundry`;
     }
     return defaultMessage;

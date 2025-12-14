@@ -111,7 +111,9 @@ const NewTransactionPage: React.FC = () => {
       val = settings?.discountRate ?? 0;
       type = 'percent';
     } else {
-      val = Number(discountValue) || 0;
+      // Ensure discountValue is a valid number
+      const parsedValue = Number(discountValue);
+      val = isNaN(parsedValue) ? 0 : Math.max(0, parsedValue);
     }
     let rawDiscount = 0;
     if (type === 'percent') {
@@ -222,9 +224,15 @@ const NewTransactionPage: React.FC = () => {
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;
-    // Gunakan amountToPay untuk pengecekan status, bukan grandTotal mentah
-    // Karena jika dibulatkan ke bawah, actualAmountPaid pasti < grandTotal asli
-    if (actualAmountPaid > 0) return PaymentStatus.Paid;
+    
+    // Toleransi untuk floating point arithmetic
+    const paid = actualAmountPaid;
+    const total = grandTotal;
+    
+    if (Math.abs(paid - total) < 0.01) return PaymentStatus.Paid;
+    if (paid >= total) return PaymentStatus.Paid;
+    if (paid > 0) return PaymentStatus.PartiallyPaid;
+    
     return PaymentStatus.Unpaid;
   }, [isPayingNow, grandTotal, actualAmountPaid]);
 
@@ -411,10 +419,12 @@ const NewTransactionPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving) {
+      addToast('Transaksi sedang disimpan, mohon tunggu...', 'warning');
+      return;
+    }
 
     if (!currentStoreId || currentStoreId === 'all') {
-      // Perbaikan pesan agar cocok untuk semua role jika terjadi error data
       const msg =
         currentUser?.role === UserRole.SuperAdmin
           ? 'Super Admin harus memilih cabang spesifik.'
@@ -431,7 +441,7 @@ const NewTransactionPage: React.FC = () => {
       return;
     }
     
-    // FIXED: Set isSaving early to prevent double submission race condition
+    // Prevent double submission
     setIsSaving(true);
     
     if (isPayingNow) {
@@ -446,7 +456,8 @@ const NewTransactionPage: React.FC = () => {
         return;
       }
     }
-    const toastId = addToast('Menyimpan transaksi...', 'info');
+    
+    const toastId = addToast('Menyimpan transaksi ke database...', 'info');
     try {
       // --- PERBAIKAN: Hitung waktu saat tombol ditekan ---
       const now = new Date(); // Waktu Masuk (Real-time)
@@ -501,6 +512,10 @@ const NewTransactionPage: React.FC = () => {
         idempotencyKey: idempotencyKey,
       };
       const savedTransaction = await addTransaction(newTransaction);
+      
+      // Update toast untuk verifikasi
+      updateToast(toastId, 'Memverifikasi data tersimpan...', 'info');
+      
       if (savedTransaction) {
         // Map Supabase transaction (JSON fields, dates) to app Transaction type
         const tx: Transaction = {
@@ -534,13 +549,9 @@ const NewTransactionPage: React.FC = () => {
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);
-        updateToast(toastId, 'Transaksi berhasil disimpan.', 'success');
+        updateToast(toastId, '✓ Transaksi berhasil disimpan dan terverifikasi.', 'success');
       } else {
-        updateToast(
-          toastId,
-          'Gagal menyimpan transaksi: Tidak ada data yang dikembalikan.',
-          'error',
-        );
+        throw new Error('Tidak ada data yang dikembalikan dari server');
       }
     } catch (error: unknown) {
       // Tangani error duplikat idempotencyKey

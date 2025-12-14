@@ -89,9 +89,10 @@ const YearlySummaryChart: React.FC<{
             top: tooltip.y,
             transform: 'translateX(-50%) translateY(-100%)',
           }}
-          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
-          dangerouslySetInnerHTML={{ __html: tooltip.content }}
-        ></div>
+          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg whitespace-pre-line"
+        >
+          {tooltip.content}
+        </div>
       )}
       <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
         {/* Y-Axis Grid Lines and Labels */}
@@ -123,9 +124,9 @@ const YearlySummaryChart: React.FC<{
         {/* Bars and X-Axis Labels */}
         {data.map((d, i) => {
           const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
-          const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
-          const expensesHeight = (d.expenses / maxValue) * (chartHeight - 30);
-          const tooltipContent = `<b>${d.month}</b><br/>Pendapatan: Rp ${d.revenue.toLocaleString('id-ID')}<br/>Pengeluaran: Rp ${d.expenses.toLocaleString('id-ID')}`;
+          const revenueHeight = Math.max((d.revenue / maxValue) * (chartHeight - 30), 0);
+          const expensesHeight = Math.max((d.expenses / maxValue) * (chartHeight - 30), 0);
+          const tooltipContent = `${d.month}\nPendapatan: Rp ${d.revenue.toLocaleString('id-ID')}\nPengeluaran: Rp ${d.expenses.toLocaleString('id-ID')}`;
 
           return (
             <g key={i}>

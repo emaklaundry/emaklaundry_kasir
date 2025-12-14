@@ -154,6 +154,8 @@ export interface Settings {
   receiptMessage: string;
   taxRate: number;
   discountRate: number;
+  isMaintenanceMode?: boolean;
+  maintenanceMessage?: string;
 }
 
 export interface ScheduledMaintenance {

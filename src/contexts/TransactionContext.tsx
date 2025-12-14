@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
+import { retrySupabaseOperation, verifyDataSaved } from '../utils/retryUtils';
 import { Transaction } from '@/types';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
@@ -62,11 +63,43 @@ export function useTransactions(filter: TransactionFilter = {}) {
 
   const addTransaction = useMutation({
     mutationFn: async (transaction: Omit<Transaction, 'id'>) => {
-      const { data, error } = await supabase.from('transactions').insert([transaction]).select();
-      if (error) throw error;
-      return data?.[0] || null;
+      try {
+        // Retry operation untuk memastikan sukses
+        const savedTransaction = await retrySupabaseOperation(async () => {
+          const { data, error } = await supabase.from('transactions').insert([transaction]).select();
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            throw new Error('No data returned after insert');
+          }
+          return data[0];
+        }, 'Insert Transaction');
+
+        // Verify data benar-benar tersimpan
+        const verified = await verifyDataSaved(
+          async () => {
+            const { data } = await supabase
+              .from('transactions')
+              .select('*')
+              .eq('id', savedTransaction.id)
+              .single();
+            return data;
+          },
+          (data) => data !== null && data.id === savedTransaction.id,
+          { maxAttempts: 3, pollInterval: 300 }
+        );
+
+        return verified;
+      } catch (error) {
+        console.error('Error adding transaction:', error);
+        throw new Error(
+          `Gagal menyimpan transaksi: ${error instanceof Error ? error.message : 'Unknown error'}. Data tidak tersimpan, silakan coba lagi.`
+        );
+      }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: () => {
+      // Invalidate untuk force refresh dari server
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
   });
 
   const updateTransaction = useMutation({
@@ -136,12 +169,48 @@ export function useTransactions(filter: TransactionFilter = {}) {
         idempotencyKey: row.idempotencyKey ?? undefined,
       };
     },
-    // Perbaikan: invalidate detail transaksi juga
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      if (variables && variables.id) {
-        queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+    // Conservative approach: TIDAK ada optimistic update
+    // Tunggu hingga server confirm sebelum update UI
+    onSuccess: async (result, variables) => {
+      // Verify update berhasil
+      if (result) {
+        try {
+          await verifyDataSaved(
+            async () => {
+              const { data } = await supabase
+                .from('transactions')
+                .select('*')
+                .eq('id', variables.id)
+                .single();
+              return data;
+            },
+            (data) => {
+              if (!data) return false;
+              // Verify semua field yang diupdate
+              return Object.keys(variables.data).every((key) => {
+                const expectedValue = variables.data[key as keyof typeof variables.data];
+                const actualValue = data[key];
+                return expectedValue === undefined || actualValue === expectedValue;
+              });
+            },
+            { maxAttempts: 3, pollInterval: 300 }
+          );
+        } catch (verifyError) {
+          console.error('Verification failed after update:', verifyError);
+          throw new Error('Update berhasil disimpan tetapi verifikasi gagal. Silakan refresh halaman.');
+        }
       }
+      
+      // Force refresh data dari server
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      if (variables && variables.id) {
+        await queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+      }
+    },
+    onError: (error) => {
+      console.error('Transaction update failed:', error);
+      // Force refresh untuk memastikan UI sync dengan database
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 

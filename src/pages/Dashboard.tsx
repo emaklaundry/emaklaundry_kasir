@@ -85,21 +85,22 @@ const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }>
             top: tooltip.y,
             transform: 'translateX(-50%) translateY(-100%)',
           }}
-          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
-          dangerouslySetInnerHTML={{ __html: tooltip.content }}
-        ></div>
+          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg whitespace-nowrap"
+        >
+          {tooltip.content}
+        </div>
       )}
       <div
         className="flex justify-between items-end h-full pt-4"
         style={{ height: `${chartHeight}px` }}
       >
         {data.map((d, i) => {
-          const barHeight = (d.revenue / maxValue) * (chartHeight - 30);
-          const tooltipContent = `<b>${d.day}</b><br/>Rp ${d.revenue.toLocaleString('id-ID')}`;
+          const barHeight = Math.max((d.revenue / maxValue) * (chartHeight - 30), 0);
+          const tooltipContent = `${d.day}: Rp ${d.revenue.toLocaleString('id-ID')}`;
           return (
             <div key={i} className="flex flex-col items-center w-full">
               <div
-                className="w-4/5 bg-brand-blue-500 rounded-t-md hover:bg-brand-blue-400"
+                className="w-4/5 bg-brand-blue-500 rounded-t-md hover:bg-brand-blue-400 transition-colors"
                 style={{ height: `${barHeight}px`, minHeight: '2px' }}
                 onMouseMove={(e) => showTooltip(tooltipContent, e)}
                 onMouseLeave={hideTooltip}
@@ -238,6 +239,7 @@ const Dashboard: React.FC = () => {
       const dayData = data.find(
         (d) =>
           d.date.getDate() === transactionDate.getDate() &&
+          d.date.getMonth() === transactionDate.getMonth() &&
           d.date.getFullYear() === transactionDate.getFullYear(),
       );
       if (dayData) {

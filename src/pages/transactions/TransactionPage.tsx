@@ -60,6 +60,7 @@ const TransactionPage: React.FC = () => {
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<OrderStatus | null>(null);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   // Pagination and data
   const customersQuery = useQuery({
@@ -109,7 +110,12 @@ const TransactionPage: React.FC = () => {
 
       if (selectedDate) {
         const parts = selectedDate.split('-').map((p) => parseInt(p, 10));
-        const startOfDay = new Date(parts[0], parts[1] - 1, parts[2]);
+        // Validate date parts to prevent invalid dates
+        if (parts.length !== 3 || parts.some((p) => isNaN(p) || p <= 0)) {
+          return false; // Skip invalid dates
+        }
+        const [year, month, day] = parts;
+        const startOfDay = new Date(year, month - 1, day);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(startOfDay);
         endOfDay.setHours(23, 59, 59, 999);
@@ -176,6 +182,7 @@ const TransactionPage: React.FC = () => {
     const shouldShowWhatsAppModal =
       newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
 
+    setUpdatingStatusId(id);
     const toastId = addToast('Memperbarui status...', 'info');
     try {
       await updateTransaction(id, { orderStatus: newStatus });
@@ -191,6 +198,8 @@ const TransactionPage: React.FC = () => {
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal memperbarui status: ${errMsg}`, 'error');
+    } finally {
+      setUpdatingStatusId(null);
     }
   };
 

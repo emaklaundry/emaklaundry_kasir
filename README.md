@@ -1,10 +1,8 @@
----
----
-
 # Laundry Management System (Web Kasir)
 
-**Versi:** 1.3.0  
-**Update terakhir:** 11 Desember 2025
+**Versi:** 2.0.0  
+**Update terakhir:** 14 Desember 2025  
+**Status:** ✅ Production Ready
 
 ---
 
@@ -12,60 +10,168 @@ Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi
 
 ---
 
+## 📚 Documentation
+
+Dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
+
+- **[FINAL_AUDIT_REPORT.md](./docs/FINAL_AUDIT_REPORT.md)** - Comprehensive code audit & security analysis
+- **[IMPROVEMENTS.md](./docs/IMPROVEMENTS.md)** - Implementation details & improvements
+- **[DATA_CONSISTENCY.md](./docs/DATA_CONSISTENCY.md)** - Conservative data consistency strategy  
+- **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Production deployment guide
+- **[MAINTENANCE_MODE.md](./docs/MAINTENANCE_MODE.md)** - 🔧 Maintenance mode guide
+- **[Database Setup & Backup](./database/README.md)** - Database scripts & backup guide
+
+---
+
 ## ✨ Fitur Utama
 
-- Manajemen transaksi laundry (kiloan, satuan, sepatu, karpet) & invoice pendek
-- Manajemen pelanggan, layanan, inventaris, aset, pengeluaran
-- Multi-cabang: Pengaturan, transaksi, dan laporan per store/cabang
-- Multi-role: Super Admin, Admin, Kasir
-- Audit log, laporan, analitik
-- PWA: offline mode, installable
-- Notifikasi, dark/light mode
-- Backup database otomatis/manual (Supabase)
-- Pengujian otomatis per-file (Vitest, Testing Library)
-- Penanganan tanggal aset dan pengeluaran sudah timezone-safe (lokal, bukan UTC/ISO)
+- ✅ Manajemen transaksi laundry (kiloan, satuan, sepatu, karpet) & invoice pendek
+- ✅ Manajemen pelanggan, layanan, inventaris, aset, pengeluaran
+- ✅ Multi-cabang: Pengaturan, transaksi, dan laporan per store/cabang
+- ✅ Multi-role: Super Admin, Admin, Kasir
+- ✅ 🔧 **Maintenance Mode**: Nonaktifkan akses saat perbaikan (hanya Super Admin)
+- ✅ Audit log, laporan, analitik
+- ✅ PWA: offline mode, installable
+- ✅ Notifikasi, dark/light mode
+- ✅ Conservative data consistency (zero data loss)
+- ✅ Auto-retry & verification mechanism
+- ✅ Mobile-first responsive design (WCAG AA)
+- ✅ Comprehensive error handling
+- ✅ Backup database otomatis/manual (Supabase)
+- ✅ Timezone-safe date handling
 
 ---
 
 ## 🛠️ Teknologi
 
-- **Frontend:** React 19, TypeScript, Vite
-- **State:** React Context, React Query
-- **Styling:** Tailwind CSS
+- **Frontend:** React 19, TypeScript, Vite 6
+- **State:** React Context, TanStack Query 5
+- **Styling:** Tailwind CSS 3
+- **Database:** Supabase (PostgreSQL + RLS)
+- **Testing:** Vitest, Testing Library
+- **PWA:** Service Worker + Manifest
 
 ---
 
-## 🚀 Backup Database
+## 📂 Project Structure
 
-Jalankan perintah berikut di PowerShell:
-
-### Backup Data Saja (Data Only)
-```powershell
-supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" --data-only -f database/backup/data.sql
 ```
-Output: `database/backup/data.sql`
-
-### Backup Lengkap (Schema + Data)
-```powershell
-supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" -f database/backup/full_backup.sql
+emaklaundry_kasir/
+├── .github/workflows/      # 🔄 GitHub Actions (auto backup)
+├── docs/                   # 📚 Documentation
+│   ├── README.md          # Documentation index
+│   ├── FINAL_AUDIT_REPORT.md
+│   ├── IMPROVEMENTS.md
+│   ├── DATA_CONSISTENCY.md
+│   ├── DEPLOYMENT.md
+│   └── STRUCTURE.md       # Project structure guide
+├── database/              # 💾 Database scripts
+│   ├── README.md         # Database documentation
+│   ├── setup/            # SQL setup scripts
+│   │   ├── 0.droptable.sql
+│   │   ├── 1.database.sql
+│   │   ├── 2.apply_rpc_and_seed.sql
+│   │   └── 3.security_and_performance.sql
+│   └── backup/           # Database backups
+│       ├── database-backup.md  # Backup guide
+│       └── full_backup.sql     # Latest backup
+├── public/               # 🌐 Public assets
+│   ├── favicon/         # App icons
+│   └── manifest.webmanifest
+├── src/                  # 💻 Source code
+│   ├── components/      # React components
+│   ├── contexts/        # State management
+│   ├── hooks/           # Custom hooks
+│   ├── pages/           # Page components
+│   ├── types/           # TypeScript types
+│   ├── utils/           # Utility functions
+│   └── __tests__/       # Test files
+├── supabase/            # ⚙️ Supabase config
+│   ├── config.toml
+│   └── functions/       # Edge functions
+└── README.md            # This file
 ```
-Output: `database/backup/full_backup.sql`
 
 ---
 
- 
-## 🔄 Backup Otomatis (GitHub Actions)
+## 🚀 Quick Start
 
-Backup otomatis harian ke folder `database/backup/` via GitHub Actions. Lihat `.github/workflows/backup.yml` dan tambahkan secret `SUPABASE_DB_URL` di GitHub Settings. Hasil backup dapat diunduh dari tab Actions.
+### Prerequisites
+- Node.js 18+ dan npm
+- Akun Supabase (gratis)
 
----
+### Installation
 
-## 📁 Struktur Direktori
+1. **Clone repository**
+   ```bash
+   git clone <repository-url>
+   cd emaklaundry_kasir
+   ```
 
-- `src/` : Source code utama (komponen, halaman, context, hooks, utils)
-- `public/` : Aset publik (favicon, manifest, dll)
-- `database/` : Skrip SQL dan dokumentasi deployment database
-- `index.html`, `index.tsx`, `App.tsx` : Entry point aplikasi
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Setup environment variables**
+   ```bash
+   # Copy template .env
+   cp .env.example .env
+   
+   # Edit .env dan isi dengan Supabase credentials:
+   # VITE_SUPABASE_URL=https://your-project.supabase.co
+   # VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+   
+   Dapatkan credentials dari: Supabase Dashboard → Settings → API
+
+4. **Setup database**
+   - Buka Supabase Dashboard → SQL Editor
+   - Copy isi file `database/setup/complete_setup.sql`
+   - Paste & Run di SQL Editor
+   - ✅ Database siap!
+
+5. **Run development server**
+   ```bash
+   npm run dev
+   ```
+   
+   Buka http://localhost:5173
+
+### Build
+```bash
+npm run build
+npm run preview
+```
+
+### Testing
+```bash
+npm run test
+npm run test:all  # Format, lint, dan test
+```
+
+### Database Setup & Backup
+Lihat panduan lengkap di [database/README.md](./database/README.md) atau [database/backup/database-backup.md](./database/backup/database-backup.md).
+
+**Quick Setup (⭐ RECOMMENDED):**
+```bash
+# 1 file saja - copy & paste ke Supabase SQL Editor:
+database/setup/complete_setup.sql
+```
+
+**Manual Setup (Step-by-step):**
+```bash
+# Jalankan berurutan:
+1. database/setup/0.droptable.sql  # Reset (opsional)
+2. database/setup/1.database.sql   # Schema
+3. database/setup/2.apply_rpc_and_seed.sql  # RPC & seed
+4. database/setup/3.security_and_performance.sql  # Security
+5. database/setup/4.add_maintenance_mode.sql  # Maintenance mode
+```
+
+Panduan lengkap: [database/setup/SETUP_GUIDE.md](./database/setup/SETUP_GUIDE.md)
+
+**Auto Backup:** GitHub Actions menjalankan backup otomatis setiap hari. Lihat [.github/workflows/backup.yml](.github/workflows/backup.yml).
 
 ---
 
@@ -89,29 +195,18 @@ Backup otomatis harian ke folder `database/backup/` via GitHub Actions. Lihat `.
 ---
 
 
-## 📝 Catatan Rilis (Changelog)
+## 📝 Changelog
 
-### v1.3.0 - 11 Desember 2025
-- Peningkatan versi aplikasi.
-- [Tambahkan highlight perubahan terbaru di sini jika ada]
+### v2.0.0 - 14 Desember 2025
+- ✅ Production ready dengan comprehensive audit
+- ✅ Conservative data consistency (zero data loss)
+- ✅ Multi-tenant (multi-cabang) support
+- ✅ Auto-retry & verification mechanism
+- ✅ Enhanced security & performance optimization
+- ✅ Reorganized project structure & documentation
+- ✅ 🔧 **NEW: Maintenance Mode** - Nonaktifkan sistem saat perbaikan
 
-### v1.2.0 - 2 Desember 2025
-- Tingkatkan versi aplikasi.
-- Perbaikan bug, pembaruan dependensi, dan peningkatan stabilitas.
-
-### v1.1.9 - 2 Desember 2025
-- [Fix] Penanganan tanggal aset dan pengeluaran sudah timezone-safe (lokal, bukan UTC/ISO)
-- [Fix] Semua error lint/TypeScript (no-unused-vars, null checks) sudah diperbaiki
-- [Docs] README diperbarui, lebih ringkas dan up-to-date
-- [Test] Semua pengujian, lint, dan format lolos tanpa error
-
-### v1.1.8 - 1 Desember 2025
-- [Security] Database siap multi-cabang: kolom dan index storeId di semua tabel utama
-- [Security] Trigger handle_new_user otomatis untuk fail-safe RLS
-- [Fix] Semua perintah CREATE INDEX dan ALTER PUBLICATION sudah diurutkan setelah seluruh CREATE TABLE (tidak ada lagi error "relation does not exist")
-- [Fix] Duplikasi CREATE TABLE (customers) dihilangkan (tidak ada lagi error "relation already exists")
-- [Docs] Update README, dokumentasi best practice production-ready
-- [Test] Semua pengujian, lint, dan format lolos tanpa error
+**Detail lengkap:** Lihat [IMPROVEMENTS.md](./docs/IMPROVEMENTS.md) dan [FINAL_AUDIT_REPORT.md](./docs/FINAL_AUDIT_REPORT.md)
 
 ---
 

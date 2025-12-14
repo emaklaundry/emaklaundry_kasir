@@ -5,6 +5,8 @@ import useToasts from './contexts/useToasts';
 import { UserRole } from './types';
 import useAppContext from './contexts/useAppContext';
 import Layout from './components/Layout';
+import MaintenanceMode from './components/MaintenanceMode';
+import { useSettings } from './contexts/SettingsContext';
 
 import useTheme from './hooks/useTheme';
 import { AppProviders } from './contexts/AppProviders';
@@ -76,6 +78,15 @@ const APP_VERSION = `v${pkg.version}`;
 
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAppContext();
+  const { settings } = useSettings();
+
+  // Tampilkan maintenance mode jika aktif, kecuali untuk Super Admin
+  const isMaintenanceMode = settings?.isMaintenanceMode && currentUser?.role !== UserRole.SuperAdmin;
+
+  if (isMaintenanceMode) {
+    return <MaintenanceMode message={settings?.maintenanceMessage} />;
+  }
+
   if (currentUser === null) {
     return (
       <Suspense fallback={<PageLoader />}>

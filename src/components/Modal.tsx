@@ -17,6 +17,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer 
       onClick={onClose}
       aria-modal="true"
       role="dialog"
+      aria-labelledby="modal-title"
     >
       <div
         className="relative w-full max-w-lg mx-0 sm:mx-4 bg-white rounded-t-3xl sm:rounded-xl shadow-2xl dark:bg-slate-800 flex flex-col"
@@ -24,7 +25,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between p-4 sm:p-5 border-b dark:border-slate-700 flex-shrink-0">
-          <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">{title}</h3>
+          <h3 id="modal-title" className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">{title}</h3>
           <button
             type="button"
             className="text-slate-400 bg-transparent hover:bg-slate-200 hover:text-slate-900 rounded-lg text-sm w-10 h-10 sm:w-9 sm:h-9 ml-auto inline-flex justify-center items-center dark:hover:bg-slate-600 dark:hover:text-white touch-target"
