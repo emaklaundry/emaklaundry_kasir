@@ -11,6 +11,7 @@ import { UserRole } from '@/types';
 const AuditLogPage: React.FC = () => {
   const { logs: allLogs, isLoading } = useAuditLogs();
   const { currentUser, selectedStoreId, stores } = useAppContext();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const logs = useStoreFilteredData(allLogs as any) as unknown as typeof allLogs;
 
   const [searchTerm, setSearchTerm] = useState('');

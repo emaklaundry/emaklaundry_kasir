@@ -90,7 +90,6 @@ const UsersPage: React.FC = () => {
       // Catatan: Penggunaan 'as any' hanya pada error object di catch block, bukan pada payload/data. Sudah aman.
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
-    } finally {
     }
   };
 
@@ -117,7 +116,7 @@ const UsersPage: React.FC = () => {
         updateToast(toastId, `Gagal mengubah status: ${errMsg}`, 'error');
       } finally {
         setUserToToggleStatus(null);
-        }
+      }
     }
   };
   const usersWithStore = useMemo(

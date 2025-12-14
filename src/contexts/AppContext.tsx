@@ -145,12 +145,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!currentUser) return;
 
-    // Track jika sedang refresh/reload
-    let isRefreshing = false;
 
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       // Set flag bahwa user sedang refresh/reload
-      isRefreshing = true;
       sessionStorage.setItem('isRefreshing', 'true');
     };
 

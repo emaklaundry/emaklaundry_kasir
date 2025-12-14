@@ -53,6 +53,7 @@ export function useCustomerMutations() {
       };
       const { data, error } = await supabase
         .from('customers')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert([dbCustomer as any])
         .select();
       if (error) throw error;

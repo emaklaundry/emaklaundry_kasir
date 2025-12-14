@@ -1,0 +1,11 @@
+﻿
+> laundry-management-system@2.0.0 lint
+> eslint .
+
+
+C:\.github_mhmdnvn18@gmail.com\emaklaundry_kasir\src\components\Layout.tsx
+  70:9  error  'isCashier' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  71:9  error  'isAdmin' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+Γ£û 2 problems (2 errors, 0 warnings)
+

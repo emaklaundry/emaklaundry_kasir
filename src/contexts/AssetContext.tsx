@@ -28,6 +28,7 @@ export function useAssets() {
         purchaseCost: asset.purchaseCost ?? null,
         storeId: asset.storeId ?? null,
       };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.from('assets').insert([dbAsset as any]);
       if (error) throw error;
       // We invalidate and refetch the assets list, caller doesn't rely on returned row

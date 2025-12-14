@@ -106,7 +106,6 @@ const AssetsPage: React.FC = () => {
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
-    } finally {
     }
   };
 

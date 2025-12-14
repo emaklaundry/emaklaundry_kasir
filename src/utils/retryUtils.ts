@@ -147,7 +147,7 @@ export async function executeWithRollback<T>(
       }
     }
 
-    return lastResult as T; // eslint-disable-line @typescript-eslint/no-unsafe-return
+    return lastResult as T;
   } catch (error) {
     console.error('Transaction failed, rolling back...', error);
 

@@ -2,12 +2,11 @@ import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCustomers } from '../contexts/CustomerContext';
-import useAppContext from '../contexts/useAppContext';
 import ToastContainer from './ToastContainer';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import BottomNavBar from './BottomNavBar';
-import { Customer, UserRole } from '@/types';
+import { Customer } from '@/types';
 
 const getPageTitle = (
   pathname: string,
@@ -59,27 +58,30 @@ const getPageTitle = (
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const params = useParams();
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  
   const { data: customersRaw = [] } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
   // Normalize customers to always be an array
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
-  const { currentUser } = useAppContext();
   const pageTitle = getPageTitle(location.pathname, params, customers);
-  const isCashier = currentUser?.role === UserRole.Cashier;
 
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col">
-      <Sidebar />
-      <div className="sm:ml-64 flex-1 flex flex-col">
-        <Header pageTitle={pageTitle} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        isSidebarOpen ? 'ml-0 sm:ml-64' : 'ml-0'
+      }`}>
+        <Header pageTitle={pageTitle} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         <main
-          className={`p-4 md:p-6 flex-1 ${isCashier ? 'pb-24 sm:pb-6' : ''} print-main-content`}
+          className={`p-2 sm:p-4 md:p-6 flex-1 pb-20 sm:pb-6 print-main-content`}
         >
           {children}
         </main>
-        <footer className="print-hide bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-3 px-4 text-center">
+        <footer className="print-hide bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-2 sm:py-3 px-4 text-center hidden sm:block">
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             © {new Date().getFullYear()} Laundry Management System. Developed by{' '}
             <a
@@ -93,7 +95,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </p>
         </footer>
       </div>
-      {isCashier && <BottomNavBar />}
+      <BottomNavBar />
       <ToastContainer />
     </div>
   );

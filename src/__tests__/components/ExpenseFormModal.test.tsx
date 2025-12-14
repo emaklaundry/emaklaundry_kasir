@@ -50,7 +50,7 @@ describe('ExpenseFormModal', () => {
     const expense = {
       id: '1',
       storeId: '1',
-      date: '2025-11-29T00:00:00.000Z',
+      date: new Date('2025-11-29T00:00:00.000Z'),
       description: 'Beli deterjen',
       category: 'Operasional',
       amount: 20000,

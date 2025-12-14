@@ -48,11 +48,11 @@ describe('useAssets', () => {
     const { result } = renderHook(() => useAssets());
     await expect(
       result.current.addAsset({
-        name: 'Aset',
+        name: 'Aset Baru',
+        serialNumber: 'SN-001',
+        purchaseDate: new Date(),
+        purchaseCost: 1000000,
         status: 'Active',
-        unit: 'pcs',
-        stock: 1,
-        lowStockThreshold: 1,
         storeId: '1',
         maintenanceHistory: [],
       }),

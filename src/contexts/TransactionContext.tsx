@@ -210,6 +210,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
       }
       if (!row) return null;
       // Explicitly map all required Transaction fields
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dbRow = row as any;
       return {
         id: dbRow.id ?? '',

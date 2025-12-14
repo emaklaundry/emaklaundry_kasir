@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -40,7 +40,6 @@ const TransactionDetailPage: React.FC = () => {
 
   // Mengambil fungsi updateTransaction dari context
   const { updateTransaction } = useTransactions({ enabled: false });
-  const { addAuditLog } = useAuditLogs();
 
   // Query untuk mengambil SATU transaksi berdasarkan ID
   const {

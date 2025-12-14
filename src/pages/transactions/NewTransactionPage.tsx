@@ -488,8 +488,6 @@ const NewTransactionPage: React.FC = () => {
       }));
       // Hitung total diskon akhir (diskon manual + diskon pembulatan)
       const finalDiscount = discountAmount + roundingDifference;
-      // Pastikan total yang disimpan ke database adalah total setelah pembulatan
-      const finalTotal = grandTotal - roundingDifference;
 
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,

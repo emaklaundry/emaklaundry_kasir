@@ -12,6 +12,7 @@ describe('CustomerSelector', () => {
       address: '',
       notes: '',
       defaultDiscount: 0,
+      storeId: 'store-1',
       createdAt: new Date(),
     },
     {
@@ -21,6 +22,7 @@ describe('CustomerSelector', () => {
       address: '',
       notes: '',
       defaultDiscount: 0,
+      storeId: 'store-1',
       createdAt: new Date(),
     },
   ];

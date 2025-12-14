@@ -16,7 +16,9 @@ describe('formatRupiah', () => {
   it('should handle invalid input gracefully', () => {
     expect(formatRupiah('invalid')).toBe('0');
     expect(formatRupiah(NaN)).toBe('0');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(formatRupiah(null as any)).toBe('0');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(formatRupiah(undefined as any)).toBe('0');
     expect(formatRupiah('')).toBe('0');
   });
@@ -48,7 +50,9 @@ describe('parseRupiah', () => {
   it('should handle invalid input gracefully', () => {
     expect(parseRupiah('')).toBe(0);
     expect(parseRupiah('invalid')).toBe(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(parseRupiah(null as any)).toBe(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(parseRupiah(undefined as any)).toBe(0);
   });
 

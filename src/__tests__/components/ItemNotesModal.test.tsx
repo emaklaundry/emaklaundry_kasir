@@ -6,8 +6,12 @@ import { vi } from 'vitest';
 describe('ItemNotesModal', () => {
   const baseItem = {
     id: '1',
+    serviceId: 'svc-1',
     serviceName: 'Cuci Kering',
     quantity: 2,
+    price: 10000,
+    subtotal: 20000,
+    unit: 'pcs',
     itemDetails: [{ note: 'Noda di lengan' }, { note: '' }],
   };
 

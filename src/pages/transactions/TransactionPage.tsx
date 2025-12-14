@@ -59,7 +59,6 @@ const TransactionPage: React.FC = () => {
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<OrderStatus | null>(null);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
-  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   // Pagination and data
   const customersQuery = useQuery({
@@ -167,7 +166,6 @@ const TransactionPage: React.FC = () => {
     const shouldShowWhatsAppModal =
       newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
 
-    setUpdatingStatusId(id);
     const toastId = addToast('Memperbarui status...', 'info');
     try {
       await updateTransaction(id, { orderStatus: newStatus });
@@ -183,8 +181,6 @@ const TransactionPage: React.FC = () => {
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal memperbarui status: ${errMsg}`, 'error');
-    } finally {
-      setUpdatingStatusId(null);
     }
   };
 
