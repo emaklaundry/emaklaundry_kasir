@@ -22,20 +22,20 @@
 -- CAUTION: Ini akan menghapus semua data!
 -- Uncomment baris dibawah jika ingin reset database
 --
--- drop table if exists transaction_items cascade;
--- drop table if exists transactions cascade;
--- drop table if exists expenses cascade;
--- drop table if exists scheduled_maintenances cascade;
--- drop table if exists maintenance_logs cascade;
--- drop table if exists assets cascade;
--- drop table if exists inventory_items cascade;
--- drop table if exists services cascade;
--- drop table if exists customers cascade;
--- drop table if exists profiles cascade;
--- drop table if exists stores cascade;
--- drop table if exists audit_logs cascade;
--- drop table if exists settings cascade;
--- drop table if exists user_credentials cascade;
+drop table if exists transaction_items cascade;
+drop table if exists transactions cascade;
+drop table if exists expenses cascade;
+drop table if exists scheduled_maintenances cascade;
+drop table if exists maintenance_logs cascade;
+drop table if exists assets cascade;
+drop table if exists inventory_items cascade;
+drop table if exists services cascade;
+drop table if exists customers cascade;
+drop table if exists profiles cascade;
+drop table if exists stores cascade;
+drop table if exists audit_logs cascade;
+drop table if exists settings cascade;
+drop table if exists user_credentials cascade;
 
 -- ============================================
 -- SECTION 2: CREATE TABLES & FUNCTIONS

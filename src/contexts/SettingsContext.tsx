@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings } from '../../types';
+import { Settings } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 const fetchSettings = async (): Promise<Settings | null> => {

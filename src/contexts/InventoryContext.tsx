@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { InventoryItem } from '../../types';
+import { InventoryItem } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 export interface InventoryFilter {

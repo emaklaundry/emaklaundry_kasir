@@ -19,33 +19,67 @@ export interface TransactionFilter {
 const fetchTransactions = async (
   filter: TransactionFilter = {},
 ): Promise<{ data: Transaction[]; count: number }> => {
-  const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
-  let query = supabase.from('transactions').select('*', { count: 'exact' });
-  if (dateRange) {
-    // Atur Start Date (Awal Hari Lokal)
-    const fromDate = new Date(dateRange.from);
-    fromDate.setHours(0, 0, 0, 0);
-    // Atur End Date (Akhir Hari Lokal)
-    const toDate = new Date(dateRange.to);
-    toDate.setHours(23, 59, 59, 999);
-    // Kirim sebagai ISO String (browser akan konversi ke UTC)
-    query = query.gte('createdAt', fromDate.toISOString()).lte('createdAt', toDate.toISOString());
+  try {
+    const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
+    
+    // Validasi input
+    if (page < 1) {
+      throw new Error('Page number must be greater than 0');
+    }
+    if (pageSize < 1 || pageSize > 100) {
+      throw new Error('Page size must be between 1 and 100');
+    }
+
+    let query = supabase.from('transactions').select('*', { count: 'exact' });
+    
+    if (dateRange) {
+      // Validasi date range
+      if (!dateRange.from || !dateRange.to) {
+        throw new Error('Invalid date range: both from and to are required');
+      }
+      
+      // Atur Start Date (Awal Hari Lokal)
+      const fromDate = new Date(dateRange.from);
+      if (isNaN(fromDate.getTime())) {
+        throw new Error('Invalid from date');
+      }
+      fromDate.setHours(0, 0, 0, 0);
+      
+      // Atur End Date (Akhir Hari Lokal)
+      const toDate = new Date(dateRange.to);
+      if (isNaN(toDate.getTime())) {
+        throw new Error('Invalid to date');
+      }
+      toDate.setHours(23, 59, 59, 999);
+      
+      // Kirim sebagai ISO String (browser akan konversi ke UTC)
+      query = query.gte('createdAt', fromDate.toISOString()).lte('createdAt', toDate.toISOString());
+    }
+    
+    if (storeId && storeId !== 'all') {
+      query = query.eq('storeId', storeId);
+    }
+    
+    if (paymentStatus) {
+      query = query.eq('paymentStatus', paymentStatus);
+    }
+    
+    if (orderStatus) {
+      query = query.eq('orderStatus', orderStatus);
+    }
+    
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to).order('createdAt', { ascending: false });
+    
+    const { data, error, count } = await query;
+    if (error) throw error;
+    
+    return { data: data || [], count: count || 0 };
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    throw error;
   }
-  if (storeId && storeId !== 'all') {
-    query = query.eq('storeId', storeId);
-  }
-  if (paymentStatus) {
-    query = query.eq('paymentStatus', paymentStatus);
-  }
-  if (orderStatus) {
-    query = query.eq('orderStatus', orderStatus);
-  }
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-  query = query.range(from, to);
-  const { data, error, count } = await query;
-  if (error) throw error;
-  return { data: data || [], count: count || 0 };
 };
 
 export function useTransactions(filter: TransactionFilter = {}) {

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Asset } from '../../types';
+import { Asset } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 const fetchAssets = async (): Promise<Asset[]> => {

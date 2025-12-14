@@ -53,59 +53,78 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handleSave = async () => {
     if (!transaction) return;
 
-    // FIXED: Lock values immediately to prevent race conditions
-    const lockedAmountToPay = amountToPay;
-    const lockedRemainingBalance = remainingBalance;
-    const lockedTenderedAmount = tenderedAmount;
-    const lockedChange = change;
+    try {
+      // FIXED: Lock values immediately to prevent race conditions
+      const lockedAmountToPay = amountToPay;
+      const lockedRemainingBalance = remainingBalance;
+      const lockedTenderedAmount = tenderedAmount;
+      const lockedChange = change;
 
-    // Jika total 0 (karena diskon penuh atau pajak), atau amountPaid >= total, status harus Lunas
-    if (transaction.total === 0 || transaction.amountPaid >= transaction.total) {
+      // Validasi awal
+      if (lockedAmountToPay < 0 || lockedRemainingBalance < 0) {
+        addToast('Terjadi kesalahan: nilai pembayaran tidak valid.', 'error');
+        return;
+      }
+
+      // Jika total 0 (karena diskon penuh atau pajak), atau amountPaid >= total, status harus Lunas
+      if (transaction.total === 0 || transaction.amountPaid >= transaction.total) {
+        await onSave({
+          ...transaction,
+          paymentStatus: PaymentStatus.Paid,
+          amountPaid: transaction.total, // pastikan tidak berlebih
+        });
+        onClose();
+        return;
+      }
+
+      if (lockedAmountToPay <= 0) {
+        addToast('Jumlah pembayaran harus lebih dari nol.', 'error');
+        return;
+      }
+
+      // Semua metode pembayaran: harus bayar penuh, tidak boleh kurang dari sisa tagihan
+      if (lockedAmountToPay < lockedRemainingBalance) {
+        addToast('Pembayaran harus sama dengan sisa tagihan. Tidak boleh bayar sebagian.', 'error');
+        return;
+      }
+      
+      if (lockedAmountToPay > lockedRemainingBalance) {
+        addToast('Jumlah pembayaran tidak boleh melebihi sisa tagihan.', 'error');
+        return;
+      }
+      
+      if (method === PaymentMethod.Cash && lockedTenderedAmount < lockedAmountToPay) {
+        addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
+        return;
+      }
+
+      const newAmountPaid = Math.min(transaction.amountPaid + lockedAmountToPay, transaction.total);
+      let newStatus = PaymentStatus.Unpaid;
+      
+      if (newAmountPaid >= transaction.total) {
+        newStatus = PaymentStatus.Paid;
+      } else if (newAmountPaid > 0) {
+        newStatus = PaymentStatus.Unpaid;
+      }
+      
+      const finalChange = newStatus === PaymentStatus.Paid ? lockedChange : 0;
+
       await onSave({
         ...transaction,
-        paymentStatus: PaymentStatus.Paid,
-        amountPaid: transaction.amountPaid, // pastikan tidak berubah
+        amountPaid: newAmountPaid,
+        paymentStatus: newStatus,
+        paymentMethod: method,
+        change: finalChange,
       });
+      
       onClose();
-      return;
+    } catch (error) {
+      console.error('Error saving payment:', error);
+      addToast(
+        'Terjadi kesalahan saat menyimpan pembayaran. Silakan coba lagi.',
+        'error'
+      );
     }
-
-    if (lockedAmountToPay <= 0) {
-      addToast('Jumlah pembayaran harus lebih dari nol.', 'error');
-      return;
-    }
-
-    // Semua metode pembayaran: harus bayar penuh, tidak boleh kurang dari sisa tagihan
-    if (lockedAmountToPay < lockedRemainingBalance) {
-      addToast('Pembayaran harus sama dengan sisa tagihan. Tidak boleh bayar sebagian.', 'error');
-      return;
-    }
-    if (lockedAmountToPay > lockedRemainingBalance) {
-      addToast('Jumlah pembayaran tidak boleh melebihi sisa tagihan.', 'error');
-      return;
-    }
-    if (method === PaymentMethod.Cash && lockedTenderedAmount < lockedAmountToPay) {
-      addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
-      return;
-    }
-
-    const newAmountPaid = transaction.amountPaid + lockedAmountToPay;
-    let newStatus = PaymentStatus.Unpaid;
-    if (newAmountPaid >= transaction.total) {
-      newStatus = PaymentStatus.Paid;
-    } else if (newAmountPaid > 0) {
-      newStatus = PaymentStatus.Unpaid;
-    }
-    const finalChange = newStatus === PaymentStatus.Paid ? lockedChange : 0;
-
-    await onSave({
-      ...transaction,
-      amountPaid: newAmountPaid,
-      paymentStatus: newStatus,
-      paymentMethod: method,
-      change: finalChange,
-    });
-    onClose();
   };
 
   if (!transaction) return null;

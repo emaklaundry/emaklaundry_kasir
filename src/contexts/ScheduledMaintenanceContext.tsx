@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ScheduledMaintenance } from '../../types';
+import { ScheduledMaintenance } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { useAssets } from './AssetContext';
 

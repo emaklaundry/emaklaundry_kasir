@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Customer } from '../../types';
+import { Customer } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 export interface CustomerFilter {

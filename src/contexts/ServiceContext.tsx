@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Service } from '../../types';
+import { Service } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 const fetchServices = async (): Promise<Service[]> => {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Expense } from '../../types';
+import { Expense } from '../types';
 import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
 import Modal from './Modal';
 

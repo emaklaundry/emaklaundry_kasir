@@ -12,6 +12,12 @@ supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_
 ```
 **Output:** `database/backup/full_backup.sql`
 
+### 📊 Backup Data Saja (Tanpa Schema)
+```powershell
+supabase db dump --db-url "postgresql://postgres.kxylzjjmakbhzuirvnyd:[PASSWORD_ENCODED]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres" --data-only -f database/backup/data_only.sql
+```
+**Output:** `database/backup/data_only.sql`
+
 **Catatan:** 
 - Ganti `[PASSWORD_ENCODED]` dengan password database yang di-encode URL
 - File backup otomatis ditimpa setiap kali menjalankan perintah
