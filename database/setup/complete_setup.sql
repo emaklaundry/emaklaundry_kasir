@@ -103,7 +103,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -475,7 +475,11 @@ CREATE POLICY "Allow INSERT for store users" ON public.transactions
 
 -- Trigger: Prevent update of immutable fields except by Super Admin
 CREATE OR REPLACE FUNCTION public.prevent_immutable_transaction_update()
-RETURNS trigger AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   current_user_role text;
 BEGIN
@@ -502,7 +506,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS prevent_immutable_transaction_update ON public.transactions;
 CREATE TRIGGER prevent_immutable_transaction_update
@@ -687,6 +691,32 @@ BEGIN
   VALUES ((SELECT p.name FROM public.profiles p WHERE p.id = caller), concat('Update progress ', transaction_id_input), tx_store);
 
   RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
+END;
+$$;
+
+-- === RPC: bulk_update_order_status ===
+-- Bulk update order status untuk multiple transactions sekaligus
+CREATE OR REPLACE FUNCTION public.bulk_update_order_status(
+  p_transaction_ids uuid[],
+  p_new_status text,
+  p_user_id uuid
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  updated_count integer := 0;
+BEGIN
+  -- Update semua transaksi dalam satu transaksi database
+  UPDATE public.transactions
+  SET "orderStatus" = p_new_status,
+      "updatedAt" = now(),
+      "updatedByUserId" = p_user_id
+  WHERE id = ANY(p_transaction_ids);
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
+  RETURN updated_count;
 END;
 $$;
 
@@ -900,6 +930,7 @@ CREATE OR REPLACE FUNCTION public.update_transaction_status_safe(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   current_user_role text;
@@ -912,8 +943,8 @@ BEGIN
 
   -- Ambil role user
   SELECT role INTO current_user_role
-  FROM public.users
-  WHERE "userId" = caller;
+  FROM public.profiles
+  WHERE id = caller;
 
   IF current_user_role IS NULL THEN
     RAISE EXCEPTION 'Unauthorized: User not found';
@@ -945,9 +976,9 @@ BEGIN
     DECLARE
       user_store_id text;
     BEGIN
-      SELECT "storeId" INTO user_store_id
-      FROM public.users
-      WHERE "userId" = caller;
+      SELECT store_id INTO user_store_id
+      FROM public.profiles
+      WHERE id = caller;
 
       IF user_store_id IS NULL OR user_store_id != transaction_store_id THEN
         RAISE EXCEPTION 'Forbidden: Cannot update transaction from different store';
@@ -974,7 +1005,7 @@ BEGIN
   INSERT INTO public.audit_logs ("timestamp", "user", "action", "storeId")
   VALUES (
     NOW(),
-    (SELECT name FROM public.users WHERE "userId" = caller),
+    (SELECT name FROM public.profiles WHERE id = caller),
     format('Updated transaction %s status', transaction_id_input),
     transaction_store_id
   );
@@ -1017,7 +1048,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_phone
 
 -- Index untuk inventory
 CREATE INDEX IF NOT EXISTS idx_inventory_store 
-  ON public.inventory("storeId", "itemName");
+  ON public.inventory_items("storeId", name);
 
 -- Index untuk assets
 CREATE INDEX IF NOT EXISTS idx_assets_store_status 
@@ -1028,7 +1059,7 @@ CREATE INDEX IF NOT EXISTS idx_assets_store_status
 
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
@@ -1039,13 +1070,13 @@ CREATE POLICY "Users can view their store transactions"
   ON public.transactions FOR SELECT
   USING (
     auth.uid() IN (
-      SELECT "userId" FROM public.users 
-      WHERE role = 'SuperAdmin'
+      SELECT id FROM public.profiles 
+      WHERE role = 'Super Admin'
     )
     OR
     "storeId" = (
-      SELECT "storeId" FROM public.users 
-      WHERE "userId" = auth.uid()
+      SELECT store_id FROM public.profiles 
+      WHERE id = auth.uid()
     )
   );
 
@@ -1054,13 +1085,13 @@ CREATE POLICY "Users can insert their store transactions"
   ON public.transactions FOR INSERT
   WITH CHECK (
     "storeId" = (
-      SELECT "storeId" FROM public.users 
-      WHERE "userId" = auth.uid()
+      SELECT store_id FROM public.profiles 
+      WHERE id = auth.uid()
     )
     OR
     auth.uid() IN (
-      SELECT "userId" FROM public.users 
-      WHERE role = 'SuperAdmin'
+      SELECT id FROM public.profiles 
+      WHERE role = 'Super Admin'
     )
   );
 
@@ -1069,13 +1100,13 @@ CREATE POLICY "Users can update their store transactions"
   ON public.transactions FOR UPDATE
   USING (
     auth.uid() IN (
-      SELECT "userId" FROM public.users 
-      WHERE role = 'SuperAdmin'
+      SELECT id FROM public.profiles 
+      WHERE role = 'Super Admin'
     )
     OR
     "storeId" = (
-      SELECT "storeId" FROM public.users 
-      WHERE "userId" = auth.uid()
+      SELECT store_id FROM public.profiles 
+      WHERE id = auth.uid()
     )
   );
 
@@ -1086,14 +1117,15 @@ CREATE OR REPLACE FUNCTION public.cleanup_old_audit_logs(days_to_keep integer DE
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   deleted_count integer;
 BEGIN
   -- Hanya SuperAdmin yang bisa jalankan
   IF NOT EXISTS (
-    SELECT 1 FROM public.users 
-    WHERE "userId" = auth.uid() AND role = 'SuperAdmin'
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role = 'Super Admin'
   ) THEN
     RAISE EXCEPTION 'Only SuperAdmin can cleanup audit logs';
   END IF;
@@ -1114,6 +1146,8 @@ $$;
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   NEW."updatedAt" = NOW();
@@ -1134,9 +1168,9 @@ CREATE TRIGGER update_customers_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_inventory_updated_at ON public.inventory;
+DROP TRIGGER IF EXISTS update_inventory_updated_at ON public.inventory_items;
 CREATE TRIGGER update_inventory_updated_at
-  BEFORE UPDATE ON public.inventory
+  BEFORE UPDATE ON public.inventory_items
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
