@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useUsers } from '../../contexts/UserContext';
 import {
-  PlusCircleIcon,
   EditIcon,
   PowerIcon,
   UsersIcon,
@@ -30,8 +29,10 @@ const UsersPage: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
   const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
-  const [isSavingUser, setIsSavingUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<
+    'all' | 'superadmin' | 'admin' | 'kasir' | 'active' | 'inactive'
+  >('all');
 
   const handleOpenFormModal = (user: User | null = null) => {
     setCurrentUserToEdit(user);
@@ -66,7 +67,6 @@ const UsersPage: React.FC = () => {
     }
 
     const toastId = addToast('Menyimpan pengguna...', 'info');
-    setIsSavingUser(true);
     try {
       if (currentUserToEdit && currentUserToEdit.id) {
         await updateUser(currentUserToEdit.id, {
@@ -90,8 +90,6 @@ const UsersPage: React.FC = () => {
       // Catatan: Penggunaan 'as any' hanya pada error object di catch block, bukan pada payload/data. Sudah aman.
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
-    } finally {
-      setIsSavingUser(false);
     }
   };
 
@@ -101,7 +99,6 @@ const UsersPage: React.FC = () => {
         `${userToToggleStatus.isActive ? 'Menonaktifkan' : 'Mengaktifkan'} pengguna...`,
         'info',
       );
-      setIsSavingUser(true);
       try {
         const newStatus = !userToToggleStatus.isActive;
         await updateUser(userToToggleStatus.id, { isActive: newStatus });
@@ -119,7 +116,6 @@ const UsersPage: React.FC = () => {
         updateToast(toastId, `Gagal mengubah status: ${errMsg}`, 'error');
       } finally {
         setUserToToggleStatus(null);
-        setIsSavingUser(false);
       }
     }
   };
@@ -134,11 +130,25 @@ const UsersPage: React.FC = () => {
 
   type UserWithStore = (typeof usersWithStore)[0];
 
-  const filteredUsers = useMemo(
-    () =>
-      usersWithStore.filter((user) => user.name.toLowerCase().includes(searchTerm.toLowerCase())),
-    [usersWithStore, searchTerm],
-  );
+  const filteredUsers = useMemo(() => {
+    let filtered = usersWithStore.filter((user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+
+    if (roleFilter === 'superadmin') {
+      filtered = filtered.filter((user) => user.role === UserRole.SuperAdmin);
+    } else if (roleFilter === 'admin') {
+      filtered = filtered.filter((user) => user.role === UserRole.Admin);
+    } else if (roleFilter === 'kasir') {
+      filtered = filtered.filter((user) => user.role === UserRole.Cashier);
+    } else if (roleFilter === 'active') {
+      filtered = filtered.filter((user) => user.isActive === true);
+    } else if (roleFilter === 'inactive') {
+      filtered = filtered.filter((user) => user.isActive === false);
+    }
+
+    return filtered;
+  }, [usersWithStore, searchTerm, roleFilter]);
 
   const {
     items: sortedUsers,
@@ -154,242 +164,229 @@ const UsersPage: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      {isSavingUser && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
-          <div className="flex items-center gap-3">
-            <svg
-              className="animate-spin h-6 w-6 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-            <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-          Manajemen Pengguna
-        </h1>
-        <div className="w-full md:w-auto flex items-center gap-4">
-          <div className="relative w-full md:w-64">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari pengguna..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
-          <button
-            onClick={handleAddUser}
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5"
-          >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
-            Tambah Pengguna
-          </button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pengguna</h1>
+        <button
+          onClick={handleAddUser}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Tambah Pengguna
+        </button>
       </div>
 
-      {/* Desktop Table View */}
-      <div className="overflow-x-auto hidden md:block">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-            <tr>
-              <th className="px-4 py-3">
-                <button
-                  onClick={() => requestSort('name')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Nama {getSortIcon('name')}
-                </button>
-              </th>
-              <th className="px-4 py-3">
-                <button
-                  onClick={() => requestSort('role')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Peran {getSortIcon('role')}
-                </button>
-              </th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-4 py-3">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari pengguna..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          />
+        </div>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
+          className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+        >
+          <option value="all">Semua Pengguna</option>
+          <option value="superadmin">Super Admin</option>
+          <option value="admin">Admin</option>
+          <option value="kasir">Kasir</option>
+          <option value="active">Aktif</option>
+          <option value="inactive">Tidak Aktif</option>
+        </select>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
+        {/* Desktop Table View */}
+        <div className="overflow-x-auto hidden md:block">
+          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+              <tr>
+                <th className="px-6 py-3">
                   <button
-                    onClick={() => requestSort('storeName')}
+                    onClick={() => requestSort('name')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
                   >
-                    Cabang {getSortIcon('storeName')}
+                    Nama {getSortIcon('name')}
                   </button>
                 </th>
-              )}
-              <th className="px-4 py-3">
-                <button
-                  onClick={() => requestSort('isActive')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                  Status {getSortIcon('isActive')}
-                </button>
-              </th>
-              <th className="px-4 py-3">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedUsers.length > 0 ? (
-              sortedUsers.map((user) => {
-                const isSuperAdmin = user.role === UserRole.SuperAdmin;
-                return (
-                  <tr key={user.id} className="border-b dark:border-slate-700">
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                      {user.name}
-                    </td>
-                    <td className="px-4 py-3">{user.role}</td>
-                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                      <td className="px-4 py-3">
-                        {user.role !== UserRole.SuperAdmin ? user.storeName : '-'}
-                      </td>
-                    )}
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 text-sm font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
-                      >
-                        {user.isActive ? 'Aktif' : 'Tidak Aktif'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 flex items-center space-x-2">
-                      <button
-                        onClick={() => handleOpenFormModal(user)}
-                        title="Edit"
-                        className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        <EditIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleToggleStatus(user)}
-                        title={
-                          isSuperAdmin
-                            ? 'Super Admin tidak bisa dinonaktifkan'
-                            : user.isActive
-                              ? 'Nonaktifkan'
-                              : 'Aktifkan'
-                        }
-                        disabled={isSuperAdmin}
-                        className={`p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${user.isActive ? 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-500 dark:hover:text-yellow-400' : 'text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400'} disabled:opacity-50 disabled:cursor-not-allowed`}
-                      >
-                        <PowerIcon className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan={
-                    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 5 : 4
-                  }
-                >
-                  <EmptyState
-                    icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
-                    title={searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}
-                    description={
-                      searchTerm
-                        ? 'Coba kata kunci lain atau tambahkan pengguna baru.'
-                        : 'Mulai dengan menambahkan pengguna pertama Anda.'
-                    }
-                  />
-                </td>
+                <th className="px-6 py-3">
+                  <button
+                    onClick={() => requestSort('role')}
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                  >
+                    Peran {getSortIcon('role')}
+                  </button>
+                </th>
+                {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                  <th className="px-6 py-3">
+                    <button
+                      onClick={() => requestSort('storeName')}
+                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                    >
+                      Cabang {getSortIcon('storeName')}
+                    </button>
+                  </th>
+                )}
+                <th className="px-6 py-3">
+                  <button
+                    onClick={() => requestSort('isActive')}
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                  >
+                    Status {getSortIcon('isActive')}
+                  </button>
+                </th>
+                <th className="px-6 py-3">Aksi</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
-        {sortedUsers.length > 0 ? (
-          sortedUsers.map((user) => {
-            const isSuperAdmin = user.role === UserRole.SuperAdmin;
-            return (
-              <div
-                key={user.id}
-                className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
-                      {user.name}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{user.role}</p>
-                    {currentUser.role === UserRole.SuperAdmin &&
-                      selectedStoreId === 'all' &&
-                      user.role !== UserRole.SuperAdmin && (
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                          {user.storeName}
-                        </p>
+            </thead>
+            <tbody>
+              {sortedUsers.length > 0 ? (
+                sortedUsers.map((user) => {
+                  const isSuperAdmin = user.role === UserRole.SuperAdmin;
+                  return (
+                    <tr key={user.id} className="border-b dark:border-slate-700">
+                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                        {user.name}
+                      </td>
+                      <td className="px-6 py-4">{user.role}</td>
+                      {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                        <td className="px-6 py-4">
+                          {user.role !== UserRole.SuperAdmin ? user.storeName : '-'}
+                        </td>
                       )}
-                  </div>
-                  <span
-                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
-                  >
-                    {user.isActive ? 'Aktif' : 'Tidak Aktif'}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-end gap-2 border-t dark:border-slate-600 pt-2">
-                  <button
-                    onClick={() => {
-                      setCurrentUserToEdit(user);
-                      setIsFormModalOpen(true);
-                    }}
-                    title="Edit"
-                    className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"
-                  >
-                    <EditIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setUserToToggleStatus(user)}
-                    title={
-                      isSuperAdmin
-                        ? 'Super Admin tidak bisa dinonaktifkan'
-                        : user.isActive
-                          ? 'Nonaktifkan'
-                          : 'Aktifkan'
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-2 py-1 text-sm font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
+                        >
+                          {user.isActive ? 'Aktif' : 'Tidak Aktif'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleOpenFormModal(user)}
+                            title="Edit"
+                            className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          >
+                            <EditIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleToggleStatus(user)}
+                            title={
+                              isSuperAdmin
+                                ? 'Super Admin tidak bisa dinonaktifkan'
+                                : user.isActive
+                                  ? 'Nonaktifkan'
+                                  : 'Aktifkan'
+                            }
+                            disabled={isSuperAdmin}
+                            className={`p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${user.isActive ? 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-500 dark:hover:text-yellow-400' : 'text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            <PowerIcon className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={
+                      currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 5 : 4
                     }
-                    disabled={isSuperAdmin}
-                    className={`p-2 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50`}
                   >
-                    <PowerIcon className="w-5 h-5" />
-                  </button>
+                    <EmptyState
+                      icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
+                      title={searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}
+                      description={
+                        searchTerm
+                          ? 'Coba kata kunci lain atau tambahkan pengguna baru.'
+                          : 'Mulai dengan menambahkan pengguna pertama Anda.'
+                      }
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {sortedUsers.length > 0 ? (
+            sortedUsers.map((user) => {
+              const isSuperAdmin = user.role === UserRole.SuperAdmin;
+              return (
+                <div
+                  key={user.id}
+                  className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
+                        {user.name}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{user.role}</p>
+                      {currentUser?.role === UserRole.SuperAdmin &&
+                        selectedStoreId === 'all' &&
+                        user.role !== UserRole.SuperAdmin && (
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                            {user.storeName}
+                          </p>
+                        )}
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
+                    >
+                      {user.isActive ? 'Aktif' : 'Tidak Aktif'}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end gap-2 border-t dark:border-slate-600 pt-2">
+                    <button
+                      onClick={() => {
+                        setCurrentUserToEdit(user);
+                        setIsFormModalOpen(true);
+                      }}
+                      title="Edit"
+                      className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    >
+                      <EditIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setUserToToggleStatus(user)}
+                      title={
+                        isSuperAdmin
+                          ? 'Super Admin tidak bisa dinonaktifkan'
+                          : user.isActive
+                            ? 'Nonaktifkan'
+                            : 'Aktifkan'
+                      }
+                      disabled={isSuperAdmin}
+                      className={`p-2.5 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50`}
+                    >
+                      <PowerIcon className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          <EmptyState
-            icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
-            title={searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}
-            description={
-              searchTerm
-                ? 'Coba kata kunci lain atau tambahkan pengguna baru.'
-                : 'Mulai dengan menambahkan pengguna pertama Anda.'
-            }
-          />
-        )}
+              );
+            })
+          ) : (
+            <EmptyState
+              icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
+              title={searchTerm ? 'Pengguna Tidak Ditemukan' : 'Belum Ada Pengguna'}
+              description={
+                searchTerm
+                  ? 'Coba kata kunci lain atau tambahkan pengguna baru.'
+                  : 'Mulai dengan menambahkan pengguna pertama Anda.'
+              }
+            />
+          )}
+        </div>
       </div>
 
       {isFormModalOpen && (
@@ -421,3 +418,6 @@ const UsersPage: React.FC = () => {
 };
 
 export default UsersPage;
+
+
+

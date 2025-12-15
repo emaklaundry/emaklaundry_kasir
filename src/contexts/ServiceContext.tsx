@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Service } from '../../types';
+import { Service } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 const fetchServices = async (): Promise<Service[]> => {
   const { data, error } = await supabase.from('services').select('*');
   if (error) throw error;
-  return data || [];
+  return (data || []).map((s) => ({
+    ...s,
+    storeId: s.storeId ?? undefined,
+  })) as Service[];
 };
 
 export function useServices() {
@@ -13,6 +16,10 @@ export function useServices() {
   const { data: services = [], ...query } = useQuery({
     queryKey: ['services'],
     queryFn: fetchServices,
+    // Data services jarang berubah, cache 10 menit
+    staleTime: 10 * 60 * 1000,
+    // Jangan auto-refetch saat window focus (mencegah gangguan saat input)
+    refetchOnWindowFocus: false,
   });
 
   const addService = useMutation({

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Expense } from '../../types';
+import { Expense } from '../types';
 import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
 import Modal from './Modal';
 
@@ -19,10 +19,15 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   const categoryOptions = ['Operasional', 'Listrik', 'Air', 'Gaji', 'Perlengkapan', 'Lainnya'];
   const initialFormData = useMemo(() => {
     if (expense) {
+      let dateValue = new Date().toISOString().split('T')[0];
+      if (expense.date) {
+        const expDate = new Date(expense.date);
+        if (!isNaN(expDate.getTime())) {
+          dateValue = expDate.toISOString().split('T')[0];
+        }
+      }
       return {
-        date: expense.date
-          ? String(expense.date).split('T')[0]
-          : new Date().toISOString().split('T')[0],
+        date: dateValue,
         description: expense.description || '',
         category: expense.category || 'Operasional',
         amount: expense.amount || 0,
@@ -45,7 +50,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     setFormData(initialFormData);
   }, [initialFormData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'amount') {
       setFormData((prev) => ({ ...prev, amount: parseRupiah(value) }));
@@ -61,7 +66,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     setIsSaving(true);
     try {
       const iso = convertLocalDateToISOString(formData.date);
-      await onSave({ ...formData, date: iso });
+      await onSave({ ...formData, date: new Date(iso) });
       setFormData(initialFormData); // Reset form setelah sukses
     } finally {
       setIsSaving(false);

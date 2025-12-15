@@ -9,9 +9,10 @@ import Pagination from '../components/Pagination';
 import { UserRole } from '@/types';
 
 const AuditLogPage: React.FC = () => {
-  const { logs: allLogs } = useAuditLogs();
+  const { logs: allLogs, isLoading } = useAuditLogs();
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const logs = useStoreFilteredData(allLogs);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const logs = useStoreFilteredData(allLogs as any) as unknown as typeof allLogs;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -19,22 +20,32 @@ const AuditLogPage: React.FC = () => {
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
+      // Search filter
+      const searchLower = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        !searchLower ||
+        log.user.toLowerCase().includes(searchLower) ||
+        log.action.toLowerCase().includes(searchLower);
+
+      // Date range filter
       const logDate = new Date(log.timestamp);
+      logDate.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+
+      let matchesDateRange = true;
+
       if (startDate) {
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
-        if (logDate < start) return false;
+        matchesDateRange = matchesDateRange && logDate >= start;
       }
+
       if (endDate) {
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-        if (logDate > end) return false;
+        matchesDateRange = matchesDateRange && logDate <= end;
       }
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        return log.user.toLowerCase().includes(term) || log.action.toLowerCase().includes(term);
-      }
-      return true;
+
+      return matchesSearch && matchesDateRange;
     });
   }, [logs, searchTerm, startDate, endDate]);
 
@@ -57,7 +68,7 @@ const AuditLogPage: React.FC = () => {
     currentPage,
     totalPages,
     onPageChange,
-  } = usePagination(sortedLogs);
+  } = usePagination(sortedLogs, 20);
 
   const getSortIcon = (key: keyof LogWithStore) => {
     if (!sortConfig || sortConfig.key !== key) return null;
@@ -72,7 +83,21 @@ const AuditLogPage: React.FC = () => {
     setEndDate('');
   };
 
-  const filtersApplied = searchTerm || startDate || endDate;
+  const filtersApplied = Boolean(searchTerm || startDate || endDate);
+
+  const getStoreName = (storeId?: string) => {
+    if (!storeId) return '-';
+    const store = stores.find((s) => s.id === storeId);
+    return store?.name || 'Unknown Store';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-brand-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -101,6 +126,7 @@ const AuditLogPage: React.FC = () => {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            max={endDate || undefined}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           />
         </div>
@@ -116,13 +142,14 @@ const AuditLogPage: React.FC = () => {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
+            min={startDate || undefined}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           />
         </div>
         {filtersApplied && (
           <button
             onClick={handleResetFilters}
-            className="text-base text-blue-600 dark:text-blue-400 hover:underline"
+            className="px-4 py-2 text-sm bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600"
           >
             Reset Filter
           </button>
@@ -149,7 +176,7 @@ const AuditLogPage: React.FC = () => {
                   Pengguna {getSortIcon('user')}
                 </button>
               </th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+              {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                 <th className="px-4 py-3">
                   <button
                     onClick={() => requestSort('storeName')}
@@ -173,8 +200,8 @@ const AuditLogPage: React.FC = () => {
                     })}
                   </td>
                   <td className="px-4 py-3">{log.user}</td>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                    <td className="px-4 py-3">{log.storeName}</td>
+                  {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                    <td className="px-4 py-3">{getStoreName(log.storeId)}</td>
                   )}
                   <td className="px-4 py-3">{log.action}</td>
                 </tr>
@@ -183,7 +210,7 @@ const AuditLogPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 4 : 3
+                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 4 : 3
                   }
                   className="text-center py-12"
                 >

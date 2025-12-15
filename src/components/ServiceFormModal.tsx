@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import Modal from './Modal';
 import { Service, ServiceCategory } from '@/types';
+import useToasts from '../contexts/useToasts';
 
 interface ServiceFormModalProps {
   service: Service | null;
@@ -10,6 +11,7 @@ interface ServiceFormModalProps {
 }
 
 const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, onSave }) => {
+  const { addToast } = useToasts();
   const [formData, setFormData] = useState<Omit<Service, 'id' | 'storeId'>>({
     name: service?.name || '',
     category: service?.category || ServiceCategory.Kiloan,
@@ -22,9 +24,11 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     const { name, value } = e.target;
     if (name === 'price' || name === 'durationDays') {
       const numericValue = name === 'price' ? parseRupiah(value) : parseInt(value, 10);
+      // FIXED: For price, enforce minimum of 1 instead of 0
+      const minValue = name === 'price' ? 1 : 0;
       setFormData((prev) => ({
         ...prev,
-        [name]: Math.max(0, isNaN(numericValue) ? 0 : numericValue),
+        [name]: Math.max(minValue, isNaN(numericValue) ? minValue : numericValue),
       }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -33,6 +37,19 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // FIXED: Add validation before save
+    if (!formData.name || formData.name.trim() === '') {
+      addToast('Nama layanan harus diisi.', 'error');
+      return;
+    }
+    if (formData.price <= 0) {
+      addToast('Harga layanan harus lebih dari 0.', 'error');
+      return;
+    }
+    if (formData.durationDays < 0) {
+      addToast('Durasi tidak boleh negatif.', 'error');
+      return;
+    }
     onSave(formData);
   };
 

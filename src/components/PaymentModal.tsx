@@ -53,53 +53,75 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handleSave = async () => {
     if (!transaction) return;
 
-    // Jika total 0 (karena diskon penuh atau pajak), atau amountPaid >= total, status harus Lunas
-    if (transaction.total === 0 || transaction.amountPaid >= transaction.total) {
+    try {
+      // FIXED: Lock values immediately to prevent race conditions
+      const lockedAmountToPay = amountToPay;
+      const lockedRemainingBalance = remainingBalance;
+      const lockedTenderedAmount = tenderedAmount;
+      const lockedChange = change;
+
+      // Validasi awal
+      if (lockedAmountToPay < 0 || lockedRemainingBalance < 0) {
+        addToast('Terjadi kesalahan: nilai pembayaran tidak valid.', 'error');
+        return;
+      }
+
+      // Jika total 0 (karena diskon penuh atau pajak), atau amountPaid >= total, status harus Lunas
+      if (transaction.total === 0 || transaction.amountPaid >= transaction.total) {
+        await onSave({
+          ...transaction,
+          paymentStatus: PaymentStatus.Paid,
+          amountPaid: transaction.total, // pastikan tidak berlebih
+        });
+        onClose();
+        return;
+      }
+
+      if (lockedAmountToPay <= 0) {
+        addToast('Jumlah pembayaran harus lebih dari nol.', 'error');
+        return;
+      }
+
+      // Semua metode pembayaran: harus bayar penuh, tidak boleh kurang dari sisa tagihan
+      if (lockedAmountToPay < lockedRemainingBalance) {
+        addToast('Pembayaran harus sama dengan sisa tagihan. Tidak boleh bayar sebagian.', 'error');
+        return;
+      }
+
+      if (lockedAmountToPay > lockedRemainingBalance) {
+        addToast('Jumlah pembayaran tidak boleh melebihi sisa tagihan.', 'error');
+        return;
+      }
+
+      if (method === PaymentMethod.Cash && lockedTenderedAmount < lockedAmountToPay) {
+        addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
+        return;
+      }
+
+      const newAmountPaid = Math.min(transaction.amountPaid + lockedAmountToPay, transaction.total);
+      let newStatus = PaymentStatus.Unpaid;
+
+      if (newAmountPaid >= transaction.total) {
+        newStatus = PaymentStatus.Paid;
+      } else if (newAmountPaid > 0) {
+        newStatus = PaymentStatus.Unpaid;
+      }
+
+      const finalChange = newStatus === PaymentStatus.Paid ? lockedChange : 0;
+
       await onSave({
         ...transaction,
-        paymentStatus: PaymentStatus.Paid,
-        amountPaid: transaction.amountPaid, // pastikan tidak berubah
+        amountPaid: newAmountPaid,
+        paymentStatus: newStatus,
+        paymentMethod: method,
+        change: finalChange,
       });
+
       onClose();
-      return;
+    } catch (error) {
+      console.error('Error saving payment:', error);
+      addToast('Terjadi kesalahan saat menyimpan pembayaran. Silakan coba lagi.', 'error');
     }
-
-    if (amountToPay <= 0) {
-      addToast('Jumlah pembayaran harus lebih dari nol.', 'error');
-      return;
-    }
-
-    // Semua metode pembayaran: harus bayar penuh, tidak boleh kurang dari sisa tagihan
-    if (amountToPay < remainingBalance) {
-      addToast('Pembayaran harus sama dengan sisa tagihan. Tidak boleh bayar sebagian.', 'error');
-      return;
-    }
-    if (amountToPay > remainingBalance) {
-      addToast('Jumlah pembayaran tidak boleh melebihi sisa tagihan.', 'error');
-      return;
-    }
-    if (method === PaymentMethod.Cash && tenderedAmount < amountToPay) {
-      addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
-      return;
-    }
-
-    const newAmountPaid = transaction.amountPaid + amountToPay;
-    let newStatus = PaymentStatus.Unpaid;
-    if (newAmountPaid >= transaction.total) {
-      newStatus = PaymentStatus.Paid;
-    } else if (newAmountPaid > 0) {
-      newStatus = PaymentStatus.Unpaid;
-    }
-    const finalChange = newStatus === PaymentStatus.Paid ? change : 0;
-
-    await onSave({
-      ...transaction,
-      amountPaid: newAmountPaid,
-      paymentStatus: newStatus,
-      paymentMethod: method,
-      change: finalChange,
-    });
-    onClose();
   };
 
   if (!transaction) return null;
@@ -159,7 +181,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   ${
                     method === m
                       ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
-                      : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'
+                      : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:border-slate-600 dark:text-white'
                   }
                 `}
               >

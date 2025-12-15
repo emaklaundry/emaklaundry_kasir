@@ -1,16 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Store } from '../../types';
+import { Store } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 const fetchStores = async (): Promise<Store[]> => {
   const { data, error } = await supabase.from('stores').select('*');
   if (error) throw error;
-  return data || [];
+  return (data || []).map((s) => ({
+    ...s,
+    address: s.address ?? undefined,
+    isActive: s.isActive ?? true,
+  })) as Store[];
 };
 
 export function useStores() {
   const queryClient = useQueryClient();
-  const { data: stores = [], ...query } = useQuery({ queryKey: ['stores'], queryFn: fetchStores });
+  const { data: stores = [], ...query } = useQuery({
+    queryKey: ['stores'],
+    queryFn: fetchStores,
+    // Data stores jarang berubah, cache 10 menit
+    staleTime: 10 * 60 * 1000,
+    // Jangan auto-refetch saat window focus (mencegah gangguan saat input)
+    refetchOnWindowFocus: false,
+  });
 
   const addStore = useMutation({
     mutationFn: async (store: Omit<Store, 'id'>) => {

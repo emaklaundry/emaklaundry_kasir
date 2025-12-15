@@ -10,6 +10,7 @@ import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
 import { supabase } from '../utils/supabaseClient';
 import { UserRole, Service, User, ServiceCategory, MaintenanceLog, Transaction } from '@/types';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 // Type guard for Transaction
 function isTransaction(obj: unknown): obj is Transaction {
@@ -88,9 +89,10 @@ const YearlySummaryChart: React.FC<{
             top: tooltip.y,
             transform: 'translateX(-50%) translateY(-100%)',
           }}
-          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg"
-          dangerouslySetInnerHTML={{ __html: tooltip.content }}
-        ></div>
+          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg whitespace-pre-line"
+        >
+          {tooltip.content}
+        </div>
       )}
       <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="min-w-[800px] print-chart-hide">
         {/* Y-Axis Grid Lines and Labels */}
@@ -122,9 +124,9 @@ const YearlySummaryChart: React.FC<{
         {/* Bars and X-Axis Labels */}
         {data.map((d, i) => {
           const x = yAxisWidth + i * (barWidth * 2 + barMargin + groupMargin / 2) + groupMargin;
-          const revenueHeight = (d.revenue / maxValue) * (chartHeight - 30);
-          const expensesHeight = (d.expenses / maxValue) * (chartHeight - 30);
-          const tooltipContent = `<b>${d.month}</b><br/>Pendapatan: Rp ${d.revenue.toLocaleString('id-ID')}<br/>Pengeluaran: Rp ${d.expenses.toLocaleString('id-ID')}`;
+          const revenueHeight = Math.max((d.revenue / maxValue) * (chartHeight - 30), 0);
+          const expensesHeight = Math.max((d.expenses / maxValue) * (chartHeight - 30), 0);
+          const tooltipContent = `${d.month}\nPendapatan: Rp ${d.revenue.toLocaleString('id-ID')}\nPengeluaran: Rp ${d.expenses.toLocaleString('id-ID')}`;
 
           return (
             <g key={i}>
@@ -232,6 +234,7 @@ const ReportsPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { services } = useServices();
   const { users: allUsers } = useUsers();
+  const { addAuditLog } = useAuditLogs();
   const [reportType] = useState<'range' | 'yearlySummary'>('range');
   const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
   const today = new Date();
@@ -245,20 +248,22 @@ const ReportsPage: React.FC = () => {
   // Date range for reports
   const { startDate, endDate } = useMemo(() => {
     const now = new Date();
-    now.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+
     if (rangeType === 'weekly') {
       const firstDayOfWeek = new Date(now);
       firstDayOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
       firstDayOfWeek.setHours(0, 0, 0, 0);
-      return { startDate: firstDayOfWeek, endDate: now };
+      return { startDate: firstDayOfWeek, endDate: endOfDay };
     }
     if (rangeType === 'monthly') {
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { startDate: firstDay, endDate: now };
+      return { startDate: firstDay, endDate: endOfDay };
     }
-    const endOfDay = new Date(customEndDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    return { startDate: customStartDate, endDate: endOfDay };
+    const customEnd = new Date(customEndDate);
+    customEnd.setHours(23, 59, 59, 999);
+    return { startDate: customStartDate, endDate: customEnd };
   }, [rangeType, customStartDate, customEndDate]);
 
   // Customers
@@ -343,7 +348,7 @@ const ReportsPage: React.FC = () => {
           (e) =>
             e.description === desc &&
             e.date === date &&
-            Math.abs(e.amount - amount) < 100 // Toleransi sedikit
+            Math.abs(e.amount - amount) < Math.max(100, amount * 0.01), // Toleransi 100 rupiah atau 1%, mana yang lebih besar
         );
       };
 
@@ -357,9 +362,9 @@ const ReportsPage: React.FC = () => {
           if (asset.purchaseDate) {
             let purchaseDateStr = String(asset.purchaseDate);
             if (purchaseDateStr.includes('T')) {
-               purchaseDateStr = purchaseDateStr.split('T')[0];
+              purchaseDateStr = purchaseDateStr.split('T')[0];
             }
-            
+
             // Filter tanggal sesuai range
             if (purchaseDateStr >= startDateStr && purchaseDateStr <= endDateStr) {
               const cost = Number(asset.purchaseCost) || 0;
@@ -387,7 +392,9 @@ const ReportsPage: React.FC = () => {
             } else if (typeof asset.maintenanceHistory === 'string') {
               try {
                 maintenanceHistory = JSON.parse(asset.maintenanceHistory);
-              } catch { /* ignore */ }
+              } catch (error) {
+                console.error(`Failed to parse maintenanceHistory for asset ${asset.id}:`, error);
+              }
             }
           }
 
@@ -395,18 +402,16 @@ const ReportsPage: React.FC = () => {
             const logDate = new Date(log.date);
             const logDateStr = formatDateStr(logDate);
             const cost = Number(log.cost) || 0;
-            
+
             if (logDateStr >= startDateStr && logDateStr <= endDateStr) {
-              // Format deskripsi harus dicek terhadap format yang disimpan AssetsPage
-              // AssetsPage format: "Perawatan Aset: [Nama] ([Desc])"
-              // Kita gunakan format yang sama untuk pengecekan
-              const expenseDescToCheck = `Perawatan Aset: ${asset.name} (${log.description})`;
-              
-              if (!isExpenseExist(expenseDescToCheck, logDateStr, cost)) {
+              // Format deskripsi HARUS SAMA dengan yang di-push untuk duplikasi detection
+              const description = `Perawatan Aset: ${asset.name} (${log.description})`;
+
+              if (!isExpenseExist(description, logDateStr, cost)) {
                 assetExpenses.push({
                   id: `asset-maint-${asset.id}-${index}`,
                   date: logDateStr,
-                  description: `[Maintenance] ${asset.name}: ${log.description}`, // Penanda beda untuk log manual
+                  description: description, // FIXED: Gunakan format yang sama
                   category: 'Pemeliharaan Aset',
                   amount: cost,
                   storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
@@ -445,7 +450,7 @@ const ReportsPage: React.FC = () => {
   const filteredData = useMemo(() => {
     const start = startDate.getTime();
     const end = endDate.getTime();
-    
+
     const transactions = (allStoreTransactions as unknown[])
       .map(normalizeTransaction)
       .filter((t): t is Omit<Transaction, 'createdAt'> & { createdAt: string } => !!t)
@@ -465,7 +470,7 @@ const ReportsPage: React.FC = () => {
   const netProfit = totalRevenue - totalExpenses;
 
   // ... (Kode selebihnya untuk chart, tabel, dll tetap sama) ...
-  
+
   const serviceMap = useMemo(
     () =>
       services.reduce(
@@ -484,6 +489,7 @@ const ReportsPage: React.FC = () => {
     );
     return Object.entries(serviceRevenue)
       .map(([serviceId, revenue]) => ({
+        serviceId, // FIXED: Tambahkan serviceId untuk key yang unik
         name: serviceMap[serviceId]?.name || 'Layanan Dihapus',
         revenue,
       }))
@@ -711,7 +717,13 @@ const ReportsPage: React.FC = () => {
           </div>
         )}
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            addAuditLog(
+              `Mencetak laporan ${reportType === 'yearlySummary' ? 'Tahunan' : 'Rentang Tanggal'} untuk cabang: ${selectedStoreId === 'all' ? 'Semua Cabang' : selectedStoreId}.`,
+              selectedStoreId !== 'all' ? selectedStoreId : undefined,
+            );
+            window.print();
+          }}
           className="print-hide flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3"
         >
           Cetak Laporan
@@ -760,7 +772,10 @@ const ReportsPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {topServices.map((s, i) => (
-                      <tr key={s.serviceId ? s.serviceId : `${s.name}-${i}`} className="border-b dark:border-slate-700">
+                      <tr
+                        key={s.serviceId ? s.serviceId : `${s.name}-${i}`}
+                        className="border-b dark:border-slate-700"
+                      >
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {s.name}
                         </td>

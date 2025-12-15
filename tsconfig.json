@@ -25,15 +25,11 @@
   },
   "include": [
     "src",
-    "vite-env.d.ts",
-    "App.tsx",
-    "index.tsx",
-    "global.d.ts",
     "vite.config.ts",
     "vitest.config.ts",
     "vitest.setup.ts",
     "src/**/*.test.ts",
     "src/**/*.test.tsx"
   ],
-  "exclude": ["dist", "data/mockData.ts"]
+  "exclude": ["dist", "node_modules"]
 }

@@ -11,7 +11,7 @@ type ScheduleFormData = Omit<
 interface ScheduledMaintenanceFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: ScheduleFormData) => void;
+  onSave: (data: ScheduleFormData) => void | Promise<void>;
   schedule: ScheduledMaintenance | null;
 }
 

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { InventoryItem } from '../../types';
+import { InventoryItem } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 export interface InventoryFilter {
@@ -25,7 +25,11 @@ export async function fetchInventory(
   query = query.range(from, to);
   const { data, error, count } = await query;
   if (error) throw error;
-  return { data: data || [], count: count || 0 };
+  const items = (data || []).map((i) => ({
+    ...i,
+    storeId: i.storeId ?? undefined,
+  })) as InventoryItem[];
+  return { data: items, count: count || 0 };
 }
 
 export function useInventoryMutations() {

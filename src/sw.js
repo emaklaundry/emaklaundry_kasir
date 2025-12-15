@@ -29,9 +29,22 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Jangan cache request ke Supabase (data dinamis)
-  if (url.hostname.endsWith('supabase.co')) {
-    // Network only, no cache
+  // Jangan cache request ke Supabase (data dinamis) - Network Only
+  if (url.hostname.includes('supabase.co')) {
+    event.respondWith(
+      fetch(event.request, {
+        headers: {
+          ...event.request.headers,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
+      }),
+    );
+    return;
+  }
+
+  // Jangan cache API calls lainnya
+  if (url.pathname.includes('/api/') || url.pathname.includes('/rest/')) {
     event.respondWith(fetch(event.request));
     return;
   }
@@ -54,19 +67,41 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For other requests, try cache first then network
+  // For static assets (js, css, images), use cache-first strategy
+  if (
+    event.request.destination === 'script' ||
+    event.request.destination === 'style' ||
+    event.request.destination === 'image' ||
+    event.request.destination === 'font'
+  ) {
+    event.respondWith(
+      (async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        try {
+          const response = await fetch(event.request);
+          if (response && response.status === 200) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, response.clone());
+          }
+          return response;
+        } catch (err) {
+          return cached || Response.error();
+        }
+      })(),
+    );
+    return;
+  }
+
+  // Default: network-first for everything else
   event.respondWith(
     (async () => {
-      const cached = await caches.match(event.request);
-      if (cached) return cached;
       try {
         const response = await fetch(event.request);
-        if (!response || response.status !== 200) return response;
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(event.request, response.clone());
         return response;
       } catch (err) {
-        return undefined;
+        const cached = await caches.match(event.request);
+        return cached || Response.error();
       }
     })(),
   );

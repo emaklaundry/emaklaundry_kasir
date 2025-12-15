@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -8,6 +8,8 @@ import {
   SearchIcon,
   UsersIcon,
   ArrowUpIcon,
+  DownloadIcon,
+  UploadIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -22,6 +24,11 @@ import { useDebounce } from '../../hooks/useDebounce';
 // import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
 import { Customer, UserRole } from '@/types';
+import {
+  exportCustomersToExcel,
+  importCustomersFromExcel,
+  downloadCustomerTemplate,
+} from '../../utils/excelUtils';
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -37,7 +44,7 @@ const CustomersPage: React.FC = () => {
     ],
     queryFn: () =>
       fetchCustomers({ page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId }),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
   const customers = result.data;
   const totalCount = result.count;
@@ -51,6 +58,8 @@ const CustomersPage: React.FC = () => {
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [activityFilter, setActivityFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const customerStats = useMemo(() => {
     const stats: { [key: string]: { transactionCount: number; totalSpent: number } } = {};
@@ -76,6 +85,16 @@ const CustomersPage: React.FC = () => {
 
   type CustomerWithStats = (typeof customerStats)[0];
 
+  // Apply activity filter
+  const filteredCustomers = useMemo(() => {
+    if (activityFilter === 'active') {
+      return customerStats.filter((c) => c.transactionCount > 0);
+    } else if (activityFilter === 'inactive') {
+      return customerStats.filter((c) => c.transactionCount === 0);
+    }
+    return customerStats;
+  }, [customerStats, activityFilter]);
+
   // type CustomerInput = Omit<Customer, 'id'>;
   // const addCustomerMutation = useMutation({
   //   mutationFn: async (data: CustomerInput) => addCustomer(data),
@@ -89,7 +108,7 @@ const CustomersPage: React.FC = () => {
     items: sortedCustomers,
     requestSort,
     sortConfig,
-  } = useSortableData(customerStats, {
+  } = useSortableData(filteredCustomers, {
     key: 'createdAt',
     direction: 'descending',
   });
@@ -118,7 +137,7 @@ const CustomersPage: React.FC = () => {
     // Pilih storeId sesuai role user
     const storeId =
       currentCustomer?.storeId ||
-      (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+      (currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId);
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
       return;
@@ -132,6 +151,20 @@ const CustomersPage: React.FC = () => {
     } else if (phone.startsWith('8')) {
       phone = '62' + phone;
     }
+
+    // FIXED: Check for duplicate phone number
+    const existingCustomers = customers.filter(
+      (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
+    );
+    if (existingCustomers.length > 0) {
+      addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
+      addAuditLog(
+        `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${existingCustomers[0].name}".`,
+        storeId,
+      );
+      return;
+    }
+
     const toastId = addToast('Menyimpan pelanggan...', 'info');
     setIsSaving(true);
     try {
@@ -175,7 +208,7 @@ const CustomersPage: React.FC = () => {
       setIsSaving(true);
       try {
         await deleteCustomer(customerToDelete.id);
-        addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId);
+        addAuditLog(`Menghapus pelanggan: "${customerToDelete.name}".`, customerToDelete.storeId!);
         updateToast(toastId, 'Pelanggan berhasil dihapus!', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
@@ -195,8 +228,130 @@ const CustomersPage: React.FC = () => {
   };
 
   const canAddNewCustomer = !(
-    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all'
+    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all'
   );
+
+  // Excel Export
+  const handleExportToExcel = async () => {
+    try {
+      await exportCustomersToExcel(customers);
+      addToast('Data pelanggan berhasil di-export ke Excel', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      addToast('Gagal export data ke Excel', 'error');
+    }
+  };
+
+  // Excel Import
+  const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsSaving(true);
+    const toastId = addToast('Memproses import data...', 'info');
+
+    try {
+      const importedCustomers = await importCustomersFromExcel(file);
+
+      let successCount = 0;
+      let errorCount = 0;
+      let skipCount = 0;
+
+      for (const customer of importedCustomers) {
+        try {
+          if (customer.id) {
+            // Update existing customer
+            await updateCustomer(customer.id, {
+              name: customer.name!,
+              phone: customer.phone || '',
+              address: customer.address,
+              notes: customer.notes,
+              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId!,
+            });
+            successCount++;
+          } else {
+            // Check for duplicate phone number before adding new customer
+            if (customer.phone) {
+              const normalizedPhone = customer.phone.replace(/\D/g, '');
+              const existingCustomer = customers.find(
+                (c) => c.phone?.replace(/\D/g, '') === normalizedPhone,
+              );
+
+              if (existingCustomer) {
+                console.warn('Duplicate phone number skipped:', customer.name, customer.phone);
+                skipCount++;
+                continue;
+              }
+            }
+
+            // Determine storeId - must not be null for RLS policy
+            const storeId =
+              (selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId) || '';
+
+            if (!storeId) {
+              console.error('storeId is required for new customers');
+              errorCount++;
+              continue;
+            }
+
+            // Add new customer
+            await addCustomer({
+              name: customer.name!,
+              phone: customer.phone || '',
+              address: customer.address,
+              notes: customer.notes,
+              storeId: storeId!,
+            } as Omit<Customer, 'id'>);
+            successCount++;
+          }
+        } catch (error) {
+          console.error('Error importing customer:', customer, error);
+          errorCount++;
+        }
+      }
+
+      if (skipCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat nomor HP)`,
+          'warning',
+        );
+      } else if (errorCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
+          'warning',
+        );
+      } else {
+        updateToast(toastId, `Berhasil import ${successCount} pelanggan`, 'success');
+      }
+
+      addAuditLog(
+        `Import ${successCount} pelanggan dari Excel.`,
+        selectedStoreId !== 'all' ? selectedStoreId : undefined,
+      );
+    } catch (error) {
+      console.error('Import error:', error);
+      updateToast(toastId, 'Gagal import data dari Excel', 'error');
+    } finally {
+      setIsSaving(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Download Template
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadCustomerTemplate();
+      addToast('Template Excel berhasil didownload', 'success');
+    } catch (error) {
+      console.error('Download template error:', error);
+      addToast('Gagal download template', 'error');
+    }
+  };
 
   const NoCustomersFound = () => (
     <EmptyState
@@ -220,58 +375,77 @@ const CustomersPage: React.FC = () => {
   );
 
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      {isSaving && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
-          <div className="flex items-center gap-3">
-            <svg
-              className="animate-spin h-6 w-6 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-            <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-          Manajemen Pelanggan
-        </h1>
-        <div className="w-full md:w-auto flex items-center gap-4">
-          <div className="relative w-full md:w-64">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari pelanggan..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
+        <div className="flex gap-2">
+          {/* Excel Import/Export Buttons */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+            title="Download Template Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Template</span>
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImportFromExcel}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!canAddNewCustomer || isSaving}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            title="Import dari Excel"
+          >
+            <UploadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Import</span>
+          </button>
+
+          <button
+            onClick={handleExportToExcel}
+            disabled={customers.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            title="Export ke Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Export</span>
+          </button>
+
           <button
             onClick={() => handleOpenFormModal()}
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 disabled:bg-blue-400 disabled:cursor-not-allowed"
             disabled={!canAddNewCustomer}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
             Tambah Pelanggan
           </button>
         </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari pelanggan..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          />
+        </div>
+        <select
+          value={activityFilter}
+          onChange={(e) => setActivityFilter(e.target.value as 'all' | 'active' | 'inactive')}
+          className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+        >
+          <option value="all">Semua Pelanggan</option>
+          <option value="active">Aktif (Ada Transaksi)</option>
+          <option value="inactive">Tidak Aktif</option>
+        </select>
       </div>
       {!canAddNewCustomer && (
         <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">
@@ -279,11 +453,11 @@ const CustomersPage: React.FC = () => {
         </p>
       )}
 
-      <div className="overflow-x-auto hidden md:block">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden hidden md:block">
+        <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
+          <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -291,9 +465,9 @@ const CustomersPage: React.FC = () => {
                   Nama {getSortIcon('name')}
                 </button>
               </th>
-              <th className="px-4 py-3">No. Telepon</th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-4 py-3">
+              <th className="px-6 py-3">No. Telepon</th>
+              {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                <th className="px-6 py-3">
                   <button
                     onClick={() => requestSort('storeName')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -302,7 +476,7 @@ const CustomersPage: React.FC = () => {
                   </button>
                 </th>
               )}
-              <th className="px-4 py-3 text-center">
+              <th className="px-6 py-3 text-center">
                 <button
                   onClick={() => requestSort('transactionCount')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 mx-auto"
@@ -310,7 +484,7 @@ const CustomersPage: React.FC = () => {
                   Total Transaksi {getSortIcon('transactionCount')}
                 </button>
               </th>
-              <th className="px-4 py-3 text-right">
+              <th className="px-6 py-3 text-right">
                 <button
                   onClick={() => requestSort('totalSpent')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
@@ -318,14 +492,17 @@ const CustomersPage: React.FC = () => {
                   Total Belanja {getSortIcon('totalSpent')}
                 </button>
               </th>
-              <th className="px-4 py-3">Aksi</th>
+              <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {paginatedCustomers.length > 0 ? (
               paginatedCustomers.map((customer) => (
-                <tr key={customer.id} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                <tr
+                  key={customer.id}
+                  className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
+                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     <Link
                       to={`/management/customers/${customer.id}`}
                       className="hover:underline text-blue-600 dark:text-blue-400"
@@ -333,27 +510,29 @@ const CustomersPage: React.FC = () => {
                       {customer.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">{customer.phone}</td>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                    <td className="px-4 py-3">{customer.storeName}</td>
+                  <td className="px-6 py-4">{customer.phone}</td>
+                  {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                    <td className="px-6 py-4">{customer.storeName}</td>
                   )}
-                  <td className="px-4 py-3 text-center">{customer.transactionCount}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-6 py-4 text-center">{customer.transactionCount}</td>
+                  <td className="px-6 py-4 text-right">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </td>
-                  <td className="px-4 py-3 flex items-center space-x-2">
-                    <button
-                      onClick={() => handleOpenFormModal(customer)}
-                      className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <EditIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(customer)}
-                      className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <Trash2Icon className="w-5 h-5" />
-                    </button>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleOpenFormModal(customer)}
+                        className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        <EditIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(customer)}
+                        className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        <Trash2Icon className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -361,7 +540,7 @@ const CustomersPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
+                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
                   }
                 >
                   <NoCustomersFound />
@@ -388,7 +567,7 @@ const CustomersPage: React.FC = () => {
                     {customer.name}
                   </Link>
                   <p className="text-sm text-slate-500 dark:text-slate-400">{customer.phone}</p>
-                  {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                  {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                       {customer.storeName}
                     </p>
@@ -397,13 +576,13 @@ const CustomersPage: React.FC = () => {
                 <div className="flex items-center space-x-1 flex-shrink-0">
                   <button
                     onClick={() => handleOpenFormModal(customer)}
-                    className="p-2 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <EditIcon className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleDelete(customer)}
-                    className="p-2 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <Trash2Icon className="w-5 h-5" />
                   </button>

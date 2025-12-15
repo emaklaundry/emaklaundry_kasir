@@ -1,13 +1,18 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ScheduledMaintenance } from '../../types';
+import { ScheduledMaintenance } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { useAssets } from './AssetContext';
 
 const fetchScheduledMaintenances = async (): Promise<ScheduledMaintenance[]> => {
   const { data, error } = await supabase.from('scheduled_maintenances').select('*');
   if (error) throw error;
-  return data || [];
+  return (data || []).map((s) => ({
+    ...s,
+    assetId: s.assetId ?? undefined,
+    lastCompletedDate: s.lastCompletedDate ? new Date(s.lastCompletedDate) : undefined,
+    nextDueDate: new Date(s.nextDueDate),
+  })) as ScheduledMaintenance[];
 };
 
 export function useScheduledMaintenances() {
@@ -26,7 +31,20 @@ export function useScheduledMaintenances() {
 
   const addScheduledMaintenance = useMutation({
     mutationFn: async (sm: Omit<ScheduledMaintenance, 'id'>) => {
-      const { error } = await supabase.from('scheduled_maintenances').insert([sm]);
+      // Convert Date to string and undefined to null for Supabase
+      const dbSM = {
+        ...sm,
+        assetId: sm.assetId ?? null,
+        nextDueDate:
+          sm.nextDueDate instanceof Date
+            ? sm.nextDueDate.toISOString().split('T')[0]
+            : sm.nextDueDate,
+        lastCompletedDate:
+          sm.lastCompletedDate instanceof Date
+            ? sm.lastCompletedDate.toISOString().split('T')[0]
+            : (sm.lastCompletedDate ?? null),
+      };
+      const { error } = await supabase.from('scheduled_maintenances').insert([dbSM]);
       if (error) throw error;
       return null;
     },
@@ -36,9 +54,19 @@ export function useScheduledMaintenances() {
   const updateScheduledMaintenance = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<ScheduledMaintenance> }) => {
       const { id, data } = variables;
+      // Convert Date to string and undefined to null for Supabase
+      const dbData: Record<string, unknown> = {};
+      for (const key in data) {
+        const value = (data as Record<string, unknown>)[key];
+        if (value instanceof Date) {
+          dbData[key] = value.toISOString().split('T')[0];
+        } else {
+          dbData[key] = value ?? null;
+        }
+      }
       const { data: updated, error } = await supabase
         .from('scheduled_maintenances')
-        .update(data)
+        .update(dbData)
         .eq('id', id)
         .select();
       if (error) throw error;

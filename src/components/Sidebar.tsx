@@ -14,8 +14,14 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   TruckIcon,
+  ChevronLeftIcon,
 } from './icons';
 import { UserRole } from '@/types';
+
+interface SidebarProps {
+  isOpen: boolean;
+  onToggle: () => void;
+}
 
 interface NavItem {
   path: string;
@@ -49,7 +55,7 @@ const navItems: NavItem[] = [
   { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
 ];
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { currentUser } = useAppContext();
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>(['/management']);
@@ -61,8 +67,8 @@ const Sidebar: React.FC = () => {
   };
 
   const hasAdminAccess =
-    currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.Admin;
-  const isSuperAdmin = currentUser.role === UserRole.SuperAdmin;
+    currentUser?.role === UserRole.SuperAdmin || currentUser?.role === UserRole.Admin;
+  const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
 
   const renderNavLinks = (items: NavItem[]) => {
     return items
@@ -87,17 +93,25 @@ const Sidebar: React.FC = () => {
             <li key={item.path}>
               <button
                 onClick={() => toggleMenu(item.path)}
-                className={`w-full flex items-center p-3 text-lg rounded-lg text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 group ${isParentActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                className={`w-full flex items-center p-3 text-base rounded-lg transition-all duration-200 group ${
+                  isParentActive
+                    ? 'bg-brand-blue-50 dark:bg-slate-700 text-brand-blue-700 dark:text-brand-blue-300'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
               >
-                <item.icon className="w-6 h-6 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                <span className="flex-1 ml-4 text-left whitespace-nowrap">{item.label}</span>
+                <item.icon className={`w-5 h-5 transition-all duration-200 ${
+                  isParentActive
+                    ? 'text-brand-blue-600 dark:text-brand-blue-400'
+                    : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-blue-600 dark:group-hover:text-brand-blue-400'
+                }`} />
+                <span className="flex-1 ml-3 text-left whitespace-nowrap font-medium">{item.label}</span>
                 {isOpen ? (
-                  <ChevronUpIcon className="w-5 h-5" />
+                  <ChevronUpIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 ) : (
-                  <ChevronDownIcon className="w-5 h-5" />
+                  <ChevronDownIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 )}
               </button>
-              {isOpen && <ul className="py-2 space-y-2 pl-4">{renderNavLinks(item.children)}</ul>}
+              {isOpen && <ul className="mt-2 space-y-1 pl-3 border-l-2 border-slate-200 dark:border-slate-700">{renderNavLinks(item.children)}</ul>}
             </li>
           );
         }
@@ -107,11 +121,17 @@ const Sidebar: React.FC = () => {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex items-center p-3 text-lg rounded-lg text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 group ${isActive ? 'bg-brand-blue-50 dark:bg-slate-700 text-brand-blue-600 dark:text-brand-blue-300 font-semibold' : ''}`
+                `flex items-center p-3 text-base rounded-lg transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-brand-blue-600 dark:bg-brand-blue-600 text-white shadow-lg shadow-brand-blue-500/30'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:pl-4'
+                }`
               }
             >
-              <item.icon className="w-6 h-6 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-              <span className="ml-4">{item.label}</span>
+              <item.icon className={`w-5 h-5 transition-all duration-200 ${
+                'group-[.active]:text-white'
+              }`} />
+              <span className="ml-3 font-medium">{item.label}</span>
             </NavLink>
           </li>
         );
@@ -119,20 +139,45 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside
-      id="logo-sidebar"
-      className="print-hide fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0"
-      aria-label="Sidebar"
-    >
-      <div className="h-full px-3 py-4 overflow-y-auto bg-slate-50 dark:bg-slate-800">
-        <NavLink to="/" className="flex items-center pl-2.5 mb-5">
-          <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-            Laundry POS
-          </span>
-        </NavLink>
-        <ul className="space-y-2 font-medium">{renderNavLinks(navItems)}</ul>
-      </div>
-    </aside>
+    <>
+      {/* Overlay untuk mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 z-30 sm:hidden"
+          onClick={onToggle}
+          aria-hidden="true"
+        />
+      )}
+      
+      <aside
+        id="logo-sidebar"
+        className={`print-hide fixed top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        aria-label="Sidebar"
+      >
+        <div className="h-full px-3 py-4 overflow-y-auto bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
+          {/* Header dengan toggle button */}
+          <div className="flex items-center justify-between mb-6">
+            <NavLink to="/" className="flex items-center group">
+              <span className="self-center text-2xl font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-400 bg-clip-text text-transparent dark:from-brand-blue-400 dark:to-brand-blue-300">
+                Laundry POS
+              </span>
+            </NavLink>
+            <button
+              onClick={onToggle}
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors hidden sm:block"
+              aria-label="Toggle Sidebar"
+              title="Sembunyikan Sidebar"
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <ul className="space-y-2 font-medium flex-1">{renderNavLinks(navItems)}</ul>
+        </div>
+      </aside>
+    </>
   );
 };
 

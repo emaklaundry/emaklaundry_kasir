@@ -23,8 +23,8 @@ const NavItem: React.FC<{
     tabIndex={disabled ? -1 : 0}
     aria-disabled={disabled}
   >
-    <Icon className="w-6 h-6" />
-    <span className="text-xs font-medium tracking-tight">{label}</span>
+    <Icon className="w-6 h-6 mb-0.5" />
+    <span className="text-[10px] font-medium tracking-tight leading-tight">{label}</span>
   </NavLink>
 );
 
@@ -36,7 +36,7 @@ const BottomNavBar: React.FC = () => {
   // Hanya menu yang boleh diakses kasir
   if (isCashier) {
     return (
-      <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden">
+      <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
         <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
           <NavItem to="/" icon={HomeIcon} label="Dashboard" />
           <NavItem to="/quick-actions" icon={BoltIcon} label="Aksi Cepat" />
@@ -48,7 +48,7 @@ const BottomNavBar: React.FC = () => {
 
   // Menu untuk admin/superadmin
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden">
+    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         <NavItem to="/" icon={HomeIcon} label="Dashboard" />
         <NavItem to="/quick-actions" icon={BoltIcon} label="Aksi Cepat" />

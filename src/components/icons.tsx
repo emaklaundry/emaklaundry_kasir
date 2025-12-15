@@ -211,6 +211,21 @@ export const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }
   </Icon>
 );
 
+export const MenuIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </Icon>
+);
+
+export const XIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </Icon>
+);
+
 export const PrinterIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Icon className={className}>
     <polyline points="6 9 6 2 18 2 18 9" />
@@ -321,5 +336,29 @@ export const TagIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const CommandIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Icon className={className}>
     <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
+  </Icon>
+);
+
+export const KeyIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <circle cx="7.5" cy="15.5" r="5.5" />
+    <path d="m21 2-9.6 9.6" />
+    <path d="m15.5 7.5 3 3L22 7l-3-3" />
+  </Icon>
+);
+
+export const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" x2="12" y1="15" y2="3" />
+  </Icon>
+);
+
+export const UploadIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" x2="12" y1="3" y2="15" />
   </Icon>
 );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TransactionItem } from '../../types';
+import { TransactionItem } from '../types';
 import Modal from './Modal';
 
 interface ItemNotesModalProps {

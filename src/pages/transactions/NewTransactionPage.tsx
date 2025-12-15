@@ -46,6 +46,9 @@ const NewTransactionPage: React.FC = () => {
   const { data: customersData } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    // PENTING: nonaktifkan auto-refetch saat user sedang input data
+    refetchOnWindowFocus: false,
+    staleTime: 10 * 60 * 1000, // 10 menit - data customer jarang berubah
   });
   const customers: Customer[] = Array.isArray(customersData)
     ? customersData
@@ -111,7 +114,9 @@ const NewTransactionPage: React.FC = () => {
       val = settings?.discountRate ?? 0;
       type = 'percent';
     } else {
-      val = Number(discountValue) || 0;
+      // Ensure discountValue is a valid number
+      const parsedValue = Number(discountValue);
+      val = isNaN(parsedValue) ? 0 : Math.max(0, parsedValue);
     }
     let rawDiscount = 0;
     if (type === 'percent') {
@@ -126,7 +131,6 @@ const NewTransactionPage: React.FC = () => {
     const taxableAmount = subtotal - discountAmount;
     return Math.round(taxableAmount * ((settings?.taxRate ?? 0) / 100));
   }, [subtotal, discountAmount, settings?.taxRate]);
-
 
   const grandTotal = useMemo(() => {
     return subtotal - discountAmount + taxAmount;
@@ -147,7 +151,7 @@ const NewTransactionPage: React.FC = () => {
   // ----------------------------------
 
   // GANTI baris ini:
-  // const amountToPay = grandTotal; 
+  // const amountToPay = grandTotal;
   // MENJADI:
   const amountToPay = finalTotalToPay;
 
@@ -203,7 +207,6 @@ const NewTransactionPage: React.FC = () => {
     }
   }, [showKiloanToast, addToast]);
 
-
   // (Deklarasi duplikat finalTotalToPay, roundingDifference, amountToPay dihapus. Sudah ada di atas.)
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
@@ -222,9 +225,15 @@ const NewTransactionPage: React.FC = () => {
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
     if (grandTotal <= 0) return PaymentStatus.Paid;
-    // Gunakan amountToPay untuk pengecekan status, bukan grandTotal mentah
-    // Karena jika dibulatkan ke bawah, actualAmountPaid pasti < grandTotal asli
-    if (actualAmountPaid > 0) return PaymentStatus.Paid;
+
+    // Toleransi untuk floating point arithmetic
+    const paid = actualAmountPaid;
+    const total = grandTotal;
+
+    if (Math.abs(paid - total) < 0.01) return PaymentStatus.Paid;
+    if (paid >= total) return PaymentStatus.Paid;
+    if (paid > 0) return PaymentStatus.Unpaid; // Partial payment still counts as Unpaid
+
     return PaymentStatus.Unpaid;
   }, [isPayingNow, grandTotal, actualAmountPaid]);
 
@@ -303,7 +312,8 @@ const NewTransactionPage: React.FC = () => {
       if (field === 'width') item.width = val;
       const l = item.length || 0;
       const w = item.width || 0;
-      const area = parseFloat((l * w).toFixed(2));
+      // FIXED: Prevent submitting with zero area
+      const area = l > 0 && w > 0 ? parseFloat((l * w).toFixed(2)) : 0;
       item.quantity = area;
       item.subtotal = item.price * item.quantity;
     } else if (field === 'quantity' && typeof value === 'number') {
@@ -410,10 +420,12 @@ const NewTransactionPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving) {
+      addToast('Transaksi sedang disimpan, mohon tunggu...', 'warning');
+      return;
+    }
 
     if (!currentStoreId || currentStoreId === 'all') {
-      // Perbaikan pesan agar cocok untuk semua role jika terjadi error data
       const msg =
         currentUser?.role === UserRole.SuperAdmin
           ? 'Super Admin harus memilih cabang spesifik.'
@@ -429,19 +441,24 @@ const NewTransactionPage: React.FC = () => {
       addToast('Minimal satu layanan harus ditambahkan.', 'warning');
       return;
     }
+
+    // Prevent double submission
+    setIsSaving(true);
+
     if (isPayingNow) {
       if (!paymentMethod) {
         addToast('Pilih metode pembayaran.', 'error');
+        setIsSaving(false);
         return;
       }
       if (paymentMethod === PaymentMethod.Cash && tenderedAmount < grandTotal) {
         addToast('Jumlah uang diterima tidak boleh kurang dari total tagihan.', 'error');
+        setIsSaving(false);
         return;
       }
     }
 
-    setIsSaving(true);
-    const toastId = addToast('Menyimpan transaksi...', 'info');
+    const toastId = addToast('Menyimpan transaksi ke database...', 'info');
     try {
       // --- PERBAIKAN: Hitung waktu saat tombol ditekan ---
       const now = new Date(); // Waktu Masuk (Real-time)
@@ -471,16 +488,14 @@ const NewTransactionPage: React.FC = () => {
       }));
       // Hitung total diskon akhir (diskon manual + diskon pembulatan)
       const finalDiscount = discountAmount + roundingDifference;
-      // Pastikan total yang disimpan ke database adalah total setelah pembulatan
-      const finalTotal = grandTotal - roundingDifference;
 
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
         items: cleanedItems,
         subtotal,
-        discount: finalDiscount, // Gunakan finalDiscount
+        discount: finalDiscount,
         tax: taxAmount,
-        total: finalTotal,       // Gunakan finalTotal (agar match dengan amountPaid)
+        total: subtotal - finalDiscount + taxAmount, // FIXED: Calculate total consistently with displayed grandTotal
         paymentStatus,
         orderStatus: OrderStatus.Processing,
         // --- UPDATE: Gunakan variabel waktu yang baru dihitung ---
@@ -496,6 +511,10 @@ const NewTransactionPage: React.FC = () => {
         idempotencyKey: idempotencyKey,
       };
       const savedTransaction = await addTransaction(newTransaction);
+
+      // Update toast untuk verifikasi
+      updateToast(toastId, 'Memverifikasi data tersimpan...', 'info');
+
       if (savedTransaction) {
         // Map Supabase transaction (JSON fields, dates) to app Transaction type
         const tx: Transaction = {
@@ -515,7 +534,7 @@ const NewTransactionPage: React.FC = () => {
             : [],
           createdAt: savedTransaction.createdAt ? new Date(savedTransaction.createdAt) : new Date(),
           estimatedCompletionDate: savedTransaction.estimatedCompletionDate ?? '',
-          invoiceCode: savedTransaction.invoiceCode ?? undefined,
+          invoiceCode: savedTransaction.invoice_code ?? undefined,
           paymentStatus: savedTransaction.paymentStatus as PaymentStatus,
           orderStatus: savedTransaction.orderStatus as OrderStatus,
           paymentMethod: savedTransaction.paymentMethod
@@ -529,13 +548,9 @@ const NewTransactionPage: React.FC = () => {
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);
-        updateToast(toastId, 'Transaksi berhasil disimpan.', 'success');
+        updateToast(toastId, '✓ Transaksi berhasil disimpan dan terverifikasi.', 'success');
       } else {
-        updateToast(
-          toastId,
-          'Gagal menyimpan transaksi: Tidak ada data yang dikembalikan.',
-          'error',
-        );
+        throw new Error('Tidak ada data yang dikembalikan dari server');
       }
     } catch (error: unknown) {
       // Tangani error duplikat idempotencyKey
@@ -568,12 +583,12 @@ const NewTransactionPage: React.FC = () => {
                   (item) => ({
                     ...item,
                     itemDetails: item.itemDetails ?? [],
-                  })
+                  }),
                 )
               : [],
             createdAt: existingTx.createdAt ? new Date(existingTx.createdAt) : new Date(),
             estimatedCompletionDate: existingTx.estimatedCompletionDate ?? '',
-            invoiceCode: existingTx.invoiceCode ?? undefined,
+            invoiceCode: existingTx.invoice_code ?? undefined,
             paymentStatus: existingTx.paymentStatus as PaymentStatus,
             orderStatus: existingTx.orderStatus as OrderStatus,
             paymentMethod: existingTx.paymentMethod
@@ -625,7 +640,6 @@ const NewTransactionPage: React.FC = () => {
     setIsSaving(false);
     setIsPayingNow(false);
     setPaymentMethod(undefined);
-    setAmountPaidStr('');
     setTenderedAmountStr('');
     setIdempotencyKey(generateUUID()); // Generate kunci baru untuk transaksi berikutnya
   };
@@ -647,7 +661,6 @@ const NewTransactionPage: React.FC = () => {
       setTenderedAmountStr('');
     }
   };
-
 
   return (
     <>
@@ -921,12 +934,14 @@ const NewTransactionPage: React.FC = () => {
                     </span>
                   </div>
                   {/* Tambahkan blok ini di atas Grand Total */}
-                  {isPayingNow && paymentMethod === PaymentMethod.Cash && roundingDifference > 0 && (
-                    <div className="flex justify-between items-center text-lg text-slate-500 dark:text-slate-400 italic">
-                      <span>Pembulatan:</span>
-                      <span>- Rp {formatRupiah(roundingDifference)}</span>
-                    </div>
-                  )}
+                  {isPayingNow &&
+                    paymentMethod === PaymentMethod.Cash &&
+                    roundingDifference > 0 && (
+                      <div className="flex justify-between items-center text-lg text-slate-500 dark:text-slate-400 italic">
+                        <span>Pembulatan:</span>
+                        <span>- Rp {formatRupiah(roundingDifference)}</span>
+                      </div>
+                    )}
 
                   <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
                     <span>Grand Total:</span>
@@ -1092,3 +1107,5 @@ const NewTransactionPage: React.FC = () => {
 };
 
 export default NewTransactionPage;
+
+

@@ -10,17 +10,19 @@ import {
 } from '../../components/icons';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import { Customer } from '../../types';
 // import { OrderStatus, PaymentStatus } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { data: customers = [] } = useQuery({
+  const { data: customersData } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
   });
+  const customers = Array.isArray(customersData) ? customersData : (customersData?.data ?? []);
   const { transactions } = useTransactions();
-  const customer = customers.find((c) => c.id === id);
+  const customer = customers.find((c: Customer) => c.id === id);
   const customerTransactions = transactions.filter((t) => t.customerId === id);
 
   if (!customer) {
@@ -118,7 +120,7 @@ const CustomerDetailPage: React.FC = () => {
                 to={`/transactions/${mostRecentTransaction.id}/receipt`}
                 className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
               >
-                {mostRecentTransaction.invoice_code || mostRecentTransaction.id}
+                {mostRecentTransaction.invoiceCode || mostRecentTransaction.id}
               </Link>
             </div>
             <div className="flex justify-between items-center">
@@ -157,7 +159,7 @@ const CustomerDetailPage: React.FC = () => {
                 sortedTransactions.map((t) => (
                   <tr key={t.id} className="border-b dark:border-slate-700">
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                      {t.invoice_code || t.id}
+                      {t.invoiceCode || t.id}
                     </td>
                     <td className="px-4 py-3">
                       {new Date(t.createdAt).toLocaleDateString('id-ID')}

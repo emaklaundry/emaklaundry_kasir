@@ -1,11 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Expense } from '../../types';
+import { Expense } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 const fetchExpenses = async (): Promise<Expense[]> => {
   const { data, error } = await supabase.from('expenses').select('*');
   if (error) throw error;
-  return data || [];
+  return (data || []).map((e) => ({
+    ...e,
+    date: new Date(e.date),
+    storeId: e.storeId ?? undefined,
+  })) as Expense[];
 };
 
 export function useExpenses() {
@@ -17,7 +21,14 @@ export function useExpenses() {
 
   const addExpense = useMutation({
     mutationFn: async (expense: Omit<Expense, 'id'>) => {
-      const { error } = await supabase.from('expenses').insert([expense]);
+      // Convert Date to string and undefined to null for Supabase
+      const dbExpense = {
+        ...expense,
+        date:
+          expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
+        storeId: expense.storeId ?? null,
+      };
+      const { error } = await supabase.from('expenses').insert([dbExpense]);
       if (error) throw error;
       return null;
     },
@@ -27,9 +38,19 @@ export function useExpenses() {
   const updateExpense = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Expense> }) => {
       const { id, data } = variables;
+      // Convert Date to string and undefined to null for Supabase
+      const dbData: Record<string, unknown> = {};
+      for (const key in data) {
+        const value = (data as Record<string, unknown>)[key];
+        if (key === 'date' && value instanceof Date) {
+          dbData[key] = value.toISOString().split('T')[0];
+        } else {
+          dbData[key] = value ?? null;
+        }
+      }
       const { data: updated, error } = await supabase
         .from('expenses')
-        .update(data)
+        .update(dbData)
         .eq('id', id)
         .select();
       if (error) throw error;

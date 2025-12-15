@@ -2,25 +2,57 @@ import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
+import ChangePasswordModal from '../../components/ChangePasswordModal';
+import { KeyIcon } from '../../components/icons';
+import { Wrench, AlertTriangle } from 'lucide-react';
+import useAppContext from '../../contexts/useAppContext';
+import { UserRole } from '../../types';
+
+// Template default untuk WhatsApp footer
+const DEFAULT_WHATSAPP_FOOTER = `🔍 Cek status cucian Anda:
+https://www.emaklaundry.my.id/
+
+💬 Bantu kami lebih baik! Berikan kritik & saran:
+https://forms.gle/8JnjZZ4cu5oTXGYr9`;
 
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings } = useSettings();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
+  const { currentUser } = useAppContext();
 
   const [formData, setFormData] = useState(settings);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  // Only Super Admin can toggle maintenance mode
+  const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
 
   useEffect(() => {
     if (settings) {
-      setFormData(settings);
+      // Set default template untuk whatsappFooter jika kosong
+      setFormData({
+        ...settings,
+        whatsappFooter: settings.whatsappFooter || DEFAULT_WHATSAPP_FOOTER,
+      });
     }
   }, [settings]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const isCheckbox = type === 'checkbox';
     const isNumber = ['taxRate', 'discountRate'].includes(name);
+
     setFormData((prev) =>
-      prev ? { ...prev, [name]: isNumber ? parseFloat(value) || 0 : value } : null,
+      prev
+        ? {
+            ...prev,
+            [name]: isCheckbox
+              ? (e.target as HTMLInputElement).checked
+              : isNumber
+                ? parseFloat(value) || 0
+                : value,
+          }
+        : null,
     );
   };
 
@@ -81,10 +113,94 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
-      <h1 className="text-2xl font-semibold mb-6 text-slate-900 dark:text-white">
-        Pengaturan Aplikasi
-      </h1>
+
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+          Pengaturan Aplikasi
+        </h1>
+        <button
+          type="button"
+          onClick={() => setIsPasswordModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm sm:text-base transition-colors touch-target"
+        >
+          <KeyIcon className="w-5 h-5" />
+          <span className="hidden sm:inline">Ubah Password</span>
+          <span className="sm:hidden">Password</span>
+        </button>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isSaving}>
+        {/* Maintenance Mode Section - Only for Super Admin */}
+        {isSuperAdmin && (
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-yellow-500 rounded-full p-2">
+                <Wrench className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Mode Pemeliharaan
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Aktifkan saat melakukan perbaikan sistem
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 bg-white dark:bg-slate-800/50 rounded-lg p-4">
+              <input
+                type="checkbox"
+                id="isMaintenanceMode"
+                name="isMaintenanceMode"
+                checked={formData?.isMaintenanceMode || false}
+                onChange={handleChange}
+                disabled={isSaving}
+                className="mt-1 w-5 h-5 text-yellow-600 bg-slate-100 border-slate-300 rounded focus:ring-yellow-500 dark:focus:ring-yellow-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600"
+              />
+              <div className="flex-1">
+                <label
+                  htmlFor="isMaintenanceMode"
+                  className="text-base font-medium text-slate-900 dark:text-white cursor-pointer"
+                >
+                  Aktifkan Mode Pemeliharaan
+                </label>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Ketika aktif, hanya Super Admin yang dapat mengakses sistem. Kasir dan Admin
+                  lainnya akan melihat halaman maintenance.
+                </p>
+              </div>
+            </div>
+
+            {formData?.isMaintenanceMode && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                <div className="flex items-start">
+                  <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
+                  <div className="flex-1">
+                    <label
+                      htmlFor="maintenanceMessage"
+                      className="block mb-2 text-base font-medium text-yellow-800 dark:text-yellow-300"
+                    >
+                      Pesan Pemeliharaan (Opsional)
+                    </label>
+                    <textarea
+                      id="maintenanceMessage"
+                      name="maintenanceMessage"
+                      value={formData?.maintenanceMessage || ''}
+                      onChange={handleChange}
+                      disabled={isSaving}
+                      rows={3}
+                      placeholder="Contoh: Sistem sedang dalam perbaikan. Diperkirakan selesai dalam 30 menit."
+                      className="bg-white dark:bg-slate-700 border border-yellow-300 dark:border-yellow-700 text-slate-900 dark:text-white text-sm rounded-lg block w-full p-3"
+                    />
+                    <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                      Pesan ini akan ditampilkan kepada pengguna yang mencoba mengakses sistem.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <label
             htmlFor="receiptMessage"
@@ -100,6 +216,41 @@ const SettingsPage: React.FC = () => {
             disabled={isSaving}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           />
+        </div>
+
+        <div>
+          <label
+            htmlFor="whatsappFooter"
+            className="block mb-2 text-lg font-medium text-slate-900 dark:text-white"
+          >
+            Footer Pesan WhatsApp
+          </label>
+          <textarea
+            id="whatsappFooter"
+            name="whatsappFooter"
+            value={formData.whatsappFooter || DEFAULT_WHATSAPP_FOOTER}
+            onChange={handleChange}
+            disabled={isSaving}
+            rows={4}
+            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white font-mono text-sm"
+          />
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Pesan ini akan ditampilkan di akhir pesan WhatsApp kepada pelanggan.
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) =>
+                  prev ? { ...prev, whatsappFooter: DEFAULT_WHATSAPP_FOOTER } : null,
+                )
+              }
+              disabled={isSaving}
+              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium disabled:opacity-50"
+            >
+              Reset Template
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -168,6 +319,11 @@ const SettingsPage: React.FC = () => {
           <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
         </button>
       </form>
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 };

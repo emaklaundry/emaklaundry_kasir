@@ -75,7 +75,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
         try {
           const dateStr = formData.date.toISOString().split('T')[0];
           await addExpense({
-            date: dateStr,
+            date: new Date(dateStr),
             description: `Quick Maintenance: ${assetToUpdate.name} (${formData.description})`,
             category: 'Perawatan Aset',
             amount: formData.cost,

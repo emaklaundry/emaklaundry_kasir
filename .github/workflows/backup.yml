@@ -2,26 +2,45 @@ name: Daily Supabase Backup
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Jalan setiap jam 00:00 UTC
+    - cron: '0 0 * * *' # Jalan setiap jam 00:00 UTC (07:00 WIB)
+  workflow_dispatch: # Manual trigger
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install PostgreSQL Client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
-      - name: Backup Database
+      - name: Create Backup
         run: |
-          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -f backup_$(date +%Y-%m-%d).sql
+          mkdir -p database/backup
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            -f database/backup/auto_backup_$(date +%Y-%m-%d).sql
 
-      - name: Upload Artifact
+      - name: Commit & Push Backup
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add database/backup/
+          git commit -m "🔄 Auto backup: $(date +%Y-%m-%d)" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+
+      - name: Upload Artifact (Fallback)
         uses: actions/upload-artifact@v4
         with:
-          name: db-backup
-          path: '*.sql'
-          retention-days: 7
+          name: db-backup-$(date +%Y-%m-%d)
+          path: 'database/backup/*.sql'
+          retention-days: 30

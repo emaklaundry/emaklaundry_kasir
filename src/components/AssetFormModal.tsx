@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Asset } from '../../types';
-import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { Asset } from '@/types';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
+import { getLocalDateString } from '@/utils/dateHelpers';
+import useToasts from '@/contexts/useToasts';
 import Modal from './Modal';
 
 interface AssetFormModalProps {
@@ -10,29 +12,12 @@ interface AssetFormModalProps {
 }
 
 const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave }) => {
-  // Helper untuk mendapatkan YYYY-MM-DD lokal dengan aman
-  const getLocalDateStr = (dateInput?: string | Date) => {
-    if (!dateInput) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-    if (typeof dateInput === 'string') {
-      return dateInput.split('T')[0];
-    }
-    const d = dateInput;
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const { addToast } = useToasts();
 
   const [formData, setFormData] = useState(() => ({
     name: asset?.name || '',
     serialNumber: asset?.serialNumber || '',
-    purchaseDate: getLocalDateStr(asset?.purchaseDate),
+    purchaseDate: getLocalDateString(asset?.purchaseDate),
     purchaseCost: asset?.purchaseCost || 0,
     status: asset?.status || 'Active',
   }));
@@ -51,9 +36,35 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // --- PERBAIKAN 2: Jangan konversi ke ISOString! ---
-    // Kirim data apa adanya (string YYYY-MM-DD) agar tanggal tidak bergeser.
-    onSave(formData);
+
+    // Validate before save
+    if (!formData.name || formData.name.trim() === '') {
+      addToast('Nama aset harus diisi.', 'error');
+      return;
+    }
+    if (!formData.purchaseDate) {
+      addToast('Tanggal pembelian harus diisi.', 'error');
+      return;
+    }
+    if (formData.purchaseCost <= 0) {
+      addToast('Harga pembelian harus lebih dari 0.', 'error');
+      return;
+    }
+    if (
+      !formData.status ||
+      !['Active', 'Under Maintenance', 'Decommissioned'].includes(formData.status)
+    ) {
+      addToast('Status aset tidak valid.', 'error');
+      return;
+    }
+
+    // Convert purchaseDate string to Date object
+    const assetData = {
+      ...formData,
+      purchaseDate: new Date(formData.purchaseDate),
+    };
+
+    onSave(assetData);
   };
 
   return (

@@ -3,6 +3,8 @@ import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { SendIcon } from './icons';
 import { Transaction, Customer, OrderStatus } from '@/types';
+import { useAuditLogs } from '../contexts/AuditLogContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -18,6 +20,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   customer,
 }) => {
   const { addToast } = useToasts();
+  const { addAuditLog } = useAuditLogs();
+  const { settings } = useSettings();
 
   const message = React.useMemo(() => {
     if (!transaction || !customer) return '';
@@ -38,6 +42,11 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const rawRemaining = total - amountPaid;
     const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
     const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
+
+    // Footer custom dari settings atau default
+    const defaultFooter = `🔍 Cek status cucian Anda:\nhttps://www.emaklaundry.my.id/\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9`;
+    const footer = settings?.whatsappFooter || defaultFooter;
+
     if (transaction.orderStatus === OrderStatus.Processing) {
       defaultMessage =
         `Halo ${customer.name},\n\n` +
@@ -58,6 +67,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}\n` +
         `─────────────────────────────\n` +
         `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
+        `${footer}\n\n` +
         `Salam hangat,\nTim Emak Laundry`;
     } else if (transaction.orderStatus === OrderStatus.Ready) {
       defaultMessage =
@@ -70,6 +80,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
         `─────────────────────────────\n` +
         `Silakan datang ke toko kami untuk pengambilan.\n\n` +
+        `${footer}\n\n` +
         `Terima kasih,\nTim Emak Laundry`;
     } else {
       defaultMessage =
@@ -81,10 +92,12 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Total: Rp${total.toLocaleString('id-ID')}\n` +
         `Status: LUNAS\n` +
         `─────────────────────────────\n` +
-        `Terima kasih telah menggunakan layanan kami.\nTim Emak Laundry`;
+        `Terima kasih telah menggunakan layanan kami.\n\n` +
+        `${footer}\n\n` +
+        `Tim Emak Laundry`;
     }
     return defaultMessage;
-  }, [transaction, customer]);
+  }, [transaction, customer, settings]);
 
   const handleSend = () => {
     if (!customer?.phone) {
@@ -102,6 +115,14 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const whatsappUrl = isMobile
       ? `https://wa.me/${phone}?text=${encodedMessage}`
       : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+
+    if (transaction) {
+      addAuditLog(
+        `Mengirim notifikasi WhatsApp untuk transaksi ${transaction.id} kepada ${customer.name}.`,
+        transaction.storeId,
+      );
+    }
+
     window.open(whatsappUrl, '_blank');
     onClose();
   };

@@ -1,16 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  PlusCircleIcon,
   EditIcon,
   Trash2Icon,
   PackageIcon,
   SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  DownloadIcon,
+  UploadIcon,
 } from '../../components/icons';
+import {
+  exportInventoryToExcel,
+  importInventoryFromExcel,
+  downloadInventoryTemplate,
+} from '../../utils/excelUtils';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { fetchInventory, useInventoryMutations } from '../../contexts/InventoryContext';
@@ -38,7 +44,7 @@ const InventoryPage: React.FC = () => {
     ],
     queryFn: () =>
       fetchInventory({ page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId }),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
   const inventory = result.data;
   const totalCount = result.count;
@@ -47,6 +53,7 @@ const InventoryPage: React.FC = () => {
   const { addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventoryMutations();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   type InventoryInput = Omit<InventoryItem, 'id'>;
   const addInventoryMutation = useMutation({
     mutationFn: async (data: InventoryInput) => addInventoryItem(data),
@@ -90,7 +97,7 @@ const InventoryPage: React.FC = () => {
   const handleSaveItem = async (item: Omit<InventoryItem, 'id' | 'storeId'>) => {
     const storeId =
       currentItem?.storeId ||
-      (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+      (currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId);
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit item.', 'warning');
       return;
@@ -128,7 +135,7 @@ const InventoryPage: React.FC = () => {
       const toastId = addToast('Menghapus item inventaris...', 'info');
       try {
         await deleteInventoryMutation.mutateAsync(itemToDelete.id);
-        addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId);
+        addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId!);
         updateToast(toastId, 'Item inventaris berhasil dihapus!', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
@@ -161,7 +168,8 @@ const InventoryPage: React.FC = () => {
     () =>
       inventoryWithStore.filter((item) => {
         if (filter === 'low_stock') {
-          return item.stock <= item.lowStockThreshold;
+          // FIXED: Exclude items with threshold=0 (monitoring disabled)
+          return item.lowStockThreshold > 0 && item.stock <= item.lowStockThreshold;
         }
         return true;
       }),
@@ -182,7 +190,7 @@ const InventoryPage: React.FC = () => {
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
-  const canAddNewItem = !(currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all');
+  const canAddNewItem = !(currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all');
 
   const handleFilterChange = (newFilter: 'all' | 'low_stock') => {
     setFilter(newFilter);
@@ -194,88 +202,216 @@ const InventoryPage: React.FC = () => {
     setSearchParams(searchParams);
   };
 
+  // Excel Export
+  const handleExportToExcel = async () => {
+    try {
+      await exportInventoryToExcel(inventory);
+      addToast('Data inventaris berhasil di-export ke Excel', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      addToast('Gagal export data ke Excel', 'error');
+    }
+  };
+
+  // Excel Import
+  const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const toastId = addToast('Memproses import data...', 'info');
+
+    try {
+      const importedItems = await importInventoryFromExcel(file);
+
+      let successCount = 0;
+      let errorCount = 0;
+      let skipCount = 0;
+
+      for (const item of importedItems) {
+        try {
+          if (item.id) {
+            // Validate UUID format before UPDATE
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(item.id)) {
+              console.warn('Invalid UUID skipped:', item.id);
+              skipCount++;
+              continue;
+            }
+
+            // Update existing item
+            await updateInventoryMutation.mutateAsync({
+              id: item.id,
+              data: {
+                name: item.name!,
+                stock: item.stock!,
+                unit: item.unit!,
+                lowStockThreshold: item.lowStockThreshold!,
+                storeId: selectedStoreId === 'all' ? undefined : selectedStoreId!,
+              } as InventoryInput,
+            });
+            successCount++;
+          } else {
+            // Check for duplicate before adding new item
+            const existingItem = inventory?.find(
+              (i) => i.name.toLowerCase() === item.name!.toLowerCase(),
+            );
+            if (existingItem) {
+              console.warn('Duplicate item skipped:', item.name);
+              skipCount++;
+              continue;
+            }
+
+            // Ensure storeId is set for INSERT (RLS policy requirement)
+            const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
+
+            if (!storeId) {
+              console.error('storeId is required for new items');
+              errorCount++;
+              continue;
+            }
+
+            // Add new item
+            await addInventoryMutation.mutateAsync({
+              name: item.name!,
+              stock: item.stock!,
+              unit: item.unit!,
+              lowStockThreshold: item.lowStockThreshold!,
+              storeId: storeId!,
+            });
+            successCount++;
+          }
+        } catch (error) {
+          console.error('Error importing item:', item, error);
+          errorCount++;
+        }
+      }
+
+      if (skipCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
+          'warning',
+        );
+      } else if (errorCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
+          'warning',
+        );
+      } else {
+        updateToast(toastId, `Berhasil import ${successCount} item inventaris`, 'success');
+      }
+
+      addAuditLog(
+        `Import ${successCount} item inventaris dari Excel`,
+        selectedStoreId === 'all' ? undefined : selectedStoreId,
+      );
+    } catch (error) {
+      console.error('Import error:', error);
+      updateToast(toastId, 'Gagal import data dari Excel', 'error');
+    } finally {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Download Template
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadInventoryTemplate();
+      addToast('Template Excel berhasil didownload', 'success');
+    } catch (error) {
+      console.error('Download template error:', error);
+      addToast('Gagal download template', 'error');
+    }
+  };
+
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      {(addInventoryMutation.isPending ||
-        updateInventoryMutation.isPending ||
-        deleteInventoryMutation.isPending) && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
-          <div className="flex items-center gap-3">
-            <svg
-              className="animate-spin h-6 w-6 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-            <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-          Manajemen Inventaris
-        </h1>
-        <div className="w-full md:w-auto flex items-center gap-4">
-          <div className="relative w-full md:w-64">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari item..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Inventaris</h1>
+        <div className="flex gap-2">
+          {/* Excel Import/Export Buttons */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+            title="Download Template Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Template</span>
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImportFromExcel}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!canAddNewItem}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            title="Import dari Excel"
+          >
+            <UploadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Import</span>
+          </button>
+
+          <button
+            onClick={handleExportToExcel}
+            disabled={inventory.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            title="Export ke Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Export</span>
+          </button>
+
           <button
             onClick={() => handleOpenFormModal()}
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 disabled:bg-blue-400 disabled:cursor-not-allowed"
             disabled={!canAddNewItem}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
             Tambah Item
           </button>
         </div>
       </div>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari item..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          />
+        </div>
+        <select
+          value={filter}
+          onChange={(e) => handleFilterChange(e.target.value as typeof filter)}
+          className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+        >
+          <option value="all">Semua Item</option>
+          <option value="low_stock">Stok Rendah</option>
+        </select>
+      </div>
+
       {!canAddNewItem && (
-        <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4 -mt-2">
+        <p className="text-sm text-yellow-600 dark:text-yellow-400">
           Pilih cabang spesifik di header untuk menambah item baru.
         </p>
       )}
 
-      <div className="flex items-center gap-2 flex-wrap mb-4">
-        <button
-          onClick={() => handleFilterChange('all')}
-          className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
-        >
-          Semua Item
-        </button>
-        <button
-          onClick={() => handleFilterChange('low_stock')}
-          className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${filter === 'low_stock' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
-        >
-          Stok Rendah
-        </button>
-      </div>
-
-      <div className="overflow-x-auto hidden md:block">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden hidden md:block">
+        <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
+          <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -283,8 +419,8 @@ const InventoryPage: React.FC = () => {
                   Nama Item {getSortIcon('name')}
                 </button>
               </th>
-              {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-4 py-3">
+              {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                <th className="px-6 py-3">
                   <button
                     onClick={() => requestSort('storeName')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -293,7 +429,7 @@ const InventoryPage: React.FC = () => {
                   </button>
                 </th>
               )}
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('stock')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -301,10 +437,10 @@ const InventoryPage: React.FC = () => {
                   Stok {getSortIcon('stock')}
                 </button>
               </th>
-              <th className="px-4 py-3">Ambang Batas</th>
-              <th className="px-4 py-3">Satuan</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Aksi</th>
+              <th className="px-6 py-3">Ambang Batas</th>
+              <th className="px-6 py-3">Satuan</th>
+              <th className="px-6 py-3">Status</th>
+              <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -325,38 +461,43 @@ const InventoryPage: React.FC = () => {
                     'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
                 }
                 return (
-                  <tr key={item.id} className="border-b dark:border-slate-700">
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                  <tr
+                    key={item.id}
+                    className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  >
+                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                       {item.name}
                     </td>
-                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                      <td className="px-4 py-3">{item.storeName}</td>
+                    {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                      <td className="px-6 py-4">{item.storeName}</td>
                     )}
                     <td
-                      className={`px-4 py-3 ${item.stock === 0 ? 'text-red-500 font-bold' : item.stock <= item.lowStockThreshold ? 'text-yellow-600 font-bold' : 'text-slate-900 dark:text-white'}`}
+                      className={`px-6 py-4 ${item.stock === 0 ? 'text-red-500 font-bold' : item.stock <= item.lowStockThreshold ? 'text-yellow-600 font-bold' : 'text-slate-900 dark:text-white'}`}
                     >
                       {item.stock}
                     </td>
-                    <td className="px-4 py-3">{item.lowStockThreshold}</td>
-                    <td className="px-4 py-3">{item.unit}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">{item.lowStockThreshold}</td>
+                    <td className="px-6 py-4">{item.unit}</td>
+                    <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-sm font-medium rounded-full ${statusClass}`}>
                         {stockStatus}
                       </span>
                     </td>
-                    <td className="px-4 py-3 flex items-center space-x-2">
-                      <button
-                        onClick={() => handleOpenFormModal(item)}
-                        className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        <EditIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        <Trash2Icon className="w-5 h-5" />
-                      </button>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleOpenFormModal(item)}
+                          className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <EditIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <Trash2Icon className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -365,7 +506,7 @@ const InventoryPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6
+                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6
                   }
                 >
                   <EmptyState
@@ -414,7 +555,7 @@ const InventoryPage: React.FC = () => {
                     <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
                       {item.name}
                     </p>
-                    {currentUser.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+                    {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                         {item.storeName}
                       </p>
@@ -423,13 +564,13 @@ const InventoryPage: React.FC = () => {
                   <div className="flex items-center space-x-1 flex-shrink-0">
                     <button
                       onClick={() => handleOpenFormModal(item)}
-                      className="p-2 rounded-md text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                      className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(item)}
-                      className="p-2 rounded-md text-red-600 hover:bg-slate-200 dark:hover:bg-slate-600"
+                      className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       <Trash2Icon className="w-5 h-5" />
                     </button>
@@ -495,3 +636,4 @@ const InventoryPage: React.FC = () => {
 };
 
 export default InventoryPage;
+

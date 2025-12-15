@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import VersionInfo from '../components/VersionInfo';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { addAuditLog } = useAuditLogs();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+      addAuditLog(`Percobaan login gagal untuk email: ${email}.`);
+    } else if (data.user) {
+      addAuditLog(`Login berhasil: ${data.user.email || email}.`);
+    }
     setLoading(false);
   };
 
@@ -67,7 +74,7 @@ const LoginPage: React.FC = () => {
         {error && <div className="text-red-600 mb-4 text-center">{error}</div>}
         <button
           type="submit"
-          className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 rounded-lg disabled:bg-blue-400"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg disabled:bg-blue-400"
           disabled={loading}
         >
           {loading ? 'Loading...' : 'Login'}

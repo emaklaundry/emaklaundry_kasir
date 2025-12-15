@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { supabase } from '../../utils/supabaseClient';
@@ -19,6 +20,7 @@ import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { OrderStatus, PaymentStatus, Transaction, Customer, TransactionItem } from '@/types';
+import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({
   label,
@@ -66,7 +68,7 @@ const TransactionDetailPage: React.FC = () => {
           : [],
         createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
         estimatedCompletionDate: data.estimatedCompletionDate ?? '',
-        invoiceCode: data.invoiceCode ?? undefined,
+        invoiceCode: data.invoice_code ?? undefined,
         paymentStatus: data.paymentStatus as import('../../types').PaymentStatus,
         orderStatus: data.orderStatus as import('../../types').OrderStatus,
         paymentMethod: data.paymentMethod
@@ -90,10 +92,8 @@ const TransactionDetailPage: React.FC = () => {
 
   const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
 
-  // State untuk WhatsApp manual dari header (opsional, jika ingin tombol di header)
-  // const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false); // Unused
-
-  if (isTransactionLoading) {
+  // FIXED: Add loading state guard to prevent premature error display
+  if (isTransactionLoading || customersQuery.isLoading) {
     return (
       <div className="text-center py-12 text-slate-500 dark:text-slate-400">
         Memuat detail transaksi...
@@ -101,21 +101,40 @@ const TransactionDetailPage: React.FC = () => {
     );
   }
 
-  if (transactionError || !transaction || !customer) {
-    // Optional: log error for analytics/debugging
-    // console.warn('Transaction detail error:', transactionError);
+  // FIXED: More comprehensive null checks with better error handling
+  if (transactionError) {
+    console.error('Transaction detail error:', transactionError);
     return (
       <EmptyState
-        icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
-        title={transactionError?.message === 'Transaction ID is missing' ? 'ID Transaksi tidak valid' : 'Transaksi tidak ditemukan'}
-        description={transactionError?.message === 'Transaction ID is missing'
-          ? 'ID transaksi tidak valid atau tidak diberikan.'
-          : 'Transaksi yang Anda cari tidak tersedia, telah dihapus, atau ID tidak ditemukan.'}
-      >
-        <Link to="/transactions" className="mt-4 inline-block text-blue-600 hover:underline">
-          Kembali ke Daftar Transaksi
-        </Link>
-      </EmptyState>
+        icon={<AlertCircle className="w-12 h-12" />}
+        title="Terjadi Kesalahan"
+        description="Terjadi kesalahan saat memuat transaksi"
+      />
+    );
+  }
+
+  if (!transaction) {
+    console.warn('Transaction not found for ID:', id);
+    return (
+      <EmptyState
+        icon={<AlertCircle className="w-12 h-12" />}
+        title="Tidak Ditemukan"
+        description="Transaksi tidak ditemukan"
+      />
+    );
+  }
+
+  if (!customer) {
+    console.warn('Customer not found for transaction:', {
+      transactionId: transaction.id,
+      customerId: transaction.customerId,
+    });
+    return (
+      <EmptyState
+        icon={<AlertCircle className="w-12 h-12" />}
+        title="Tidak Ditemukan"
+        description="Data pelanggan tidak ditemukan"
+      />
     );
   }
 
@@ -384,6 +403,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 }) => {
   const { currentUser } = useAppContext();
   const { addToast, updateToast } = useToasts();
+  const { addAuditLog } = useAuditLogs();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
@@ -414,6 +434,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         paymentMethod: updatedTransaction.paymentMethod ?? undefined,
         paymentStatus: updatedTransaction.paymentStatus,
       });
+      addAuditLog(
+        `Menerima pembayaran untuk transaksi ${transaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
+        transaction.storeId,
+      );
       await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
       updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
       if (shouldShowWhatsAppModal) {
@@ -433,6 +457,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
       await updateTransaction(transaction.id, { orderStatus: OrderStatus.Ready });
+      addAuditLog(
+        `Mengubah status transaksi ${transaction.id} menjadi "${OrderStatus.Ready}".`,
+        transaction.storeId,
+      );
       updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
       // Otomatis tawarkan kirim WA saat Ready
       setIsWhatsAppOpen(true);
@@ -457,6 +485,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     const toastId = addToast('Memperbarui status pesanan...', 'info');
     try {
       await updateTransaction(transaction.id, { orderStatus: OrderStatus.Completed });
+      addAuditLog(
+        `Mengubah status transaksi ${transaction.id} menjadi "${OrderStatus.Completed}".`,
+        transaction.storeId,
+      );
       updateToast(toastId, 'Status pesanan diperbarui: Selesai', 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Gagal memperbarui status pesanan';
@@ -504,7 +536,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         <button
           disabled={loading}
           onClick={handleOpenPaymentModal}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md disabled:bg-green-300 disabled:cursor-not-allowed"
+          className="bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-green-400 disabled:cursor-not-allowed"
           title="Input Pembayaran"
         >
           Bayar
@@ -518,7 +550,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           transaction.orderStatus === OrderStatus.Completed
         }
         onClick={handleMarkReady}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md disabled:bg-yellow-300 disabled:cursor-not-allowed"
+        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-yellow-300 disabled:cursor-not-allowed"
       >
         Tandai Siap Ambil
       </button>
@@ -530,7 +562,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           transaction.paymentStatus !== PaymentStatus.Paid
         }
         onClick={handleMarkCompleted}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:bg-blue-300 disabled:cursor-not-allowed"
+        className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-blue-400 disabled:cursor-not-allowed"
         title={
           transaction.paymentStatus !== PaymentStatus.Paid
             ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'

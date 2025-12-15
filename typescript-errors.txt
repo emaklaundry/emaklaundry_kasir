@@ -1,0 +1,24 @@
+﻿src/__tests__/components/CustomerSelector.test.tsx(31,9): error TS2322: Type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }[]' is not assignable to type 'Customer[]'.
+  Property 'storeId' is missing in type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }' but required in type 'Customer'.
+src/__tests__/components/CustomerSelector.test.tsx(45,9): error TS2322: Type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }[]' is not assignable to type 'Customer[]'.
+  Property 'storeId' is missing in type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }' but required in type 'Customer'.
+src/__tests__/components/CustomerSelector.test.tsx(62,9): error TS2322: Type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }[]' is not assignable to type 'Customer[]'.
+  Property 'storeId' is missing in type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }' but required in type 'Customer'.
+src/__tests__/components/CustomerSelector.test.tsx(79,9): error TS2322: Type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }[]' is not assignable to type 'Customer[]'.
+  Property 'storeId' is missing in type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }' but required in type 'Customer'.
+src/__tests__/components/CustomerSelector.test.tsx(92,9): error TS2322: Type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }[]' is not assignable to type 'Customer[]'.
+  Property 'storeId' is missing in type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }' but required in type 'Customer'.
+src/__tests__/components/CustomerSelector.test.tsx(93,9): error TS2741: Property 'storeId' is missing in type '{ id: string; name: string; phone: string; address: string; notes: string; defaultDiscount: number; createdAt: Date; }' but required in type 'Customer'.
+src/__tests__/components/ExpenseFormModal.test.tsx(58,45): error TS2322: Type '{ id: string; storeId: string; date: string; description: string; category: string; amount: number; }' is not assignable to type 'Expense'.
+  Types of property 'date' are incompatible.
+    Type 'string' is not assignable to type 'Date'.
+src/__tests__/components/ItemNotesModal.test.tsx(21,9): error TS2739: Type '{ id: string; serviceName: string; quantity: number; itemDetails: { note: string; }[]; }' is missing the following properties from type 'TransactionItem': serviceId, price, subtotal, unit
+src/__tests__/components/ItemNotesModal.test.tsx(42,9): error TS2739: Type '{ id: string; serviceName: string; quantity: number; itemDetails: { note: string; }[]; }' is missing the following properties from type 'TransactionItem': serviceId, price, subtotal, unit
+src/__tests__/components/ItemNotesModal.test.tsx(62,11): error TS2739: Type '{ id: string; serviceName: string; quantity: number; itemDetails: { note: string; }[]; }' is missing the following properties from type 'TransactionItem': serviceId, price, subtotal, unit
+src/__tests__/components/PaymentModal.test.tsx(29,26): error TS2322: Type '{ isOpen: boolean; onClose: Mock<Procedure>; transaction: { id: string; total: number; amountPaid: number; paymentMethod: string; paymentStatus: string; }; onSave: Mock<Procedure>; disabled: boolean; }' is not assignable to type 'PaymentModalProps'.
+  Types of property 'transaction' are incompatible.
+    Type '{ id: string; total: number; amountPaid: number; paymentMethod: string; paymentStatus: string; }' is missing the following properties from type 'Transaction': customerId, items, subtotal, discount, and 7 more.
+src/__tests__/components/PaymentModal.test.tsx(36,26): error TS2322: Type '{ isOpen: boolean; onClose: Mock<Procedure>; transaction: { id: string; total: number; amountPaid: number; paymentMethod: string; paymentStatus: string; }; onSave: Mock<Procedure>; disabled: boolean; }' is not assignable to type 'PaymentModalProps'.
+  Types of property 'transaction' are incompatible.
+    Type '{ id: string; total: number; amountPaid: number; paymentMethod: string; paymentStatus: string; }' is missing the following properties from type 'Transaction': customerId, items, subtotal, discount, and 7 more.
+src/__tests__/contexts/AssetContext.test.tsx(53,9): error TS2353: Object literal may only specify known properties, and 'unit' does not exist in type 'Omit<Asset, "id">'.

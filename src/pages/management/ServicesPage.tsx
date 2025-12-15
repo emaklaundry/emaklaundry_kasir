@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -7,10 +7,18 @@ import {
   SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  DownloadIcon,
+  UploadIcon,
 } from '../../components/icons';
+import {
+  exportServicesToExcel,
+  importServicesFromExcel,
+  downloadServiceTemplate,
+} from '../../utils/excelUtils';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
+import { useTransactions } from '../../contexts/TransactionContext';
 import useToasts from '../../contexts/useToasts';
 import ServiceFormModal from '../../components/ServiceFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
@@ -20,6 +28,7 @@ import { Service, UserRole } from '@/types';
 
 const ServicesPage: React.FC = () => {
   const { services, addService, updateService, deleteService } = useServices();
+  const { transactions } = useTransactions();
   const { addAuditLog } = useAuditLogs();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
@@ -28,16 +37,24 @@ const ServicesPage: React.FC = () => {
   const { addToast, updateToast } = useToasts();
   const [isSavingService, setIsSavingService] = useState(false);
   const { currentUser, selectedStoreId } = useAppContext();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [categoryFilter, setCategoryFilter] = useState<
+    'all' | 'Kiloan' | 'Satuan' | 'Express' | 'Khusus'
+  >('all');
 
-  const filteredServices = useMemo(
-    () =>
-      services.filter(
-        (service) =>
-          service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          service.category.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    [services, searchTerm],
-  );
+  const filteredServices = useMemo(() => {
+    let filtered = services.filter(
+      (service) =>
+        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.category.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter((service) => service.category === categoryFilter);
+    }
+
+    return filtered;
+  }, [services, searchTerm, categoryFilter]);
 
   const {
     items: sortedServices,
@@ -66,7 +83,7 @@ const ServicesPage: React.FC = () => {
     // Determine storeId to attach to the service so inserts/updates comply with RLS policies.
     const storeId =
       currentService?.storeId ||
-      (currentUser.role === UserRole.SuperAdmin ? selectedStoreId : currentUser.storeId);
+      (currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId);
 
     if (!storeId || storeId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit layanan.', 'warning');
@@ -96,6 +113,22 @@ const ServicesPage: React.FC = () => {
   };
 
   const handleDelete = (service: Service) => {
+    // FIXED: Check if service is used in any transaction
+    const transactionsWithService = transactions.filter((tx) =>
+      tx.items?.some((item) => item.serviceId === service.id),
+    );
+
+    if (transactionsWithService.length > 0) {
+      addToast(
+        `Layanan "${service.name}" tidak dapat dihapus karena masih digunakan dalam ${transactionsWithService.length} transaksi.`,
+        'error',
+      );
+      addAuditLog(
+        `Gagal menghapus layanan "${service.name}" - masih digunakan dalam ${transactionsWithService.length} transaksi.`,
+      );
+      return;
+    }
+
     setServiceToDelete(service);
   };
 
@@ -124,63 +157,212 @@ const ServicesPage: React.FC = () => {
     }
   };
 
+  // Excel Export
+  const handleExportToExcel = async () => {
+    try {
+      await exportServicesToExcel(services);
+      addToast('Data layanan berhasil di-export ke Excel', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      addToast('Gagal export data ke Excel', 'error');
+    }
+  };
+
+  // Excel Import
+  const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsSavingService(true);
+    const toastId = addToast('Memproses import data...', 'info');
+
+    try {
+      const importedServices = await importServicesFromExcel(file);
+
+      let successCount = 0;
+      let errorCount = 0;
+      let skipCount = 0;
+
+      for (const service of importedServices) {
+        try {
+          if (service.id) {
+            // Validate UUID format before UPDATE
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(service.id)) {
+              console.warn('Invalid UUID skipped:', service.id);
+              skipCount++;
+              continue;
+            }
+
+            // Update existing service
+            await updateService(service.id, {
+              name: service.name!,
+              category: service.category!,
+              price: service.price!,
+              unit: service.unit!,
+              durationDays: service.durationDays!,
+              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
+            });
+            successCount++;
+          } else {
+            // Check for duplicate service (same name + category)
+            const existingService = services.find(
+              (s) =>
+                s.name.toLowerCase() === service.name?.toLowerCase() &&
+                s.category === service.category,
+            );
+
+            if (existingService) {
+              console.warn('Duplicate service skipped:', service.name, service.category);
+              skipCount++;
+              continue;
+            }
+
+            // Ensure storeId is set for INSERT (RLS policy requirement)
+            const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
+
+            if (!storeId) {
+              console.error('storeId is required for new services');
+              errorCount++;
+              continue;
+            }
+
+            // Add new service
+            await addService({
+              name: service.name!,
+              category: service.category!,
+              price: service.price!,
+              unit: service.unit!,
+              durationDays: service.durationDays!,
+              storeId: storeId!,
+            });
+            successCount++;
+          }
+        } catch (error) {
+          console.error('Error importing service:', service, error);
+          errorCount++;
+        }
+      }
+
+      if (skipCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
+          'warning',
+        );
+      } else if (errorCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
+          'warning',
+        );
+      } else {
+        updateToast(toastId, `Berhasil import ${successCount} layanan`, 'success');
+      }
+
+      addAuditLog(`Import ${successCount} layanan dari Excel.`, currentUser?.storeId);
+    } catch (error) {
+      console.error('Import error:', error);
+      updateToast(toastId, 'Gagal import data dari Excel', 'error');
+    } finally {
+      setIsSavingService(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Download Template
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadServiceTemplate();
+      addToast('Template Excel berhasil didownload', 'success');
+    } catch (error) {
+      console.error('Download template error:', error);
+      addToast('Gagal download template', 'error');
+    }
+  };
+
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      {isSavingService && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
-          <div className="flex items-center gap-3">
-            <svg
-              className="animate-spin h-6 w-6 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-            <span className="text-slate-700 dark:text-slate-200 font-medium">Memproses...</span>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Layanan</h1>
-        <div className="w-full md:w-auto flex items-center gap-4">
-          <div className="relative w-full md:w-64">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari layanan..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Layanan</h1>
+        <div className="flex gap-2">
+          {/* Excel Import/Export Buttons */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+            title="Download Template Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Template</span>
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImportFromExcel}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSavingService}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            title="Import dari Excel"
+          >
+            <UploadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Import</span>
+          </button>
+
+          <button
+            onClick={handleExportToExcel}
+            disabled={services.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            title="Export ke Excel"
+          >
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Export</span>
+          </button>
+
           <button
             onClick={() => handleOpenFormModal()}
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
             Tambah Layanan
           </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari layanan..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          />
+        </div>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
+          className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+        >
+          <option value="all">Semua Kategori</option>
+          <option value="Kiloan">Kiloan</option>
+          <option value="Satuan">Satuan</option>
+          <option value="Express">Express</option>
+          <option value="Khusus">Khusus</option>
+        </select>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+        <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
+          <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -188,7 +370,7 @@ const ServicesPage: React.FC = () => {
                   Nama Layanan {getSortIcon('name')}
                 </button>
               </th>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('category')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -196,7 +378,7 @@ const ServicesPage: React.FC = () => {
                   Kategori {getSortIcon('category')}
                 </button>
               </th>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('price')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -204,7 +386,7 @@ const ServicesPage: React.FC = () => {
                   Harga {getSortIcon('price')}
                 </button>
               </th>
-              <th className="px-4 py-3">
+              <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('durationDays')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -212,34 +394,39 @@ const ServicesPage: React.FC = () => {
                   Durasi {getSortIcon('durationDays')}
                 </button>
               </th>
-              <th className="px-4 py-3">Aksi</th>
+              <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {sortedServices.length > 0 ? (
               sortedServices.map((service) => (
-                <tr key={service.id} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                <tr
+                  key={service.id}
+                  className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
+                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     {service.name}
                   </td>
-                  <td className="px-4 py-3">{service.category}</td>
-                  <td className="px-4 py-3">
-                    Rp {service.price.toLocaleString('id-ID')} / {service.unit}
+                  <td className="px-6 py-4">{service.category}</td>
+                  <td className="px-6 py-4">
+                    Rp {service.price.toLocaleString('id-ID')}/{service.unit}
                   </td>
-                  <td className="px-4 py-3">{service.durationDays} hari</td>
-                  <td className="px-4 py-3 flex items-center space-x-2">
-                    <button
-                      onClick={() => handleOpenFormModal(service)}
-                      className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <EditIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(service)}
-                      className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <Trash2Icon className="w-5 h-5" />
-                    </button>
+                  <td className="px-6 py-4">{service.durationDays} hari</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleOpenFormModal(service)}
+                        className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        <EditIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(service)}
+                        className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        <Trash2Icon className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
