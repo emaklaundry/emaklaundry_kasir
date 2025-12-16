@@ -179,4 +179,5 @@ export interface ScheduledMaintenance {
   frequencyUnit: 'days' | 'weeks' | 'months' | 'years';
   nextDueDate: Date;
   lastCompletedDate: Date | null;
+  estimatedCost?: number;
 }

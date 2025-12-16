@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   DownloadIcon,
@@ -8,61 +8,316 @@ import {
   CheckCircleIcon,
   ClockIcon,
 } from '../../components/icons';
-import { fetchCustomers } from '../../contexts/CustomerContext';
-import { useServices } from '../../contexts/ServiceContext';
-import { fetchInventory } from '../../contexts/InventoryContext';
-import { useAssets } from '../../contexts/AssetContext';
-import { useExpenses } from '../../contexts/ExpenseContext';
-import { useTransactions } from '../../contexts/TransactionContext';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
 import { exportAllData, importAllData } from '../../utils/excelUtils';
-import { UserRole, Transaction, TransactionItem } from '@/types';
+import { UserRole, Transaction, TransactionItem, Expense } from '@/types';
 import type { Json } from '@/types/supabase';
 
 const BackupRestorePage: React.FC = () => {
-  const { currentUser } = useAppContext();
+  const { currentUser, selectedStoreId, stores } = useAppContext();
   const { addToast, updateToast } = useToasts();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Fetch all data
+  // Fetch all data without pagination limits
   const customersQuery = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 10000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 10000 }),
+    queryKey: ['backup-customers-all', selectedStoreId],
+    queryFn: async () => {
+      const { supabase } = await import('../../utils/supabaseClient');
+      let allCustomers: unknown[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase.from('customers').select('*');
+        
+        // Apply store filter
+        if (selectedStoreId && selectedStoreId !== 'all') {
+          query = query.eq('storeId', selectedStoreId);
+        }
+        
+        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allCustomers = [...allCustomers, ...data];
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allCustomers.map((c: any) => ({
+        ...c,
+        address: c.address ?? undefined,
+        notes: c.notes ?? undefined,
+        phone: c.phone ?? undefined,
+        defaultDiscount: c.defaultDiscount ?? undefined,
+        storeId: c.storeId ?? undefined,
+      }));
+    },
   });
 
-  const customers = Array.isArray(customersQuery.data)
-    ? customersQuery.data
-    : (customersQuery.data?.data ?? []);
+  const customers = customersQuery.data || [];
 
-  const { services } = useServices();
+  const servicesQuery = useQuery({
+    queryKey: ['backup-services-all', selectedStoreId],
+    queryFn: async () => {
+      const { supabase } = await import('../../utils/supabaseClient');
+      let query = supabase.from('services').select('*');
+      
+      // Apply store filter
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []).map((s: any) => ({
+        ...s,
+        storeId: s.storeId ?? undefined,
+      }));
+    },
+  });
+
+  const services = servicesQuery.data || [];
 
   const inventoryQuery = useQuery({
-    queryKey: ['inventory', { page: 1, pageSize: 10000 }],
-    queryFn: () => fetchInventory({ page: 1, pageSize: 10000 }),
+    queryKey: ['backup-inventory-all', selectedStoreId],
+    queryFn: async () => {
+      const { supabase } = await import('../../utils/supabaseClient');
+      let allInventory: unknown[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase.from('inventory_items').select('*');
+        
+        // Apply store filter
+        if (selectedStoreId && selectedStoreId !== 'all') {
+          query = query.eq('storeId', selectedStoreId);
+        }
+        
+        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allInventory = [...allInventory, ...data];
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allInventory.map((i: any) => ({
+        ...i,
+        storeId: i.storeId ?? undefined,
+      }));
+    },
   });
 
-  const inventory = useMemo(() => {
-    return Array.isArray(inventoryQuery.data)
-      ? inventoryQuery.data
-      : (inventoryQuery.data?.data ?? []);
-  }, [inventoryQuery.data]);
+  const inventory = inventoryQuery.data || [];
 
-  const { assets } = useAssets();
-  const { expenses } = useExpenses();
+  const assetsQuery = useQuery({
+    queryKey: ['backup-assets-all', selectedStoreId],
+    queryFn: async () => {
+      const { supabase } = await import('../../utils/supabaseClient');
+      let query = supabase.from('assets').select('*');
+      
+      // Apply store filter
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []).map((a: any) => ({
+        ...a,
+        purchaseDate: a.purchaseDate ?? undefined,
+        serialNumber: a.serialNumber ?? undefined,
+        purchaseCost: a.purchaseCost ?? undefined,
+        storeId: a.storeId ?? undefined,
+        maintenanceHistory: Array.isArray(a.maintenanceHistory) ? a.maintenanceHistory : [],
+      }));
+    },
+  });
+
+  const assets = assetsQuery.data || [];
+  
+  // Fetch combined expenses (from database + asset purchases + maintenance)
+  const expensesQuery = useQuery({
+    queryKey: ['backup-expenses-combined', selectedStoreId],
+    queryFn: async () => {
+      const { supabase } = await import('../../utils/supabaseClient');
+      
+      // Helper untuk format tanggal lokal (YYYY-MM-DD)
+      const formatDateStr = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      // 1. Fetch ALL expenses from database
+      let allOperationalExpenses: Expense[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase.from('expenses').select('*');
+        
+        // Apply store filter
+        if (selectedStoreId && selectedStoreId !== 'all') {
+          query = query.eq('storeId', selectedStoreId);
+        }
+        
+        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allOperationalExpenses = [
+            ...allOperationalExpenses,
+            ...data.map((e) => ({
+              ...e,
+              date: typeof e.date === 'string' ? e.date : formatDateStr(new Date(e.date)),
+              storeId: e.storeId ?? undefined,
+            })),
+          ];
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // 2. Fetch Assets for backfilling old purchases and maintenance
+      let assetQuery = supabase.from('assets').select('*');
+      
+      // Apply store filter
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        assetQuery = assetQuery.eq('storeId', selectedStoreId);
+      }
+      
+      const { data: assetsData, error: assetsError } = await assetQuery;
+      
+      if (assetsError) throw assetsError;
+
+      const assetExpenses: Expense[] = [];
+
+      // Helper to check duplicate expenses
+      const isExpenseExist = (desc: string, date: string, amount: number) => {
+        return allOperationalExpenses.some(
+          (e) =>
+            e.description === desc &&
+            e.date === date &&
+            Math.abs(e.amount - amount) < Math.max(100, amount * 0.01),
+        );
+      };
+
+      if (assetsData) {
+        (assetsData as Record<string, unknown>[]).forEach((asset) => {
+          if (!asset.id || !asset.name) return;
+
+          // A. Asset Purchases
+          if (asset.purchaseDate) {
+            let purchaseDateStr = String(asset.purchaseDate);
+            if (purchaseDateStr.includes('T')) {
+              purchaseDateStr = purchaseDateStr.split('T')[0];
+            }
+
+            const cost = Number(asset.purchaseCost) || 0;
+            const description = `Pembelian Aset: ${asset.name}`;
+
+            if (!isExpenseExist(description, purchaseDateStr, cost)) {
+              assetExpenses.push({
+                id: `asset-purchase-${asset.id}`,
+                date: purchaseDateStr,
+                description: description,
+                category: 'Pembelian Aset',
+                amount: cost,
+                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+              });
+            }
+          }
+
+          // B. Asset Maintenance History
+          let maintenanceHistory: { id: string; date: Date | string; description: string; cost: number }[] = [];
+          if (asset.maintenanceHistory) {
+            if (Array.isArray(asset.maintenanceHistory)) {
+              maintenanceHistory = asset.maintenanceHistory;
+            } else if (typeof asset.maintenanceHistory === 'string') {
+              try {
+                maintenanceHistory = JSON.parse(asset.maintenanceHistory);
+              } catch (error) {
+                console.error(`Failed to parse maintenanceHistory for asset ${asset.id}:`, error);
+              }
+            }
+          }
+
+          maintenanceHistory.forEach((log, index) => {
+            const logDate = new Date(log.date);
+            const logDateStr = formatDateStr(logDate);
+            const cost = Number(log.cost) || 0;
+
+            const description = `Perawatan Aset: ${asset.name} (${log.description})`;
+
+            if (!isExpenseExist(description, logDateStr, cost)) {
+              assetExpenses.push({
+                id: `asset-maint-${asset.id}-${index}`,
+                date: logDateStr,
+                description: description,
+                category: 'Pemeliharaan Aset',
+                amount: cost,
+                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+              });
+            }
+          });
+        });
+      }
+
+      // Combine: Database expenses + Asset expenses
+      return [...allOperationalExpenses, ...assetExpenses];
+    },
+  });
+
+  const expenses = expensesQuery.data || [];
   
   // Fetch all transactions without filters
   const transactionsQuery = useQuery({
-    queryKey: ['transactions', { page: 1, pageSize: 10000 }],
+    queryKey: ['backup-transactions-all', selectedStoreId],
     queryFn: async () => {
       const { supabase } = await import('../../utils/supabaseClient');
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select('*', { count: 'exact' })
-        .order('createdAt', { ascending: false })
-        .range(0, 9999);
+        .order('createdAt', { ascending: false });
+      
+      // Apply store filter
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      query = query.range(0, 9999);
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -233,11 +488,27 @@ const BackupRestorePage: React.FC = () => {
       if (importedData.expenses.length > 0) {
         updateToast(toastId, `Restore pengeluaran (${importedData.expenses.length})...`, 'info');
         // Convert Expense to database format
-        const dbExpenses = importedData.expenses.map(e => ({
-          ...e,
-          date: e.date instanceof Date ? e.date.toISOString().split('T')[0] : e.date,
-          storeId: e.storeId ?? null,
-        }));
+        const dbExpenses = importedData.expenses.map(e => {
+          // Ensure date is properly formatted as YYYY-MM-DD for database
+          let dateStr: string;
+          if (e.date instanceof Date) {
+            dateStr = e.date.toISOString().split('T')[0];
+          } else if (typeof e.date === 'string') {
+            // If already a string, parse it first to ensure valid format
+            const parsedDate = new Date(e.date);
+            dateStr = isNaN(parsedDate.getTime()) 
+              ? new Date().toISOString().split('T')[0] 
+              : parsedDate.toISOString().split('T')[0];
+          } else {
+            dateStr = new Date().toISOString().split('T')[0];
+          }
+
+          return {
+            ...e,
+            date: dateStr,
+            storeId: e.storeId ?? null,
+          };
+        });
         const { error } = await supabase.from('expenses').insert(dbExpenses);
         if (error) throw new Error(`Gagal restore pengeluaran: ${error.message}`);
         insertedCount += importedData.expenses.length;
@@ -285,8 +556,32 @@ const BackupRestorePage: React.FC = () => {
   // Check if user has permission
   const canBackup = currentUser?.role !== UserRole.Cashier;
 
+  // Get store name for display
+  const getStoreName = () => {
+    if (currentUser?.role === UserRole.SuperAdmin) {
+      if (selectedStoreId === 'all') return 'Semua Cabang';
+      return stores.find((s) => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal';
+    }
+    if (currentUser?.storeId) {
+      return stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
+    }
+    return 'Cabang Tidak Dikenal';
+  };
+
   return (
     <div className="space-y-6">
+      {/* Store Info Header */}
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+          Data Backup & Restore: <span className="text-blue-600 dark:text-blue-400">{getStoreName()}</span>
+        </h2>
+        {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+          <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+            ⚠️ Mode gabungan - Data dari semua cabang akan di-backup/restore
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">

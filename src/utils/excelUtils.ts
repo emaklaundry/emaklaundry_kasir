@@ -251,7 +251,7 @@ export async function exportAssetsToExcel(assets: Asset[]): Promise<void> {
       id: asset.id,
       name: asset.name,
       serialNumber: asset.serialNumber || '',
-      purchaseDate: asset.purchaseDate || '',
+      purchaseDate: asset.purchaseDate instanceof Date ? asset.purchaseDate.toISOString().split('T')[0] : (asset.purchaseDate || ''),
       purchaseCost: asset.purchaseCost || 0,
       status: asset.status,
     });
@@ -290,7 +290,7 @@ export async function exportExpensesToExcel(expenses: Expense[]): Promise<void> 
   expenses.forEach((expense) => {
     worksheet.addRow({
       id: expense.id,
-      date: expense.date,
+      date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
       category: expense.category,
       amount: expense.amount,
       description: expense.description,
@@ -2044,12 +2044,11 @@ export async function exportAllData(
   const expenseSheet = workbook.addWorksheet('Expenses');
   expenseSheet.columns = [
     { header: 'ID', key: 'id', width: 40 },
-    { header: 'Tanggal', key: 'date', width: 15 },
-    { header: 'Kategori', key: 'category', width: 20 },
     { header: 'Deskripsi', key: 'description', width: 40 },
     { header: 'Jumlah', key: 'amount', width: 15 },
-    { header: 'Metode Bayar', key: 'paymentMethod', width: 15 },
-    { header: 'Catatan', key: 'notes', width: 30 },
+    { header: 'Kategori', key: 'category', width: 20 },
+    { header: 'Tanggal', key: 'date', width: 15 },
+    { header: 'Store ID', key: 'storeId', width: 40 },
   ];
   expenseSheet.getRow(1).font = { bold: true };
   expenseSheet.getRow(1).fill = {
@@ -2060,15 +2059,14 @@ export async function exportAllData(
   expenses.forEach((expense) => {
     expenseSheet.addRow({
       id: expense.id,
-      date: expense.date,
-      category: expense.category,
       description: expense.description,
       amount: expense.amount,
-      paymentMethod: expense.paymentMethod || '',
-      notes: expense.notes || '',
+      category: expense.category,
+      date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
+      storeId: expense.storeId,
     });
   });
-  expenseSheet.getColumn('E').numFmt = 'Rp #,##0';
+  expenseSheet.getColumn('C').numFmt = 'Rp #,##0';
 
   // Sheet 7: Transactions
   const transactionSheet = workbook.addWorksheet('Transactions');
@@ -2272,16 +2270,26 @@ export async function importAllData(
         const description = row.getCell(2).value as string;
         const amount = Number(row.getCell(3).value) || 0;
         const category = row.getCell(4).value as string;
-        const date = row.getCell(5).value as string;
+        const dateValue = row.getCell(5).value;
         const storeId = row.getCell(6).value as string;
 
-        if (id && description && category && date && storeId) {
+        if (id && description && category && dateValue && storeId) {
+          // Convert date to Date object
+          let dateObj: Date;
+          if (dateValue instanceof Date) {
+            dateObj = dateValue;
+          } else if (typeof dateValue === 'string') {
+            dateObj = new Date(dateValue);
+          } else {
+            dateObj = new Date();
+          }
+
           expenses.push({
             id,
             description,
             amount,
             category,
-            date,
+            date: dateObj,
             storeId,
           });
         }

@@ -182,7 +182,8 @@ CREATE TABLE public.scheduled_maintenances (
   "frequencyValue" integer NOT NULL,
   "frequencyUnit" text NOT NULL,
   "nextDueDate" date NOT NULL,
-  "lastCompletedDate" date
+  "lastCompletedDate" date,
+  "estimatedCost" numeric DEFAULT 0
 );
 
 CREATE TABLE public.expenses (

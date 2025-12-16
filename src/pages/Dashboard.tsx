@@ -529,7 +529,7 @@ const Dashboard: React.FC = () => {
         id: `LOG_${crypto.randomUUID()}`,
         date: new Date(),
         description: `[Jadwal] - ${schedule.description}`,
-        cost: 0,
+        cost: schedule.estimatedCost || 0,
       };
       await updateAsset(asset.id, { maintenanceHistory: [...asset.maintenanceHistory, newLog] });
       await updateScheduledMaintenance(schedule.id, {
