@@ -11,8 +11,7 @@ import { UserRole } from '@/types';
 const AuditLogPage: React.FC = () => {
   const { logs: allLogs, isLoading } = useAuditLogs();
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logs = useStoreFilteredData(allLogs as any) as unknown as typeof allLogs;
+  const logs = useStoreFilteredData(allLogs);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -77,6 +76,18 @@ const AuditLogPage: React.FC = () => {
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
+  // Add loading state - AFTER all hooks
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <span className="text-lg text-slate-600 dark:text-slate-300">Memuat log audit...</span>
+        </div>
+      </div>
+    );
+  }
+
   const handleResetFilters = () => {
     setSearchTerm('');
     setStartDate('');
@@ -108,10 +119,13 @@ const AuditLogPage: React.FC = () => {
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            id="audit-search"
+            name="audit-search"
             placeholder="Cari pengguna atau aksi..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -123,11 +137,13 @@ const AuditLogPage: React.FC = () => {
           </label>
           <input
             id="startDate"
+            name="startDate"
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             max={endDate || undefined}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -139,11 +155,13 @@ const AuditLogPage: React.FC = () => {
           </label>
           <input
             id="endDate"
+            name="endDate"
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             min={startDate || undefined}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         {filtersApplied && (

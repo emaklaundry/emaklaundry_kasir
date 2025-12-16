@@ -137,6 +137,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={onClose}
             className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
+            aria-label="Batalkan pembayaran"
           >
             Batal
           </button>
@@ -201,9 +202,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <input
             type="text"
             id="amountToPay"
+            name="amountToPay"
             value={formatRupiah(remainingBalance)}
             readOnly
             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white opacity-70 cursor-not-allowed"
+            autoComplete="off"
           />
         </div>
 
@@ -218,10 +221,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <input
               type="text"
               id="tenderedAmount"
+              name="tenderedAmount"
               value={tenderedAmountStr}
               onChange={(e) => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               placeholder="Masukkan jumlah uang tunai"
+              autoComplete="off"
             />
           </div>
         )}

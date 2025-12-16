@@ -147,6 +147,7 @@ CREATE TABLE public.services (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   category public.service_category NOT NULL,
+  wash_type text NOT NULL DEFAULT 'Pakaian',
   price integer NOT NULL,
   unit text NOT NULL,
   "durationDays" integer NOT NULL,
@@ -928,6 +929,27 @@ CREATE INDEX IF NOT EXISTS idx_inventory_store
 -- Index untuk assets
 CREATE INDEX IF NOT EXISTS idx_assets_store_status 
   ON public.assets("storeId", "status");
+
+-- Index untuk expenses (filtering dan sorting)
+CREATE INDEX IF NOT EXISTS idx_expenses_store_category 
+  ON public.expenses("storeId", "category");
+
+CREATE INDEX IF NOT EXISTS idx_expenses_date 
+  ON public.expenses("date" DESC);
+
+-- Index untuk services (filtering)
+CREATE INDEX IF NOT EXISTS idx_services_category 
+  ON public.services("category");
+
+CREATE INDEX IF NOT EXISTS idx_services_wash_type 
+  ON public.services("wash_type");
+
+-- Index untuk scheduled_maintenances
+CREATE INDEX IF NOT EXISTS idx_scheduled_maintenances_next_due 
+  ON public.scheduled_maintenances("nextDueDate");
+
+CREATE INDEX IF NOT EXISTS idx_scheduled_maintenances_status 
+  ON public.scheduled_maintenances("status");
 
 -- 3. ROW LEVEL SECURITY (RLS) ENHANCEMENTS
 -- Pastikan RLS enabled untuk semua tabel sensitif

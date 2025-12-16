@@ -393,6 +393,8 @@ const CustomersPage: React.FC = () => {
 
           <input
             ref={fileInputRef}
+            id="customer-import-file"
+            name="customer-import-file"
             type="file"
             accept=".xlsx,.xls"
             onChange={handleImportFromExcel}
@@ -433,13 +435,18 @@ const CustomersPage: React.FC = () => {
           <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            id="customer-search"
+            name="customer-search"
             placeholder="Cari pelanggan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <select
+          id="customer-activity-filter"
+          name="customer-activity-filter"
           value={activityFilter}
           onChange={(e) => setActivityFilter(e.target.value as 'all' | 'active' | 'inactive')}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"

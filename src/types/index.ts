@@ -5,6 +5,17 @@ export enum ServiceCategory {
   Karpet = 'Karpet',
 }
 
+export enum WashType {
+  Pakaian = 'Pakaian',
+  Sepatu = 'Sepatu',
+  Tas = 'Tas',
+  Selimut = 'Selimut',
+  Boneka = 'Boneka',
+  Karpet = 'Karpet',
+  Gorden = 'Gorden',
+  Lainnya = 'Lainnya',
+}
+
 export enum PaymentStatus {
   Paid = 'Lunas',
   Unpaid = 'Belum Lunas',
@@ -52,6 +63,7 @@ export interface Service {
   id: string;
   name: string;
   category: ServiceCategory;
+  washType: WashType;
   price: number;
   unit: string;
   durationDays: number;

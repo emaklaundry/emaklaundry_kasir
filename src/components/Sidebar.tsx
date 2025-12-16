@@ -15,6 +15,7 @@ import {
   ChevronUpIcon,
   TruckIcon,
   ChevronLeftIcon,
+  DatabaseIcon,
 } from './icons';
 import { UserRole } from '@/types';
 
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
   },
   { path: '/reports', label: 'Laporan', icon: BarChartIcon, adminOnly: true },
   { path: '/audit-log', label: 'Log Audit', icon: HistoryIcon, adminOnly: true },
+  { path: '/management/backup', label: 'Backup & Restore', icon: DatabaseIcon, adminOnly: true },
   { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
 ];
 

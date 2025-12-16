@@ -7,6 +7,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useServices } from '../../contexts/ServiceContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
@@ -36,6 +37,7 @@ import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import {
   exportTransactionsToExcel,
   downloadTransactionTemplate,
+  importTransactionsFromExcel,
 } from '@/utils/excelUtils';
 
 // Tipe kustom untuk transaksi dengan nama pelanggan
@@ -67,6 +69,7 @@ const TransactionPage: React.FC = () => {
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<OrderStatus | null>(null);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Pagination and data
   const customersQuery = useQuery({
@@ -82,6 +85,7 @@ const TransactionPage: React.FC = () => {
 
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
+  const { services } = useServices();
 
   // State untuk server-side pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,7 +101,7 @@ const TransactionPage: React.FC = () => {
   }, [selectedDate]);
 
   // Ambil data transaksi dengan server-side filtering dan pagination
-  const { transactions, totalCount, updateTransaction } = useTransactions({
+  const { transactions, totalCount, updateTransaction, addTransaction } = useTransactions({
     page: currentPage,
     pageSize: pageSize,
     dateRange: dateRange,
@@ -265,6 +269,84 @@ const TransactionPage: React.FC = () => {
     }
   };
 
+  const handleImportFromExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const toastId = addToast('Memproses file Excel...', 'info');
+
+    try {
+      // Import transaksi dari Excel
+      const result = await importTransactionsFromExcel(file, customers, services, transactions);
+
+      // Tampilkan hasil
+      if (result.errors.length > 0) {
+        console.warn('Import errors:', result.errors);
+        updateToast(
+          toastId,
+          `Import selesai dengan ${result.errors.length} error. ${result.success.length} transaksi berhasil diimport.`,
+          'warning',
+        );
+
+        // Tampilkan detail error
+        result.errors.forEach((err) => {
+          addToast(`Baris ${err.row}: ${err.error}`, 'error');
+        });
+      }
+
+      if (result.success.length === 0) {
+        updateToast(toastId, 'Tidak ada transaksi yang berhasil diimport.', 'error');
+        return;
+      }
+
+      // Simpan transaksi ke database
+      updateToast(toastId, `Menyimpan ${result.success.length} transaksi...`, 'info');
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const transaction of result.success) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id, ...transactionData } = transaction;
+          
+          // Gunakan addTransaction dari context
+          await addTransaction(transactionData);
+          successCount++;
+
+          // Audit log
+          await addAuditLog({
+            action: 'CREATE',
+            tableName: 'transactions',
+            recordId: transaction.id,
+            changes: { imported: true, invoiceCode: transaction.invoiceCode },
+          });
+        } catch (err) {
+          console.error('Error saving transaction:', err);
+          failCount++;
+        }
+      }
+
+      if (failCount > 0) {
+        updateToast(
+          toastId,
+          `Import selesai: ${successCount} berhasil, ${failCount} gagal disimpan.`,
+          'warning',
+        );
+      } else {
+        updateToast(toastId, `Berhasil mengimport ${successCount} transaksi!`, 'success');
+      }
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal import: ${errMsg}`, 'error');
+    } finally {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleStatusFilterChange = (status: OrderStatus | 'all') => {
     setStatusFilter(status);
     if (status === 'all') {
@@ -423,6 +505,25 @@ const TransactionPage: React.FC = () => {
                   <DownloadIcon className="w-4 h-4" />
                   <span className="hidden sm:inline text-sm">Template</span>
                 </button>
+
+                <input
+                  ref={fileInputRef}
+                  id="transaction-import-file"
+                  name="transaction-import-file"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleImportFromExcel}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+                  title="Import dari Excel"
+                >
+                  <UploadIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline text-sm">Import</span>
+                </button>
+
                 <button
                   onClick={handleExportTransactions}
                   disabled={transactions.length === 0}
@@ -452,6 +553,7 @@ const TransactionPage: React.FC = () => {
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               id="searchTerm"
+              name="searchTerm"
               type="text"
               placeholder="Cari ID, Invoice, Nama, atau No. HP..."
               value={searchTerm}
@@ -466,6 +568,7 @@ const TransactionPage: React.FC = () => {
             </label>
             <select
               id="customerFilter"
+              name="customerFilter"
               value={customerFilter}
               onChange={(e) => setCustomerFilter(e.target.value)}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -484,6 +587,7 @@ const TransactionPage: React.FC = () => {
             </label>
             <select
               id="paymentFilter"
+              name="paymentFilter"
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value as PaymentStatus | 'all')}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -499,6 +603,7 @@ const TransactionPage: React.FC = () => {
             </label>
             <input
               id="selectedDate"
+              name="selectedDate"
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
@@ -539,6 +644,8 @@ const TransactionPage: React.FC = () => {
             </span>
             <div className="relative">
               <select
+                id="bulk-status-change"
+                name="bulk-status-change"
                 onChange={(e) => handleBulkStatusChange(e.target.value as OrderStatus)}
                 className="pl-3 pr-8 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none appearance-none"
                 value=""
@@ -566,6 +673,8 @@ const TransactionPage: React.FC = () => {
                   <th className="px-1 sm:px-2 py-2 sm:py-3 w-8 sm:w-10 text-center">
                     <input
                       type="checkbox"
+                      id="transaction-select-all"
+                      name="transaction-select-all"
                       onChange={handleSelectAll}
                       checked={
                         sortedTransactions.length > 0 &&
@@ -635,6 +744,8 @@ const TransactionPage: React.FC = () => {
                       <td className="px-1 sm:px-2 py-2 sm:py-3 text-center">
                         <input
                           type="checkbox"
+                          id={`transaction-checkbox-${t.id}`}
+                          name={`transaction-checkbox-${t.id}`}
                           onChange={() => handleSelectOne(t.id)}
                           checked={selectedIds.has(t.id)}
                           className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
@@ -662,6 +773,8 @@ const TransactionPage: React.FC = () => {
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3">
                         <select
+                          id={`order-status-${t.id}`}
+                          name={`order-status-${t.id}`}
                           value={t.orderStatus}
                           onChange={(e) =>
                             handleOrderStatusChange(t.id, e.target.value as OrderStatus)
@@ -786,6 +899,8 @@ const TransactionPage: React.FC = () => {
                 <div className="absolute top-3 left-2">
                   <input
                     type="checkbox"
+                    id={`transaction-mobile-checkbox-${t.id}`}
+                    name={`transaction-mobile-checkbox-${t.id}`}
                     onChange={() => handleSelectOne(t.id)}
                     checked={selectedIds.has(t.id)}
                     className="w-5 h-5 text-blue-600 bg-slate-100 border-slate-300 dark:bg-slate-700 dark:border-slate-500 rounded focus:ring-blue-500"

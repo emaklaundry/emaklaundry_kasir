@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
 import Modal from './Modal';
-import { Service, ServiceCategory } from '@/types';
+import { Service, ServiceCategory, WashType } from '@/types';
 import useToasts from '../contexts/useToasts';
 
 interface ServiceFormModalProps {
@@ -15,6 +15,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
   const [formData, setFormData] = useState<Omit<Service, 'id' | 'storeId'>>({
     name: service?.name || '',
     category: service?.category || ServiceCategory.Kiloan,
+    washType: service?.washType || WashType.Pakaian,
     price: service?.price || 0,
     unit: service?.unit || 'kg',
     durationDays: service?.durationDays || 0,
@@ -110,6 +111,27 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             {Object.values(ServiceCategory).map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="washType"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
+            Jenis Yang Dicuci
+          </label>
+          <select
+            name="washType"
+            id="washType"
+            value={formData.washType}
+            onChange={handleChange}
+            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          >
+            {Object.values(WashType).map((type) => (
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>

@@ -24,6 +24,7 @@ const UsersPage = lazy(() => import('./pages/management/UsersPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
 const SettingsPage = lazy(() => import('./pages/management/SettingsPage'));
+const BackupRestorePage = lazy(() => import('./pages/management/BackupRestorePage'));
 const CustomersPage = lazy(() => import('./pages/management/CustomersPage'));
 const CustomerDetailPage = lazy(() => import('./pages/management/CustomerDetailPage'));
 const ReceiptPage = lazy(() => import('./pages/transactions/ReceiptPage'));
@@ -193,6 +194,14 @@ const AppRoutes: React.FC = () => {
               element={
                 <AdminRoute>
                   <SettingsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/backup"
+              element={
+                <AdminRoute>
+                  <BackupRestorePage />
                 </AdminRoute>
               }
             />

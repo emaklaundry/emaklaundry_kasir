@@ -366,6 +366,8 @@ const AssetsPage: React.FC = () => {
 
           <input
             ref={fileInputRef}
+            id="asset-import-file"
+            name="asset-import-file"
             type="file"
             accept=".xlsx,.xls"
             onChange={handleImportFromExcel}
@@ -411,13 +413,18 @@ const AssetsPage: React.FC = () => {
           <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            id="asset-search"
+            name="asset-search"
             placeholder="Cari aset..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <select
+          id="asset-maintenance-filter"
+          name="asset-maintenance-filter"
           value={maintenanceFilter}
           onChange={(e) => handleFilterChange(e.target.value as 'all' | 'due')}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"

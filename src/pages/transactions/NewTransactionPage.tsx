@@ -708,6 +708,8 @@ const NewTransactionPage: React.FC = () => {
                                     <span className="text-xs font-bold text-slate-500 w-4">P:</span>
                                     <input
                                       type="number"
+                                      id={`item-length-${index}`}
+                                      name={`item-length-${index}`}
                                       min="0"
                                       step="0.1"
                                       placeholder="P"
@@ -720,6 +722,7 @@ const NewTransactionPage: React.FC = () => {
                                         )
                                       }
                                       className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                      autoComplete="off"
                                     />
                                     <span className="text-sm text-slate-500">m</span>
                                   </div>
@@ -727,6 +730,8 @@ const NewTransactionPage: React.FC = () => {
                                     <span className="text-xs font-bold text-slate-500 w-4">L:</span>
                                     <input
                                       type="number"
+                                      id={`item-width-${index}`}
+                                      name={`item-width-${index}`}
                                       min="0"
                                       step="0.1"
                                       placeholder="L"
@@ -750,6 +755,8 @@ const NewTransactionPage: React.FC = () => {
                                 <div className="flex items-center">
                                   <input
                                     type="number"
+                                    id={`item-quantity-${index}`}
+                                    name={`item-quantity-${index}`}
                                     min="0"
                                     step={item.unit === 'kg' ? '0.01' : '1'}
                                     value={item.quantity}
@@ -761,6 +768,7 @@ const NewTransactionPage: React.FC = () => {
                                       )
                                     }
                                     className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    autoComplete="off"
                                   />
                                   <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
                                     {item.unit}
@@ -905,6 +913,7 @@ const NewTransactionPage: React.FC = () => {
                       <input
                         type="number"
                         id="discountValue"
+                        name="discountValue"
                         min="0"
                         value={discountValue}
                         onChange={(e) =>
@@ -916,6 +925,7 @@ const NewTransactionPage: React.FC = () => {
                         }
                         className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600"
                         disabled={!canEditDiscount}
+                        autoComplete="off"
                       />
                     </div>
                   </div>
@@ -1010,6 +1020,7 @@ const NewTransactionPage: React.FC = () => {
                         <input
                           type="text"
                           id="tenderedAmount"
+                          name="tenderedAmount"
                           value={tenderedAmountStr}
                           onChange={(e) => {
                             const val = parseRupiah(e.target.value);
@@ -1018,6 +1029,7 @@ const NewTransactionPage: React.FC = () => {
                           className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                           placeholder="0"
                           disabled={false}
+                          autoComplete="off"
                         />
                       </div>
                     )}

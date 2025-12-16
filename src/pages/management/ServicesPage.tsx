@@ -300,6 +300,8 @@ const ServicesPage: React.FC = () => {
 
           <input
             ref={fileInputRef}
+            id="service-import-file"
+            name="service-import-file"
             type="file"
             accept=".xlsx,.xls"
             onChange={handleImportFromExcel}
@@ -339,13 +341,18 @@ const ServicesPage: React.FC = () => {
           <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            id="service-search"
+            name="service-search"
             placeholder="Cari layanan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <select
+          id="service-category-filter"
+          name="service-category-filter"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -380,6 +387,14 @@ const ServicesPage: React.FC = () => {
               </th>
               <th className="px-6 py-3">
                 <button
+                  onClick={() => requestSort('washType')}
+                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                >
+                  Jenis Cucian {getSortIcon('washType')}
+                </button>
+              </th>
+              <th className="px-6 py-3">
+                <button
                   onClick={() => requestSort('price')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
                 >
@@ -408,6 +423,7 @@ const ServicesPage: React.FC = () => {
                     {service.name}
                   </td>
                   <td className="px-6 py-4">{service.category}</td>
+                  <td className="px-6 py-4">{service.washType}</td>
                   <td className="px-6 py-4">
                     Rp {service.price.toLocaleString('id-ID')}/{service.unit}
                   </td>

@@ -90,6 +90,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
           disabled={currentPage === 1}
           className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           title="Halaman sebelumnya"
+          aria-label="Halaman sebelumnya"
         >
           <ChevronLeftIcon className="w-5 h-5" />
         </button>
@@ -119,6 +120,8 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
                     ? 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700'
                     : 'border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
                 }`}
+                aria-label={`Halaman ${pageNum}`}
+                aria-current={isActive ? 'page' : undefined}
               >
                 {pageNum}
               </button>
