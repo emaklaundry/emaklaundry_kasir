@@ -9,6 +9,7 @@ import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
+import useAppContext from '../../contexts/useAppContext';
 
 import {
   PlusCircleIcon,
@@ -21,6 +22,8 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ChevronDownIcon,
+  DownloadIcon,
+  UploadIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import PaymentModal from '../../components/PaymentModal';
@@ -28,13 +31,18 @@ import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../components/Pagination';
 
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
+import { Transaction, OrderStatus, PaymentStatus, Customer, UserRole } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
+import {
+  exportTransactionsToExcel,
+  downloadTransactionTemplate,
+} from '@/utils/excelUtils';
 
 // Tipe kustom untuk transaksi dengan nama pelanggan
 type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
 
 const TransactionPage: React.FC = () => {
+  const { currentUser } = useAppContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -103,7 +111,7 @@ const TransactionPage: React.FC = () => {
       return {
         ...t,
         customerName: customer ? customer.name : 'N/A',
-        customerPhone: customer ? customer.phone : 'N/A',
+        customerPhone: customer ? (customer.phone || 'N/A') : 'N/A',
       };
     });
   }, [transactions, customers]);
@@ -227,6 +235,34 @@ const TransactionPage: React.FC = () => {
   const handleOpenWhatsAppModal = (transaction: Transaction) => {
     setTransactionForWhatsApp(transaction);
     setIsWhatsAppModalOpen(true);
+  };
+
+  // Handler untuk export dan template
+  const handleExportTransactions = async () => {
+    const toastId = addToast('Mengekspor transaksi...', 'info');
+    try {
+      const customersForExport = customers.map((c: Customer) => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+      }));
+      await exportTransactionsToExcel(transactions, customersForExport);
+      updateToast(toastId, 'Transaksi berhasil diekspor ke Excel.', 'success');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal mengekspor transaksi: ${errMsg}`, 'error');
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    const toastId = addToast('Mengunduh template...', 'info');
+    try {
+      await downloadTransactionTemplate();
+      updateToast(toastId, 'Template transaksi berhasil diunduh.', 'success');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal mengunduh template: ${errMsg}`, 'error');
+    }
   };
 
   const handleStatusFilterChange = (status: OrderStatus | 'all') => {
@@ -376,13 +412,36 @@ const TransactionPage: React.FC = () => {
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
             Daftar Transaksi
           </h1>
-          <Link
-            to="/transactions/new"
-            className="flex-shrink-0 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-lg px-6 py-3"
-          >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
-            Transaksi Baru
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            {currentUser?.role !== UserRole.Cashier && (
+              <>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+                  title="Download Template Excel"
+                >
+                  <DownloadIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline text-sm">Template</span>
+                </button>
+                <button
+                  onClick={handleExportTransactions}
+                  disabled={transactions.length === 0}
+                  className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                  title="Export ke Excel"
+                >
+                  <DownloadIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline text-sm">Export</span>
+                </button>
+              </>
+            )}
+            <Link
+              to="/transactions/new"
+              className="flex-shrink-0 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2.5"
+            >
+              <PlusCircleIcon className="h-5 w-5 mr-2" />
+              Transaksi Baru
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">

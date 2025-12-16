@@ -15,6 +15,7 @@
 - 🔄 InventoryPage
 - 🔄 AssetsPage
 - 🔄 ExpensesPage
+- ✅ **TransactionsPage** - Export & Template implemented (Import tidak tersedia karena transaksi dibuat melalui form)
 
 ## 📋 Fitur yang Tersedia
 
@@ -301,7 +302,53 @@ const handleDownloadTemplate = async () => {
 
 ---
 
-## 📚 Dependencies
+## � Transactions Page (SELESAI)
+
+**File:** `src/pages/transactions/TransactionPage.tsx`
+
+**Tombol yang ditambahkan:**
+
+- 📥 **Template** - Download template Excel kosong untuk referensi format export
+- ⬇️ **Export** - Export semua transaksi yang sedang ditampilkan (dengan filter) ke Excel
+
+**Kolom Excel:**
+
+- ID Transaksi
+- Kode Invoice
+- Tanggal
+- Nama Pelanggan
+- No. HP
+- Layanan (detail item transaksi)
+- Subtotal
+- Diskon
+- Pajak
+- Total
+- Status Pesanan
+- Status Bayar
+- Dibayar
+- Kembalian
+- Metode Bayar
+- Estimasi Selesai
+- Catatan
+
+**Catatan:**
+
+- Import **TIDAK** tersedia karena transaksi harus dibuat melalui form UI untuk memastikan validasi dan konsistensi data
+- Export mengambil data yang sedang ditampilkan (mengikuti filter yang aktif)
+- Template hanya untuk referensi format, bukan untuk import
+
+**Implementasi:**
+
+- ✅ Export function: `exportTransactionsToExcel()`
+- ✅ Template function: `downloadTransactionTemplate()`
+- ✅ Handler: `handleExportTransactions()` dan `handleDownloadTemplate()`
+- ✅ UI Buttons dengan icons dan styling yang konsisten
+- ✅ Disabled state untuk Export jika tidak ada data
+- ✅ Toast notifications untuk feedback user
+
+---
+
+## �📚 Dependencies
 
 - ✅ `exceljs@^4.4.0` - Already installed in package.json
 - ✅ Icons (DownloadIcon, UploadIcon) - Added to icons.tsx

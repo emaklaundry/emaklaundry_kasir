@@ -142,37 +142,39 @@ const CustomersPage: React.FC = () => {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
       return;
     }
-    // Normalisasi nomor telepon
+    // Normalisasi nomor telepon hanya jika diisi
     let phone = customerData.phone?.replace(/\D/g, '') || '';
-    if (phone.startsWith('0')) {
-      phone = '62' + phone.substring(1);
-    } else if (phone.startsWith('62')) {
-      // sudah benar
-    } else if (phone.startsWith('8')) {
-      phone = '62' + phone;
-    }
+    if (phone) {
+      if (phone.startsWith('0')) {
+        phone = '62' + phone.substring(1);
+      } else if (phone.startsWith('62')) {
+        // sudah benar
+      } else if (phone.startsWith('8')) {
+        phone = '62' + phone;
+      }
 
-    // FIXED: Check for duplicate phone number
-    const existingCustomers = customers.filter(
-      (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
-    );
-    if (existingCustomers.length > 0) {
-      addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
-      addAuditLog(
-        `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${existingCustomers[0].name}".`,
-        storeId,
+      // Check for duplicate phone number hanya jika phone diisi
+      const existingCustomers = customers.filter(
+        (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
       );
-      return;
+      if (existingCustomers.length > 0) {
+        addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
+        addAuditLog(
+          `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${existingCustomers[0].name}".`,
+          storeId,
+        );
+        return;
+      }
     }
 
     const toastId = addToast('Menyimpan pelanggan...', 'info');
     setIsSaving(true);
     try {
       if (currentCustomer && currentCustomer.id) {
-        await updateCustomer(currentCustomer.id, { ...customerData, phone, storeId });
+        await updateCustomer(currentCustomer.id, { ...customerData, phone: phone || undefined, storeId });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
       } else {
-        await addCustomer({ ...customerData, phone, storeId });
+        await addCustomer({ ...customerData, phone: phone || undefined, storeId });
         addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
         updateToast(toastId, 'Pelanggan baru berhasil ditambahkan!', 'success');
       }

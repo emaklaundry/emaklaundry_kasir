@@ -40,7 +40,7 @@ export interface Store {
 export interface Customer {
   id: string;
   name: string;
-  phone: string;
+  phone?: string; // Optional - tidak wajib diisi
   address?: string;
   notes?: string;
   storeId: string;
