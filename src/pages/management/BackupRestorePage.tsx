@@ -6,7 +6,6 @@ import {
   DatabaseIcon,
   AlertTriangleIcon,
   CheckCircleIcon,
-  ClockIcon,
 } from '../../components/icons';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
@@ -55,7 +54,7 @@ const BackupRestorePage: React.FC = () => {
         }
       }
 
-      return allCustomers.map((c: any) => ({
+      return (allCustomers as Record<string, unknown>[]).map((c) => ({
         ...c,
         address: c.address ?? undefined,
         notes: c.notes ?? undefined,
@@ -81,7 +80,7 @@ const BackupRestorePage: React.FC = () => {
       
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map((s: any) => ({
+      return (data || []).map((s: Record<string, unknown>) => ({
         ...s,
         storeId: s.storeId ?? undefined,
       }));
@@ -123,7 +122,7 @@ const BackupRestorePage: React.FC = () => {
         }
       }
 
-      return allInventory.map((i: any) => ({
+      return (allInventory as Record<string, unknown>[]).map((i) => ({
         ...i,
         storeId: i.storeId ?? undefined,
       }));
@@ -145,7 +144,7 @@ const BackupRestorePage: React.FC = () => {
       
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map((a: any) => ({
+      return (data || []).map((a: Record<string, unknown>) => ({
         ...a,
         purchaseDate: a.purchaseDate ?? undefined,
         serialNumber: a.serialNumber ?? undefined,
@@ -196,8 +195,8 @@ const BackupRestorePage: React.FC = () => {
             ...allOperationalExpenses,
             ...data.map((e) => ({
               ...e,
-              date: typeof e.date === 'string' ? e.date : formatDateStr(new Date(e.date)),
-              storeId: e.storeId ?? undefined,
+              date: new Date(typeof e.date === 'string' ? e.date : e.date),
+              storeId: e.storeId ?? '',
             })),
           ];
           if (data.length < pageSize) {
@@ -228,7 +227,7 @@ const BackupRestorePage: React.FC = () => {
         return allOperationalExpenses.some(
           (e) =>
             e.description === desc &&
-            e.date === date &&
+            (e.date instanceof Date ? e.date.toISOString().split('T')[0] : e.date) === date &&
             Math.abs(e.amount - amount) < Math.max(100, amount * 0.01),
         );
       };
@@ -250,11 +249,11 @@ const BackupRestorePage: React.FC = () => {
             if (!isExpenseExist(description, purchaseDateStr, cost)) {
               assetExpenses.push({
                 id: `asset-purchase-${asset.id}`,
-                date: purchaseDateStr,
+                date: new Date(purchaseDateStr),
                 description: description,
                 category: 'Pembelian Aset',
                 amount: cost,
-                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+                storeId: (typeof asset.storeId === 'string' ? asset.storeId : '') as string,
               });
             }
           }
@@ -283,11 +282,11 @@ const BackupRestorePage: React.FC = () => {
             if (!isExpenseExist(description, logDateStr, cost)) {
               assetExpenses.push({
                 id: `asset-maint-${asset.id}-${index}`,
-                date: logDateStr,
+                date: new Date(logDateStr),
                 description: description,
                 category: 'Pemeliharaan Aset',
                 amount: cost,
-                storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+                storeId: (typeof asset.storeId === 'string' ? asset.storeId : '') as string,
               });
             }
           });
@@ -358,7 +357,8 @@ const BackupRestorePage: React.FC = () => {
     const toastId = addToast('Mempersiapkan full backup...', 'info');
 
     try {
-      await exportAllData(customers, services, inventory, assets, expenses, transactions);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await exportAllData(customers as unknown as any, services as unknown as any, inventory as unknown as any, assets as unknown as any, expenses, transactions);
 
       // Save last backup date
       const now = new Date().toISOString();

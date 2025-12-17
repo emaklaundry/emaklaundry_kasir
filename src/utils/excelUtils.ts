@@ -1714,7 +1714,7 @@ export async function importTransactionsFromExcel(
       }
 
       // Find or create customer
-      let customer = existingCustomers.find(
+      const customer = existingCustomers.find(
         (c) =>
           c.name.toLowerCase() === customerName.toLowerCase() ||
           (customerPhone && c.phone === customerPhone),

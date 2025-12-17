@@ -1,7 +1,7 @@
 /// <reference types="vite-plugin-pwa/client" />
 
 declare module 'virtual:pwa-register/react' {
-  import type { Ref } from 'react';
+
 
   export interface RegisterSWOptions {
     immediate?: boolean;

@@ -29,6 +29,7 @@ import {
   importCustomersFromExcel,
   downloadCustomerTemplate,
 } from '../../utils/excelUtils';
+import { supabase } from '../../utils/supabaseClient';
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -235,9 +236,45 @@ const CustomersPage: React.FC = () => {
 
   // Excel Export
   const handleExportToExcel = async () => {
+    const toastId = addToast('Mengekspor pelanggan...', 'info');
     try {
-      await exportCustomersToExcel(customers);
-      addToast('Data pelanggan berhasil di-export ke Excel', 'success');
+      // Fetch SEMUA pelanggan dengan filter yang sama, tanpa pagination
+      updateToast(toastId, 'Mengambil semua data pelanggan...', 'info');
+      
+      let query = supabase.from('customers').select('*', { count: 'exact' });
+      
+      // Terapkan filter store yang sama
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      // Terapkan search term jika ada
+      if (debouncedSearchTerm) {
+        query = query.ilike('name', `%${debouncedSearchTerm}%`);
+      }
+      
+      const { data: allCustomers, error } = await query;
+      
+      if (error) throw error;
+      if (!allCustomers || allCustomers.length === 0) {
+        updateToast(toastId, 'Tidak ada pelanggan untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allCustomers.length} pelanggan...`, 'info');
+      
+      // Convert null to undefined untuk kompatibilitas
+      const customersToExport = allCustomers.map((c) => ({
+        ...c,
+        address: c.address ?? undefined,
+        notes: c.notes ?? undefined,
+        phone: c.phone ?? undefined,
+        defaultDiscount: c.defaultDiscount ?? undefined,
+        storeId: c.storeId ?? undefined,
+      })) as unknown as Customer[];
+      
+      await exportCustomersToExcel(customersToExport);
+      updateToast(toastId, `Berhasil mengekspor ${allCustomers.length} pelanggan ke Excel.`, 'success');
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');

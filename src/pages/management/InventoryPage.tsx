@@ -17,6 +17,7 @@ import {
   importInventoryFromExcel,
   downloadInventoryTemplate,
 } from '../../utils/excelUtils';
+import { supabase } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { fetchInventory, useInventoryMutations } from '../../contexts/InventoryContext';
@@ -204,9 +205,41 @@ const InventoryPage: React.FC = () => {
 
   // Excel Export
   const handleExportToExcel = async () => {
+    const toastId = addToast('Mengekspor inventaris...', 'info');
     try {
-      await exportInventoryToExcel(inventory);
-      addToast('Data inventaris berhasil di-export ke Excel', 'success');
+      // Fetch SEMUA item inventaris dengan filter yang sama, tanpa pagination
+      updateToast(toastId, 'Mengambil semua data inventaris...', 'info');
+      
+      let query = supabase.from('inventory_items').select('*', { count: 'exact' });
+      
+      // Terapkan filter store yang sama
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      // Terapkan search term jika ada
+      if (debouncedSearchTerm) {
+        query = query.ilike('name', `%${debouncedSearchTerm}%`);
+      }
+      
+      const { data: allInventory, error } = await query;
+      
+      if (error) throw error;
+      if (!allInventory || allInventory.length === 0) {
+        updateToast(toastId, 'Tidak ada item inventaris untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allInventory.length} item...`, 'info');
+      
+      // Convert null to undefined untuk kompatibilitas
+      const inventoryToExport = allInventory.map((item) => ({
+        ...item,
+        storeId: item.storeId ?? undefined,
+      })) as unknown as InventoryItem[];
+      
+      await exportInventoryToExcel(inventoryToExport);
+      updateToast(toastId, `Berhasil mengekspor ${allInventory.length} item inventaris ke Excel.`, 'success');
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');

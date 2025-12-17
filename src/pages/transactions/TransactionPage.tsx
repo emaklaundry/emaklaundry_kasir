@@ -11,6 +11,7 @@ import { useServices } from '../../contexts/ServiceContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
+import { supabase } from '../../utils/supabaseClient';
 
 import {
   PlusCircleIcon,
@@ -245,13 +246,61 @@ const TransactionPage: React.FC = () => {
   const handleExportTransactions = async () => {
     const toastId = addToast('Mengekspor transaksi...', 'info');
     try {
+      // Fetch SEMUA transaksi dengan filter yang sama, tanpa pagination
+      updateToast(toastId, 'Mengambil semua data transaksi...', 'info');
+      
+      let query = supabase.from('transactions').select('*', { count: 'exact' });
+      
+      // Terapkan filter yang sama dengan tampilan saat ini
+      if (dateRange) {
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        query = query.gte('createdAt', fromDate.toISOString()).lte('createdAt', toDate.toISOString());
+      }
+      
+      if (currentUser?.storeId) {
+        query = query.eq('storeId', currentUser.storeId);
+      }
+      
+      if (statusFilter !== 'all') {
+        query = query.eq('orderStatus', statusFilter);
+      }
+      
+      if (paymentFilter !== 'all') {
+        query = query.eq('paymentStatus', paymentFilter);
+      }
+      
+      // Order by createdAt descending
+      query = query.order('createdAt', { ascending: false });
+      
+      const { data: allTransactions, error } = await query;
+      
+      if (error) throw error;
+      if (!allTransactions || allTransactions.length === 0) {
+        updateToast(toastId, 'Tidak ada transaksi untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allTransactions.length} transaksi...`, 'info');
+      
+      // Convert null to undefined untuk kompatibilitas dengan Transaction type
+      const transactionsToExport = allTransactions.map((t) => ({
+        ...t,
+        customerId: t.customerId ?? undefined,
+        createdByUserId: t.createdByUserId ?? undefined,
+        paymentMethod: t.paymentMethod ?? undefined,
+      })) as unknown as Transaction[];
+      
       const customersForExport = customers.map((c: Customer) => ({
         id: c.id,
         name: c.name,
         phone: c.phone,
       }));
-      await exportTransactionsToExcel(transactions, customersForExport);
-      updateToast(toastId, 'Transaksi berhasil diekspor ke Excel.', 'success');
+      
+      await exportTransactionsToExcel(transactionsToExport, customersForExport);
+      updateToast(toastId, `Berhasil mengekspor ${allTransactions.length} transaksi ke Excel.`, 'success');
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal mengekspor transaksi: ${errMsg}`, 'error');

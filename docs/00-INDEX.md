@@ -5,29 +5,33 @@ Indeks lengkap dokumentasi untuk aplikasi manajemen laundry multi-cabang.
 ## 📋 Daftar Isi
 
 ### 🚀 Getting Started
+
 - [README.md](README.md) - Panduan utama aplikasi
 - [STRUCTURE.md](STRUCTURE.md) - Struktur folder dan file
 
 ### 🔧 Development & Deployment
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Panduan deployment lengkap
-- [DEPLOYMENT_QUICK_GUIDE.md](DEPLOYMENT_QUICK_GUIDE.md) - Panduan cepat deployment
+
+- [deployment/DEPLOYMENT.md](deployment/DEPLOYMENT.md) - Panduan deployment lengkap
+- [deployment/DEPLOYMENT_QUICK_GUIDE.md](deployment/DEPLOYMENT_QUICK_GUIDE.md) - Panduan cepat deployment
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Panduan kontribusi
 
 ### 📊 Features & Updates
-- [EXCEL_IMPORT_EXPORT.md](EXCEL_IMPORT_EXPORT.md) - Import/Export data Excel
-- [WHATSAPP_FOOTER.md](WHATSAPP_FOOTER.md) - Konfigurasi WhatsApp footer
-- [MAINTENANCE_MODE.md](MAINTENANCE_MODE.md) - Mode maintenance
-- [SCHEDULED_MAINTENANCE_COST_UPDATE.md](SCHEDULED_MAINTENANCE_COST_UPDATE.md) - Update estimasi biaya perawatan
+
+- [features/EXCEL_IMPORT_EXPORT.md](features/EXCEL_IMPORT_EXPORT.md) - Import/Export data Excel
+- [features/WHATSAPP_FOOTER.md](features/WHATSAPP_FOOTER.md) - Konfigurasi WhatsApp footer
+- [features/MAINTENANCE_MODE.md](features/MAINTENANCE_MODE.md) - Mode maintenance
+- [features/SCHEDULED_MAINTENANCE_COST_UPDATE.md](features/SCHEDULED_MAINTENANCE_COST_UPDATE.md) - Update estimasi biaya perawatan
 
 ### 🔒 Security & Privacy
-- [SECURITY.md](SECURITY.md) - Kebijakan keamanan
-- [PRIVACY.md](PRIVACY.md) - Kebijakan privasi
-- [LICENSE](LICENSE) - Lisensi aplikasi
+
+- [security/SECURITY.md](security/SECURITY.md) - Kebijakan keamanan
+- [security/PRIVACY.md](security/PRIVACY.md) - Kebijakan privasi
 
 ### 📈 Reports & Audits
-- [FINAL_AUDIT_REPORT.md](FINAL_AUDIT_REPORT.md) - Laporan audit final
-- [DATA_CONSISTENCY.md](DATA_CONSISTENCY.md) - Konsistensi data
-- [IMPROVEMENTS.md](IMPROVEMENTS.md) - Daftar perbaikan
+
+- [reports/FINAL_AUDIT_REPORT.md](reports/FINAL_AUDIT_REPORT.md) - Laporan audit final
+- [reports/DATA_CONSISTENCY.md](reports/DATA_CONSISTENCY.md) - Konsistensi data
+- [reports/IMPROVEMENTS.md](reports/IMPROVEMENTS.md) - Daftar perbaikan
 
 ## 🗂️ Struktur Folder
 
@@ -61,16 +65,17 @@ docs/
 ## 🔍 Pencarian Cepat
 
 ### Mencari informasi tentang:
+
 - **Setup & Install** → [README.md](README.md)
-- **Deploy ke Production** → [DEPLOYMENT_QUICK_GUIDE.md](DEPLOYMENT_QUICK_GUIDE.md)
+- **Deploy ke Production** → [deployment/DEPLOYMENT_QUICK_GUIDE.md](deployment/DEPLOYMENT_QUICK_GUIDE.md)
 - **Struktur Code** → [STRUCTURE.md](STRUCTURE.md)
-- **Import/Export Data** → [EXCEL_IMPORT_EXPORT.md](EXCEL_IMPORT_EXPORT.md)
-- **WhatsApp Integration** → [WHATSAPP_FOOTER.md](WHATSAPP_FOOTER.md)
-- **Security Issues** → [SECURITY.md](SECURITY.md)
+- **Import/Export Data** → [features/EXCEL_IMPORT_EXPORT.md](features/EXCEL_IMPORT_EXPORT.md)
+- **WhatsApp Integration** → [features/WHATSAPP_FOOTER.md](features/WHATSAPP_FOOTER.md)
+- **Security Issues** → [security/SECURITY.md](security/SECURITY.md)
 - **Kontribusi** → [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## 📝 Notes
 
 - Semua dokumentasi menggunakan format Markdown
-- Update terakhir: 17 Desember 2025
+- Update terakhir: 18 Desember 2024
 - Untuk pertanyaan, lihat [CONTRIBUTING.md](CONTRIBUTING.md)

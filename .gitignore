@@ -63,10 +63,3 @@ Thumbs.db
 # Database backups (keep only full_backup.sql)
 database/backup/*.sql
 !database/backup/full_backup.sql
-
-# Temporary files
-*.tmp
-*.bak
-*.backup
-*.old
-*.temp

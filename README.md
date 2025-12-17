@@ -1,7 +1,7 @@
 # Laundry Management System (Web Kasir)
 
 **Versi:** 2.1.0  
-**Update terakhir:** 15 Desember 2024  
+**Update terakhir:** 18 Desember 2024  
 **Status:** ✅ Production Ready
 
 ---
@@ -68,13 +68,20 @@ emaklaundry_kasir/
 ├── database/              # 💾 Database scripts
 │   ├── README.md         # Database documentation
 │   ├── setup/            # SQL setup scripts
-│   │   ├── 0.droptable.sql
-│   │   ├── 1.database.sql
-│   │   ├── 2.apply_rpc_and_seed.sql
-│   │   └── 3.security_and_performance.sql
+│   │   ├── 0.complete_setup.sql    # All-in-one setup (schema + functions)
+│   │   ├── 1.seed_data_awal.sql    # Basic seed data (stores, users, settings)
+│   │   ├── DEPLOYMENT.md           # Deployment guide
+│   │   ├── README.md               # Setup documentation
+│   │   └── SETUP_GUIDE.md          # Step-by-step guide
+│   ├── seeds/            # Additional seed data (modular)
+│   │   ├── seed_services.sql       # Services seed data
+│   │   ├── seed_inventory.sql      # Inventory seed data
+│   │   ├── seed_assets.sql         # Assets seed data
+│   │   └── seed_maintenances.sql   # Maintenances seed data
 │   └── backup/           # Database backups
-│       ├── database-backup.md  # Backup guide
-│       └── full_backup.sql     # Latest backup
+│       ├── README.md
+│       ├── complete_backup.sql
+│       └── full_backup.sql
 ├── public/               # 🌐 Public assets
 │   ├── favicon/         # App icons
 │   └── manifest.webmanifest
@@ -131,7 +138,7 @@ emaklaundry_kasir/
 
 4. **Setup database**
    - Buka Supabase Dashboard → SQL Editor
-   - Copy isi file `database/setup/complete_setup.sql`
+   - Copy isi file `database/setup/0.complete_setup.sql`
    - Paste & Run di SQL Editor
    - ✅ Database siap!
 
@@ -159,25 +166,32 @@ npm run test:all  # Format, lint, dan test
 
 ### Database Setup & Backup
 
-Lihat panduan lengkap di [database/README.md](./database/README.md) atau [database/backup/database-backup.md](./database/backup/database-backup.md).
+Lihat panduan lengkap di [database/README.md](./database/README.md) atau [database/backup/README.md](./database/backup/README.md).
 
 **Quick Setup (⭐ RECOMMENDED):**
 
 ```bash
 # 1 file saja - copy & paste ke Supabase SQL Editor:
-database/setup/complete_setup.sql
+database/setup/0.complete_setup.sql
 ```
 
-**Manual Setup (Step-by-step):**
+**Manual Setup (With Sample Data):**
 
 ```bash
 # Jalankan berurutan:
-1. database/setup/0.droptable.sql  # Reset (opsional)
-2. database/setup/1.database.sql   # Schema
-3. database/setup/2.apply_rpc_and_seed.sql  # RPC & seed
-4. database/setup/3.security_and_performance.sql  # Security
-5. database/setup/4.add_maintenance_mode.sql  # Maintenance mode
+1. database/setup/0.complete_setup.sql    # Schema, functions, RLS
+2. database/setup/1.seed_data_awal.sql    # Basic seed (stores, users, settings)
+3. database/seeds/seed_*.sql              # Optional: services, inventory, assets, maintenances
 ```
+
+**Modular Seed Data:**
+
+File seed data tambahan tersedia di `database/seeds/`:
+
+- `seed_services.sql` - Layanan laundry (66 services)
+- `seed_inventory.sql` - Inventaris/stok barang
+- `seed_assets.sql` - Aset perusahaan (mesin, peralatan)
+- `seed_maintenances.sql` - Jadwal perawatan berkala
 
 Panduan lengkap: [database/setup/SETUP_GUIDE.md](./database/setup/SETUP_GUIDE.md)
 

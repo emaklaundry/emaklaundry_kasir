@@ -5,6 +5,7 @@ import {
   importExpensesFromExcel,
   downloadExpenseTemplate,
 } from '../../utils/excelUtils';
+import { supabase } from '../../utils/supabaseClient';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import { useAssets } from '../../contexts/AssetContext';
@@ -156,9 +157,35 @@ const ExpensesPage: React.FC = () => {
 
   // Excel Export
   const handleExportToExcel = async () => {
+    const toastId = addToast('Mengekspor pengeluaran...', 'info');
     try {
-      await exportExpensesToExcel(expenses);
-      addToast('Data pengeluaran berhasil di-export ke Excel', 'success');
+      // Fetch SEMUA pengeluaran dari database
+      updateToast(toastId, 'Mengambil semua data pengeluaran...', 'info');
+      
+      let query = supabase.from('expenses').select('*');
+      
+      // Filter by store if needed
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      const { data: allExpenses, error } = await query;
+      
+      if (error) throw error;
+      if (!allExpenses || allExpenses.length === 0) {
+        updateToast(toastId, 'Tidak ada pengeluaran untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allExpenses.length} pengeluaran...`, 'info');
+      
+      const expensesToExport = allExpenses.map((e) => ({
+        ...e,
+        storeId: e.storeId ??undefined,
+      })) as unknown as Expense[];
+      
+      await exportExpensesToExcel(expensesToExport);
+      updateToast(toastId, `Berhasil mengekspor ${allExpenses.length} pengeluaran ke Excel.`, 'success');
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');

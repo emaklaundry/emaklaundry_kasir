@@ -12,7 +12,7 @@
   - **NO seed data** (schema only)
   - Total: ~1100+ lines
 
-- **`seed_data.sql`** - Sample data untuk testing/development
+- **`1.seed_data_awal.sql`** - Sample data untuk testing/development
   - Stores: 1 toko default
   - Profiles: 6 user dengan berbagai role
   - Services: 66 layanan laundry lengkap
@@ -34,7 +34,7 @@
 3. Run
 
 -- Step 2: (Optional) Insert sample data
-1. Copy isi file seed_data.sql
+1. Copy isi file 1.seed_data_awal.sql
 2. Paste ke SQL Editor
 3. Run
 ```
@@ -43,8 +43,8 @@
 
 ```sql
 -- Production Setup (tanpa sample data):
-1. Jalankan complete_setup.sql
-2. Skip seed_data.sql
+1. Jalankan 0.complete_setup.sql
+2. Skip 1.seed_data_awal.sql
 3. Insert data real sesuai kebutuhan
 ```
 
@@ -88,7 +88,7 @@
 - WhatsApp Custom Footer settings
 - Final verification
 
-### `seed_data.sql`
+### `1.seed_data_awal.sql`
 
 **Sample Data Included:**
 
@@ -107,12 +107,13 @@
 
 ## ✅ What Changed?
 
-### Version 3.0.0 (Dec 15, 2025)
+### Version 2.1.0 (Dec 17, 2024)
 
 ```
-✅ complete_setup.sql (v3.0.0) - Schema & functions only, NO seed data
-✅ seed_data.sql (NEW)         - All sample data separated
-❌ Migration files REMOVED     - All updates consolidated
+✅ 0.complete_setup.sql (v3.0.0) - Schema & functions only, NO seed data
+✅ 1.seed_data_awal.sql (NEW)    - Basic seed data (stores, users, settings)
+✅ database/seeds/*.sql (NEW)    - Modular seed data (services, inventory, assets, maintenances)
+❌ Migration files REMOVED       - All updates consolidated
 ```
 
 ### Before (Old Structure)
@@ -146,7 +147,7 @@
 
 ### Adding/Updating Sample Data
 
-1. Edit `seed_data.sql`
+1. Edit `1.seed_data_awal.sql` or files in `database/seeds/`
 2. Test untuk memastikan `ON CONFLICT` bekerja
 3. Dokumentasikan perubahan
 
@@ -184,7 +185,7 @@ ORDER BY routine_name;
 -- Expected: 5+ functions
 ```
 
-### Seed Data (jika menjalankan seed_data.sql)
+### Seed Data (jika menjalankan 1.seed_data_awal.sql)
 
 ```sql
 -- Cek stores
@@ -230,8 +231,8 @@ ORDER BY tablename, indexname;
 
 ### Tip 1: Safe to Re-run
 
-- `complete_setup.sql` menggunakan `IF NOT EXISTS` dan `CREATE OR REPLACE`
-- `seed_data.sql` menggunakan `ON CONFLICT DO NOTHING`
+- `0.complete_setup.sql` menggunakan `IF NOT EXISTS` dan `CREATE OR REPLACE`
+- `1.seed_data_awal.sql` menggunakan `ON CONFLICT DO NOTHING`
 - Aman di-run berkali-kali tanpa error atau duplicate data
 
 ### Tip 2: Reset Database
@@ -250,14 +251,15 @@ drop table if exists expenses cascade;
 
 ```sql
 -- Production: Schema only
-1. Run complete_setup.sql
-2. SKIP seed_data.sql
+1. Run 0.complete_setup.sql
+2. SKIP 1.seed_data_awal.sql dan database/seeds/*.sql
 3. Insert data production sesuai kebutuhan
 
 -- Development/Testing: Schema + Sample Data
-1. Run complete_setup.sql
-2. Run seed_data.sql
-3. Langsung ready untuk testing
+1. Run 0.complete_setup.sql
+2. Run 1.seed_data_awal.sql (stores, users, settings)
+3. Run database/seeds/*.sql (optional: services, inventory, assets, maintenances)
+4. Langsung ready untuk testing
 ```
 
 ### Tip 4: Troubleshooting
@@ -270,23 +272,20 @@ drop table if exists expenses cascade;
 
 ## 📊 File Statistics
 
-| File                         | Size   | Lines | Purpose                        |
-| ---------------------------- | ------ | ----- | ------------------------------ |
-| `complete_setup.sql`         | ~48 KB | ~1250 | Main setup (all-in-one)        |
-| `4.add_maintenance_mode.sql` | ~1 KB  | ~40   | Migration: Maintenance feature |
-| `5.add_whatsapp_footer.sql`  | ~1 KB  | ~35   | Migration: WhatsApp footer     |
+| File                   | Purpose                             |
+| ---------------------- | ----------------------------------- |
+| `0.complete_setup.sql` | Main setup - schema, functions, RLS |
+| `1.seed_data_awal.sql` | Basic seed data (stores, users)     |
+| `DEPLOYMENT.md`        | Production deployment guide         |
+| `README.md`            | This documentation file             |
+| `SETUP_GUIDE.md`       | Step-by-step setup guide            |
 
-**Execution Time:** ~30-60 seconds for complete_setup.sql
+**Additional Seed Data:** See `database/seeds/` folder for services, inventory, assets, and maintenances.
 
----
-
-**Last Updated:** December 15, 2025  
-**Database Version:** 2.0.0
-| **Add Maintenance** | `4.add_maintenance_mode.sql` | Run individual file |
-| **Backup** | Manual | See backup/database-backup.md |
+**Execution Time:** ~30-60 seconds for 0.complete_setup.sql
 
 ---
 
-**Created:** December 14, 2025  
-**Version:** 2.0.0  
+**Last Updated:** December 18, 2024  
+**Database Version:** 2.1.0  
 **Status:** ✅ Production Ready

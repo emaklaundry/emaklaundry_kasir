@@ -18,6 +18,7 @@ import {
   importAssetsFromExcel,
   downloadAssetTemplate,
 } from '../../utils/excelUtils';
+import { supabase } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAssets } from '../../contexts/AssetContext';
@@ -219,9 +220,38 @@ const AssetsPage: React.FC = () => {
 
   // Excel Export
   const handleExportToExcel = async () => {
+    const toastId = addToast('Mengekspor aset...', 'info');
     try {
-      await exportAssetsToExcel(assets);
-      addToast('Data aset berhasil di-export ke Excel', 'success');
+      // Fetch SEMUA aset dari database
+      updateToast(toastId, 'Mengambil semua data aset...', 'info');
+      
+      let query = supabase.from('assets').select('*');
+      
+      // Filter by store if needed
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      const { data: allAssets, error } = await query;
+      
+      if (error) throw error;
+      if (!allAssets || allAssets.length === 0) {
+        updateToast(toastId, 'Tidak ada aset untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allAssets.length} aset...`, 'info');
+      
+      const assetsToExport = allAssets.map((a) => ({
+        ...a,
+        storeId: a.storeId ?? undefined,
+        purchaseDate: a.purchaseDate ?? undefined,
+        purchaseCost: a.purchaseCost ?? undefined,
+        serialNumber: a.serialNumber ?? undefined,
+      })) as unknown as Asset[];
+      
+      await exportAssetsToExcel(assetsToExport);
+      updateToast(toastId, `Berhasil mengekspor ${allAssets.length} aset ke Excel.`, 'success');
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');
