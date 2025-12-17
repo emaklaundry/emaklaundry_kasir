@@ -66,6 +66,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               isActive: data.isActive ?? false,
               canGiveDiscount: data.canGiveDiscount ?? false,
             });
+
+            // Automatically select the store if the user is bound to one
+            if (data.store_id) {
+              setSelectedStoreId(data.store_id);
+            }
+            
             prevLoggedInRef.current = true;
           }
         } else {

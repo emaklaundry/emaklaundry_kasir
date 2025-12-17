@@ -32,11 +32,26 @@
 
 -- Cabang: Kota Banjar
 -- UUID: 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
-INSERT INTO public.stores (id, name, address, "isActive")
-VALUES ('9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 'Cabang Kota Banjar', 'Kota Banjar', true)
+
+-- 1.1 Add Coordinates Columns (Idempotent)
+ALTER TABLE public.stores
+ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+
+INSERT INTO public.stores (id, name, address, "isActive", latitude, longitude)
+VALUES (
+  '9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 
+  'Cabang Kota Banjar', 
+  'Kota Banjar', 
+  true,
+  -7.372186953412669,
+  108.53945949758317
+)
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
-  address = EXCLUDED.address;
+  address = EXCLUDED.address,
+  latitude = EXCLUDED.latitude,
+  longitude = EXCLUDED.longitude;
 
 
 -- ============================================

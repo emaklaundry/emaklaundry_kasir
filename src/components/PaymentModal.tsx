@@ -21,9 +21,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   disabled,
 }) => {
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
-  // amountToPayStr dihilangkan, diganti dengan auto value dari remainingBalance
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
-  // No internal isSaving state
   const { addToast } = useToasts();
 
   const remainingBalance = useMemo(() => {

@@ -12,6 +12,7 @@ import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
+import WeatherWidget from '../components/WeatherWidget';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
@@ -568,6 +569,11 @@ const Dashboard: React.FC = () => {
 
   const isActionDisabled = currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all';
 
+  const selectedStoreData = useMemo(() => {
+    if (selectedStoreId === 'all') return undefined; // Should we pick a default? Maybe the first one?
+    return stores.find((s) => s.id === selectedStoreId);
+  }, [selectedStoreId, stores]);
+
   return (
     <>
       <div className="space-y-4 sm:space-y-6 p-3 sm:p-0 pb-20 sm:pb-0">
@@ -578,6 +584,15 @@ const Dashboard: React.FC = () => {
               {getStoreName()}
             </span>
           </h2>
+        </div>
+
+        {/* Weather Widget */}
+        <div className="mb-6">
+          <WeatherWidget 
+            latitude={selectedStoreData?.latitude}
+            longitude={selectedStoreData?.longitude}
+            locationName={selectedStoreData?.name}
+          />
         </div>
 
         {/* Trend Stats - Admin View */}
