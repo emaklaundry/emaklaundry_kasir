@@ -10,7 +10,7 @@
    - Klik **SQL Editor** di sidebar kiri
 
 2. **Copy File SQL**
-   - Buka file: `database/setup/complete_setup.sql`
+   - Buka file: `database/setup/0.complete_setup.sql`
    - Copy seluruh isinya (Ctrl+A, Ctrl+C)
 
 3. **Paste & Run**
@@ -21,14 +21,13 @@
 4. **Done! ✅**
    - Database sudah siap digunakan
    - Semua tables, functions, indexes sudah dibuat
-   - Data seed services sudah ada
    - Maintenance mode sudah aktif
 
 ---
 
 ## 📋 Apa yang Di-Setup?
 
-File `complete_setup.sql` mencakup **SEMUA** yang dibutuhkan:
+File `0.complete_setup.sql` mencakup **SEMUA** yang dibutuhkan:
 
 ### ✅ Section 1: Drop Tables (Optional)
 
@@ -112,7 +111,7 @@ Jika ingin kontrol penuh atau troubleshooting:
 
 ### 1. **DROP TABLES Di-Comment Out**
 
-File `complete_setup.sql` **TIDAK** akan drop data existing secara default.
+File `0.complete_setup.sql` **TIDAK** akan drop data existing secara default.
 
 Jika ingin reset total, uncomment section 1:
 
@@ -187,7 +186,7 @@ WHERE tablename IN ('transactions', 'customers', 'audit_logs');
 ### Error: "function does not exist"
 
 **Cause:** Functions belum dibuat  
-**Fix:** Re-run `complete_setup.sql`, pastikan section 2 & 3 ter-execute
+**Fix:** Re-run `0.complete_setup.sql`, pastikan section 2 & 3 ter-execute
 
 ### Seed Data Tidak Muncul
 
@@ -195,7 +194,7 @@ WHERE tablename IN ('transactions', 'customers', 'audit_logs');
 **Fix:** Buat store dulu atau update UUID di section 3:
 
 ```sql
--- Cari baris ini di complete_setup.sql
+-- Cari baris ini di 0.complete_setup.sql atau 1.seed_data_awal.sql
 WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
 -- Ganti dengan UUID store Anda
 ```
@@ -204,7 +203,7 @@ WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
 
 ## 📊 File Statistics
 
-**complete_setup.sql:**
+**0.complete_setup.sql:**
 
 - **Lines:** ~1000+ baris
 - **Size:** ~50-60 KB
@@ -213,13 +212,12 @@ WHERE id = '9b7e1c2a-1234-4bcd-8e9f-abcdef123456'
 - **Tables:** 13 tables
 - **Functions:** 5+ functions
 - **Indexes:** 10+ indexes
-- **Seed Data:** 50+ services
 
 ---
 
 ## ✅ Post-Setup Checklist
 
-Setelah run `complete_setup.sql`:
+Setelah run `0.complete_setup.sql`:
 
 - [ ] All tables created (13 tables)
 - [ ] All functions available (5+ functions)
@@ -236,11 +234,11 @@ Setelah run `complete_setup.sql`:
 
 - [Database README](../README.md) - Overview & structure
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment
-- [Backup Guide](../backup/database-backup.md) - Backup & restore
+- [Backup Guide](../backup/README.md) - Backup & restore
 
 ---
 
-**Catatan:** File individual (0.droptable.sql s/d 4.add_maintenance_mode.sql) tetap tersedia untuk referensi atau troubleshooting.
+**Catatan:** Seed data modular tersedia di folder `database/seeds/` (services, inventory, assets, maintenances).
 
-**Last Updated:** December 14, 2025  
-**Version:** 2.0.0
+**Last Updated:** December 18, 2024  
+**Version:** 2.1.0

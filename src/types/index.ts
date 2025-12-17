@@ -5,6 +5,17 @@ export enum ServiceCategory {
   Karpet = 'Karpet',
 }
 
+export enum WashType {
+  Pakaian = 'Pakaian',
+  Sepatu = 'Sepatu',
+  Tas = 'Tas',
+  Selimut = 'Selimut',
+  Boneka = 'Boneka',
+  Karpet = 'Karpet',
+  Gorden = 'Gorden',
+  Lainnya = 'Lainnya',
+}
+
 export enum PaymentStatus {
   Paid = 'Lunas',
   Unpaid = 'Belum Lunas',
@@ -35,12 +46,14 @@ export interface Store {
   name: string;
   address: string;
   isActive: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Customer {
   id: string;
   name: string;
-  phone: string;
+  phone?: string; // Optional - tidak wajib diisi
   address?: string;
   notes?: string;
   storeId: string;
@@ -52,6 +65,7 @@ export interface Service {
   id: string;
   name: string;
   category: ServiceCategory;
+  washType: WashType;
   price: number;
   unit: string;
   durationDays: number;
@@ -167,4 +181,5 @@ export interface ScheduledMaintenance {
   frequencyUnit: 'days' | 'weeks' | 'months' | 'years';
   nextDueDate: Date;
   lastCompletedDate: Date | null;
+  estimatedCost?: number;
 }

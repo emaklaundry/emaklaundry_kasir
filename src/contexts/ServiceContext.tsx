@@ -8,6 +8,7 @@ const fetchServices = async (): Promise<Service[]> => {
   return (data || []).map((s) => ({
     ...s,
     storeId: s.storeId ?? undefined,
+    washType: s.wash_type, // Map snake_case to camelCase
   })) as Service[];
 };
 
@@ -24,7 +25,13 @@ export function useServices() {
 
   const addService = useMutation({
     mutationFn: async (service: Omit<Service, 'id'>) => {
-      const { error } = await supabase.from('services').insert([service]);
+      // Map camelCase to snake_case for database
+      const dbService: Record<string, unknown> = { ...service };
+      if (service.washType !== undefined) {
+        dbService.wash_type = service.washType;
+        delete dbService.washType;
+      }
+      const { error } = await supabase.from('services').insert([dbService as never]);
       if (error) throw error;
       return null;
     },
@@ -34,9 +41,15 @@ export function useServices() {
   const updateService = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Service> }) => {
       const { id, data } = variables;
+      // Map camelCase to snake_case for database
+      const dbData: Record<string, unknown> = { ...data };
+      if (data.washType !== undefined) {
+        dbData.wash_type = data.washType;
+        delete dbData.washType;
+      }
       const { data: updated, error } = await supabase
         .from('services')
-        .update(data)
+        .update(dbData)
         .eq('id', id)
         .select();
       if (error) throw error;

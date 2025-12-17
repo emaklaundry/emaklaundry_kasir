@@ -3,9 +3,12 @@ import { precacheAndRoute } from 'workbox-precaching';
 // Injected at build time by workbox (may be an empty array in dev)
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-const CACHE_NAME = 'laundry-management-v1-runtime';
+// Use version-based cache name to force cache invalidation on updates
+const APP_VERSION = '2.1.0'; // Update this when deploying new version
+const CACHE_NAME = `laundry-management-v${APP_VERSION}-runtime`;
 
 self.addEventListener('install', (event) => {
+  // Force immediate activation of new service worker
   self.skipWaiting();
 });
 
@@ -67,13 +70,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For static assets (js, css, images), use cache-first strategy
-  if (
-    event.request.destination === 'script' ||
-    event.request.destination === 'style' ||
-    event.request.destination === 'image' ||
-    event.request.destination === 'font'
-  ) {
+  // For JS and CSS: network-first to ensure fresh code (prevents stale cache issues)
+  if (event.request.destination === 'script' || event.request.destination === 'style') {
+    event.respondWith(
+      (async () => {
+        try {
+          // Always try network first for code files
+          const response = await fetch(event.request, {
+            cache: 'no-cache', // Force revalidation
+          });
+          if (response && response.status === 200) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, response.clone());
+          }
+          return response;
+        } catch (err) {
+          // Fallback to cache only if offline
+          const cached = await caches.match(event.request);
+          return cached || Response.error();
+        }
+      })(),
+    );
+    return;
+  }
+
+  // For images and fonts: cache-first is OK (they don't change often)
+  if (event.request.destination === 'image' || event.request.destination === 'font') {
     event.respondWith(
       (async () => {
         const cached = await caches.match(event.request);

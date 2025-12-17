@@ -1,11 +1,11 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { registerSW } from 'virtual:pwa-register';
 import { UserRole } from './types';
 import useAppContext from './contexts/useAppContext';
 import Layout from './components/Layout';
 import MaintenanceMode from './components/MaintenanceMode';
 import { useSettings } from './contexts/SettingsContext';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 
 import useTheme from './hooks/useTheme';
 import { AppProviders } from './contexts/AppProviders';
@@ -24,6 +24,7 @@ const UsersPage = lazy(() => import('./pages/management/UsersPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
 const SettingsPage = lazy(() => import('./pages/management/SettingsPage'));
+const BackupRestorePage = lazy(() => import('./pages/management/BackupRestorePage'));
 const CustomersPage = lazy(() => import('./pages/management/CustomersPage'));
 const CustomerDetailPage = lazy(() => import('./pages/management/CustomerDetailPage'));
 const ReceiptPage = lazy(() => import('./pages/transactions/ReceiptPage'));
@@ -55,38 +56,6 @@ const PageLoader: React.FC = () => (
 );
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
-
-// Komponen untuk menangani pendaftaran PWA
-const PwaStatusHandler: React.FC = () => {
-  React.useEffect(() => {
-    const updateSW = registerSW({
-      onOfflineReady() {
-        // PWA ready for offline use - status ditampilkan di Header
-      },
-      onNeedRefresh() {
-        // Auto update service worker saat ada versi baru
-        if (updateSW) {
-          updateSW(); // Trigger update (reloadPage is configured in vite.config.ts)
-        }
-      },
-      immediate: true, // Check for updates immediately
-    });
-
-    // Check for updates setiap 1 jam
-    const interval = setInterval(
-      () => {
-        if (updateSW) {
-          updateSW(); // Check for updates without forcing reload
-        }
-      },
-      60 * 60 * 1000,
-    ); // 1 hour
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return null;
-};
 
 // Versi aplikasi otomatis dari package.json
 // Pastikan resolveJsonModule diaktifkan di tsconfig.json
@@ -229,6 +198,14 @@ const AppRoutes: React.FC = () => {
               }
             />
             <Route
+              path="/management/backup"
+              element={
+                <AdminRoute>
+                  <BackupRestorePage />
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/reports"
               element={
                 <AdminRoute>
@@ -266,7 +243,7 @@ const AppRoutes: React.FC = () => {
           {APP_VERSION}
         </div>
       </Layout>
-      <PwaStatusHandler />
+      <PWAUpdatePrompt />
     </>
   );
 };

@@ -9,7 +9,7 @@ interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | null;
-  onSave: (updatedTransaction: Transaction) => Promise<void> | void;
+  onSave: (updatedTransaction: Transaction, pointsEarned?: number) => Promise<void> | void;
   disabled?: boolean;
 }
 
@@ -21,9 +21,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   disabled,
 }) => {
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
-  // amountToPayStr dihilangkan, diganti dengan auto value dari remainingBalance
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
-  // No internal isSaving state
   const { addToast } = useToasts();
 
   const remainingBalance = useMemo(() => {
@@ -43,12 +41,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const amountToPay = remainingBalance;
   const tenderedAmount = parseRupiah(tenderedAmountStr);
 
+  // NEW: Calculate rounding for ALL payment methods based on total remainder
+  // Get last 2 digits of amount (remainder when divided by 100)
+  const totalRemainder = amountToPay % 100;
+  // Round if remainder is between 1-49 (e.g., Rp 10,350 → round down Rp 50)
+  const shouldRoundTotal = totalRemainder > 0 && totalRemainder < 50;
+  const roundedAmountToPay = shouldRoundTotal ? amountToPay - totalRemainder : amountToPay;
+  const pointsEarnedFromRounding = shouldRoundTotal ? totalRemainder : 0;
+
+  // Calculate cash change (only applies to Cash payment)
   const change = useMemo(() => {
-    if (method !== PaymentMethod.Cash || !tenderedAmount || tenderedAmount < amountToPay) {
+    if (method !== PaymentMethod.Cash || !tenderedAmount || tenderedAmount < roundedAmountToPay) {
       return 0;
     }
-    return tenderedAmount - amountToPay;
-  }, [method, tenderedAmount, amountToPay]);
+    return tenderedAmount - roundedAmountToPay;
+  }, [method, tenderedAmount, roundedAmountToPay]);
 
   const handleSave = async () => {
     if (!transaction) return;
@@ -58,7 +65,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       const lockedAmountToPay = amountToPay;
       const lockedRemainingBalance = remainingBalance;
       const lockedTenderedAmount = tenderedAmount;
-      const lockedChange = change;
 
       // Validasi awal
       if (lockedAmountToPay < 0 || lockedRemainingBalance < 0) {
@@ -93,12 +99,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         return;
       }
 
-      if (method === PaymentMethod.Cash && lockedTenderedAmount < lockedAmountToPay) {
+      if (method === PaymentMethod.Cash && lockedTenderedAmount < roundedAmountToPay) {
         addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
         return;
       }
 
-      const newAmountPaid = Math.min(transaction.amountPaid + lockedAmountToPay, transaction.total);
+      // Use roundedAmountToPay instead of lockedAmountToPay for actual payment
+      const newAmountPaid = Math.min(transaction.amountPaid + roundedAmountToPay, transaction.total);
       let newStatus = PaymentStatus.Unpaid;
 
       if (newAmountPaid >= transaction.total) {
@@ -107,7 +114,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         newStatus = PaymentStatus.Unpaid;
       }
 
-      const finalChange = newStatus === PaymentStatus.Paid ? lockedChange : 0;
+      const finalChange = newStatus === PaymentStatus.Paid ? change : 0;
+      const finalPoints = newStatus === PaymentStatus.Paid ? pointsEarnedFromRounding : 0;
 
       await onSave({
         ...transaction,
@@ -115,7 +123,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         paymentStatus: newStatus,
         paymentMethod: method,
         change: finalChange,
-      });
+      }, finalPoints);
 
       onClose();
     } catch (error) {
@@ -137,6 +145,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={onClose}
             className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
+            aria-label="Batalkan pembayaran"
           >
             Batal
           </button>
@@ -197,13 +206,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
           >
             Jumlah Bayar (Rp)
+            {shouldRoundTotal && (
+              <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                (Sudah dibulatkan)
+              </span>
+            )}
           </label>
           <input
             type="text"
             id="amountToPay"
-            value={formatRupiah(remainingBalance)}
+            name="amountToPay"
+            value={formatRupiah(roundedAmountToPay)}
             readOnly
             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white opacity-70 cursor-not-allowed"
+            autoComplete="off"
           />
         </div>
 
@@ -218,18 +234,40 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <input
               type="text"
               id="tenderedAmount"
+              name="tenderedAmount"
               value={tenderedAmountStr}
               onChange={(e) => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               placeholder="Masukkan jumlah uang tunai"
+              autoComplete="off"
             />
           </div>
         )}
 
         {change > 0 && (
-          <div className="p-3 bg-green-50 dark:bg-green-900/50 rounded-lg flex justify-between items-center text-xl font-bold text-green-800 dark:text-green-300">
+          <div className="p-3 rounded-lg flex justify-between items-center text-xl font-bold bg-green-50 dark:bg-green-900/50 text-green-800 dark:text-green-300">
             <span>Kembalian:</span>
             <span>Rp {formatRupiah(change)}</span>
+          </div>
+        )}
+
+        {shouldRoundTotal && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700">
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1">
+                <p className="font-semibold text-blue-900 dark:text-blue-100 text-sm">
+                  💰 Pembulatan Otomatis!
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  Total dibulatkan: Rp {formatRupiah(amountToPay)} → Rp {formatRupiah(roundedAmountToPay)}
+                  <br />
+                  Saldo diskon bertambah: +Rp {formatRupiah(pointsEarnedFromRounding)}
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>

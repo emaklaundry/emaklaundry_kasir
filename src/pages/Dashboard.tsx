@@ -12,18 +12,16 @@ import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
+import WeatherWidget from '../components/WeatherWidget';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
 import PaymentModal from '../components/PaymentModal';
 import {
-  ShoppingCartIcon,
-  PackageIcon,
   WrenchIcon,
   PlusCircleIcon,
   DollarSignIcon,
-  CalendarIcon,
   ChevronRightIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -49,7 +47,8 @@ interface TrendData {
   percentage: string;
 }
 
-const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }> = ({ data }) => {
+// WeeklyRevenueChart component - currently unused but kept for future use
+/* const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }> = ({ data }) => {
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
     content: string;
@@ -112,9 +111,9 @@ const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }>
       </div>
     </div>
   );
-};
+}; */
 
-function TrendIndicator({ trendData }: { trendData?: TrendData }) {
+/* function TrendIndicator({ trendData }: { trendData?: TrendData }) {
   if (!trendData || trendData.trend === 'neutral') return null;
   const isUp = trendData.trend === 'up';
   const trendColor = isUp ? 'text-green-500' : 'text-red-500';
@@ -125,16 +124,18 @@ function TrendIndicator({ trendData }: { trendData?: TrendData }) {
       <span>{trendData.percentage} vs 30 hari lalu</span>
     </div>
   );
-}
+} */
 
-const StatCard: React.FC<{
+// StatCard component - currently unused but kept for future use
+/* const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
   title: string;
   value: string | number;
   color: string;
   to?: string;
   trendData?: TrendData;
-}> = ({ icon: Icon, title, value, color, to, trendData }) => {
+  subtitle?: string;
+}> = ({ icon: Icon, title, value, color, to, trendData, subtitle }) => {
   const content = (
     <div
       className={`bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-[0.98]' : ''}`}
@@ -147,6 +148,11 @@ const StatCard: React.FC<{
           <p className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 dark:text-white break-all">
             {value}
           </p>
+          {subtitle && (
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+              {subtitle}
+            </p>
+          )}
         </div>
         <div
           className={`p-3 sm:p-3 rounded-full flex-shrink-0 ${color.replace('border-', 'bg-').replace('-500', '-100')} dark:${color.replace('border-', 'bg-').replace('-500', '-900/50')}`}
@@ -160,7 +166,7 @@ const StatCard: React.FC<{
     </div>
   );
   return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
-};
+}; */
 
 // Tipe kustom untuk order aktif
 type ActiveOrder = Transaction & { customerName: string };
@@ -184,9 +190,11 @@ const Dashboard: React.FC = () => {
     queryKey: ['inventory', { page: 1, pageSize: 1000, storeId: selectedStoreId }],
     queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId: selectedStoreId }),
   });
-  const inventory = Array.isArray(inventoryQuery.data)
-    ? inventoryQuery.data
-    : (inventoryQuery.data?.data ?? []);
+  const inventory = useMemo(() => {
+    return Array.isArray(inventoryQuery.data)
+      ? inventoryQuery.data
+      : (inventoryQuery.data?.data ?? []);
+  }, [inventoryQuery.data]);
   const { transactions, updateTransaction } = useTransactions();
   const customersQuery = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -237,6 +245,7 @@ const Dashboard: React.FC = () => {
         day: date.toLocaleDateString('id-ID', { weekday: 'short' }),
         revenue: 0,
         date,
+        transactionCount: 0,
       };
     });
 
@@ -250,10 +259,56 @@ const Dashboard: React.FC = () => {
       );
       if (dayData) {
         dayData.revenue += t.amountPaid;
+        dayData.transactionCount += 1;
       }
     });
     return data;
   }, [transactions]);
+
+  // Statistik untuk revenue 7 hari terakhir
+  const weeklyStats = useMemo(() => {
+    const currentWeekTotal = weeklyRevenueData.reduce((sum, d) => sum + d.revenue, 0);
+    const currentWeekTransactions = weeklyRevenueData.reduce((sum, d) => sum + d.transactionCount, 0);
+    const average = currentWeekTotal / 7;
+    
+    const sortedByRevenue = [...weeklyRevenueData].sort((a, b) => b.revenue - a.revenue);
+    const highest = sortedByRevenue[0];
+    const lowest = sortedByRevenue[sortedByRevenue.length - 1];
+
+    // Hitung revenue minggu sebelumnya (hari ke 8-14)
+    const previousWeekData = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (i + 7));
+      return { date, revenue: 0 };
+    });
+
+    transactions.forEach((t: Transaction) => {
+      const transactionDate = new Date(t.createdAt);
+      const dayData = previousWeekData.find(
+        (d) =>
+          d.date.getDate() === transactionDate.getDate() &&
+          d.date.getMonth() === transactionDate.getMonth() &&
+          d.date.getFullYear() === transactionDate.getFullYear(),
+      );
+      if (dayData) {
+        dayData.revenue += t.amountPaid;
+      }
+    });
+
+    const previousWeekTotal = previousWeekData.reduce((sum, d) => sum + d.revenue, 0);
+    const weekComparison = previousWeekTotal > 0
+      ? ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100
+      : currentWeekTotal > 0 ? 100 : 0;
+
+    return {
+      total: currentWeekTotal,
+      average,
+      highest,
+      lowest,
+      weekComparison,
+      transactionCount: currentWeekTransactions,
+    };
+  }, [weeklyRevenueData, transactions]);
 
   const trendStats = useMemo(() => {
     const now = new Date();
@@ -286,7 +341,20 @@ const Dashboard: React.FC = () => {
     };
   }, [transactions]);
 
-  const lowStockItems = inventory.filter((i) => i.stock <= i.lowStockThreshold).length;
+  const lowStockStats = useMemo(() => {
+    const lowItems = inventory.filter((i) => i.stock <= i.lowStockThreshold);
+    const criticalItems = lowItems.filter((i) => i.stock === 0);
+    const nearEmptyItems = lowItems.filter((i) => i.stock > 0 && i.stock <= i.lowStockThreshold / 2);
+    
+    return {
+      total: lowItems.length,
+      critical: criticalItems.length,
+      nearEmpty: nearEmptyItems.length,
+      items: lowItems,
+    };
+  }, [inventory]);
+
+  const lowStockItems = lowStockStats.total;
 
   const maintenanceDue = useMemo(() => {
     const now = new Date();
@@ -300,7 +368,38 @@ const Dashboard: React.FC = () => {
       .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
   }, [scheduledMaintenances, assets]);
 
-  const maintenanceDueCount = maintenanceDue.length;
+  const maintenanceStats = useMemo(() => {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const overdue = maintenanceDue.filter((m) => new Date(m.nextDueDate) < yesterday);
+    const dueToday = maintenanceDue.filter((m) => {
+      const dueDate = new Date(m.nextDueDate);
+      return dueDate.toDateString() === now.toDateString();
+    });
+    
+    const next7Days = new Date(now);
+    next7Days.setDate(next7Days.getDate() + 7);
+    const upcoming = scheduledMaintenances
+      .filter((sm) => {
+        const dueDate = new Date(sm.nextDueDate);
+        return dueDate > now && dueDate <= next7Days;
+      })
+      .map((sm) => {
+        const asset = assets.find((a) => a.id === sm.assetId);
+        return { ...sm, assetName: asset?.name || 'N/A' };
+      });
+    
+    return {
+      total: maintenanceDue.length,
+      overdue: overdue.length,
+      dueToday: dueToday.length,
+      upcoming: upcoming.length,
+    };
+  }, [maintenanceDue, scheduledMaintenances, assets]);
+
+  const maintenanceDueCount = maintenanceStats.total;
 
   const customerMap = useMemo(() => {
     return customers.reduce(
@@ -432,7 +531,7 @@ const Dashboard: React.FC = () => {
         id: `LOG_${crypto.randomUUID()}`,
         date: new Date(),
         description: `[Jadwal] - ${schedule.description}`,
-        cost: 0,
+        cost: schedule.estimatedCost || 0,
       };
       await updateAsset(asset.id, { maintenanceHistory: [...asset.maintenanceHistory, newLog] });
       await updateScheduledMaintenance(schedule.id, {
@@ -470,6 +569,11 @@ const Dashboard: React.FC = () => {
 
   const isActionDisabled = currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all';
 
+  const selectedStoreData = useMemo(() => {
+    if (selectedStoreId === 'all') return undefined; // Should we pick a default? Maybe the first one?
+    return stores.find((s) => s.id === selectedStoreId);
+  }, [selectedStoreId, stores]);
+
   return (
     <>
       <div className="space-y-4 sm:space-y-6 p-3 sm:p-0 pb-20 sm:pb-0">
@@ -482,56 +586,171 @@ const Dashboard: React.FC = () => {
           </h2>
         </div>
 
+        {/* Weather Widget */}
+        <div className="mb-6">
+          <WeatherWidget 
+            latitude={selectedStoreData?.latitude}
+            longitude={selectedStoreData?.longitude}
+            locationName={selectedStoreData?.name}
+          />
+        </div>
+
         {/* Trend Stats - Admin View */}
         <div
           className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}
         >
-          <StatCard
-            icon={PackageIcon}
-            title="Pesanan Selesai (30 hari)"
-            value={
-              transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed)
-                .length
-            }
-            color="border-green-500"
-            to={`/transactions?status=${OrderStatus.Completed}`}
-            trendData={trendStats.completed}
-          />
-          <StatCard
-            icon={ShoppingCartIcon}
-            title="Pesanan Diproses"
-            value={
-              transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
-                .length
-            }
-            color="border-blue-500"
-            to={`/transactions?status=${OrderStatus.Processing}`}
-            trendData={trendStats.processing}
-          />
-          <StatCard
-            icon={WrenchIcon}
-            title="Stok Menipis"
-            value={lowStockItems}
-            color="border-orange-500"
-            to="/management/inventory?filter=low_stock"
-          />
-          <StatCard
-            icon={CalendarIcon}
-            title="Perawatan Terjadwal"
-            value={maintenanceDueCount}
-            color="border-red-500"
-            to="/management/assets?filter=maintenance_due"
-          />
-        </div>
+          <Link to={`/transactions?status=${OrderStatus.Completed}`}>
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 sm:p-5 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors">
+              <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium mb-1">
+                Pesanan Selesai (30 hari)
+              </p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900 dark:text-green-100">
+                {transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed).length}
+              </p>
+              {trendStats.completed.trend !== 'neutral' && (
+                <div className="flex items-center gap-1 mt-1">
+                  {trendStats.completed.trend === 'up' ? (
+                    <ArrowTrendingUpIcon className="w-3 h-3 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
+                  )}
+                  <span className={`text-xs sm:text-sm font-semibold ${trendStats.completed.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {trendStats.completed.percentage} vs 30 hari lalu
+                  </span>
+                </div>
+              )}
+            </div>
+          </Link>
 
-        {/* Weekly Chart - Admin View */}
-        <div
-          className={`bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}
-        >
-          <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white mb-4">
-            Pendapatan 7 Hari Terakhir
-          </h2>
-          <WeeklyRevenueChart data={weeklyRevenueData} />
+          <Link to={`/transactions?status=${OrderStatus.Processing}`}>
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+              <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
+                Pesanan Diproses
+              </p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100">
+                {transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing).length}
+              </p>
+              {trendStats.processing.trend !== 'neutral' && (
+                <div className="flex items-center gap-1 mt-1">
+                  {trendStats.processing.trend === 'up' ? (
+                    <ArrowTrendingUpIcon className="w-3 h-3 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
+                  )}
+                  <span className={`text-xs sm:text-sm font-semibold ${trendStats.processing.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {trendStats.processing.percentage} vs 30 hari lalu
+                  </span>
+                </div>
+              )}
+            </div>
+          </Link>
+
+          <Link to="/management/inventory?filter=low_stock">
+            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 sm:p-5 rounded-lg border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
+              <p className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 font-medium mb-1">
+                Stok Menipis
+              </p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-orange-900 dark:text-orange-100">
+                {lowStockItems}
+              </p>
+              {(lowStockStats.critical > 0 || lowStockStats.nearEmpty > 0 || lowStockStats.total > 0) && (
+                <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1">
+                  {lowStockStats.critical > 0
+                    ? `${lowStockStats.critical} item habis, ${lowStockStats.nearEmpty} kritis`
+                    : lowStockStats.nearEmpty > 0
+                      ? `${lowStockStats.nearEmpty} item mendekati habis`
+                      : `${lowStockStats.total} item perlu restock`}
+                </p>
+              )}
+            </div>
+          </Link>
+
+          <Link to="/management/assets?filter=maintenance_due">
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 sm:p-5 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+              <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 font-medium mb-1">
+                Perawatan Terjadwal
+              </p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-900 dark:text-red-100">
+                {maintenanceDueCount}
+              </p>
+              {(maintenanceStats.overdue > 0 || maintenanceStats.dueToday > 0 || maintenanceStats.upcoming > 0) && (
+                <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mt-1">
+                  {maintenanceStats.overdue > 0
+                    ? `${maintenanceStats.overdue} terlambat, ${maintenanceStats.dueToday} hari ini`
+                    : maintenanceStats.dueToday > 0
+                      ? `${maintenanceStats.dueToday} jatuh tempo hari ini`
+                      : `${maintenanceStats.upcoming} dalam 7 hari ke depan`}
+                </p>
+              )}
+            </div>
+          </Link>
+          
+          {/* Pendapatan 7 Hari Terakhir Stats - Hidden for Cashier */}
+          {!isCashier && (
+            <>
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
+                  Total Pendapatan (7 hari)
+                </p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100">
+                  Rp {weeklyStats.total.toLocaleString('id-ID')}
+                </p>
+                <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  {weeklyStats.transactionCount} transaksi
+                </p>
+              </div>
+              
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 sm:p-5 rounded-lg border border-green-200 dark:border-green-800">
+                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium mb-1">
+                  Rata-rata/Hari
+                </p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900 dark:text-green-100">
+                  Rp {Math.round(weeklyStats.average).toLocaleString('id-ID')}
+                </p>
+                <div className="flex items-center gap-1 mt-1">
+                  {weeklyStats.weekComparison >= 0 ? (
+                    <ArrowTrendingUpIcon className="w-3 h-3 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
+                  )}
+                  <span
+                    className={`text-xs sm:text-sm font-semibold ${
+                      weeklyStats.weekComparison >= 0
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-600 dark:text-red-400'
+                    }`}
+                  >
+                    {weeklyStats.weekComparison >= 0 ? '+' : ''}
+                    {weeklyStats.weekComparison.toFixed(1)}% vs minggu lalu
+                  </span>
+                </div>
+              </div>
+              
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 sm:p-5 rounded-lg border border-purple-200 dark:border-purple-800">
+                <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">
+                  Hari Tertinggi
+                </p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-900 dark:text-purple-100">
+                  Rp {weeklyStats.highest.revenue.toLocaleString('id-ID')}
+                </p>
+                <p className="text-xs sm:text-sm text-purple-700 dark:text-purple-300 mt-1">
+                  {weeklyStats.highest.day} ({weeklyStats.highest.transactionCount} transaksi)
+                </p>
+              </div>
+              
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 sm:p-5 rounded-lg border border-orange-200 dark:border-orange-800">
+                <p className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 font-medium mb-1">
+                  Hari Terendah
+                </p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-orange-900 dark:text-orange-100">
+                  Rp {weeklyStats.lowest.revenue.toLocaleString('id-ID')}
+                </p>
+                <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1">
+                  {weeklyStats.lowest.day} ({weeklyStats.lowest.transactionCount} transaksi)
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         <div

@@ -362,3 +362,88 @@ export const UploadIcon: React.FC<{ className?: string }> = ({ className }) => (
     <line x1="12" x2="12" y1="3" y2="15" />
   </Icon>
 );
+
+export const RefreshCwIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
+    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+    <path d="M3 21v-5h5" />
+  </Icon>
+);
+
+export const DatabaseIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M3 5v14a9 3 0 0 0 18 0V5" />
+    <path d="M3 12a9 3 0 0 0 18 0" />
+  </Icon>
+);
+
+export const AlertTriangleIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </Icon>
+);
+
+export const CheckCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </Icon>
+);
+
+export const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </Icon>
+);
+
+export const CloudIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M17.5 19c0-1.7-1.3-3-3-3h-11a4 4 0 0 1-3.8-5 5 5 0 0 1 10.2-1 3 3 0 0 1 7.4 3 4 4 0 0 1 .2 6Z" />
+  </Icon>
+);
+
+export const CloudRainIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+    <path d="M16 14v6" />
+    <path d="M8 14v6" />
+    <path d="M12 16v6" />
+  </Icon>
+);
+
+export const CloudLightningIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973" />
+    <path d="m13 12-3 5h4l-3 5" />
+  </Icon>
+);
+
+export const WindIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" />
+    <path d="M9.6 4.6A2 2 0 1 1 11 8H2" />
+    <path d="M12.6 19.4A2 2 0 1 0 14 16H2" />
+  </Icon>
+);
+
+export const DropletsIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.8-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" />
+    <path d="M12.56 17.5c2.16 0 3.94-1.8 3.94-3.96 0-1.14-.58-2.2-1.66-3.1-1.1-1-2.26-2.28-2.28-3.74-.02 1.46-1.18 2.75-2.28 3.73-1.08.92-1.66 1.96-1.66 3.1 0 2.18 1.78 3.96 3.94 3.96z" />
+    <path d="M19 19.7c1.68 0 3.06-1.4 3.06-3.08 0-.9-.45-1.78-1.32-2.52-1.08-1-2.02-2.28-2.02-3.7-.02.48-.3 2.14-1.72 3.7a3.86 3.86 0 0 0-1.08 2.52c0 1.68 1.38 3.08 3.08 3.08z" />
+  </Icon>
+);
+
+export const MapIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+    <line x1="8" y1="2" x2="8" y2="18" />
+    <line x1="16" y1="6" x2="16" y2="22" />
+  </Icon>
+);

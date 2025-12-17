@@ -24,7 +24,11 @@ export default defineConfig(() => {
           // Files to include in the precache manifest
           globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
         },
-        registerType: 'autoUpdate',
+        registerType: 'prompt', // Changed from autoUpdate to give user control
+        // Disable dev mode service worker to prevent caching issues during development
+        devOptions: {
+          enabled: false,
+        },
         includeAssets: ['favicon/favicon.ico', 'favicon/apple-touch-icon.png'],
         manifest: {
           name: 'Emak Laundry - Sistem Kasir',

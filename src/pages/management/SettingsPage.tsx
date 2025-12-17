@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { useStores } from '../../contexts/StoreContext';
 import useToasts from '../../contexts/useToasts';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
-import { KeyIcon } from '../../components/icons';
+import { KeyIcon, MapIcon } from '../../components/icons';
 import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
 import { UserRole } from '../../types';
@@ -17,15 +18,34 @@ https://forms.gle/8JnjZZ4cu5oTXGYr9`;
 
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings } = useSettings();
+  const { stores, updateStore } = useStores();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
-  const { currentUser } = useAppContext();
+  const { currentUser, selectedStoreId } = useAppContext();
 
   const [formData, setFormData] = useState(settings);
+  const [locationData, setLocationData] = useState<{ latitude: number; longitude: number }>({
+    latitude: 0,
+    longitude: 0,
+  });
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Only Super Admin can toggle maintenance mode
   const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
+  
+  const currentStore = useMemo(() => {
+    if (selectedStoreId === 'all') return null;
+    return stores.find((s) => s.id === selectedStoreId);
+  }, [selectedStoreId, stores]);
+
+  useEffect(() => {
+    if (currentStore) {
+      setLocationData({
+        latitude: currentStore.latitude || 0,
+        longitude: currentStore.longitude || 0,
+      });
+    }
+  }, [currentStore]);
 
   useEffect(() => {
     if (settings) {
@@ -66,7 +86,18 @@ const SettingsPage: React.FC = () => {
     // Create a replaceable toast and keep its id so we can update it later
     const toastId = addToast('Menyimpan perubahan...', 'info');
     try {
+      // 1. Update Layout/General Settings
       await updateSettings(formData);
+      
+      // 2. Update Store Location (if valid store selected)
+      if (currentStore && currentStore.id !== 'all') {
+         await updateStore(currentStore.id, {
+            latitude: locationData.latitude,
+            longitude: locationData.longitude
+         });
+         addAuditLog(`Mengupdate lokasi toko "${currentStore.name}" ke (${locationData.latitude}, ${locationData.longitude}).`);
+      }
+
       addAuditLog('Menyimpan perubahan pada Pengaturan Aplikasi.');
       updateToast(toastId, 'Pengaturan berhasil disimpan!', 'success');
     } catch (error: unknown) {
@@ -129,6 +160,77 @@ const SettingsPage: React.FC = () => {
         </button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isSaving}>
+        {/* Location Settings - Visible only for Store Admins/Specific Branch */}
+        {currentStore && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-6 space-y-4">
+             <div className="flex items-center gap-3 mb-4">
+               <div className="bg-blue-500 rounded-full p-2">
+                 <MapIcon className="h-6 w-6 text-white" />
+               </div>
+               <div>
+                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                   Lokasi Toko
+                 </h2>
+                 <p className="text-sm text-slate-600 dark:text-slate-400">
+                   Koordinat untuk fitur cuaca ({currentStore.name})
+                 </p>
+               </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                   <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Latitude
+                   </label>
+                   <input
+                      type="number"
+                      step="any"
+                      value={locationData.latitude}
+                      onChange={(e) => setLocationData(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))}
+                      className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                   />
+                </div>
+                <div>
+                   <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Longitude
+                   </label>
+                   <input
+                      type="number"
+                      step="any"
+                      value={locationData.longitude}
+                      onChange={(e) => setLocationData(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
+                      className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                   />
+                </div>
+             </div>
+             
+             <div className="flex justify-end">
+                <button
+                   type="button"
+                   onClick={() => {
+                      if (navigator.geolocation) {
+                         navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                               setLocationData({
+                                  latitude: pos.coords.latitude,
+                                  longitude: pos.coords.longitude
+                               });
+                               addToast('Lokasi berhasil didapatkan dari GPS!', 'success');
+                            },
+                            () => addToast('Gagal mendapatkan lokasi GPS.', 'error')
+                         );
+                      } else {
+                         addToast('Browser tidak mendukung GPS.', 'error');
+                      }
+                   }}
+                   className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                >
+                   📍 Ambil Lokasi Saya
+                </button>
+             </div>
+          </div>
+        )}
+
         {/* Maintenance Mode Section - Only for Super Admin */}
         {isSuperAdmin && (
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-6 space-y-4">
@@ -232,7 +334,7 @@ const SettingsPage: React.FC = () => {
             onChange={handleChange}
             disabled={isSaving}
             rows={4}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white font-mono text-sm"
+            className="bg-slate-50 border border-slate-300 text-slate-900 rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white font-mono text-sm"
           />
           <div className="flex items-center justify-between mt-2">
             <p className="text-sm text-slate-600 dark:text-slate-400">

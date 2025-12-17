@@ -43,19 +43,17 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       addToast('Nama pelanggan harus diisi.', 'error');
       return;
     }
-    if (!formData.phone || formData.phone.trim() === '') {
-      addToast('Nomor telepon harus diisi.', 'error');
-      return;
-    }
 
-    // Validasi format nomor telepon (08xxx atau +62xxx)
-    const phoneClean = formData.phone.replace(/\s/g, '');
-    if (!/^(\+62|08|62)[0-9]{8,12}$/.test(phoneClean)) {
-      addToast(
-        'Format nomor telepon tidak valid (contoh: 081234567890 atau +6281234567890)',
-        'warning',
-      );
-      return;
+    // Validasi format nomor telepon HANYA jika diisi
+    if (formData.phone && formData.phone.trim() !== '') {
+      const phoneClean = formData.phone.replace(/\s/g, '');
+      if (!/^(\+62|08|62)[0-9]{8,12}$/.test(phoneClean)) {
+        addToast(
+          'Format nomor telepon tidak valid (contoh: 081234567890 atau +6281234567890)',
+          'warning',
+        );
+        return;
+      }
     }
 
     const discount = formData.defaultDiscount ?? 0;
@@ -117,7 +115,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               htmlFor="customer-phone"
               className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
             >
-              Nomor Telepon
+              Nomor Telepon (Opsional)
             </label>
             <input
               type="tel"
@@ -126,8 +124,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               autoComplete="tel"
               value={formData.phone}
               onChange={handleChange}
+              placeholder="Contoh: 081234567890"
               className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              required
             />
           </div>
         </div>

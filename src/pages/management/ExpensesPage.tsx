@@ -5,6 +5,7 @@ import {
   importExpensesFromExcel,
   downloadExpenseTemplate,
 } from '../../utils/excelUtils';
+import { supabase } from '../../utils/supabaseClient';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import { useAssets } from '../../contexts/AssetContext';
@@ -156,9 +157,35 @@ const ExpensesPage: React.FC = () => {
 
   // Excel Export
   const handleExportToExcel = async () => {
+    const toastId = addToast('Mengekspor pengeluaran...', 'info');
     try {
-      await exportExpensesToExcel(expenses);
-      addToast('Data pengeluaran berhasil di-export ke Excel', 'success');
+      // Fetch SEMUA pengeluaran dari database
+      updateToast(toastId, 'Mengambil semua data pengeluaran...', 'info');
+      
+      let query = supabase.from('expenses').select('*');
+      
+      // Filter by store if needed
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      const { data: allExpenses, error } = await query;
+      
+      if (error) throw error;
+      if (!allExpenses || allExpenses.length === 0) {
+        updateToast(toastId, 'Tidak ada pengeluaran untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allExpenses.length} pengeluaran...`, 'info');
+      
+      const expensesToExport = allExpenses.map((e) => ({
+        ...e,
+        storeId: e.storeId ??undefined,
+      })) as unknown as Expense[];
+      
+      await exportExpensesToExcel(expensesToExport);
+      updateToast(toastId, `Berhasil mengekspor ${allExpenses.length} pengeluaran ke Excel.`, 'success');
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');
@@ -191,13 +218,18 @@ const ExpensesPage: React.FC = () => {
             }
 
             // Update existing expense
-            await updateExpense(expense.id, {
+            const updatePayload: Partial<Expense> = {
               date: expense.date!,
               description: expense.description!,
               category: expense.category!,
               amount: expense.amount!,
-              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
-            });
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
+            await updateExpense(expense.id, updatePayload);
             successCount++;
           } else {
             // Check for duplicate before adding new expense
@@ -341,6 +373,8 @@ const ExpensesPage: React.FC = () => {
 
           <input
             ref={fileInputRef}
+            id="expense-import-file"
+            name="expense-import-file"
             type="file"
             accept=".xlsx,.xls"
             onChange={handleImportFromExcel}
@@ -386,13 +420,18 @@ const ExpensesPage: React.FC = () => {
           <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            id="expense-search"
+            name="expense-search"
             placeholder="Cari..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <select
+          id="expense-category-filter"
+          name="expense-category-filter"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"

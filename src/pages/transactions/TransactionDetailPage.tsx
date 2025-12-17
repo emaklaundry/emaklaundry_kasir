@@ -186,7 +186,7 @@ const TransactionDetailPage: React.FC = () => {
               Info Pelanggan
             </h2>
             <DetailItem label="Nama" value={customer.name} />
-            <DetailItem label="Telepon" value={customer.phone} />
+            <DetailItem label="Telepon" value={customer.phone || '-'} />
             <DetailItem label="Alamat" value={customer.address || '-'} />
           </div>
           <div>

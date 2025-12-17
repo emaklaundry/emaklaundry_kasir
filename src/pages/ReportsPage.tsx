@@ -701,16 +701,22 @@ const ReportsPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <input
                   type="date"
+                  id="report-custom-start-date"
+                  name="report-custom-start-date"
                   value={customStartDate.toISOString().split('T')[0]}
                   onChange={(e) => setCustomStartDate(new Date(e.target.value))}
                   className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-base"
+                  autoComplete="off"
                 />
                 <span>-</span>
                 <input
                   type="date"
+                  id="report-custom-end-date"
+                  name="report-custom-end-date"
                   value={customEndDate.toISOString().split('T')[0]}
                   onChange={(e) => setCustomEndDate(new Date(e.target.value))}
                   className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-2 text-base"
+                  autoComplete="off"
                 />
               </div>
             )}

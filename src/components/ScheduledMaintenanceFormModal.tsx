@@ -30,6 +30,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
         nextDueDate: schedule.nextDueDate
           ? String(schedule.nextDueDate).split('T')[0]
           : new Date().toISOString().split('T')[0],
+        estimatedCost: schedule.estimatedCost || 0,
       };
     }
     const tomorrow = new Date();
@@ -39,6 +40,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
       frequencyValue: 1,
       frequencyUnit: 'months',
       nextDueDate: tomorrow.toISOString().split('T')[0],
+      estimatedCost: 0,
     };
   }, [schedule]);
 
@@ -146,6 +148,50 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
               <option value="years">Tahun</option>
             </select>
           </div>
+        </div>
+        <div>
+          <label
+            htmlFor="estimatedCost"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
+            Estimasi Biaya (Rp)
+          </label>
+          <input
+            type="number"
+            name="estimatedCost"
+            id="estimatedCost"
+            min="0"
+            step="1000"
+            value={formData.estimatedCost || 0}
+            onChange={handleChange}
+            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            placeholder="0"
+          />
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Biaya yang akan dicatat saat perawatan selesai.
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="estimatedCost"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
+            Estimasi Biaya (Rp)
+          </label>
+          <input
+            type="number"
+            name="estimatedCost"
+            id="estimatedCost"
+            min="0"
+            step="1000"
+            value={formData.estimatedCost || 0}
+            onChange={handleChange}
+            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            placeholder="0"
+          />
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Biaya yang akan dicatat saat perawatan selesai.
+          </p>
         </div>
         <div>
           <label

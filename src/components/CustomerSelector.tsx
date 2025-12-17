@@ -97,7 +97,9 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                     onClick={() => handleSelectCustomer(customer)}
                   >
                     <p className="font-semibold">{customer.name}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{customer.phone}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {customer.phone || 'Tidak ada nomor'}
+                    </p>
                   </li>
                 ))}
               </ul>

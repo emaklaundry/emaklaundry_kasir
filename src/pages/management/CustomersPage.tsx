@@ -29,6 +29,7 @@ import {
   importCustomersFromExcel,
   downloadCustomerTemplate,
 } from '../../utils/excelUtils';
+import { supabase } from '../../utils/supabaseClient';
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -142,37 +143,39 @@ const CustomersPage: React.FC = () => {
       addToast('Silakan pilih cabang spesifik untuk menambah atau mengedit pelanggan.', 'warning');
       return;
     }
-    // Normalisasi nomor telepon
+    // Normalisasi nomor telepon hanya jika diisi
     let phone = customerData.phone?.replace(/\D/g, '') || '';
-    if (phone.startsWith('0')) {
-      phone = '62' + phone.substring(1);
-    } else if (phone.startsWith('62')) {
-      // sudah benar
-    } else if (phone.startsWith('8')) {
-      phone = '62' + phone;
-    }
+    if (phone) {
+      if (phone.startsWith('0')) {
+        phone = '62' + phone.substring(1);
+      } else if (phone.startsWith('62')) {
+        // sudah benar
+      } else if (phone.startsWith('8')) {
+        phone = '62' + phone;
+      }
 
-    // FIXED: Check for duplicate phone number
-    const existingCustomers = customers.filter(
-      (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
-    );
-    if (existingCustomers.length > 0) {
-      addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
-      addAuditLog(
-        `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${existingCustomers[0].name}".`,
-        storeId,
+      // Check for duplicate phone number hanya jika phone diisi
+      const existingCustomers = customers.filter(
+        (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
       );
-      return;
+      if (existingCustomers.length > 0) {
+        addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
+        addAuditLog(
+          `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${existingCustomers[0].name}".`,
+          storeId,
+        );
+        return;
+      }
     }
 
     const toastId = addToast('Menyimpan pelanggan...', 'info');
     setIsSaving(true);
     try {
       if (currentCustomer && currentCustomer.id) {
-        await updateCustomer(currentCustomer.id, { ...customerData, phone, storeId });
+        await updateCustomer(currentCustomer.id, { ...customerData, phone: phone || undefined, storeId });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
       } else {
-        await addCustomer({ ...customerData, phone, storeId });
+        await addCustomer({ ...customerData, phone: phone || undefined, storeId });
         addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
         updateToast(toastId, 'Pelanggan baru berhasil ditambahkan!', 'success');
       }
@@ -233,9 +236,45 @@ const CustomersPage: React.FC = () => {
 
   // Excel Export
   const handleExportToExcel = async () => {
+    const toastId = addToast('Mengekspor pelanggan...', 'info');
     try {
-      await exportCustomersToExcel(customers);
-      addToast('Data pelanggan berhasil di-export ke Excel', 'success');
+      // Fetch SEMUA pelanggan dengan filter yang sama, tanpa pagination
+      updateToast(toastId, 'Mengambil semua data pelanggan...', 'info');
+      
+      let query = supabase.from('customers').select('*', { count: 'exact' });
+      
+      // Terapkan filter store yang sama
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      // Terapkan search term jika ada
+      if (debouncedSearchTerm) {
+        query = query.ilike('name', `%${debouncedSearchTerm}%`);
+      }
+      
+      const { data: allCustomers, error } = await query;
+      
+      if (error) throw error;
+      if (!allCustomers || allCustomers.length === 0) {
+        updateToast(toastId, 'Tidak ada pelanggan untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allCustomers.length} pelanggan...`, 'info');
+      
+      // Convert null to undefined untuk kompatibilitas
+      const customersToExport = allCustomers.map((c) => ({
+        ...c,
+        address: c.address ?? undefined,
+        notes: c.notes ?? undefined,
+        phone: c.phone ?? undefined,
+        defaultDiscount: c.defaultDiscount ?? undefined,
+        storeId: c.storeId ?? undefined,
+      })) as unknown as Customer[];
+      
+      await exportCustomersToExcel(customersToExport);
+      updateToast(toastId, `Berhasil mengekspor ${allCustomers.length} pelanggan ke Excel.`, 'success');
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');
@@ -260,14 +299,21 @@ const CustomersPage: React.FC = () => {
       for (const customer of importedCustomers) {
         try {
           if (customer.id) {
-            // Update existing customer
-            await updateCustomer(customer.id, {
+            // Update existing customer - ensure storeId is set properly
+            // Update existing customer - ensure storeId is set properly
+            const updatePayload: Partial<Customer> = {
               name: customer.name!,
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
-              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId!,
-            });
+              defaultDiscount: customer.defaultDiscount || 0,
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
+            await updateCustomer(customer.id, updatePayload);
             successCount++;
           } else {
             // Check for duplicate phone number before adding new customer
@@ -300,6 +346,7 @@ const CustomersPage: React.FC = () => {
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
+              defaultDiscount: customer.defaultDiscount || 0,
               storeId: storeId!,
             } as Omit<Customer, 'id'>);
             successCount++;
@@ -391,6 +438,8 @@ const CustomersPage: React.FC = () => {
 
           <input
             ref={fileInputRef}
+            id="customer-import-file"
+            name="customer-import-file"
             type="file"
             accept=".xlsx,.xls"
             onChange={handleImportFromExcel}
@@ -431,13 +480,18 @@ const CustomersPage: React.FC = () => {
           <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            id="customer-search"
+            name="customer-search"
             placeholder="Cari pelanggan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <select
+          id="customer-activity-filter"
+          name="customer-activity-filter"
           value={activityFilter}
           onChange={(e) => setActivityFilter(e.target.value as 'all' | 'active' | 'inactive')}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -492,6 +546,14 @@ const CustomersPage: React.FC = () => {
                   Total Belanja {getSortIcon('totalSpent')}
                 </button>
               </th>
+              <th className="px-6 py-3 text-right">
+                <button
+                  onClick={() => requestSort('defaultDiscount')}
+                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
+                >
+                  💰 Saldo Diskon {getSortIcon('defaultDiscount')}
+                </button>
+              </th>
               <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
@@ -517,6 +579,15 @@ const CustomersPage: React.FC = () => {
                   <td className="px-6 py-4 text-center">{customer.transactionCount}</td>
                   <td className="px-6 py-4 text-right">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    {customer.defaultDiscount && customer.defaultDiscount > 0 ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Rp {customer.defaultDiscount.toLocaleString('id-ID')}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500">-</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
@@ -588,18 +659,28 @@ const CustomersPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Total Transaksi</p>
-                  <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Transaksi</p>
+                  <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
                     {customer.transactionCount}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Total Belanja</p>
-                  <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Total Belanja</p>
+                  <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">💰 Saldo Diskon</p>
+                  {customer.defaultDiscount && customer.defaultDiscount > 0 ? (
+                    <p className="font-semibold text-base text-green-600 dark:text-green-400">
+                      Rp {customer.defaultDiscount.toLocaleString('id-ID')}
+                    </p>
+                  ) : (
+                    <p className="text-slate-400 dark:text-slate-500">-</p>
+                  )}
                 </div>
               </div>
             </div>

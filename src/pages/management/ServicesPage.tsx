@@ -15,6 +15,7 @@ import {
   importServicesFromExcel,
   downloadServiceTemplate,
 } from '../../utils/excelUtils';
+import { supabase } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useServices } from '../../contexts/ServiceContext';
@@ -159,9 +160,35 @@ const ServicesPage: React.FC = () => {
 
   // Excel Export
   const handleExportToExcel = async () => {
+    const toastId = addToast('Mengekspor layanan...', 'info');
     try {
-      await exportServicesToExcel(services);
-      addToast('Data layanan berhasil di-export ke Excel', 'success');
+      // Fetch SEMUA layanan dari database
+      updateToast(toastId, 'Mengambil semua data layanan...', 'info');
+      
+      let query = supabase.from('services').select('*');
+      
+      // Filter by store if needed
+      if (selectedStoreId && selectedStoreId !== 'all') {
+        query = query.eq('storeId', selectedStoreId);
+      }
+      
+      const { data: allServices, error } = await query;
+      
+      if (error) throw error;
+      if (!allServices || allServices.length === 0) {
+        updateToast(toastId, 'Tidak ada layanan untuk diekspor.', 'warning');
+        return;
+      }
+      
+      updateToast(toastId, `Mengekspor ${allServices.length} layanan...`, 'info');
+      
+      const servicesToExport = allServices.map((s) => ({
+        ...s,
+        storeId: s.storeId ?? undefined,
+      })) as unknown as Service[];
+      
+      await exportServicesToExcel(servicesToExport);
+      updateToast(toastId, `Berhasil mengekspor ${allServices.length} layanan ke Excel.`, 'success');
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');
@@ -195,14 +222,21 @@ const ServicesPage: React.FC = () => {
             }
 
             // Update existing service
-            await updateService(service.id, {
+            // Update existing service
+            const updatePayload: Partial<Service> = {
               name: service.name!,
               category: service.category!,
+              washType: service.washType, // Include washType
               price: service.price!,
               unit: service.unit!,
               durationDays: service.durationDays!,
-              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
-            });
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
+            await updateService(service.id, updatePayload);
             successCount++;
           } else {
             // Check for duplicate service (same name + category)
@@ -231,6 +265,7 @@ const ServicesPage: React.FC = () => {
             await addService({
               name: service.name!,
               category: service.category!,
+              washType: service.washType!, // Include washType
               price: service.price!,
               unit: service.unit!,
               durationDays: service.durationDays!,
@@ -300,6 +335,8 @@ const ServicesPage: React.FC = () => {
 
           <input
             ref={fileInputRef}
+            id="service-import-file"
+            name="service-import-file"
             type="file"
             accept=".xlsx,.xls"
             onChange={handleImportFromExcel}
@@ -339,13 +376,18 @@ const ServicesPage: React.FC = () => {
           <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            id="service-search"
+            name="service-search"
             placeholder="Cari layanan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            autoComplete="off"
           />
         </div>
         <select
+          id="service-category-filter"
+          name="service-category-filter"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -380,6 +422,14 @@ const ServicesPage: React.FC = () => {
               </th>
               <th className="px-6 py-3">
                 <button
+                  onClick={() => requestSort('washType')}
+                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                >
+                  Jenis Cucian {getSortIcon('washType')}
+                </button>
+              </th>
+              <th className="px-6 py-3">
+                <button
                   onClick={() => requestSort('price')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
                 >
@@ -408,6 +458,7 @@ const ServicesPage: React.FC = () => {
                     {service.name}
                   </td>
                   <td className="px-6 py-4">{service.category}</td>
+                  <td className="px-6 py-4">{service.washType}</td>
                   <td className="px-6 py-4">
                     Rp {service.price.toLocaleString('id-ID')}/{service.unit}
                   </td>

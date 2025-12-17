@@ -66,6 +66,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               isActive: data.isActive ?? false,
               canGiveDiscount: data.canGiveDiscount ?? false,
             });
+
+            // Automatically select the store if the user is bound to one
+            if (data.store_id) {
+              setSelectedStoreId(data.store_id);
+            }
+            
             prevLoggedInRef.current = true;
           }
         } else {
@@ -145,47 +151,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!currentUser) return;
 
-
     const handleBeforeUnload = () => {
       // Set flag bahwa user sedang refresh/reload
       sessionStorage.setItem('isRefreshing', 'true');
     };
 
-    const handleUnload = async () => {
-      // Tunggu sebentar untuk cek apakah ini refresh atau close
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      const wasRefreshing = sessionStorage.getItem('isRefreshing');
-
-      // Jika bukan refresh, logout
-      if (!wasRefreshing) {
-        await signOut();
-      }
-
-      // Clear flag refresh
-      sessionStorage.removeItem('isRefreshing');
-    };
-
     const handleVisibilityChange = () => {
-      // Clear refresh flag saat page visible lagi (setelah refresh selesai)
-      if (!document.hidden) {
+      // Alternative to unload: use visibilitychange
+      if (document.visibilityState === 'hidden') {
+        const wasRefreshing = sessionStorage.getItem('isRefreshing');
+        if (!wasRefreshing) {
+          // User potentially closing tab/browser
+          sessionStorage.setItem('maybeClosing', 'true');
+        }
+      } else if (document.visibilityState === 'visible') {
+        // User came back, clear the flag
+        sessionStorage.removeItem('maybeClosing');
         sessionStorage.removeItem('isRefreshing');
       }
     };
 
-    // Clear refresh flag saat component mount (setelah refresh selesai)
-    sessionStorage.removeItem('isRefreshing');
-
     window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('unload', handleUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('unload', handleUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // Clean up flags
+      sessionStorage.removeItem('isRefreshing');
+      sessionStorage.removeItem('maybeClosing');
     };
-  }, [currentUser, signOut]);
+  }, [currentUser]);
   // -------------------------
 
   return (

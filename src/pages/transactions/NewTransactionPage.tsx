@@ -3,7 +3,7 @@ interface ExtendedTransactionItem extends TransactionItem {
   length?: number;
   width?: number;
 }
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils';
@@ -53,7 +53,7 @@ const NewTransactionPage: React.FC = () => {
   const customers: Customer[] = Array.isArray(customersData)
     ? customersData
     : (customersData?.data ?? []);
-  const { addCustomer } = useCustomerMutations();
+  const { addCustomer, updateCustomer } = useCustomerMutations();
   const { services } = useServices();
   const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
@@ -78,6 +78,9 @@ const NewTransactionPage: React.FC = () => {
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // State untuk idempotencyKey
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
+  
+  // Ref to track if discount toast was shown (prevent spam)
+  const hasShownDiscountToast = useRef(false);
 
   // Semua useMemo, useEffect, useCallback juga di sini
   const canEditDiscount = useMemo(() => {
@@ -244,23 +247,43 @@ const NewTransactionPage: React.FC = () => {
   }, [currentUser, selectedStoreId]);
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
-  // Catatan: Dependensi useEffect ini sudah aman, logika hanya berjalan saat selectedCustomer atau setting diskon berubah.
+  // Auto-apply customer discount balance with max 10% of subtotal
   useEffect(() => {
     if (!canApplyDiscount) {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
+      hasShownDiscountToast.current = false; // Reset when can't apply
     } else if (
       selectedCustomer &&
       selectedCustomer.defaultDiscount &&
       selectedCustomer.defaultDiscount > 0
     ) {
-      setDiscountType('percent');
-      setDiscountValue(selectedCustomer.defaultDiscount);
+      // Calculate max allowed discount (10% of subtotal)
+      const maxDiscount = subtotal * 0.1;
+      // Apply the lesser of: customer's balance or 10% of subtotal
+      const discountToApply = Math.min(selectedCustomer.defaultDiscount, maxDiscount);
+      setDiscountType('fixed');
+      setDiscountValue(Math.round(discountToApply));
+      
+      // Show toast only once per customer selection (not on every subtotal change)
+      if (!hasShownDiscountToast.current && discountToApply > 0) {
+        addToast(
+          `Saldo diskon Rp ${formatRupiah(Math.round(discountToApply))} diterapkan${
+            discountToApply < selectedCustomer.defaultDiscount
+              ? ` (max 10% dari subtotal)`
+              : ''
+          }`,
+          'info',
+        );
+        hasShownDiscountToast.current = true;
+      }
     } else {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
+      hasShownDiscountToast.current = false; // Reset when no discount
     }
-  }, [canApplyDiscount, selectedCustomer, settings?.discountRate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   // Show error toast if settings failed to load
@@ -545,6 +568,20 @@ const NewTransactionPage: React.FC = () => {
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
           currentStoreId,
         );
+        
+        // Deduct used discount from customer's balance
+        if (discountType === 'fixed' && discountValue && selectedCustomer.defaultDiscount) {
+          const usedDiscount = typeof discountValue === 'number' ? discountValue : 0;
+          if (usedDiscount > 0) {
+            const newBalance = Math.max(0, selectedCustomer.defaultDiscount - usedDiscount);
+            await updateCustomer(selectedCustomer.id, { defaultDiscount: newBalance });
+            addAuditLog(
+              `Diskon Rp ${usedDiscount} digunakan. Saldo diskon ${selectedCustomer.name}: ${selectedCustomer.defaultDiscount} → ${newBalance}`,
+              currentStoreId,
+            );
+          }
+        }
+        
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);
@@ -708,6 +745,8 @@ const NewTransactionPage: React.FC = () => {
                                     <span className="text-xs font-bold text-slate-500 w-4">P:</span>
                                     <input
                                       type="number"
+                                      id={`item-length-${index}`}
+                                      name={`item-length-${index}`}
                                       min="0"
                                       step="0.1"
                                       placeholder="P"
@@ -720,6 +759,7 @@ const NewTransactionPage: React.FC = () => {
                                         )
                                       }
                                       className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                      autoComplete="off"
                                     />
                                     <span className="text-sm text-slate-500">m</span>
                                   </div>
@@ -727,6 +767,8 @@ const NewTransactionPage: React.FC = () => {
                                     <span className="text-xs font-bold text-slate-500 w-4">L:</span>
                                     <input
                                       type="number"
+                                      id={`item-width-${index}`}
+                                      name={`item-width-${index}`}
                                       min="0"
                                       step="0.1"
                                       placeholder="L"
@@ -750,6 +792,8 @@ const NewTransactionPage: React.FC = () => {
                                 <div className="flex items-center">
                                   <input
                                     type="number"
+                                    id={`item-quantity-${index}`}
+                                    name={`item-quantity-${index}`}
                                     min="0"
                                     step={item.unit === 'kg' ? '0.01' : '1'}
                                     value={item.quantity}
@@ -761,6 +805,7 @@ const NewTransactionPage: React.FC = () => {
                                       )
                                     }
                                     className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                    autoComplete="off"
                                   />
                                   <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
                                     {item.unit}
@@ -905,6 +950,7 @@ const NewTransactionPage: React.FC = () => {
                       <input
                         type="number"
                         id="discountValue"
+                        name="discountValue"
                         min="0"
                         value={discountValue}
                         onChange={(e) =>
@@ -916,6 +962,7 @@ const NewTransactionPage: React.FC = () => {
                         }
                         className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-1.5 text-right dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600"
                         disabled={!canEditDiscount}
+                        autoComplete="off"
                       />
                     </div>
                   </div>
@@ -1010,6 +1057,7 @@ const NewTransactionPage: React.FC = () => {
                         <input
                           type="text"
                           id="tenderedAmount"
+                          name="tenderedAmount"
                           value={tenderedAmountStr}
                           onChange={(e) => {
                             const val = parseRupiah(e.target.value);
@@ -1018,6 +1066,7 @@ const NewTransactionPage: React.FC = () => {
                           className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                           placeholder="0"
                           disabled={false}
+                          autoComplete="off"
                         />
                       </div>
                     )}
