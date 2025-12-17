@@ -299,13 +299,21 @@ const CustomersPage: React.FC = () => {
       for (const customer of importedCustomers) {
         try {
           if (customer.id) {
-            // Update existing customer
+            // Update existing customer - ensure storeId is set properly
+            const storeId = selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId;
+            if (!storeId) {
+              console.error('Cannot update customer: storeId is required');
+              errorCount++;
+              continue;
+            }
+            
             await updateCustomer(customer.id, {
               name: customer.name!,
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
-              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId!,
+              defaultDiscount: customer.defaultDiscount || 0,
+              storeId: storeId,
             });
             successCount++;
           } else {
@@ -339,6 +347,7 @@ const CustomersPage: React.FC = () => {
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
+              defaultDiscount: customer.defaultDiscount || 0,
               storeId: storeId!,
             } as Omit<Customer, 'id'>);
             successCount++;
