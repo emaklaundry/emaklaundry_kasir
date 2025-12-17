@@ -234,6 +234,7 @@ export type Database = {
         Row: {
           assetId: string | null;
           description: string;
+          estimatedCost: number | null;
           frequencyUnit: string;
           frequencyValue: number;
           id: string;
@@ -243,6 +244,7 @@ export type Database = {
         Insert: {
           assetId?: string | null;
           description: string;
+          estimatedCost?: number | null;
           frequencyUnit: string;
           frequencyValue: number;
           id?: string;
@@ -252,6 +254,7 @@ export type Database = {
         Update: {
           assetId?: string | null;
           description?: string;
+          estimatedCost?: number | null;
           frequencyUnit?: string;
           frequencyValue?: number;
           id?: string;
@@ -277,6 +280,7 @@ export type Database = {
           price: number;
           storeId: string | null;
           unit: string;
+          wash_type: string;
         };
         Insert: {
           category: Database['public']['Enums']['service_category'];
@@ -286,6 +290,7 @@ export type Database = {
           price: number;
           storeId?: string | null;
           unit: string;
+          wash_type?: string;
         };
         Update: {
           category?: Database['public']['Enums']['service_category'];
@@ -295,6 +300,7 @@ export type Database = {
           price?: number;
           storeId?: string | null;
           unit?: string;
+          wash_type?: string;
         };
         Relationships: [
           {
