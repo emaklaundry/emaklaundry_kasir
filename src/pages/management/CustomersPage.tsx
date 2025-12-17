@@ -538,6 +538,14 @@ const CustomersPage: React.FC = () => {
                   Total Belanja {getSortIcon('totalSpent')}
                 </button>
               </th>
+              <th className="px-6 py-3 text-right">
+                <button
+                  onClick={() => requestSort('defaultDiscount')}
+                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
+                >
+                  💰 Saldo Diskon {getSortIcon('defaultDiscount')}
+                </button>
+              </th>
               <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
@@ -563,6 +571,15 @@ const CustomersPage: React.FC = () => {
                   <td className="px-6 py-4 text-center">{customer.transactionCount}</td>
                   <td className="px-6 py-4 text-right">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    {customer.defaultDiscount && customer.defaultDiscount > 0 ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Rp {customer.defaultDiscount.toLocaleString('id-ID')}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500">-</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
@@ -634,18 +651,28 @@ const CustomersPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Total Transaksi</p>
-                  <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Transaksi</p>
+                  <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
                     {customer.transactionCount}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Total Belanja</p>
-                  <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Total Belanja</p>
+                  <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">💰 Saldo Diskon</p>
+                  {customer.defaultDiscount && customer.defaultDiscount > 0 ? (
+                    <p className="font-semibold text-base text-green-600 dark:text-green-400">
+                      Rp {customer.defaultDiscount.toLocaleString('id-ID')}
+                    </p>
+                  ) : (
+                    <p className="text-slate-400 dark:text-slate-500">-</p>
+                  )}
                 </div>
               </div>
             </div>

@@ -3,7 +3,7 @@ interface ExtendedTransactionItem extends TransactionItem {
   length?: number;
   width?: number;
 }
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils';
@@ -53,7 +53,7 @@ const NewTransactionPage: React.FC = () => {
   const customers: Customer[] = Array.isArray(customersData)
     ? customersData
     : (customersData?.data ?? []);
-  const { addCustomer } = useCustomerMutations();
+  const { addCustomer, updateCustomer } = useCustomerMutations();
   const { services } = useServices();
   const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
@@ -78,6 +78,9 @@ const NewTransactionPage: React.FC = () => {
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // State untuk idempotencyKey
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
+  
+  // Ref to track if discount toast was shown (prevent spam)
+  const hasShownDiscountToast = useRef(false);
 
   // Semua useMemo, useEffect, useCallback juga di sini
   const canEditDiscount = useMemo(() => {
@@ -244,23 +247,43 @@ const NewTransactionPage: React.FC = () => {
   }, [currentUser, selectedStoreId]);
 
   // --- PERBAIKAN 1: Logika useEffect Diskon ---
-  // Catatan: Dependensi useEffect ini sudah aman, logika hanya berjalan saat selectedCustomer atau setting diskon berubah.
+  // Auto-apply customer discount balance with max 10% of subtotal
   useEffect(() => {
     if (!canApplyDiscount) {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
+      hasShownDiscountToast.current = false; // Reset when can't apply
     } else if (
       selectedCustomer &&
       selectedCustomer.defaultDiscount &&
       selectedCustomer.defaultDiscount > 0
     ) {
-      setDiscountType('percent');
-      setDiscountValue(selectedCustomer.defaultDiscount);
+      // Calculate max allowed discount (10% of subtotal)
+      const maxDiscount = subtotal * 0.1;
+      // Apply the lesser of: customer's balance or 10% of subtotal
+      const discountToApply = Math.min(selectedCustomer.defaultDiscount, maxDiscount);
+      setDiscountType('fixed');
+      setDiscountValue(Math.round(discountToApply));
+      
+      // Show toast only once per customer selection (not on every subtotal change)
+      if (!hasShownDiscountToast.current && discountToApply > 0) {
+        addToast(
+          `Saldo diskon Rp ${formatRupiah(Math.round(discountToApply))} diterapkan${
+            discountToApply < selectedCustomer.defaultDiscount
+              ? ` (max 10% dari subtotal)`
+              : ''
+          }`,
+          'info',
+        );
+        hasShownDiscountToast.current = true;
+      }
     } else {
       setDiscountType('percent');
       setDiscountValue(settings?.discountRate ?? 0);
+      hasShownDiscountToast.current = false; // Reset when no discount
     }
-  }, [canApplyDiscount, selectedCustomer, settings?.discountRate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   // Show error toast if settings failed to load
@@ -545,6 +568,20 @@ const NewTransactionPage: React.FC = () => {
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
           currentStoreId,
         );
+        
+        // Deduct used discount from customer's balance
+        if (discountType === 'fixed' && discountValue && selectedCustomer.defaultDiscount) {
+          const usedDiscount = typeof discountValue === 'number' ? discountValue : 0;
+          if (usedDiscount > 0) {
+            const newBalance = Math.max(0, selectedCustomer.defaultDiscount - usedDiscount);
+            await updateCustomer(selectedCustomer.id, { defaultDiscount: newBalance });
+            addAuditLog(
+              `Diskon Rp ${usedDiscount} digunakan. Saldo diskon ${selectedCustomer.name}: ${selectedCustomer.defaultDiscount} → ${newBalance}`,
+              currentStoreId,
+            );
+          }
+        }
+        
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);

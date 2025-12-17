@@ -6,7 +6,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 
 import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
@@ -87,6 +87,7 @@ const TransactionPage: React.FC = () => {
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const { services } = useServices();
+  const { updateCustomer } = useCustomerMutations();
 
   // State untuk server-side pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -202,7 +203,7 @@ const TransactionPage: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handleSavePayment = async (updatedTransaction: Transaction) => {
+  const handleSavePayment = async (updatedTransaction: Transaction, pointsEarned?: number) => {
     const shouldShowModal =
       updatedTransaction.paymentStatus === PaymentStatus.Paid &&
       updatedTransaction.orderStatus === OrderStatus.Completed;
@@ -218,11 +219,31 @@ const TransactionPage: React.FC = () => {
       };
 
       await updateTransaction(updatedTransaction.id, payload);
+      
+      // If points earned from rounding, add to customer's discount balance
+      if (pointsEarned && pointsEarned > 0 && updatedTransaction.customerId) {
+        const customer = customers.find((c: Customer) => c.id === updatedTransaction.customerId);
+        if (customer) {
+          const newDiscountBalance = (customer.defaultDiscount || 0) + pointsEarned;
+          await updateCustomer(customer.id, { defaultDiscount: newDiscountBalance });
+          addAuditLog(
+            `Pembulatan: Rp ${pointsEarned} ditambahkan ke saldo diskon ${customer.name}. Saldo baru: Rp ${newDiscountBalance}`,
+            updatedTransaction.storeId,
+          );
+        }
+      }
+      
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,
       );
-      updateToast(toastId, 'Pembayaran berhasil disimpan.', 'success');
+      
+      if (pointsEarned && pointsEarned > 0) {
+        updateToast(toastId, `Pem bayaran berhasil! Rp ${pointsEarned} ditambahkan ke saldo diskon pelanggan.`, 'success');
+      } else {
+        updateToast(toastId, 'Pembayaran berhasil disimpan.', 'success');
+      }
+      
       setIsPaymentModalOpen(false);
       setSelectedTransaction(null);
       if (shouldShowModal) {
@@ -296,7 +317,7 @@ const TransactionPage: React.FC = () => {
       const customersForExport = customers.map((c: Customer) => ({
         id: c.id,
         name: c.name,
-        phone: c.phone,
+        phone: c.phone || '',
       }));
       
       await exportTransactionsToExcel(transactionsToExport, customersForExport);
@@ -364,12 +385,10 @@ const TransactionPage: React.FC = () => {
           successCount++;
 
           // Audit log
-          await addAuditLog({
-            action: 'CREATE',
-            tableName: 'transactions',
-            recordId: transaction.id,
-            changes: { imported: true, invoiceCode: transaction.invoiceCode },
-          });
+          addAuditLog(
+            `Import transaksi: ${transaction.invoiceCode || transaction.id}`,
+            transaction.storeId,
+          );
         } catch (err) {
           console.error('Error saving transaction:', err);
           failCount++;

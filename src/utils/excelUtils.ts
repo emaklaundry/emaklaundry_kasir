@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+/* eslint-disable @typescript-eslint/no-unused-vars */import ExcelJS from 'exceljs';
 import type {
   Customer,
   Service,
@@ -319,9 +319,9 @@ export async function importCustomersFromExcel(file: File): Promise<Partial<Cust
 
   const customers: Partial<Customer>[] = [];
 
-  worksheet.eachRow((row, rowNumber) => {
+  worksheet.eachRow((row, _rowNumber) => {
     // Skip header row
-    if (rowNumber === 1) return;
+    if (_rowNumber === 1) return;
 
     const rawId = row.getCell(1).value?.toString();
     const customerId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
@@ -356,9 +356,9 @@ export async function importServicesFromExcel(file: File): Promise<Partial<Servi
 
   const services: Partial<Service>[] = [];
 
-  worksheet.eachRow((row, rowNumber) => {
+  worksheet.eachRow((row, _rowNumber) => {
     // Skip header row
-    if (rowNumber === 1) return;
+    if (_rowNumber === 1) return;
 
     const rawId = row.getCell(1).value?.toString();
     const serviceId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
@@ -394,9 +394,9 @@ export async function importInventoryFromExcel(file: File): Promise<Partial<Inve
 
   const items: Partial<InventoryItem>[] = [];
 
-  worksheet.eachRow((row, rowNumber) => {
+  worksheet.eachRow((row, _rowNumber) => {
     // Skip header row
-    if (rowNumber === 1) return;
+    if (_rowNumber === 1) return;
 
     const rawId = row.getCell(1).value?.toString();
     const itemId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
@@ -431,9 +431,9 @@ export async function importAssetsFromExcel(file: File): Promise<Partial<Asset>[
 
   const assets: Partial<Asset>[] = [];
 
-  worksheet.eachRow((row, rowNumber) => {
+  worksheet.eachRow((row, _rowNumber) => {
     // Skip header row
-    if (rowNumber === 1) return;
+    if (_rowNumber === 1) return;
 
     const rawId = row.getCell(1).value?.toString();
     const assetId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
@@ -478,9 +478,9 @@ export async function importExpensesFromExcel(file: File): Promise<Partial<Expen
 
   const expenses: Partial<Expense>[] = [];
 
-  worksheet.eachRow((row, rowNumber) => {
+  worksheet.eachRow((row, _rowNumber) => {
     // Skip header row
-    if (rowNumber === 1) return;
+    if (_rowNumber === 1) return;
 
     const rawId = row.getCell(1).value?.toString();
     const expenseId = rawId && !rawId.includes('Kosongkan') ? rawId : undefined;
@@ -675,7 +675,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
   });
 
   // Add borders
-  dataSheet.eachRow((row, rowNumber) => {
+  dataSheet.eachRow((row, _rowNumber) => {
     row.eachCell((cell) => {
       cell.border = {
         top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
@@ -1666,8 +1666,8 @@ export async function importTransactionsFromExcel(
   const errors: Array<{ row: number; error: string; data?: any }> = [];
 
   // Skip header row (row 1)
-  worksheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return; // Skip header
+  worksheet.eachRow((row, _rowNumber) => {
+    if (_rowNumber === 1) return; // Skip header
 
     try {
       const id = row.getCell(1).value?.toString().trim();
@@ -1691,7 +1691,7 @@ export async function importTransactionsFromExcel(
       // Validation
       if (!id || !invoiceCode || !customerName || !servicesStr) {
         errors.push({
-          row: rowNumber,
+          row: _rowNumber,
           error: 'Data tidak lengkap (ID, Invoice, Pelanggan, atau Layanan kosong)',
           data: { id, invoiceCode, customerName },
         });
@@ -1706,7 +1706,7 @@ export async function importTransactionsFromExcel(
 
       if (duplicateInExisting || duplicateInSuccess) {
         errors.push({
-          row: rowNumber,
+          row: _rowNumber,
           error: `Invoice ${invoiceCode} sudah ada dalam database`,
           data: { invoiceCode },
         });
@@ -1722,7 +1722,7 @@ export async function importTransactionsFromExcel(
 
       if (!customer) {
         errors.push({
-          row: rowNumber,
+          row: _rowNumber,
           error: `Pelanggan "${customerName}" tidak ditemukan. Silakan tambahkan pelanggan terlebih dahulu.`,
           data: { customerName, customerPhone },
         });
@@ -1736,7 +1736,7 @@ export async function importTransactionsFromExcel(
 
       if (!serviceMatches || serviceMatches.length === 0) {
         errors.push({
-          row: rowNumber,
+          row: _rowNumber,
           error: 'Format layanan tidak valid',
           data: { servicesStr },
         });
@@ -1756,7 +1756,7 @@ export async function importTransactionsFromExcel(
 
         if (!qtyMatch || !priceMatch) {
           errors.push({
-            row: rowNumber,
+            row: _rowNumber,
             error: `Format detail layanan tidak valid: ${serviceMatch}`,
             data: { serviceMatch },
           });
@@ -1765,7 +1765,6 @@ export async function importTransactionsFromExcel(
 
         const quantity = parseFloat(qtyMatch[1]);
         const unit = qtyMatch[2];
-        const price = parseFloat(priceMatch[1].replace(/[,.]/g, ''));
 
         // Find service
         const service = existingServices.find(
@@ -1774,7 +1773,7 @@ export async function importTransactionsFromExcel(
 
         if (!service) {
           errors.push({
-            row: rowNumber,
+            row: _rowNumber,
             error: `Layanan "${serviceName}" tidak ditemukan`,
             data: { serviceName },
           });
@@ -1792,7 +1791,7 @@ export async function importTransactionsFromExcel(
 
       if (items.length === 0) {
         errors.push({
-          row: rowNumber,
+          row: _rowNumber,
           error: 'Tidak ada layanan yang valid',
           data: { servicesStr },
         });
@@ -1826,8 +1825,8 @@ export async function importTransactionsFromExcel(
         discount,
         tax,
         total,
-        orderStatus: orderStatus as any,
-        paymentStatus: paymentStatus as any,
+        orderStatus: orderStatus as OrderStatus,
+        paymentStatus: paymentStatus as PaymentStatus,
         amountPaid,
         change,
         paymentMethod: paymentMethod || '',
@@ -1840,7 +1839,7 @@ export async function importTransactionsFromExcel(
       success.push(transaction);
     } catch (error) {
       errors.push({
-        row: rowNumber,
+        row: _rowNumber,
         error: error instanceof Error ? error.message : 'Error tidak diketahui',
       });
     }
@@ -2154,8 +2153,8 @@ export async function importAllData(
   const customerSheet = workbook.getWorksheet('👥 Pelanggan');
   const customers: Customer[] = [];
   if (customerSheet) {
-    customerSheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
+    customerSheet.eachRow((row, _rowNumber) => {
+      if (_rowNumber > 1) {
         // Skip header
         const id = row.getCell(1).value as string;
         const name = row.getCell(2).value as string;
@@ -2179,8 +2178,8 @@ export async function importAllData(
   const serviceSheet = workbook.getWorksheet('🧺 Layanan');
   const services: Service[] = [];
   if (serviceSheet) {
-    serviceSheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
+    serviceSheet.eachRow((row, _rowNumber) => {
+      if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
         const name = row.getCell(2).value as string;
         const category = row.getCell(3).value as ServiceCategory;
@@ -2207,8 +2206,8 @@ export async function importAllData(
   const inventorySheet = workbook.getWorksheet('📦 Inventaris');
   const inventory: InventoryItem[] = [];
   if (inventorySheet) {
-    inventorySheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
+    inventorySheet.eachRow((row, _rowNumber) => {
+      if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
         const name = row.getCell(2).value as string;
         const stock = Number(row.getCell(3).value) || 0;
@@ -2234,8 +2233,8 @@ export async function importAllData(
   const assetSheet = workbook.getWorksheet('🏢 Aset');
   const assets: Asset[] = [];
   if (assetSheet) {
-    assetSheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
+    assetSheet.eachRow((row, _rowNumber) => {
+      if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
         const name = row.getCell(2).value as string;
         const serialNumber = row.getCell(3).value as string;
@@ -2264,8 +2263,8 @@ export async function importAllData(
   const expenseSheet = workbook.getWorksheet('💰 Pengeluaran');
   const expenses: Expense[] = [];
   if (expenseSheet) {
-    expenseSheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
+    expenseSheet.eachRow((row, _rowNumber) => {
+      if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
         const description = row.getCell(2).value as string;
         const amount = Number(row.getCell(3).value) || 0;
@@ -2301,8 +2300,8 @@ export async function importAllData(
   const transactionSheet = workbook.getWorksheet('🛒 Transaksi');
   const transactions: Transaction[] = [];
   if (transactionSheet) {
-    transactionSheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
+    transactionSheet.eachRow((row, _rowNumber) => {
+      if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
         const invoiceCode = row.getCell(2).value as string;
         const createdAt = row.getCell(3).value as string;
@@ -2352,3 +2351,5 @@ export async function importAllData(
     transactions,
   };
 }
+
+
