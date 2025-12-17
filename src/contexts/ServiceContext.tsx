@@ -26,11 +26,12 @@ export function useServices() {
   const addService = useMutation({
     mutationFn: async (service: Omit<Service, 'id'>) => {
       // Map camelCase to snake_case for database
-      const dbService = {
-        ...service,
-        wash_type: service.washType,
-      };
-      const { error } = await supabase.from('services').insert([dbService]);
+      const dbService: Record<string, unknown> = { ...service };
+      if (service.washType !== undefined) {
+        dbService.wash_type = service.washType;
+        delete dbService.washType;
+      }
+      const { error } = await supabase.from('services').insert([dbService as never]);
       if (error) throw error;
       return null;
     },

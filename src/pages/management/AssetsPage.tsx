@@ -284,14 +284,20 @@ const AssetsPage: React.FC = () => {
             }
 
             // Update existing asset
-            await updateAsset(asset.id, {
+            // Update existing asset
+            const updatePayload: Partial<Asset> = {
               name: asset.name!,
               serialNumber: asset.serialNumber,
               purchaseDate: asset.purchaseDate!,
               purchaseCost: asset.purchaseCost!,
               status: asset.status!,
-              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
-            });
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
+            await updateAsset(asset.id, updatePayload);
             successCount++;
           } else {
             // Check for duplicate before adding new asset

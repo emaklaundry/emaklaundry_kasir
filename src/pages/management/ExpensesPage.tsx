@@ -218,13 +218,18 @@ const ExpensesPage: React.FC = () => {
             }
 
             // Update existing expense
-            await updateExpense(expense.id, {
+            const updatePayload: Partial<Expense> = {
               date: expense.date!,
               description: expense.description!,
               category: expense.category!,
               amount: expense.amount!,
-              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
-            });
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
+            await updateExpense(expense.id, updatePayload);
             successCount++;
           } else {
             // Check for duplicate before adding new expense

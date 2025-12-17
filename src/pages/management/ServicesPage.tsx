@@ -222,14 +222,21 @@ const ServicesPage: React.FC = () => {
             }
 
             // Update existing service
-            await updateService(service.id, {
+            // Update existing service
+            const updatePayload: Partial<Service> = {
               name: service.name!,
               category: service.category!,
+              washType: service.washType, // Include washType
               price: service.price!,
               unit: service.unit!,
               durationDays: service.durationDays!,
-              storeId: selectedStoreId === 'all' ? undefined : selectedStoreId,
-            });
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
+            await updateService(service.id, updatePayload);
             successCount++;
           } else {
             // Check for duplicate service (same name + category)
@@ -258,6 +265,7 @@ const ServicesPage: React.FC = () => {
             await addService({
               name: service.name!,
               category: service.category!,
+              washType: service.washType!, // Include washType
               price: service.price!,
               unit: service.unit!,
               durationDays: service.durationDays!,

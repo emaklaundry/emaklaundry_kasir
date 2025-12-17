@@ -300,21 +300,20 @@ const CustomersPage: React.FC = () => {
         try {
           if (customer.id) {
             // Update existing customer - ensure storeId is set properly
-            const storeId = selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId;
-            if (!storeId) {
-              console.error('Cannot update customer: storeId is required');
-              errorCount++;
-              continue;
-            }
-            
-            await updateCustomer(customer.id, {
+            // Update existing customer - ensure storeId is set properly
+            const updatePayload: Partial<Customer> = {
               name: customer.name!,
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
               defaultDiscount: customer.defaultDiscount || 0,
-              storeId: storeId,
-            });
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
+            await updateCustomer(customer.id, updatePayload);
             successCount++;
           } else {
             // Check for duplicate phone number before adding new customer

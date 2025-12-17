@@ -60,7 +60,7 @@ const InventoryPage: React.FC = () => {
     mutationFn: async (data: InventoryInput) => addInventoryItem(data),
   });
   const updateInventoryMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: InventoryInput }) =>
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InventoryItem> }) =>
       updateInventoryItem(id, data),
   });
   const deleteInventoryMutation = useMutation({
@@ -272,15 +272,20 @@ const InventoryPage: React.FC = () => {
             }
 
             // Update existing item
+            const updatePayload: Partial<InventoryItem> = {
+              name: item.name!,
+              stock: item.stock!,
+              unit: item.unit!,
+              lowStockThreshold: item.lowStockThreshold!,
+            };
+
+            if (selectedStoreId !== 'all') {
+              updatePayload.storeId = selectedStoreId;
+            }
+
             await updateInventoryMutation.mutateAsync({
               id: item.id,
-              data: {
-                name: item.name!,
-                stock: item.stock!,
-                unit: item.unit!,
-                lowStockThreshold: item.lowStockThreshold!,
-                storeId: selectedStoreId === 'all' ? undefined : selectedStoreId!,
-              } as InventoryInput,
+              data: updatePayload,
             });
             successCount++;
           } else {
