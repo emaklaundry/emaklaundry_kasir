@@ -49,16 +49,17 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
     if (transaction.orderStatus === OrderStatus.Processing) {
       // Calculate points earned from rounding (if change < 500)
-      const pointsEarned = transaction.change > 0 && transaction.change < 500 ? transaction.change : 0;
+      const pointsEarned =
+        transaction.change > 0 && transaction.change < 500 ? transaction.change : 0;
       const currentBalance = customer.defaultDiscount || 0;
-      
+
       let balanceInfo = '';
       if (pointsEarned > 0) {
         balanceInfo = `\n💰 *Pembulatan*: +Rp${pointsEarned.toLocaleString('id-ID')}\n💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`;
       } else if (currentBalance > 0) {
         balanceInfo = `\n💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`;
       }
-      
+
       defaultMessage =
         `Halo ${customer.name},\n\n` +
         `Terima kasih telah mempercayakan laundry Anda kepada kami. Berikut adalah detail pesanan Anda:\n` +
@@ -83,10 +84,11 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Salam hangat,\nTim Emak Laundry`;
     } else if (transaction.orderStatus === OrderStatus.Ready) {
       const currentBalance = customer.defaultDiscount || 0;
-      const balanceInfo = currentBalance > 0 
-        ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n` 
-        : '';
-      
+      const balanceInfo =
+        currentBalance > 0
+          ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`
+          : '';
+
       defaultMessage =
         `Halo ${customer.name},\n\n` +
         `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
@@ -102,10 +104,11 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Terima kasih,\nTim Emak Laundry`;
     } else {
       const currentBalance = customer.defaultDiscount || 0;
-      const balanceInfo = currentBalance > 0 
-        ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n` 
-        : '';
-      
+      const balanceInfo =
+        currentBalance > 0
+          ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`
+          : '';
+
       defaultMessage =
         `Halo ${customer.name},\n\n` +
         `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
@@ -141,8 +144,9 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
 
     if (transaction) {
+      const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
       addAuditLog(
-        `Mengirim notifikasi WhatsApp untuk transaksi ${transaction.id} kepada ${customer.name}.`,
+        `Mengirim notifikasi WhatsApp untuk transaksi ${invoiceNumber} kepada ${customer.name}.`,
         transaction.storeId,
       );
     }

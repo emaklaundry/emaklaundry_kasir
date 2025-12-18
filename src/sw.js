@@ -4,7 +4,7 @@ import { precacheAndRoute } from 'workbox-precaching';
 precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Use version-based cache name to force cache invalidation on updates
-const APP_VERSION = '2.1.0'; // Update this when deploying new version
+const APP_VERSION = '2.3.0'; // ✅ UPDATED to match package.json
 const CACHE_NAME = `laundry-management-v${APP_VERSION}-runtime`;
 
 self.addEventListener('install', (event) => {
@@ -32,14 +32,20 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Jangan cache request ke Supabase (data dinamis) - Network Only
-  if (url.hostname.includes('supabase.co')) {
+  // CRITICAL: Never cache auth-related requests (prevents login issues)
+  if (
+    url.pathname.includes('/auth/') || 
+    url.pathname.includes('/login') ||
+    url.pathname === '/' && url.search.includes('auth') ||
+    url.hostname.includes('supabase.co')
+  ) {
     event.respondWith(
       fetch(event.request, {
+        cache: 'no-store',
         headers: {
-          ...event.request.headers,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          Pragma: 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
         },
       }),
     );

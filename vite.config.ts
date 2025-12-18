@@ -23,8 +23,14 @@ export default defineConfig(() => {
         injectManifest: {
           // Files to include in the precache manifest
           globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
+          // Injected manifest will exclude these
+          globIgnores: ['**/node_modules/**/*'],
         },
-        registerType: 'prompt', // Changed from autoUpdate to give user control
+        registerType: 'autoUpdate', // ✅ Changed to autoUpdate for immediate updates
+        workbox: {
+          skipWaiting: true, // ✅ Force new SW to activate immediately
+          clientsClaim: true, // ✅ Take control of pages immediately
+        },
         // Disable dev mode service worker to prevent caching issues during development
         devOptions: {
           enabled: false,
