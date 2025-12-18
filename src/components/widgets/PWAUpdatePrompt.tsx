@@ -12,14 +12,14 @@ const PWAUpdatePrompt: React.FC = () => {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(registration: ServiceWorkerRegistration | undefined) {
-      console.log('[PWA] Service Worker registered:', registration);
+    onRegistered() {
+      // console.log('[PWA] Service Worker registered');
     },
     onRegisterError(error: Error) {
       console.error('[PWA] Service Worker registration error:', error);
     },
     onNeedRefresh() {
-      console.log('[PWA] New version available, prompting user to update');
+      // console.log('[PWA] New version available, prompting user to update');
     },
   });
 

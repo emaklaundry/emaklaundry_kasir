@@ -34,7 +34,7 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../components/Pagination';
 
 import { Transaction, OrderStatus, PaymentStatus, Customer, UserRole } from '@/types';
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
+import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
 import {
   exportTransactionsToExcel,
   downloadTransactionTemplate,
@@ -830,7 +830,7 @@ const TransactionPage: React.FC = () => {
                         />
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-slate-900 dark:text-white text-xs sm:text-sm">
-                        {t.invoiceCode || `#${t.id.substring(0, 8)}`}
+                        {formatTransactionId(t)}
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                         {t.customerName}
@@ -1002,7 +1002,7 @@ const TransactionPage: React.FC = () => {
                     </p>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                    {t.invoiceCode || `#${t.id.substring(0, 8)}`}
+                    {formatTransactionId(t)}
                   </p>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between items-center">

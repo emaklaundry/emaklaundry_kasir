@@ -29,3 +29,9 @@ export function getPaymentStatusBadge(status: PaymentStatus | string): string {
       return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
   }
 }
+
+export const formatTransactionId = (transaction: { id: string; invoiceCode?: string }): string => {
+  if (transaction.invoiceCode) return transaction.invoiceCode;
+  // Fallback to simpler format if no invoice code
+  return `#${transaction.id.substring(0, 8)}`;
+};

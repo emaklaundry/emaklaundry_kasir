@@ -196,9 +196,7 @@ const YearlySummaryChart: React.FC<{
               <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">
                 {d.month}
               </td>
-              <td className="print-only-cell px-4 py-3 text-right">
-                Rp {formatRupiah(d.revenue)}
-              </td>
+              <td className="print-only-cell px-4 py-3 text-right">Rp {formatRupiah(d.revenue)}</td>
               <td className="print-only-cell px-4 py-3 text-right">
                 Rp {formatRupiah(d.expenses)}
               </td>
@@ -786,9 +784,7 @@ const ReportsPage: React.FC = () => {
                         <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {s.name}
                         </td>
-                        <td className="px-4 py-2 text-right">
-                          Rp {formatRupiah(s.revenue)}
-                        </td>
+                        <td className="px-4 py-2 text-right">Rp {formatRupiah(s.revenue)}</td>
                       </tr>
                     ))}
                   </tbody>

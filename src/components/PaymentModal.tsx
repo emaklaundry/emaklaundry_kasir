@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { formatRupiah, parseRupiah } from '@/utils/formatting';
+import { formatTransactionId } from '@/utils/uiHelpers';
 import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 // import { SpinnerIcon, DollarSignIcon } from './icons';
@@ -109,9 +110,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         transaction.amountPaid + roundedAmountToPay,
         transaction.total,
       );
+
+      // --- FIX: Adjust Total & Discount if Rounding Applied ---
+      let finalTotal = transaction.total;
+      let finalDiscount = transaction.discount;
+
+      const roundingDifference = shouldRoundTotal ? amountToPay - roundedAmountToPay : 0;
+
+      if (roundingDifference > 0) {
+        finalTotal -= roundingDifference;
+        finalDiscount += roundingDifference;
+      }
+      // --------------------------------------------------------
+
       let newStatus = PaymentStatus.Unpaid;
 
-      if (newAmountPaid >= transaction.total) {
+      // Check status against FINAL Total
+      if (newAmountPaid >= finalTotal) {
         newStatus = PaymentStatus.Paid;
       } else if (newAmountPaid > 0) {
         newStatus = PaymentStatus.Unpaid;
@@ -127,6 +142,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           paymentStatus: newStatus,
           paymentMethod: method,
           change: finalChange,
+          // Update total & discount to reflect rounding "write-off"
+          total: finalTotal,
+          discount: finalDiscount,
         },
         finalPoints,
       );
@@ -145,7 +163,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       // PERBAIKAN: Gunakan invoice_code jika ada, jika tidak baru gunakan ID
-      title={`Pembayaran: ${transaction.invoiceCode || '#' + transaction.id.substring(0, 8)}`}
+      title={`Pembayaran: ${formatTransactionId(transaction)}`}
       footer={
         <>
           <button
@@ -276,10 +294,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   💰 Pembulatan Otomatis (Tunai)
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  Total dibulatkan ke Rp 500 terdekat: Rp {formatRupiah(amountToPay)} → Rp{' '}
-                  {formatRupiah(roundedAmountToPay)}
+                  Total dibulatkan ke Rp 500 terdekat: Rp {formatRupiah(amountToPay)}
                   <br />
-                  Saldo diskon bertambah: +Rp {formatRupiah(pointsEarnedFromRounding)}
+                  (Sudah termasuk dalam total tagihan)
                 </p>
               </div>
             </div>

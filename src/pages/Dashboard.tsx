@@ -37,7 +37,7 @@ import {
   ScheduledMaintenance,
   Asset,
 } from '@/types';
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
+import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
 import { calculateNextDueDate } from '../utils/formatting';
 
 type Trend = 'up' | 'down' | 'neutral';
@@ -863,7 +863,7 @@ const Dashboard: React.FC = () => {
                       <tr key={t.id} className="border-b dark:border-slate-700">
                         <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                           <Link to={`/transactions/${t.id}/details`} className="hover:underline">
-                            {t.invoiceCode || `#${t.id.substring(0, 8)}`}
+                            {formatTransactionId(t)}
                           </Link>
                         </td>
                         <td className="px-4 py-3">{t.customerName}</td>
@@ -958,7 +958,7 @@ const Dashboard: React.FC = () => {
                           to={`/transactions/${t.id}/details`}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {t.invoiceCode || `#${t.id.substring(0, 8)}`}
+                          {formatTransactionId(t)}
                         </Link>
                       </div>
                       <span

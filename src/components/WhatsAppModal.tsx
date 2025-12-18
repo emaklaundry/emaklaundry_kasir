@@ -5,6 +5,7 @@ import { SendIcon } from './icons';
 import { Transaction, Customer, OrderStatus } from '@/types';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { formatTransactionId } from '@/utils/uiHelpers';
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const amountPaid = transaction.amountPaid || 0;
     const rawRemaining = total - amountPaid;
     const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
-    const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
+    const invoiceNumber = formatTransactionId(transaction);
 
     // Footer custom dari settings atau default
     const defaultFooter = `🔍 Cek status cucian Anda:\nhttps://www.emaklaundry.my.id/\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9`;
@@ -144,7 +145,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
 
     if (transaction) {
-      const invoiceNumber = transaction.invoiceCode || transaction.id.slice(-6).toUpperCase();
+      const invoiceNumber = formatTransactionId(transaction);
       addAuditLog(
         `Mengirim notifikasi WhatsApp untuk transaksi ${invoiceNumber} kepada ${customer.name}.`,
         transaction.storeId,

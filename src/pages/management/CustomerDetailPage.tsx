@@ -12,7 +12,7 @@ import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { Customer } from '../../types';
 // import { OrderStatus, PaymentStatus } from '@/types';
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
+import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -122,7 +122,7 @@ const CustomerDetailPage: React.FC = () => {
                 to={`/transactions/${mostRecentTransaction.id}/receipt`}
                 className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
               >
-                {mostRecentTransaction.invoiceCode || mostRecentTransaction.id}
+                {formatTransactionId(mostRecentTransaction)}
               </Link>
             </div>
             <div className="flex justify-between items-center">
@@ -161,7 +161,7 @@ const CustomerDetailPage: React.FC = () => {
                 sortedTransactions.map((t) => (
                   <tr key={t.id} className="border-b dark:border-slate-700">
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
-                      {t.invoiceCode || t.id}
+                      {formatTransactionId(t)}
                     </td>
                     <td className="px-4 py-3">
                       {new Date(t.createdAt).toLocaleDateString('id-ID')}

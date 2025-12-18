@@ -135,28 +135,25 @@ const NewTransactionPage: React.FC = () => {
     return Math.round(taxableAmount * ((settings?.taxRate ?? 0) / 100));
   }, [subtotal, discountAmount, settings?.taxRate]);
 
-  const grandTotal = useMemo(() => {
+  // --- REFACTOR: Universal Rounding Logic ---
+  const rawGrandTotal = useMemo(() => {
     return subtotal - discountAmount + taxAmount;
   }, [subtotal, discountAmount, taxAmount]);
 
-  // --- TAMBAHAN LOGIKA PEMBULATAN ---
-  const finalTotalToPay = useMemo(() => {
-    // Pembulatan hanya berlaku jika Bayar Sekarang DAN Tunai
-    if (isPayingNow && paymentMethod === PaymentMethod.Cash) {
-      return roundPrice(grandTotal);
-    }
-    return grandTotal;
-  }, [grandTotal, isPayingNow, paymentMethod]);
+  // User request: "pembulatan dilakukan ketika menampilkan total tagihan"
+  // Request update: "dibulatkan ke 500 rupiah"
+  const grandTotal = useMemo(() => {
+    return roundPrice(rawGrandTotal, 500);
+  }, [rawGrandTotal]);
 
   const roundingDifference = useMemo(() => {
-    return grandTotal - finalTotalToPay;
-  }, [grandTotal, finalTotalToPay]);
-  // ----------------------------------
+    return rawGrandTotal - grandTotal;
+  }, [rawGrandTotal, grandTotal]);
 
-  // GANTI baris ini:
-  // const amountToPay = grandTotal;
-  // MENJADI:
-  const amountToPay = finalTotalToPay;
+  // Compatibility aliasing
+
+  const amountToPay = grandTotal;
+  // ------------------------------------------
 
   // Place handleAddService after all hooks, before conditional rendering
   const [showKiloanToast, setShowKiloanToast] = useState(false);
