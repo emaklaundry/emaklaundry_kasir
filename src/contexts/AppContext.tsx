@@ -71,7 +71,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (data.store_id) {
               setSelectedStoreId(data.store_id);
             }
-            
+
             prevLoggedInRef.current = true;
           }
         } else {
@@ -192,6 +192,3 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     </AppContext.Provider>
   );
 };
-
-
-

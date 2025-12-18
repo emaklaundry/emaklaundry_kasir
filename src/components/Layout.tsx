@@ -59,7 +59,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const params = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
-  
+
   const { data: customersRaw = [] } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
@@ -71,14 +71,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col">
       <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
-      
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
-        isSidebarOpen ? 'ml-0 sm:ml-64' : 'ml-0'
-      }`}>
+
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarOpen ? 'ml-0 sm:ml-64' : 'ml-0'
+        }`}
+      >
         <Header pageTitle={pageTitle} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main
-          className={`p-2 sm:p-4 md:p-6 flex-1 pb-20 sm:pb-6 print-main-content`}
-        >
+        <main className={`p-2 sm:p-4 md:p-6 flex-1 pb-20 sm:pb-6 print-main-content`}>
           {children}
         </main>
         <footer className="print-hide bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-2 sm:py-3 px-4 text-center hidden sm:block">

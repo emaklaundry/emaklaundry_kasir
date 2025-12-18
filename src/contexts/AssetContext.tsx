@@ -11,7 +11,9 @@ const fetchAssets = async (): Promise<Asset[]> => {
     purchaseDate: a.purchaseDate ?? undefined,
     serialNumber: a.serialNumber ?? undefined,
     purchaseCost: a.purchaseCost ?? undefined,
-    storeId: a.storeId ?? undefined,    maintenanceHistory: Array.isArray(a.maintenanceHistory) ? a.maintenanceHistory : [],  })) as unknown as Asset[];
+    storeId: a.storeId ?? undefined,
+    maintenanceHistory: Array.isArray(a.maintenanceHistory) ? a.maintenanceHistory : [],
+  })) as unknown as Asset[];
 };
 
 export function useAssets() {

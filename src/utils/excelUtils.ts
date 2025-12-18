@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */import ExcelJS from 'exceljs';
+/* eslint-disable @typescript-eslint/no-unused-vars */ import ExcelJS from 'exceljs';
 import type {
   Customer,
   Service,
@@ -259,7 +259,10 @@ export async function exportAssetsToExcel(assets: Asset[]): Promise<void> {
       id: asset.id,
       name: asset.name,
       serialNumber: asset.serialNumber || '',
-      purchaseDate: asset.purchaseDate instanceof Date ? asset.purchaseDate.toISOString().split('T')[0] : (asset.purchaseDate || ''),
+      purchaseDate:
+        asset.purchaseDate instanceof Date
+          ? asset.purchaseDate.toISOString().split('T')[0]
+          : asset.purchaseDate || '',
       purchaseCost: asset.purchaseCost || 0,
       status: asset.status,
     });
@@ -559,12 +562,10 @@ function downloadFile(buffer: ExcelJS.Buffer, filename: string): void {
  */
 export async function downloadCustomerTemplate(): Promise<void> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
-  instructionSheet.columns = [
-    { header: 'Panduan Penggunaan Template', key: 'guide', width: 80 },
-  ];
+  instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
   // Header instruksi
   instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
@@ -612,7 +613,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
     const row = instructionSheet.getRow(index + 2);
     row.getCell(1).value = text;
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
-    
+
     if (text.includes('🎯') || text.includes('💾')) {
       row.font = { bold: true, size: 12, color: { argb: 'FF2563EB' } };
     } else if (text.includes('⚠️')) {
@@ -624,7 +625,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
 
   // Sheet 2: Data Pelanggan
   const dataSheet = workbook.addWorksheet('Customers');
-  
+
   dataSheet.columns = [
     { header: 'Nama Pelanggan', key: 'name', width: 35 },
     { header: 'Nomor HP', key: 'phone', width: 20 },
@@ -671,7 +672,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
   sampleData.forEach((data, index) => {
     const row = dataSheet.addRow(data);
     row.height = 20;
-    
+
     // Alternate row colors
     if (index % 2 === 0) {
       row.fill = {
@@ -696,7 +697,8 @@ export async function downloadCustomerTemplate(): Promise<void> {
 
   // Add note di bawah data
   const noteRow = dataSheet.addRow(['']);
-  noteRow.getCell(1).value = '💡 Tips: Hapus baris contoh di atas, lalu isi dengan data pelanggan Anda sendiri';
+  noteRow.getCell(1).value =
+    '💡 Tips: Hapus baris contoh di atas, lalu isi dengan data pelanggan Anda sendiri';
   noteRow.getCell(1).font = { italic: true, color: { argb: 'FF6B7280' } };
   dataSheet.mergeCells(noteRow.number, 1, noteRow.number, 5);
 
@@ -709,12 +711,10 @@ export async function downloadCustomerTemplate(): Promise<void> {
  */
 export async function downloadServiceTemplate(): Promise<void> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
-  instructionSheet.columns = [
-    { header: 'Panduan Penggunaan Template', key: 'guide', width: 80 },
-  ];
+  instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
   instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
   instructionSheet.getRow(1).fill = {
@@ -772,7 +772,7 @@ export async function downloadServiceTemplate(): Promise<void> {
     const row = instructionSheet.getRow(index + 2);
     row.getCell(1).value = text;
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
-    
+
     if (text.includes('🎯') || text.includes('💾')) {
       row.font = { bold: true, size: 12, color: { argb: 'FF10B981' } };
     } else if (text.includes('⚠️')) {
@@ -784,7 +784,7 @@ export async function downloadServiceTemplate(): Promise<void> {
 
   // Sheet 2: Data Layanan
   const dataSheet = workbook.addWorksheet('Services');
-  
+
   dataSheet.columns = [
     { header: 'Nama Layanan', key: 'name', width: 35 },
     { header: 'Kategori', key: 'category', width: 15 },
@@ -849,7 +849,7 @@ export async function downloadServiceTemplate(): Promise<void> {
   sampleData.forEach((data, index) => {
     const row = dataSheet.addRow(data);
     row.height = 20;
-    
+
     if (index % 2 === 0) {
       row.fill = {
         type: 'pattern',
@@ -871,7 +871,8 @@ export async function downloadServiceTemplate(): Promise<void> {
   });
 
   const noteRow = dataSheet.addRow(['']);
-  noteRow.getCell(1).value = '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan daftar layanan Anda';
+  noteRow.getCell(1).value =
+    '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan daftar layanan Anda';
   noteRow.getCell(1).font = { italic: true, color: { argb: 'FF6B7280' } };
   dataSheet.mergeCells(noteRow.number, 1, noteRow.number, 7);
 
@@ -884,12 +885,10 @@ export async function downloadServiceTemplate(): Promise<void> {
  */
 export async function downloadInventoryTemplate(): Promise<void> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
-  instructionSheet.columns = [
-    { header: 'Panduan Penggunaan Template', key: 'guide', width: 80 },
-  ];
+  instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
   instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
   instructionSheet.getRow(1).fill = {
@@ -945,7 +944,7 @@ export async function downloadInventoryTemplate(): Promise<void> {
     const row = instructionSheet.getRow(index + 2);
     row.getCell(1).value = text;
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
-    
+
     if (text.includes('🎯') || text.includes('💾') || text.includes('💡')) {
       row.font = { bold: true, size: 12, color: { argb: 'FF8B5CF6' } };
     } else if (text.includes('⚠️')) {
@@ -957,7 +956,7 @@ export async function downloadInventoryTemplate(): Promise<void> {
 
   // Sheet 2: Data Inventori
   const dataSheet = workbook.addWorksheet('Inventory');
-  
+
   dataSheet.columns = [
     { header: 'ID', key: 'id', width: 40 },
     { header: 'Nama Item', key: 'name', width: 40 },
@@ -1016,7 +1015,7 @@ export async function downloadInventoryTemplate(): Promise<void> {
   sampleData.forEach((data, index) => {
     const row = dataSheet.addRow(data);
     row.height = 20;
-    
+
     if (index % 2 === 0) {
       row.fill = {
         type: 'pattern',
@@ -1038,7 +1037,8 @@ export async function downloadInventoryTemplate(): Promise<void> {
   });
 
   const noteRow = dataSheet.addRow(['']);
-  noteRow.getCell(1).value = '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan daftar inventori Anda';
+  noteRow.getCell(1).value =
+    '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan daftar inventori Anda';
   noteRow.getCell(1).font = { italic: true, color: { argb: 'FF6B7280' } };
   dataSheet.mergeCells(noteRow.number, 1, noteRow.number, 5);
 
@@ -1051,12 +1051,10 @@ export async function downloadInventoryTemplate(): Promise<void> {
  */
 export async function downloadAssetTemplate(): Promise<void> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
-  instructionSheet.columns = [
-    { header: 'Panduan Penggunaan Template', key: 'guide', width: 80 },
-  ];
+  instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
   instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
   instructionSheet.getRow(1).fill = {
@@ -1118,7 +1116,7 @@ export async function downloadAssetTemplate(): Promise<void> {
     const row = instructionSheet.getRow(index + 2);
     row.getCell(1).value = text;
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
-    
+
     if (text.includes('🎯') || text.includes('💾') || text.includes('💡')) {
       row.font = { bold: true, size: 12, color: { argb: 'FFF59E0B' } };
     } else if (text.includes('⚠️')) {
@@ -1130,7 +1128,7 @@ export async function downloadAssetTemplate(): Promise<void> {
 
   // Sheet 2: Data Aset
   const dataSheet = workbook.addWorksheet('Assets');
-  
+
   dataSheet.columns = [
     { header: 'ID', key: 'id', width: 40 },
     { header: 'Nama Aset', key: 'name', width: 35 },
@@ -1195,7 +1193,7 @@ export async function downloadAssetTemplate(): Promise<void> {
   sampleData.forEach((data, index) => {
     const row = dataSheet.addRow(data);
     row.height = 20;
-    
+
     if (index % 2 === 0) {
       row.fill = {
         type: 'pattern',
@@ -1217,7 +1215,8 @@ export async function downloadAssetTemplate(): Promise<void> {
   });
 
   const noteRow = dataSheet.addRow(['']);
-  noteRow.getCell(1).value = '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan daftar aset Anda';
+  noteRow.getCell(1).value =
+    '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan daftar aset Anda';
   noteRow.getCell(1).font = { italic: true, color: { argb: 'FF6B7280' } };
   dataSheet.mergeCells(noteRow.number, 1, noteRow.number, 6);
 
@@ -1230,12 +1229,10 @@ export async function downloadAssetTemplate(): Promise<void> {
  */
 export async function downloadExpenseTemplate(): Promise<void> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
-  instructionSheet.columns = [
-    { header: 'Panduan Penggunaan Template', key: 'guide', width: 80 },
-  ];
+  instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
   instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
   instructionSheet.getRow(1).fill = {
@@ -1296,7 +1293,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
     const row = instructionSheet.getRow(index + 2);
     row.getCell(1).value = text;
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
-    
+
     if (text.includes('🎯') || text.includes('💾') || text.includes('💡')) {
       row.font = { bold: true, size: 12, color: { argb: 'FFEF4444' } };
     } else if (text.includes('⚠️')) {
@@ -1308,7 +1305,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
 
   // Sheet 2: Data Pengeluaran
   const dataSheet = workbook.addWorksheet('Expenses');
-  
+
   dataSheet.columns = [
     { header: 'ID', key: 'id', width: 40 },
     { header: 'Tanggal', key: 'date', width: 18 },
@@ -1373,7 +1370,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
   sampleData.forEach((data, index) => {
     const row = dataSheet.addRow(data);
     row.height = 20;
-    
+
     if (index % 2 === 0) {
       row.fill = {
         type: 'pattern',
@@ -1395,7 +1392,8 @@ export async function downloadExpenseTemplate(): Promise<void> {
   });
 
   const noteRow = dataSheet.addRow(['']);
-  noteRow.getCell(1).value = '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan data pengeluaran Anda';
+  noteRow.getCell(1).value =
+    '💡 Tips: Hapus 5 baris contoh di atas, lalu isi dengan data pengeluaran Anda';
   noteRow.getCell(1).font = { italic: true, color: { argb: 'FF6B7280' } };
   dataSheet.mergeCells(noteRow.number, 1, noteRow.number, 6);
 
@@ -1409,12 +1407,10 @@ export async function downloadExpenseTemplate(): Promise<void> {
  */
 export async function downloadTransactionTemplate(): Promise<void> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // Sheet 1: Informasi
   const infoSheet = workbook.addWorksheet('ℹ️ INFORMASI');
-  infoSheet.columns = [
-    { header: 'Tentang Template Transaksi', key: 'info', width: 80 },
-  ];
+  infoSheet.columns = [{ header: 'Tentang Template Transaksi', key: 'info', width: 80 }];
 
   infoSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
   infoSheet.getRow(1).fill = {
@@ -1497,7 +1493,7 @@ export async function downloadTransactionTemplate(): Promise<void> {
     const row = infoSheet.getRow(index + 2);
     row.getCell(1).value = text;
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
-    
+
     if (text.includes('📊') || text.includes('✅') || text.includes('📥') || text.includes('💡')) {
       row.font = { bold: true, size: 12, color: { argb: 'FF2563EB' } };
     } else if (text.includes('❓') || text.includes('🔒')) {
@@ -1507,7 +1503,7 @@ export async function downloadTransactionTemplate(): Promise<void> {
 
   // Sheet 2: Transaksi (importable template)
   const dataSheet = workbook.addWorksheet('Transaksi');
-  
+
   dataSheet.columns = [
     { header: 'ID Transaksi', key: 'id', width: 40 },
     { header: 'Kode Invoice', key: 'invoiceCode', width: 18 },
@@ -1601,7 +1597,7 @@ export async function downloadTransactionTemplate(): Promise<void> {
   sampleData.forEach((data, index) => {
     const row = dataSheet.addRow(data);
     row.height = 20;
-    
+
     if (index % 2 === 0) {
       row.fill = {
         type: 'pattern',
@@ -1629,7 +1625,8 @@ export async function downloadTransactionTemplate(): Promise<void> {
   });
 
   const noteRow = dataSheet.addRow(['']);
-  noteRow.getCell(1).value = '✅ Template ini BISA diimport! Export transaksi aktual dengan tombol Export, lalu import kembali dengan tombol Import untuk backup/restore.';
+  noteRow.getCell(1).value =
+    '✅ Template ini BISA diimport! Export transaksi aktual dengan tombol Export, lalu import kembali dengan tombol Import untuk backup/restore.';
   noteRow.getCell(1).font = { italic: true, bold: true, color: { argb: 'FF16A34A' } };
   dataSheet.mergeCells(noteRow.number, 1, noteRow.number, 17);
 
@@ -1701,9 +1698,7 @@ export async function importTransactionsFromExcel(
       }
 
       // Check for duplicate invoice code
-      const duplicateInExisting = existingTransactions.find(
-        (t) => t.invoiceCode === invoiceCode,
-      );
+      const duplicateInExisting = existingTransactions.find((t) => t.invoiceCode === invoiceCode);
       const duplicateInSuccess = success.find((t) => t.invoiceCode === invoiceCode);
 
       if (duplicateInExisting || duplicateInSuccess) {
@@ -1767,7 +1762,7 @@ export async function importTransactionsFromExcel(
 
         const quantity = parseFloat(qtyMatch[1]);
         const unit = qtyMatch[2];
-        
+
         // Parse price from Excel (may have locale formatting like "7.000" or "7,000")
         const priceStr = priceMatch[1].replace(/\./g, '').replace(/,/g, ''); // Remove thousands separators
         const price = parseFloat(priceStr) || 0;
@@ -1877,7 +1872,7 @@ export async function exportAllData(
   // Sheet 1: Info
   const infoSheet = workbook.addWorksheet('ℹ️ INFO');
   infoSheet.columns = [{ header: 'Full Backup Information', key: 'info', width: 80 }];
-  
+
   infoSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
   infoSheet.getRow(1).fill = {
     type: 'pattern',
@@ -1927,7 +1922,7 @@ export async function exportAllData(
     const row = infoSheet.getRow(index + 2);
     row.getCell(1).value = text;
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
-    
+
     if (text.includes('💾') || text.includes('📊') || text.includes('📥') || text.includes('💡')) {
       row.font = { bold: true, size: 12, color: { argb: 'FF2563EB' } };
     } else if (text.includes('⚠️')) {
@@ -2128,9 +2123,7 @@ export async function exportAllData(
 /**
  * Import all data from full backup Excel file
  */
-export async function importAllData(
-  file: File,
-): Promise<{
+export async function importAllData(file: File): Promise<{
   customers: Customer[];
   services: Service[];
   inventory: InventoryItem[];
@@ -2242,10 +2235,10 @@ export async function importAllData(
         let maintenanceHistory: MaintenanceLog[] = [];
         if (maintenanceHistoryStr) {
           try {
-             const parsed = JSON.parse(maintenanceHistoryStr);
-             if (Array.isArray(parsed)) {
-               maintenanceHistory = parsed;
-             }
+            const parsed = JSON.parse(maintenanceHistoryStr);
+            if (Array.isArray(parsed)) {
+              maintenanceHistory = parsed;
+            }
           } catch (e) {
             console.warn('Failed to parse maintenance history', e);
           }
@@ -2333,23 +2326,25 @@ export async function importAllData(
         // "Service Name (qty unit x Rp price), ..."
         const items: TransactionItem[] = [];
         if (servicesStr) {
-           const parts = servicesStr.split('), ');
-           parts.forEach(part => {
-             const cleanPart = part.endsWith(')') ? part : part + ')';
-             const match = cleanPart.match(/^(.+?)\s*\((\d+(?:\.\d+)?)\s*(.+?)\s*×\s*Rp\s*([\d,.]+)\)$/);
-             if (match) {
-               const [_, name, qty, unit, priceStr] = match;
-               const price = parseFloat(priceStr.replace(/\./g, '').replace(/,/g, ''));
-               items.push({
-                 serviceId: 'restored-id', // Placeholder, service mapping is hard without IDs
-                 serviceName: name.trim(),
-                 quantity: parseFloat(qty),
-                 unit: unit.trim(),
-                 price: price,
-                 subtotal: parseFloat(qty) * price
-               });
-             }
-           });
+          const parts = servicesStr.split('), ');
+          parts.forEach((part) => {
+            const cleanPart = part.endsWith(')') ? part : part + ')';
+            const match = cleanPart.match(
+              /^(.+?)\s*\((\d+(?:\.\d+)?)\s*(.+?)\s*×\s*Rp\s*([\d,.]+)\)$/,
+            );
+            if (match) {
+              const [_, name, qty, unit, priceStr] = match;
+              const price = parseFloat(priceStr.replace(/\./g, '').replace(/,/g, ''));
+              items.push({
+                serviceId: 'restored-id', // Placeholder, service mapping is hard without IDs
+                serviceName: name.trim(),
+                quantity: parseFloat(qty),
+                unit: unit.trim(),
+                price: price,
+                subtotal: parseFloat(qty) * price,
+              });
+            }
+          });
         }
 
         if (id && customerId && orderStatus && paymentStatus) {
@@ -2367,7 +2362,9 @@ export async function importAllData(
             paymentStatus: paymentStatus as PaymentStatus,
             amountPaid,
             change,
-            paymentMethod: (paymentMethod !== '-' ? paymentMethod : undefined) as PaymentMethod | undefined,
+            paymentMethod: (paymentMethod !== '-' ? paymentMethod : undefined) as
+              | PaymentMethod
+              | undefined,
             estimatedCompletionDate: estimatedDateStr || '',
             notes: notesStr || '',
             storeId: storeId || '',
@@ -2387,5 +2384,3 @@ export async function importAllData(
     transactions,
   };
 }
-
-

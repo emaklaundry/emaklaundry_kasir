@@ -268,9 +268,12 @@ const Dashboard: React.FC = () => {
   // Statistik untuk revenue 7 hari terakhir
   const weeklyStats = useMemo(() => {
     const currentWeekTotal = weeklyRevenueData.reduce((sum, d) => sum + d.revenue, 0);
-    const currentWeekTransactions = weeklyRevenueData.reduce((sum, d) => sum + d.transactionCount, 0);
+    const currentWeekTransactions = weeklyRevenueData.reduce(
+      (sum, d) => sum + d.transactionCount,
+      0,
+    );
     const average = currentWeekTotal / 7;
-    
+
     const sortedByRevenue = [...weeklyRevenueData].sort((a, b) => b.revenue - a.revenue);
     const highest = sortedByRevenue[0];
     const lowest = sortedByRevenue[sortedByRevenue.length - 1];
@@ -296,9 +299,12 @@ const Dashboard: React.FC = () => {
     });
 
     const previousWeekTotal = previousWeekData.reduce((sum, d) => sum + d.revenue, 0);
-    const weekComparison = previousWeekTotal > 0
-      ? ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100
-      : currentWeekTotal > 0 ? 100 : 0;
+    const weekComparison =
+      previousWeekTotal > 0
+        ? ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100
+        : currentWeekTotal > 0
+          ? 100
+          : 0;
 
     return {
       total: currentWeekTotal,
@@ -344,8 +350,10 @@ const Dashboard: React.FC = () => {
   const lowStockStats = useMemo(() => {
     const lowItems = inventory.filter((i) => i.stock <= i.lowStockThreshold);
     const criticalItems = lowItems.filter((i) => i.stock === 0);
-    const nearEmptyItems = lowItems.filter((i) => i.stock > 0 && i.stock <= i.lowStockThreshold / 2);
-    
+    const nearEmptyItems = lowItems.filter(
+      (i) => i.stock > 0 && i.stock <= i.lowStockThreshold / 2,
+    );
+
     return {
       total: lowItems.length,
       critical: criticalItems.length,
@@ -372,13 +380,13 @@ const Dashboard: React.FC = () => {
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const overdue = maintenanceDue.filter((m) => new Date(m.nextDueDate) < yesterday);
     const dueToday = maintenanceDue.filter((m) => {
       const dueDate = new Date(m.nextDueDate);
       return dueDate.toDateString() === now.toDateString();
     });
-    
+
     const next7Days = new Date(now);
     next7Days.setDate(next7Days.getDate() + 7);
     const upcoming = scheduledMaintenances
@@ -390,7 +398,7 @@ const Dashboard: React.FC = () => {
         const asset = assets.find((a) => a.id === sm.assetId);
         return { ...sm, assetName: asset?.name || 'N/A' };
       });
-    
+
     return {
       total: maintenanceDue.length,
       overdue: overdue.length,
@@ -588,7 +596,7 @@ const Dashboard: React.FC = () => {
 
         {/* Weather Widget */}
         <div className="mb-6">
-          <WeatherWidget 
+          <WeatherWidget
             latitude={selectedStoreData?.latitude}
             longitude={selectedStoreData?.longitude}
             locationName={selectedStoreData?.name}
@@ -605,7 +613,10 @@ const Dashboard: React.FC = () => {
                 Pesanan Selesai (30 hari)
               </p>
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900 dark:text-green-100">
-                {transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed).length}
+                {
+                  transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed)
+                    .length
+                }
               </p>
               {trendStats.completed.trend !== 'neutral' && (
                 <div className="flex items-center gap-1 mt-1">
@@ -614,7 +625,9 @@ const Dashboard: React.FC = () => {
                   ) : (
                     <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
                   )}
-                  <span className={`text-xs sm:text-sm font-semibold ${trendStats.completed.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <span
+                    className={`text-xs sm:text-sm font-semibold ${trendStats.completed.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                  >
                     {trendStats.completed.percentage} vs 30 hari lalu
                   </span>
                 </div>
@@ -628,7 +641,10 @@ const Dashboard: React.FC = () => {
                 Pesanan Diproses
               </p>
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100">
-                {transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing).length}
+                {
+                  transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
+                    .length
+                }
               </p>
               {trendStats.processing.trend !== 'neutral' && (
                 <div className="flex items-center gap-1 mt-1">
@@ -637,7 +653,9 @@ const Dashboard: React.FC = () => {
                   ) : (
                     <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
                   )}
-                  <span className={`text-xs sm:text-sm font-semibold ${trendStats.processing.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <span
+                    className={`text-xs sm:text-sm font-semibold ${trendStats.processing.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                  >
                     {trendStats.processing.percentage} vs 30 hari lalu
                   </span>
                 </div>
@@ -653,7 +671,9 @@ const Dashboard: React.FC = () => {
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-orange-900 dark:text-orange-100">
                 {lowStockItems}
               </p>
-              {(lowStockStats.critical > 0 || lowStockStats.nearEmpty > 0 || lowStockStats.total > 0) && (
+              {(lowStockStats.critical > 0 ||
+                lowStockStats.nearEmpty > 0 ||
+                lowStockStats.total > 0) && (
                 <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1">
                   {lowStockStats.critical > 0
                     ? `${lowStockStats.critical} item habis, ${lowStockStats.nearEmpty} kritis`
@@ -673,7 +693,9 @@ const Dashboard: React.FC = () => {
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-900 dark:text-red-100">
                 {maintenanceDueCount}
               </p>
-              {(maintenanceStats.overdue > 0 || maintenanceStats.dueToday > 0 || maintenanceStats.upcoming > 0) && (
+              {(maintenanceStats.overdue > 0 ||
+                maintenanceStats.dueToday > 0 ||
+                maintenanceStats.upcoming > 0) && (
                 <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mt-1">
                   {maintenanceStats.overdue > 0
                     ? `${maintenanceStats.overdue} terlambat, ${maintenanceStats.dueToday} hari ini`
@@ -684,7 +706,7 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </Link>
-          
+
           {/* Pendapatan 7 Hari Terakhir Stats - Hidden for Cashier */}
           {!isCashier && (
             <>
@@ -699,7 +721,7 @@ const Dashboard: React.FC = () => {
                   {weeklyStats.transactionCount} transaksi
                 </p>
               </div>
-              
+
               <div className="bg-green-50 dark:bg-green-900/20 p-4 sm:p-5 rounded-lg border border-green-200 dark:border-green-800">
                 <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium mb-1">
                   Rata-rata/Hari
@@ -725,7 +747,7 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
               </div>
-              
+
               <div className="bg-purple-50 dark:bg-purple-900/20 p-4 sm:p-5 rounded-lg border border-purple-200 dark:border-purple-800">
                 <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">
                   Hari Tertinggi
@@ -737,7 +759,7 @@ const Dashboard: React.FC = () => {
                   {weeklyStats.highest.day} ({weeklyStats.highest.transactionCount} transaksi)
                 </p>
               </div>
-              
+
               <div className="bg-orange-50 dark:bg-orange-900/20 p-4 sm:p-5 rounded-lg border border-orange-200 dark:border-orange-800">
                 <p className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 font-medium mb-1">
                   Hari Terendah

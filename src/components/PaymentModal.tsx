@@ -105,7 +105,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       }
 
       // Use roundedAmountToPay instead of lockedAmountToPay for actual payment
-      const newAmountPaid = Math.min(transaction.amountPaid + roundedAmountToPay, transaction.total);
+      const newAmountPaid = Math.min(
+        transaction.amountPaid + roundedAmountToPay,
+        transaction.total,
+      );
       let newStatus = PaymentStatus.Unpaid;
 
       if (newAmountPaid >= transaction.total) {
@@ -117,13 +120,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       const finalChange = newStatus === PaymentStatus.Paid ? change : 0;
       const finalPoints = newStatus === PaymentStatus.Paid ? pointsEarnedFromRounding : 0;
 
-      await onSave({
-        ...transaction,
-        amountPaid: newAmountPaid,
-        paymentStatus: newStatus,
-        paymentMethod: method,
-        change: finalChange,
-      }, finalPoints);
+      await onSave(
+        {
+          ...transaction,
+          amountPaid: newAmountPaid,
+          paymentStatus: newStatus,
+          paymentMethod: method,
+          change: finalChange,
+        },
+        finalPoints,
+      );
 
       onClose();
     } catch (error) {
@@ -254,15 +260,24 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         {shouldRoundTotal && (
           <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700">
             <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              <svg
+                className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
               </svg>
               <div className="flex-1">
                 <p className="font-semibold text-blue-900 dark:text-blue-100 text-sm">
                   💰 Pembulatan Otomatis (Tunai)
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  Total dibulatkan ke Rp 500 terdekat: Rp {formatRupiah(amountToPay)} → Rp {formatRupiah(roundedAmountToPay)}
+                  Total dibulatkan ke Rp 500 terdekat: Rp {formatRupiah(amountToPay)} → Rp{' '}
+                  {formatRupiah(roundedAmountToPay)}
                   <br />
                   Saldo diskon bertambah: +Rp {formatRupiah(pointsEarnedFromRounding)}
                 </p>

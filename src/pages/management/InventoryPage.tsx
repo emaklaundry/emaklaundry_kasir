@@ -209,37 +209,41 @@ const InventoryPage: React.FC = () => {
     try {
       // Fetch SEMUA item inventaris dengan filter yang sama, tanpa pagination
       updateToast(toastId, 'Mengambil semua data inventaris...', 'info');
-      
+
       let query = supabase.from('inventory_items').select('*', { count: 'exact' });
-      
+
       // Terapkan filter store yang sama
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
-      
+
       // Terapkan search term jika ada
       if (debouncedSearchTerm) {
         query = query.ilike('name', `%${debouncedSearchTerm}%`);
       }
-      
+
       const { data: allInventory, error } = await query;
-      
+
       if (error) throw error;
       if (!allInventory || allInventory.length === 0) {
         updateToast(toastId, 'Tidak ada item inventaris untuk diekspor.', 'warning');
         return;
       }
-      
+
       updateToast(toastId, `Mengekspor ${allInventory.length} item...`, 'info');
-      
+
       // Convert null to undefined untuk kompatibilitas
       const inventoryToExport = allInventory.map((item) => ({
         ...item,
         storeId: item.storeId ?? undefined,
       })) as unknown as InventoryItem[];
-      
+
       await exportInventoryToExcel(inventoryToExport);
-      updateToast(toastId, `Berhasil mengekspor ${allInventory.length} item inventaris ke Excel.`, 'success');
+      updateToast(
+        toastId,
+        `Berhasil mengekspor ${allInventory.length} item inventaris ke Excel.`,
+        'success',
+      );
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');
@@ -681,4 +685,3 @@ const InventoryPage: React.FC = () => {
 };
 
 export default InventoryPage;
-

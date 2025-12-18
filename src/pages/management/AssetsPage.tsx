@@ -153,7 +153,7 @@ const AssetsPage: React.FC = () => {
         }
       } finally {
         setAssetToDelete(null);
-        }
+      }
     }
   };
 
@@ -224,24 +224,24 @@ const AssetsPage: React.FC = () => {
     try {
       // Fetch SEMUA aset dari database
       updateToast(toastId, 'Mengambil semua data aset...', 'info');
-      
+
       let query = supabase.from('assets').select('*');
-      
+
       // Filter by store if needed
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
-      
+
       const { data: allAssets, error } = await query;
-      
+
       if (error) throw error;
       if (!allAssets || allAssets.length === 0) {
         updateToast(toastId, 'Tidak ada aset untuk diekspor.', 'warning');
         return;
       }
-      
+
       updateToast(toastId, `Mengekspor ${allAssets.length} aset...`, 'info');
-      
+
       const assetsToExport = allAssets.map((a) => ({
         ...a,
         storeId: a.storeId ?? undefined,
@@ -249,7 +249,7 @@ const AssetsPage: React.FC = () => {
         purchaseCost: a.purchaseCost ?? undefined,
         serialNumber: a.serialNumber ?? undefined,
       })) as unknown as Asset[];
-      
+
       await exportAssetsToExcel(assetsToExport);
       updateToast(toastId, `Berhasil mengekspor ${allAssets.length} aset ke Excel.`, 'success');
     } catch (error) {
@@ -758,5 +758,3 @@ const AssetsPage: React.FC = () => {
 };
 
 export default AssetsPage;
-
-

@@ -101,19 +101,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
                     : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                <item.icon className={`w-5 h-5 transition-all duration-200 ${
-                  isParentActive
-                    ? 'text-brand-blue-600 dark:text-brand-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-blue-600 dark:group-hover:text-brand-blue-400'
-                }`} />
-                <span className="flex-1 ml-3 text-left whitespace-nowrap font-medium">{item.label}</span>
+                <item.icon
+                  className={`w-5 h-5 transition-all duration-200 ${
+                    isParentActive
+                      ? 'text-brand-blue-600 dark:text-brand-blue-400'
+                      : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-blue-600 dark:group-hover:text-brand-blue-400'
+                  }`}
+                />
+                <span className="flex-1 ml-3 text-left whitespace-nowrap font-medium">
+                  {item.label}
+                </span>
                 {isOpen ? (
                   <ChevronUpIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 ) : (
                   <ChevronDownIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 )}
               </button>
-              {isOpen && <ul className="mt-2 space-y-1 pl-3 border-l-2 border-slate-200 dark:border-slate-700">{renderNavLinks(item.children)}</ul>}
+              {isOpen && (
+                <ul className="mt-2 space-y-1 pl-3 border-l-2 border-slate-200 dark:border-slate-700">
+                  {renderNavLinks(item.children)}
+                </ul>
+              )}
             </li>
           );
         }
@@ -130,9 +138,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
                 }`
               }
             >
-              <item.icon className={`w-5 h-5 transition-all duration-200 ${
-                'group-[.active]:text-white'
-              }`} />
+              <item.icon
+                className={`w-5 h-5 transition-all duration-200 ${'group-[.active]:text-white'}`}
+              />
               <span className="ml-3 font-medium">{item.label}</span>
             </NavLink>
           </li>
@@ -150,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           aria-hidden="true"
         />
       )}
-      
+
       <aside
         id="logo-sidebar"
         className={`print-hide fixed top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 ${
@@ -175,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               <ChevronLeftIcon className="w-5 h-5" />
             </button>
           </div>
-          
+
           <ul className="space-y-2 font-medium flex-1">{renderNavLinks(navItems)}</ul>
         </div>
       </aside>

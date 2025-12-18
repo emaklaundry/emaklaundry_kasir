@@ -65,7 +65,9 @@ const CustomerDetailPage: React.FC = () => {
           </div>
           <div className="flex-grow">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{customer.name}</h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400">{customer.phone || 'Tidak ada nomor telepon'}</p>
+            <p className="text-lg text-slate-600 dark:text-slate-400">
+              {customer.phone || 'Tidak ada nomor telepon'}
+            </p>
             <p className="text-base text-slate-500 dark:text-slate-400 mt-1">{customer.address}</p>
           </div>
         </div>

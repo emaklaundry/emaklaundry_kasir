@@ -164,31 +164,35 @@ const ServicesPage: React.FC = () => {
     try {
       // Fetch SEMUA layanan dari database
       updateToast(toastId, 'Mengambil semua data layanan...', 'info');
-      
+
       let query = supabase.from('services').select('*');
-      
+
       // Filter by store if needed
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
-      
+
       const { data: allServices, error } = await query;
-      
+
       if (error) throw error;
       if (!allServices || allServices.length === 0) {
         updateToast(toastId, 'Tidak ada layanan untuk diekspor.', 'warning');
         return;
       }
-      
+
       updateToast(toastId, `Mengekspor ${allServices.length} layanan...`, 'info');
-      
+
       const servicesToExport = allServices.map((s) => ({
         ...s,
         storeId: s.storeId ?? undefined,
       })) as unknown as Service[];
-      
+
       await exportServicesToExcel(servicesToExport);
-      updateToast(toastId, `Berhasil mengekspor ${allServices.length} layanan ke Excel.`, 'success');
+      updateToast(
+        toastId,
+        `Berhasil mengekspor ${allServices.length} layanan ke Excel.`,
+        'success',
+      );
     } catch (error) {
       console.error('Export error:', error);
       addToast('Gagal export data ke Excel', 'error');
