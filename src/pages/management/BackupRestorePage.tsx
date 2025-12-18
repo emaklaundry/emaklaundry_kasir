@@ -10,7 +10,7 @@ import {
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
 import { exportAllData, importAllData } from '../../utils/excelUtils';
-import { UserRole, Transaction, TransactionItem, Expense } from '@/types';
+import { UserRole, Transaction, TransactionItem, Expense, Customer, Service, InventoryItem, Asset } from '@/types';
 import type { Json } from '@/types/supabase';
 
 const BackupRestorePage: React.FC = () => {
@@ -362,12 +362,11 @@ const BackupRestorePage: React.FC = () => {
     const toastId = addToast('Mempersiapkan full backup...', 'info');
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await exportAllData(
-        customers as unknown as any,
-        services as unknown as any,
-        inventory as unknown as any,
-        assets as unknown as any,
+        customers as unknown as Customer[],
+        services as unknown as Service[],
+        inventory as unknown as InventoryItem[],
+        assets as unknown as Asset[],
         expenses,
         transactions,
       );
