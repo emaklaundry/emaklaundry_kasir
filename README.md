@@ -195,7 +195,7 @@ File seed data tambahan tersedia di `database/seeds/`:
 
 Panduan lengkap: [database/setup/SETUP_GUIDE.md](./database/setup/SETUP_GUIDE.md)
 
-**Auto Backup:** GitHub Actions menjalankan backup otomatis setiap hari. Lihat [.github/workflows/backup.yml](.github/workflows/backup.yml).
+**Manual Backup:** Aplikasi memiliki fitur Backup & Restore manual via halaman **Management** > **Backup & Restore** yang bisa diakses oleh Admin/Super Admin.
 
 ---
 
