@@ -1,7 +1,7 @@
 # Laundry Management System (Web Kasir)
 
-**Versi:** 2.1.0  
-**Update terakhir:** 18 Desember 2024  
+**Versi:** 2.3.0  
+**Update terakhir:** 19 Desember 2024  
 **Status:** ✅ Production Ready
 
 ---
@@ -219,6 +219,59 @@ Panduan lengkap: [database/setup/SETUP_GUIDE.md](./database/setup/SETUP_GUIDE.md
 ---
 
 ## 📝 Changelog
+
+### v2.2.0 - 19 Desember 2024
+
+**🔧 Critical Fixes & Improvements**
+
+- ✅ **PWA Cache & Login Fix** - Fixed login issues caused by stale service worker cache
+- ✅ **PWA Icon Path Fix** - Resolved icon loading errors by moving to `/favicon/` directory
+- ✅ **Invoice Number Consistency** - Unified invoice format across WhatsApp and print receipts
+- ✅ **Cash Rounding Update** - Improved rounding logic to match Indonesian currency (Rp 500 minimum)
+- ✅ **Documentation Consistency** - Fixed version mismatch between README and package.json
+
+**🔍 PWA & Cache Updates**
+
+- Service Worker version: 2.1.0 → 2.2.0
+- Auth endpoints: Never cached (prevents login issues)
+- PWA mode: Changed to `autoUpdate` with `skipWaiting` enabled
+- Cache strategy: Improved for mobile/desktop consistency
+- Old cache: Automatically cleared on update
+
+**🎨 Icon & Manifest Improvements**
+
+- Moved all PWA icons to `/favicon/` folder for consistency
+- Updated `manifest.webmanifest` icon paths
+- Fixed Vite PWA configuration
+- Icons now load correctly on all platforms
+
+**💰 Payment & Rounding Logic**
+
+- Cash rounding: Now applies only to Cash payment method
+- Rounding minimum: Changed from 1-49 rupiah → 500 rupiah
+- Examples:
+  - Cash Rp 10,350 → Rp 10,000 (saldo +Rp 350)
+  - Transfer Rp 10,350 → Rp 10,350 (no rounding)
+- Updated UI messages to clarify "Tunai" only
+
+**📄 Invoice & Display Consistency**
+
+- Unified invoice format: `invoiceCode || id.slice(-6).toUpperCase()`
+- WhatsApp receipt: Uses consistent invoice number in audit logs
+- Print receipt: Uses same 6-character fallback format
+- All displays now show identical invoice numbers
+
+**✅ Verification Results**
+
+- ESLint: ✅ Passing (0 errors)
+- Build: ✅ Successful (137ms)
+- Security: ✅ 0 vulnerabilities
+- TypeScript: ✅ No errors
+- PWA: ✅ 45 entries precached (1920.52 KiB)
+
+**Detail lengkap:** Lihat artifacts di `brain/` folder untuk implementation details
+
+---
 
 ### v2.1.0 - 15 Desember 2024
 

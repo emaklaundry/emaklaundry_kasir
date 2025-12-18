@@ -41,11 +41,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const amountToPay = remainingBalance;
   const tenderedAmount = parseRupiah(tenderedAmountStr);
 
-  // NEW: Calculate rounding for ALL payment methods based on total remainder
-  // Get last 2 digits of amount (remainder when divided by 100)
-  const totalRemainder = amountToPay % 100;
-  // Round if remainder is between 1-49 (e.g., Rp 10,350 → round down Rp 50)
-  const shouldRoundTotal = totalRemainder > 0 && totalRemainder < 50;
+  // UPDATED: Rounding only for CASH payments, minimum 500 rupiah
+  // Calculate remainder when divided by 500
+  const totalRemainder = amountToPay % 500;
+  // Only round for Cash method AND if remainder exists (< 500)
+  const shouldRoundTotal = method === PaymentMethod.Cash && totalRemainder > 0;
   const roundedAmountToPay = shouldRoundTotal ? amountToPay - totalRemainder : amountToPay;
   const pointsEarnedFromRounding = shouldRoundTotal ? totalRemainder : 0;
 
@@ -259,10 +259,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               </svg>
               <div className="flex-1">
                 <p className="font-semibold text-blue-900 dark:text-blue-100 text-sm">
-                  💰 Pembulatan Otomatis!
+                  💰 Pembulatan Otomatis (Tunai)
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  Total dibulatkan: Rp {formatRupiah(amountToPay)} → Rp {formatRupiah(roundedAmountToPay)}
+                  Total dibulatkan ke Rp 500 terdekat: Rp {formatRupiah(amountToPay)} → Rp {formatRupiah(roundedAmountToPay)}
                   <br />
                   Saldo diskon bertambah: +Rp {formatRupiah(pointsEarnedFromRounding)}
                 </p>
