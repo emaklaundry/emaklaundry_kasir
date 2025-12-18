@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { NavLink } from 'react-router-dom';
-import useAppContext from '../contexts/useAppContext';
-import { UserRole } from '../types';
-import { HomeIcon, UsersIcon, ShoppingCartIcon, BarChartIcon, BoltIcon } from './icons';
+import useAppContext from '../../contexts/useAppContext';
+import { UserRole } from '../../types';
+import { HomeIcon, UsersIcon, ShoppingCartIcon, BarChartIcon, BoltIcon } from '../icons';
 
 const NavItem: React.FC<{
   to: string;

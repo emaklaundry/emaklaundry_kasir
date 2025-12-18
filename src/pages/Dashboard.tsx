@@ -12,7 +12,7 @@ import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
-import WeatherWidget from '../components/WeatherWidget';
+import WeatherWidget from '../components/widgets/WeatherWidget';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';

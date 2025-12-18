@@ -2,10 +2,10 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { UserRole } from './types';
 import useAppContext from './contexts/useAppContext';
-import Layout from './components/Layout';
+import Layout from './components/layout/Layout';
 import MaintenanceMode from './components/MaintenanceMode';
 import { useSettings } from './contexts/SettingsContext';
-import PWAUpdatePrompt from './components/PWAUpdatePrompt';
+import PWAUpdatePrompt from './components/widgets/PWAUpdatePrompt';
 
 import useTheme from './hooks/useTheme';
 import { AppProviders } from './contexts/AppProviders';

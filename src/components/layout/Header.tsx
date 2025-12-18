@@ -1,10 +1,10 @@
 import * as React from 'react';
-import useAppContext from '../contexts/useAppContext';
-import useTheme from '../hooks/useTheme';
-import useCommandPalette from '../hooks/useCommandPalette';
-import { SunIcon, MoonIcon, CommandIcon, KeyIcon, MenuIcon } from './icons';
+import useAppContext from '../../contexts/useAppContext';
+import useTheme from '../../hooks/useTheme';
+import useCommandPalette from '../../hooks/useCommandPalette';
+import { SunIcon, MoonIcon, CommandIcon, KeyIcon, MenuIcon } from '../icons';
 import { UserRole } from '@/types';
-import ChangePasswordModal from './ChangePasswordModal';
+import ChangePasswordModal from '../ChangePasswordModal';
 
 const ConnectionStatus: React.FC = () => {
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);

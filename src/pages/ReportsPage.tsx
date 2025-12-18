@@ -10,6 +10,7 @@ import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
 import { supabase } from '../utils/supabaseClient';
 import { UserRole, Service, User, ServiceCategory, MaintenanceLog, Transaction } from '@/types';
+import { formatRupiah } from '../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 
 // Type guard for Transaction
@@ -196,13 +197,13 @@ const YearlySummaryChart: React.FC<{
                 {d.month}
               </td>
               <td className="print-only-cell px-4 py-3 text-right">
-                Rp {d.revenue.toLocaleString('id-ID')}
+                Rp {formatRupiah(d.revenue)}
               </td>
               <td className="print-only-cell px-4 py-3 text-right">
-                Rp {d.expenses.toLocaleString('id-ID')}
+                Rp {formatRupiah(d.expenses)}
               </td>
               <td className="print-only-cell px-4 py-3 text-right font-semibold">
-                Rp {d.profit.toLocaleString('id-ID')}
+                Rp {formatRupiah(d.profit)}
               </td>
             </tr>
           ))}
@@ -741,19 +742,19 @@ const ReportsPage: React.FC = () => {
             <StatCard
               icon={DollarSignIcon}
               title="Total Pendapatan"
-              value={`Rp ${totalRevenue.toLocaleString('id-ID')}`}
+              value={`Rp ${formatRupiah(totalRevenue)}`}
               color="border-green-500"
             />
             <StatCard
               icon={DollarSignIcon}
               title="Total Pengeluaran"
-              value={`Rp ${totalExpenses.toLocaleString('id-ID')}`}
+              value={`Rp ${formatRupiah(totalExpenses)}`}
               color="border-red-500"
             />
             <StatCard
               icon={BarChartIcon}
               title="Laba Bersih"
-              value={`Rp ${netProfit.toLocaleString('id-ID')}`}
+              value={`Rp ${formatRupiah(netProfit)}`}
               color="border-blue-500"
             />
             <StatCard
@@ -786,7 +787,7 @@ const ReportsPage: React.FC = () => {
                           {s.name}
                         </td>
                         <td className="px-4 py-2 text-right">
-                          Rp {s.revenue.toLocaleString('id-ID')}
+                          Rp {formatRupiah(s.revenue)}
                         </td>
                       </tr>
                     ))}

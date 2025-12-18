@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { RefreshCwIcon, XIcon } from './icons';
+import { RefreshCwIcon, XIcon } from '../icons';
 
 /**
  * PWA Update Prompt Component

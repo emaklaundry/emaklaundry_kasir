@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import VersionInfo from '../components/VersionInfo';
+import VersionInfo from '../components/widgets/VersionInfo';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 
 const LoginPage: React.FC = () => {

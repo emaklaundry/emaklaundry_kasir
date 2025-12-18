@@ -5,6 +5,7 @@ import {
   importExpensesFromExcel,
   downloadExpenseTemplate,
 } from '../../utils/excelUtils';
+import { formatRupiah } from '../../utils/formatting';
 import { supabase } from '../../utils/supabaseClient';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useExpenses } from '../../contexts/ExpenseContext';
@@ -415,7 +416,7 @@ const ExpensesPage: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
         <h3 className="text-slate-500 dark:text-slate-400 font-medium mb-2">Total Pengeluaran</h3>
         <p className="text-3xl font-bold text-slate-900 dark:text-white">
-          Rp {totalExpense.toLocaleString('id-ID')}
+          Rp {formatRupiah(totalExpense)}
         </p>
       </div>
 
@@ -480,7 +481,7 @@ const ExpensesPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right text-slate-900 dark:text-white">
-                    Rp {item.amount.toLocaleString('id-ID')}
+                    Rp {formatRupiah(item.amount)}
                   </td>
                   <td className="px-6 py-4 text-center">
                     {item.source === 'asset' ? 'Aset' : 'Pengeluaran'}
