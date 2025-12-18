@@ -3,10 +3,12 @@
 ## Tanggal: 17 Desember 2025
 
 ## Masalah
+
 1. Data perawatan aset yang dijadwalkan tidak menampilkan biaya (Rp 0) pada halaman Backup & Restore
 2. Data pengeluaran pada halaman Backup & Restore hanya menampilkan 0 karena tidak mengambil semua sumber data
 
 ## Solusi
+
 1. Menambahkan field `estimatedCost` ke scheduled maintenance untuk menyimpan estimasi biaya
 2. Mengubah halaman Backup & Restore untuk mengambil data pengeluaran dari **3 sumber**:
    - Tabel `expenses` (pengeluaran operasional)
@@ -16,22 +18,26 @@
 ## Perubahan Yang Dilakukan
 
 ### 1. Database Schema
+
 - **File**: `database/setup/complete_setup.sql`
 - **Perubahan**: Tambah kolom `estimatedCost numeric DEFAULT 0` ke tabel `scheduled_maintenances`
 
 ### 2. Migration SQL
+
 - **File**: `database/migrations/add_estimated_cost_to_scheduled_maintenances.sql`
-- **Perintah**: 
+- **Perintah**:
   ```sql
-  ALTER TABLE public.scheduled_maintenances 
+  ALTER TABLE public.scheduled_maintenances
   ADD COLUMN IF NOT EXISTS "estimatedCost" numeric DEFAULT 0;
   ```
 
 ### 3. TypeScript Types
+
 - **File**: `src/types/index.ts`
 - **Perubahan**: Tambah `estimatedCost?: number;` ke interface `ScheduledMaintenance`
 
 ### 4. UI Form
+
 - **File**: `src/components/ScheduledMaintenanceFormModal.tsx`
 - **Perubahan**:
   - Tambah field input "Estimasi Biaya (Rp)"
@@ -39,6 +45,7 @@
   - Input type: number dengan step 1000
 
 ### 5. Dashboard Logic
+
 - **File**: `src/pages/Dashboard.tsx`
 - **Perubahan**: Update `handleMarkMaintenanceAsComplete` untuk menggunakan `schedule.estimatedCost`
   ```typescript
@@ -46,40 +53,47 @@
   ```
 
 ### 6. Backup & Restore Page - DATA LENGKAP
+
 - **File**: `src/pages/management/BackupRestorePage.tsx`
 - **Perubahan**: Gunakan logika yang sama dengan ReportsPage untuk menggabungkan data dari 3 sumber:
+
   ```typescript
   // 1. Fetch semua expenses dari database
-  const allOperationalExpenses = await supabase.from('expenses').select('*')
-  
+  const allOperationalExpenses = await supabase.from('expenses').select('*');
+
   // 2. Fetch assets untuk backfill pembelian & perawatan
-  const assetsData = await supabase.from('assets').select('*')
-  
+  const assetsData = await supabase.from('assets').select('*');
+
   // 3. Gabungkan:
   //    - Pembelian Aset (purchaseDate, purchaseCost)
   //    - Perawatan Aset (maintenanceHistory[].cost)
   //    - Expenses operasional
-  
-  return [...allOperationalExpenses, ...assetExpenses]
+
+  return [...allOperationalExpenses, ...assetExpenses];
   ```
 
 ### 7. Context (Otomatis)
+
 - **File**: `src/contexts/ScheduledMaintenanceContext.tsx`
 - Tidak perlu perubahan - sudah menggunakan spread operator
 
 ## Cara Menggunakan
 
 ### Untuk Database Baru
+
 Jalankan `database/setup/complete_setup.sql` yang sudah diupdate
 
 ### Untuk Database yang Sudah Ada
+
 Jalankan migration di Supabase SQL Editor:
+
 ```sql
 -- Jalankan file ini:
 database/migrations/add_estimated_cost_to_scheduled_maintenances.sql
 ```
 
 ### Di Aplikasi
+
 1. Buka halaman **Asset Management**
 2. Pilih aset yang ingin dijadwalkan perawatannya
 3. Klik "Jadwal Perawatan"
@@ -91,13 +105,16 @@ database/migrations/add_estimated_cost_to_scheduled_maintenances.sql
 5. Simpan
 
 ### Backup & Restore - Data Lengkap
+
 Sekarang halaman Backup & Restore akan menampilkan **SEMUA** pengeluaran:
+
 - ✅ Pengeluaran operasional dari tabel `expenses`
 - ✅ Pembelian aset dari tabel `assets` (10 data dari 12/12/2019 dll)
 - ✅ Biaya perawatan aset dari `maintenanceHistory`
 - ✅ Tidak ada duplikasi - ada pengecekan otomatis
 
 ## Testing
+
 1. ✅ Build successful - no TypeScript errors
 2. ✅ Form menampilkan field estimasi biaya
 3. ✅ Data tersimpan ke database
@@ -107,6 +124,7 @@ Sekarang halaman Backup & Restore akan menampilkan **SEMUA** pengeluaran:
 7. ✅ **Tidak ada duplikasi data**
 
 ## Catatan
+
 - Default value: Rp 0 (jika tidak diisi)
 - Field bersifat optional - jadwal lama tetap berfungsi
 - Biaya bisa diedit saat update jadwal perawatan

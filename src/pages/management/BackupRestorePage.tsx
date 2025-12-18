@@ -32,12 +32,12 @@ const BackupRestorePage: React.FC = () => {
 
       while (hasMore) {
         let query = supabase.from('customers').select('*');
-        
+
         // Apply store filter
         if (selectedStoreId && selectedStoreId !== 'all') {
           query = query.eq('storeId', selectedStoreId);
         }
-        
+
         query = query.range(page * pageSize, (page + 1) * pageSize - 1);
         const { data, error } = await query;
 
@@ -72,12 +72,12 @@ const BackupRestorePage: React.FC = () => {
     queryFn: async () => {
       const { supabase } = await import('../../utils/supabaseClient');
       let query = supabase.from('services').select('*');
-      
+
       // Apply store filter
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
-      
+
       const { data, error } = await query;
       if (error) throw error;
       return (data || []).map((s: Record<string, unknown>) => ({
@@ -100,12 +100,12 @@ const BackupRestorePage: React.FC = () => {
 
       while (hasMore) {
         let query = supabase.from('inventory_items').select('*');
-        
+
         // Apply store filter
         if (selectedStoreId && selectedStoreId !== 'all') {
           query = query.eq('storeId', selectedStoreId);
         }
-        
+
         query = query.range(page * pageSize, (page + 1) * pageSize - 1);
         const { data, error } = await query;
 
@@ -136,12 +136,12 @@ const BackupRestorePage: React.FC = () => {
     queryFn: async () => {
       const { supabase } = await import('../../utils/supabaseClient');
       let query = supabase.from('assets').select('*');
-      
+
       // Apply store filter
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
-      
+
       const { data, error } = await query;
       if (error) throw error;
       return (data || []).map((a: Record<string, unknown>) => ({
@@ -156,13 +156,13 @@ const BackupRestorePage: React.FC = () => {
   });
 
   const assets = assetsQuery.data || [];
-  
+
   // Fetch combined expenses (from database + asset purchases + maintenance)
   const expensesQuery = useQuery({
     queryKey: ['backup-expenses-combined', selectedStoreId],
     queryFn: async () => {
       const { supabase } = await import('../../utils/supabaseClient');
-      
+
       // Helper untuk format tanggal lokal (YYYY-MM-DD)
       const formatDateStr = (date: Date) => {
         const year = date.getFullYear();
@@ -179,12 +179,12 @@ const BackupRestorePage: React.FC = () => {
 
       while (hasMore) {
         let query = supabase.from('expenses').select('*');
-        
+
         // Apply store filter
         if (selectedStoreId && selectedStoreId !== 'all') {
           query = query.eq('storeId', selectedStoreId);
         }
-        
+
         query = query.range(page * pageSize, (page + 1) * pageSize - 1);
         const { data, error } = await query;
 
@@ -210,14 +210,14 @@ const BackupRestorePage: React.FC = () => {
 
       // 2. Fetch Assets for backfilling old purchases and maintenance
       let assetQuery = supabase.from('assets').select('*');
-      
+
       // Apply store filter
       if (selectedStoreId && selectedStoreId !== 'all') {
         assetQuery = assetQuery.eq('storeId', selectedStoreId);
       }
-      
+
       const { data: assetsData, error: assetsError } = await assetQuery;
-      
+
       if (assetsError) throw assetsError;
 
       const assetExpenses: Expense[] = [];
@@ -259,7 +259,12 @@ const BackupRestorePage: React.FC = () => {
           }
 
           // B. Asset Maintenance History
-          let maintenanceHistory: { id: string; date: Date | string; description: string; cost: number }[] = [];
+          let maintenanceHistory: {
+            id: string;
+            date: Date | string;
+            description: string;
+            cost: number;
+          }[] = [];
           if (asset.maintenanceHistory) {
             if (Array.isArray(asset.maintenanceHistory)) {
               maintenanceHistory = asset.maintenanceHistory;
@@ -299,7 +304,7 @@ const BackupRestorePage: React.FC = () => {
   });
 
   const expenses = expensesQuery.data || [];
-  
+
   // Fetch all transactions without filters
   const transactionsQuery = useQuery({
     queryKey: ['backup-transactions-all', selectedStoreId],
@@ -309,17 +314,17 @@ const BackupRestorePage: React.FC = () => {
         .from('transactions')
         .select('*', { count: 'exact' })
         .order('createdAt', { ascending: false });
-      
+
       // Apply store filter
       if (selectedStoreId && selectedStoreId !== 'all') {
         query = query.eq('storeId', selectedStoreId);
       }
-      
+
       query = query.range(0, 9999);
       const { data, error } = await query;
-      
+
       if (error) throw error;
-      
+
       // Convert database format to Transaction type
       return (data || []).map((t) => ({
         ...t,
@@ -328,7 +333,7 @@ const BackupRestorePage: React.FC = () => {
         createdAt: new Date(t.createdAt || new Date()),
         estimatedCompletionDate: t.estimatedCompletionDate ?? undefined,
         paymentMethod: t.paymentMethod ?? undefined,
-        items: (t.items as unknown) as TransactionItem[],
+        items: t.items as unknown as TransactionItem[],
       })) as Transaction[];
     },
   });
@@ -358,7 +363,14 @@ const BackupRestorePage: React.FC = () => {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await exportAllData(customers as unknown as any, services as unknown as any, inventory as unknown as any, assets as unknown as any, expenses, transactions);
+      await exportAllData(
+        customers as unknown as any,
+        services as unknown as any,
+        inventory as unknown as any,
+        assets as unknown as any,
+        expenses,
+        transactions,
+      );
 
       // Save last backup date
       const now = new Date().toISOString();
@@ -386,14 +398,14 @@ const BackupRestorePage: React.FC = () => {
     }
 
     const file = fileInputRef.current.files[0];
-    
+
     // Confirmation
     const confirmed = window.confirm(
       `⚠️ PERINGATAN PENTING ⚠️\n\n` +
-      `Restore data akan MENIMPA semua data yang ada saat ini!\n\n` +
-      `Data yang akan direstore dari file: ${file.name}\n\n` +
-      `Apakah Anda yakin ingin melanjutkan?\n\n` +
-      `Disarankan untuk melakukan backup terlebih dahulu sebelum restore.`
+        `Restore data akan MENIMPA semua data yang ada saat ini!\n\n` +
+        `Data yang akan direstore dari file: ${file.name}\n\n` +
+        `Apakah Anda yakin ingin melanjutkan?\n\n` +
+        `Disarankan untuk melakukan backup terlebih dahulu sebelum restore.`,
     );
 
     if (!confirmed) {
@@ -418,18 +430,14 @@ const BackupRestorePage: React.FC = () => {
         importedData.expenses.length +
         importedData.transactions.length;
 
-      updateToast(
-        toastId,
-        `Ditemukan ${totalImported} data. Mulai restore ke database...`,
-        'info',
-      );
+      updateToast(toastId, `Ditemukan ${totalImported} data. Mulai restore ke database...`, 'info');
 
       // Import to database using Supabase
       const { supabase } = await import('../../utils/supabaseClient');
 
       // Clear existing data (optional - bisa dikomentari jika ingin merge)
       updateToast(toastId, 'Menghapus data lama...', 'info');
-      
+
       await supabase.from('transactions').delete().neq('id', '');
       await supabase.from('expenses').delete().neq('id', '');
       await supabase.from('assets').delete().neq('id', '');
@@ -443,7 +451,7 @@ const BackupRestorePage: React.FC = () => {
       if (importedData.customers.length > 0) {
         updateToast(toastId, `Restore pelanggan (${importedData.customers.length})...`, 'info');
         // Convert Customer to database format
-        const dbCustomers = importedData.customers.map(c => ({
+        const dbCustomers = importedData.customers.map((c) => ({
           ...c,
           createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : c.createdAt,
           phone: c.phone ?? null,
@@ -472,11 +480,14 @@ const BackupRestorePage: React.FC = () => {
       if (importedData.assets.length > 0) {
         updateToast(toastId, `Restore aset (${importedData.assets.length})...`, 'info');
         // Convert Asset to database format
-        const dbAssets = importedData.assets.map(a => ({
+        const dbAssets = importedData.assets.map((a) => ({
           ...a,
           maintenanceHistory: a.maintenanceHistory as unknown as Json,
           serialNumber: a.serialNumber ?? null,
-          purchaseDate: typeof a.purchaseDate === 'string' ? a.purchaseDate : a.purchaseDate?.toISOString?.() ?? null,
+          purchaseDate:
+            typeof a.purchaseDate === 'string'
+              ? a.purchaseDate
+              : (a.purchaseDate?.toISOString?.() ?? null),
           purchaseCost: a.purchaseCost ?? null,
           storeId: a.storeId ?? null,
         }));
@@ -488,7 +499,7 @@ const BackupRestorePage: React.FC = () => {
       if (importedData.expenses.length > 0) {
         updateToast(toastId, `Restore pengeluaran (${importedData.expenses.length})...`, 'info');
         // Convert Expense to database format
-        const dbExpenses = importedData.expenses.map(e => {
+        const dbExpenses = importedData.expenses.map((e) => {
           // Ensure date is properly formatted as YYYY-MM-DD for database
           let dateStr: string;
           if (e.date instanceof Date) {
@@ -496,8 +507,8 @@ const BackupRestorePage: React.FC = () => {
           } else if (typeof e.date === 'string') {
             // If already a string, parse it first to ensure valid format
             const parsedDate = new Date(e.date);
-            dateStr = isNaN(parsedDate.getTime()) 
-              ? new Date().toISOString().split('T')[0] 
+            dateStr = isNaN(parsedDate.getTime())
+              ? new Date().toISOString().split('T')[0]
               : parsedDate.toISOString().split('T')[0];
           } else {
             dateStr = new Date().toISOString().split('T')[0];
@@ -517,7 +528,7 @@ const BackupRestorePage: React.FC = () => {
       if (importedData.transactions.length > 0) {
         updateToast(toastId, `Restore transaksi (${importedData.transactions.length})...`, 'info');
         // Convert Transaction to database format
-        const dbTransactions = importedData.transactions.map(t => ({
+        const dbTransactions = importedData.transactions.map((t) => ({
           ...t,
           items: t.items as unknown as Json,
           createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
@@ -573,7 +584,8 @@ const BackupRestorePage: React.FC = () => {
       {/* Store Info Header */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-          Data Backup & Restore: <span className="text-blue-600 dark:text-blue-400">{getStoreName()}</span>
+          Data Backup & Restore:{' '}
+          <span className="text-blue-600 dark:text-blue-400">{getStoreName()}</span>
         </h2>
         {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
           <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
@@ -584,9 +596,7 @@ const BackupRestorePage: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Backup & Restore
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Backup & Restore</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             Backup semua data aplikasi atau restore dari backup sebelumnya
           </p>
@@ -598,9 +608,7 @@ const BackupRestorePage: React.FC = () => {
           <div className="flex items-start gap-3">
             <AlertTriangleIcon className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-red-800 dark:text-red-300">
-                Akses Terbatas
-              </h3>
+              <h3 className="font-semibold text-red-800 dark:text-red-300">Akses Terbatas</h3>
               <p className="text-sm text-red-700 dark:text-red-400 mt-1">
                 Hanya Admin dan Super Admin yang dapat melakukan backup & restore data.
               </p>
@@ -631,9 +639,7 @@ const BackupRestorePage: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Pelanggan</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {customers.length}
-          </p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{customers.length}</p>
           <div className="mt-2 h-1 bg-green-200 dark:bg-green-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-green-600 dark:bg-green-400"
@@ -644,9 +650,7 @@ const BackupRestorePage: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Layanan</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {services.length}
-          </p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{services.length}</p>
           <div className="mt-2 h-1 bg-blue-200 dark:bg-blue-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-600 dark:bg-blue-400"
@@ -657,9 +661,7 @@ const BackupRestorePage: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Inventori</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {inventory.length}
-          </p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{inventory.length}</p>
           <div className="mt-2 h-1 bg-purple-200 dark:bg-purple-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-purple-600 dark:bg-purple-400"
@@ -670,9 +672,7 @@ const BackupRestorePage: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Aset</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {assets.length}
-          </p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{assets.length}</p>
           <div className="mt-2 h-1 bg-orange-200 dark:bg-orange-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-orange-600 dark:bg-orange-400"
@@ -683,9 +683,7 @@ const BackupRestorePage: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Pengeluaran</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {expenses.length}
-          </p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{expenses.length}</p>
           <div className="mt-2 h-1 bg-red-200 dark:bg-red-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-red-600 dark:bg-red-400"
@@ -696,9 +694,7 @@ const BackupRestorePage: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Transaksi</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {transactions.length}
-          </p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{transactions.length}</p>
           <div className="mt-2 h-1 bg-cyan-200 dark:bg-cyan-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-cyan-600 dark:bg-cyan-400"
@@ -789,8 +785,8 @@ const BackupRestorePage: React.FC = () => {
                 Import Full Backup
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Restore semua data dari file backup sebelumnya. Gunakan fitur ini untuk
-                disaster recovery atau migrasi sistem.
+                Restore semua data dari file backup sebelumnya. Gunakan fitur ini untuk disaster
+                recovery atau migrasi sistem.
               </p>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
@@ -849,22 +845,22 @@ const BackupRestorePage: React.FC = () => {
               <li className="flex items-start gap-2">
                 <span className="font-bold">•</span>
                 <span>
-                  <strong>Full Backup</strong> mencakup semua data: pelanggan, layanan,
-                  inventori, aset, pengeluaran, dan transaksi dalam satu file Excel.
+                  <strong>Full Backup</strong> mencakup semua data: pelanggan, layanan, inventori,
+                  aset, pengeluaran, dan transaksi dalam satu file Excel.
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-bold">•</span>
                 <span>
-                  <strong>Backup Per Halaman</strong> tetap tersedia di masing-masing
-                  halaman untuk backup selektif (misalnya hanya pelanggan atau transaksi).
+                  <strong>Backup Per Halaman</strong> tetap tersedia di masing-masing halaman untuk
+                  backup selektif (misalnya hanya pelanggan atau transaksi).
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-bold">•</span>
                 <span>
-                  Simpan file backup di tempat yang aman seperti Google Drive, OneDrive,
-                  atau hard drive eksternal.
+                  Simpan file backup di tempat yang aman seperti Google Drive, OneDrive, atau hard
+                  drive eksternal.
                 </span>
               </li>
               <li className="flex items-start gap-2">

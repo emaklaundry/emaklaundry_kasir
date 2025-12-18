@@ -32,7 +32,7 @@ const SettingsPage: React.FC = () => {
 
   // Only Super Admin can toggle maintenance mode
   const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
-  
+
   const currentStore = useMemo(() => {
     if (selectedStoreId === 'all') return null;
     return stores.find((s) => s.id === selectedStoreId);
@@ -88,14 +88,16 @@ const SettingsPage: React.FC = () => {
     try {
       // 1. Update Layout/General Settings
       await updateSettings(formData);
-      
+
       // 2. Update Store Location (if valid store selected)
       if (currentStore && currentStore.id !== 'all') {
-         await updateStore(currentStore.id, {
-            latitude: locationData.latitude,
-            longitude: locationData.longitude
-         });
-         addAuditLog(`Mengupdate lokasi toko "${currentStore.name}" ke (${locationData.latitude}, ${locationData.longitude}).`);
+        await updateStore(currentStore.id, {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+        });
+        addAuditLog(
+          `Mengupdate lokasi toko "${currentStore.name}" ke (${locationData.latitude}, ${locationData.longitude}).`,
+        );
       }
 
       addAuditLog('Menyimpan perubahan pada Pengaturan Aplikasi.');
@@ -163,71 +165,79 @@ const SettingsPage: React.FC = () => {
         {/* Location Settings - Visible only for Store Admins/Specific Branch */}
         {currentStore && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-6 space-y-4">
-             <div className="flex items-center gap-3 mb-4">
-               <div className="bg-blue-500 rounded-full p-2">
-                 <MapIcon className="h-6 w-6 text-white" />
-               </div>
-               <div>
-                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                   Lokasi Toko
-                 </h2>
-                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                   Koordinat untuk fitur cuaca ({currentStore.name})
-                 </p>
-               </div>
-             </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-blue-500 rounded-full p-2">
+                <MapIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Lokasi Toko</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Koordinat untuk fitur cuaca ({currentStore.name})
+                </p>
+              </div>
+            </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                   <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Latitude
-                   </label>
-                   <input
-                      type="number"
-                      step="any"
-                      value={locationData.latitude}
-                      onChange={(e) => setLocationData(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))}
-                      className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                   />
-                </div>
-                <div>
-                   <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Longitude
-                   </label>
-                   <input
-                      type="number"
-                      step="any"
-                      value={locationData.longitude}
-                      onChange={(e) => setLocationData(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
-                      className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                   />
-                </div>
-             </div>
-             
-             <div className="flex justify-end">
-                <button
-                   type="button"
-                   onClick={() => {
-                      if (navigator.geolocation) {
-                         navigator.geolocation.getCurrentPosition(
-                            (pos) => {
-                               setLocationData({
-                                  latitude: pos.coords.latitude,
-                                  longitude: pos.coords.longitude
-                               });
-                               addToast('Lokasi berhasil didapatkan dari GPS!', 'success');
-                            },
-                            () => addToast('Gagal mendapatkan lokasi GPS.', 'error')
-                         );
-                      } else {
-                         addToast('Browser tidak mendukung GPS.', 'error');
-                      }
-                   }}
-                   className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                >
-                   📍 Ambil Lokasi Saya
-                </button>
-             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Latitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={locationData.latitude}
+                  onChange={(e) =>
+                    setLocationData((prev) => ({
+                      ...prev,
+                      latitude: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Longitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={locationData.longitude}
+                  onChange={(e) =>
+                    setLocationData((prev) => ({
+                      ...prev,
+                      longitude: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setLocationData({
+                          latitude: pos.coords.latitude,
+                          longitude: pos.coords.longitude,
+                        });
+                        addToast('Lokasi berhasil didapatkan dari GPS!', 'success');
+                      },
+                      () => addToast('Gagal mendapatkan lokasi GPS.', 'error'),
+                    );
+                  } else {
+                    addToast('Browser tidak mendukung GPS.', 'error');
+                  }
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+              >
+                📍 Ambil Lokasi Saya
+              </button>
+            </div>
           </div>
         )}
 

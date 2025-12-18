@@ -47,12 +47,12 @@ describe('useAssets', () => {
   it('can add, update, and delete asset', async () => {
     const { result } = renderHook(() => useAssets());
     const mockStoreId = '00000000-0000-0000-0000-000000000001';
-    
+
     // Test that functions exist and can be called (with mock)
     expect(typeof result.current.addAsset).toBe('function');
     expect(typeof result.current.updateAsset).toBe('function');
     expect(typeof result.current.deleteAsset).toBe('function');
-    
+
     // Since we're using real Supabase and don't have permissions,
     // we just verify the functions exist and are callable
     try {

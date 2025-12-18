@@ -117,7 +117,7 @@ const TransactionPage: React.FC = () => {
       return {
         ...t,
         customerName: customer ? customer.name : 'N/A',
-        customerPhone: customer ? (customer.phone || 'N/A') : 'N/A',
+        customerPhone: customer ? customer.phone || 'N/A' : 'N/A',
       };
     });
   }, [transactions, customers]);
@@ -219,7 +219,7 @@ const TransactionPage: React.FC = () => {
       };
 
       await updateTransaction(updatedTransaction.id, payload);
-      
+
       // If points earned from rounding, add to customer's discount balance
       if (pointsEarned && pointsEarned > 0 && updatedTransaction.customerId) {
         const customer = customers.find((c: Customer) => c.id === updatedTransaction.customerId);
@@ -232,18 +232,22 @@ const TransactionPage: React.FC = () => {
           );
         }
       }
-      
+
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,
       );
-      
+
       if (pointsEarned && pointsEarned > 0) {
-        updateToast(toastId, `Pem bayaran berhasil! Rp ${pointsEarned} ditambahkan ke saldo diskon pelanggan.`, 'success');
+        updateToast(
+          toastId,
+          `Pem bayaran berhasil! Rp ${pointsEarned} ditambahkan ke saldo diskon pelanggan.`,
+          'success',
+        );
       } else {
         updateToast(toastId, 'Pembayaran berhasil disimpan.', 'success');
       }
-      
+
       setIsPaymentModalOpen(false);
       setSelectedTransaction(null);
       if (shouldShowModal) {
@@ -269,43 +273,45 @@ const TransactionPage: React.FC = () => {
     try {
       // Fetch SEMUA transaksi dengan filter yang sama, tanpa pagination
       updateToast(toastId, 'Mengambil semua data transaksi...', 'info');
-      
+
       let query = supabase.from('transactions').select('*', { count: 'exact' });
-      
+
       // Terapkan filter yang sama dengan tampilan saat ini
       if (dateRange) {
         const fromDate = new Date(dateRange.from);
         fromDate.setHours(0, 0, 0, 0);
         const toDate = new Date(dateRange.to);
         toDate.setHours(23, 59, 59, 999);
-        query = query.gte('createdAt', fromDate.toISOString()).lte('createdAt', toDate.toISOString());
+        query = query
+          .gte('createdAt', fromDate.toISOString())
+          .lte('createdAt', toDate.toISOString());
       }
-      
+
       if (currentUser?.storeId) {
         query = query.eq('storeId', currentUser.storeId);
       }
-      
+
       if (statusFilter !== 'all') {
         query = query.eq('orderStatus', statusFilter);
       }
-      
+
       if (paymentFilter !== 'all') {
         query = query.eq('paymentStatus', paymentFilter);
       }
-      
+
       // Order by createdAt descending
       query = query.order('createdAt', { ascending: false });
-      
+
       const { data: allTransactions, error } = await query;
-      
+
       if (error) throw error;
       if (!allTransactions || allTransactions.length === 0) {
         updateToast(toastId, 'Tidak ada transaksi untuk diekspor.', 'warning');
         return;
       }
-      
+
       updateToast(toastId, `Mengekspor ${allTransactions.length} transaksi...`, 'info');
-      
+
       // Convert null to undefined untuk kompatibilitas dengan Transaction type
       const transactionsToExport = allTransactions.map((t) => ({
         ...t,
@@ -313,15 +319,19 @@ const TransactionPage: React.FC = () => {
         createdByUserId: t.createdByUserId ?? undefined,
         paymentMethod: t.paymentMethod ?? undefined,
       })) as unknown as Transaction[];
-      
+
       const customersForExport = customers.map((c: Customer) => ({
         id: c.id,
         name: c.name,
         phone: c.phone || '',
       }));
-      
+
       await exportTransactionsToExcel(transactionsToExport, customersForExport);
-      updateToast(toastId, `Berhasil mengekspor ${allTransactions.length} transaksi ke Excel.`, 'success');
+      updateToast(
+        toastId,
+        `Berhasil mengekspor ${allTransactions.length} transaksi ke Excel.`,
+        'success',
+      );
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal mengekspor transaksi: ${errMsg}`, 'error');
@@ -379,7 +389,7 @@ const TransactionPage: React.FC = () => {
         try {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { id, ...transactionData } = transaction;
-          
+
           // Gunakan addTransaction dari context
           await addTransaction(transactionData);
           successCount++;

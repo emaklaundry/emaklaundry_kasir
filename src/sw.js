@@ -34,9 +34,9 @@ self.addEventListener('fetch', (event) => {
 
   // CRITICAL: Never cache auth-related requests (prevents login issues)
   if (
-    url.pathname.includes('/auth/') || 
+    url.pathname.includes('/auth/') ||
     url.pathname.includes('/login') ||
-    url.pathname === '/' && url.search.includes('auth') ||
+    (url.pathname === '/' && url.search.includes('auth')) ||
     url.hostname.includes('supabase.co')
   ) {
     event.respondWith(
@@ -44,8 +44,8 @@ self.addEventListener('fetch', (event) => {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       }),
     );

@@ -1,8 +1,6 @@
 /// <reference types="vite-plugin-pwa/client" />
 
 declare module 'virtual:pwa-register/react' {
-
-
   export interface RegisterSWOptions {
     immediate?: boolean;
     onNeedRefresh?: () => void;

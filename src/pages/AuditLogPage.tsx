@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { useAuditLogs } from '../contexts/AuditLogContext';
-import useStoreFilteredData from '../hooks/useStoreFilteredData';
 import useAppContext from '../contexts/useAppContext';
 import { HistoryIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
 import useSortableData from '../hooks/useSortableData';
@@ -11,7 +10,21 @@ import { UserRole } from '@/types';
 const AuditLogPage: React.FC = () => {
   const { logs: allLogs, isLoading } = useAuditLogs();
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const logs = useStoreFilteredData(allLogs);
+
+  // Manual filtering for AuditLog to maintain proper types
+  const logs = useMemo(() => {
+    if (!currentUser) return allLogs;
+    
+    if (currentUser.role === UserRole.SuperAdmin) {
+      if (selectedStoreId === 'all') {
+        return allLogs;
+      }
+      return allLogs.filter((log) => log.storeId === selectedStoreId);
+    }
+    // For Admin/Kasir, filter by their storeId
+    if (!currentUser.storeId) return [];
+    return allLogs.filter((log) => log.storeId === currentUser.storeId);
+  }, [allLogs, currentUser, selectedStoreId]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');

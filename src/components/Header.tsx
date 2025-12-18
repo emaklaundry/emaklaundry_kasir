@@ -59,7 +59,10 @@ const ThemeToggleButton: React.FC = () => {
   );
 };
 
-const Header: React.FC<{ pageTitle: string; onToggleSidebar?: () => void }> = ({ pageTitle, onToggleSidebar }) => {
+const Header: React.FC<{ pageTitle: string; onToggleSidebar?: () => void }> = ({
+  pageTitle,
+  onToggleSidebar,
+}) => {
   const { currentUser, signOut, stores, selectedStoreId, setSelectedStoreId } = useAppContext();
   const { open } = useCommandPalette();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = React.useState(false);
@@ -85,7 +88,7 @@ const Header: React.FC<{ pageTitle: string; onToggleSidebar?: () => void }> = ({
               <MenuIcon className="w-5 h-5" />
             </button>
           )}
-          
+
           {/* Page Title - Responsive */}
           <h1 className="text-base sm:text-2xl md:text-3xl font-semibold text-slate-800 dark:text-white truncate flex-1 min-w-0">
             {pageTitle}

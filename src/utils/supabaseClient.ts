@@ -15,7 +15,6 @@ if (!supabaseAnonKey) {
 const createSupabaseClient = () => createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 declare global {
-   
   var supabase: ReturnType<typeof createSupabaseClient> | undefined;
 }
 

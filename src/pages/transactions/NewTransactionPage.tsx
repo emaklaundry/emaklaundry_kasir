@@ -78,7 +78,7 @@ const NewTransactionPage: React.FC = () => {
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // State untuk idempotencyKey
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
-  
+
   // Ref to track if discount toast was shown (prevent spam)
   const hasShownDiscountToast = useRef(false);
 
@@ -264,14 +264,12 @@ const NewTransactionPage: React.FC = () => {
       const discountToApply = Math.min(selectedCustomer.defaultDiscount, maxDiscount);
       setDiscountType('fixed');
       setDiscountValue(Math.round(discountToApply));
-      
+
       // Show toast only once per customer selection (not on every subtotal change)
       if (!hasShownDiscountToast.current && discountToApply > 0) {
         addToast(
           `Saldo diskon Rp ${formatRupiah(Math.round(discountToApply))} diterapkan${
-            discountToApply < selectedCustomer.defaultDiscount
-              ? ` (max 10% dari subtotal)`
-              : ''
+            discountToApply < selectedCustomer.defaultDiscount ? ` (max 10% dari subtotal)` : ''
           }`,
           'info',
         );
@@ -568,7 +566,7 @@ const NewTransactionPage: React.FC = () => {
           `Membuat transaksi baru untuk pelanggan ${selectedCustomer.name}.`,
           currentStoreId,
         );
-        
+
         // Deduct used discount from customer's balance
         if (discountType === 'fixed' && discountValue && selectedCustomer.defaultDiscount) {
           const usedDiscount = typeof discountValue === 'number' ? discountValue : 0;
@@ -581,7 +579,7 @@ const NewTransactionPage: React.FC = () => {
             );
           }
         }
-        
+
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);
@@ -1156,5 +1154,3 @@ const NewTransactionPage: React.FC = () => {
 };
 
 export default NewTransactionPage;
-
-

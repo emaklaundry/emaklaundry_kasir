@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 /**
  * Unit Tests for Cash Rounding Logic
- * 
+ *
  * Business Rules:
  * - Rounding only applies to Cash payment method
  * - Minimum rounding is 500 rupiah
@@ -17,7 +17,7 @@ describe('Cash Rounding Logic', () => {
     const shouldRound = paymentMethod === 'Cash' && remainder > 0;
     const roundedAmount = shouldRound ? amount - remainder : amount;
     const bonus = shouldRound ? remainder : 0;
-    
+
     return { roundedAmount, bonus };
   };
 
@@ -148,8 +148,8 @@ describe('Cash Rounding Logic', () => {
   describe('Rounding Formula Validation', () => {
     it('should always satisfy: original = rounded + bonus', () => {
       const testCases = [10350, 10750, 10100, 127650, 10499];
-      
-      testCases.forEach(amount => {
+
+      testCases.forEach((amount) => {
         const result = calculateRounding(amount, 'Cash');
         expect(result.roundedAmount + result.bonus).toBe(amount);
       });
@@ -157,20 +157,20 @@ describe('Cash Rounding Logic', () => {
 
     it('should ensure rounded amount is always divisible by 500 or equal to original', () => {
       const testCases = [10350, 10750, 10100, 11000, 10500];
-      
-      testCases.forEach(amount => {
+
+      testCases.forEach((amount) => {
         const result = calculateRounding(amount, 'Cash');
         const isDivisibleBy500 = result.roundedAmount % 500 === 0;
         const isOriginal = result.roundedAmount === amount;
-        
+
         expect(isDivisibleBy500 || isOriginal).toBe(true);
       });
     });
 
     it('should ensure bonus is always < 500', () => {
       const testCases = [10350, 10750, 10100, 10499, 127650];
-      
-      testCases.forEach(amount => {
+
+      testCases.forEach((amount) => {
         const result = calculateRounding(amount, 'Cash');
         expect(result.bonus).toBeLessThan(500);
         expect(result.bonus).toBeGreaterThanOrEqual(0);
