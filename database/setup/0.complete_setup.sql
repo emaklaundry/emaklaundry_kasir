@@ -1262,3 +1262,14 @@ $$;
 -- Note: The backfill function is now available but not automatically executed
 -- To run it, execute: SELECT * FROM public.backfill_invoice_codes();
 -- This gives you control over when to backfill existing data
+
+-- ============================================
+-- AUTO-EXECUTE BACKFILL ON SETUP
+-- ============================================
+-- Automatically backfill invoice codes for existing transactions
+
+SELECT * FROM public.backfill_invoice_codes();
+
+-- ============================================
+-- END OF COMPLETE SETUP
+-- ============================================
