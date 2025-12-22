@@ -131,8 +131,10 @@ CREATE TABLE public.customers (
   notes text,
   "defaultDiscount" integer DEFAULT 0,
   "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
+
 
 
 -- ENUM for service category
@@ -1168,3 +1170,95 @@ BEGIN
   RAISE NOTICE 'Next step: Run seed_data.sql untuk sample data';
 END $$;
 
+
+-- ============================================
+-- SECTION 6: BACKFILL INVOICE CODES
+-- ============================================
+-- Function to generate invoice codes for existing transactions
+-- This ensures all transactions have proper invoice codes
+
+CREATE OR REPLACE FUNCTION public.backfill_invoice_codes()
+RETURNS TABLE (
+  transaction_id uuid,
+  old_invoice_code text,
+  new_invoice_code text,
+  success boolean
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  tx_record RECORD;
+  store_prefix text;
+  new_code text;
+  attempt int;
+  max_attempts int := 10;
+  updated_count int := 0;
+BEGIN
+  -- Loop throughall transactions without invoiceCode
+  FOR tx_record IN
+    SELECT t.id, t."storeId", t."invoiceCode"
+    FROM public.transactions t
+    WHERE t."invoiceCode" IS NULL OR t."invoiceCode" = ''
+    ORDER BY t."createdAt" ASC
+  LOOP
+    -- Get store prefix
+    IF tx_record."storeId" IS NOT NULL THEN
+      SELECT upper(substr(regexp_replace(name, '[^a-zA-Z]', '', 'g'), 1, 3))
+      INTO store_prefix
+      FROM public.stores
+      WHERE id = tx_record."storeId";
+      
+      IF store_prefix IS NULL OR length(store_prefix) = 0 THEN
+        store_prefix := 'EM';
+      END IF;
+    ELSE
+      store_prefix := 'EM';
+    END IF;
+
+    -- Generate unique code
+    attempt := 0;
+    WHILE attempt < max_attempts LOOP
+      new_code := store_prefix || '-' || public.generate_invoice_code(6);
+      
+      -- Check if code already exists
+      IF NOT EXISTS (SELECT 1 FROM public.transactions WHERE "invoiceCode" = new_code) THEN
+        -- Update the transaction
+        UPDATE public.transactions
+        SET "invoiceCode" = new_code
+        WHERE id = tx_record.id;
+        
+        updated_count := updated_count + 1;
+        
+        -- Return result for this transaction
+        RETURN QUERY SELECT 
+          tx_record.id,
+          tx_record."invoiceCode",
+          new_code,
+          true;
+        
+        EXIT; -- Break the while loop
+      END IF;
+      
+      attempt := attempt + 1;
+    END LOOP;
+    
+    -- If failed to generate unique code
+    IF attempt >= max_attempts THEN
+      RETURN QUERY SELECT 
+        tx_record.id,
+        tx_record."invoiceCode",
+        NULL::text,
+        false;
+    END IF;
+  END LOOP;
+  
+  -- Log the result
+  RAISE NOTICE 'Backfill complete: % transactions updated', updated_count;
+END;
+$$;
+
+-- Note: The backfill function is now available but not automatically executed
+-- To run it, execute: SELECT * FROM public.backfill_invoice_codes();
+-- This gives you control over when to backfill existing data

@@ -30,7 +30,7 @@
 -- 1. STORES (Cabang)
 -- ============================================
 
--- Cabang: Kota Banjar
+-- Cabang: Cimenyan, Kota Banjar
 -- UUID: 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
 
 -- 1.1 Add Coordinates Columns (Idempotent)
@@ -41,7 +41,7 @@ ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 INSERT INTO public.stores (id, name, address, "isActive", latitude, longitude)
 VALUES (
   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 
-  'Cabang Kota Banjar', 
+  'Cimenyan, Kota Banjar', 
   'Kota Banjar', 
   true,
   -7.372186953412669,
