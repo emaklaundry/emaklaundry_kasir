@@ -9,6 +9,7 @@ import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 import { supabase } from '../../utils/supabaseClient';
+import { formatTransactionId } from '@/utils/uiHelpers';
 
 const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,7 +73,7 @@ const ReceiptPage: React.FC = () => {
         <div className="flex justify-between text-base">
           <span className="text-slate-500 dark:text-slate-400">No. Invoice</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            {tx.invoiceCode || tx.id.slice(-6).toUpperCase()}
+            {formatTransactionId(tx)}
           </span>
         </div>
         <div className="flex justify-between text-base">
@@ -205,7 +206,7 @@ const ReceiptPage: React.FC = () => {
         <button
           onClick={() => {
             if (tx) {
-              const invoiceNumber = tx.invoiceCode || tx.id.slice(-6).toUpperCase();
+              const invoiceNumber = formatTransactionId(tx);
               addAuditLog(`Mencetak receipt untuk transaksi ${invoiceNumber}.`, tx.storeId);
             }
             window.print();

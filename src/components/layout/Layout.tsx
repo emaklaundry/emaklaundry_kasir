@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchCustomers } from '../contexts/CustomerContext';
-import ToastContainer from './ToastContainer';
+import { fetchCustomers } from '../../contexts/CustomerContext';
+import ToastContainer from '../ToastContainer';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import BottomNavBar from './BottomNavBar';

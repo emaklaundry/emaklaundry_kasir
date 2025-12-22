@@ -4,7 +4,7 @@ import { precacheAndRoute } from 'workbox-precaching';
 precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Use version-based cache name to force cache invalidation on updates
-const APP_VERSION = '2.3.0'; // ✅ UPDATED to match package.json
+const APP_VERSION = '2.4.0'; // ✅ UPDATED to match package.json
 const CACHE_NAME = `laundry-management-v${APP_VERSION}-runtime`;
 
 self.addEventListener('install', (event) => {
@@ -26,6 +26,31 @@ self.addEventListener('activate', (event) => {
     })(),
   );
 });
+
+// Helper function to detect login-related requests
+const isLoginRelatedRequest = (url, request) => {
+  const pathname = url.pathname;
+  
+  // Explicitly login page
+  if (pathname === '/login') {
+    return true;
+  }
+  
+  // For root path (/) - used by PWA start_url
+  // Only treat as login page if no session cookie/auth header
+  // This allows authenticated PWA to cache properly
+  if (pathname === '/' || pathname === '/index.html') {
+    // Check for session cookies or auth tokens
+    const cookies = request.headers.get('Cookie') || '';
+    const hasSession = cookies.includes('sb-') || cookies.includes('supabase');
+    
+    // If no session detected, treat as login page (don't cache)
+    // If session exists, allow normal caching (for offline PWA)
+    return !hasSession;
+  }
+  
+  return false;
+};
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
@@ -52,22 +77,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Jangan cache API calls lainnya
+  // Don't cache API calls
   if (url.pathname.includes('/api/') || url.pathname.includes('/rest/')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Navigation requests (SPA) - network-first with fallback to precached index.html
+  // Navigation requests (HTML pages)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       (async () => {
         try {
-          const res = await fetch(event.request);
-          const cache = await caches.open(CACHE_NAME);
-          cache.put(event.request, res.clone());
+          // Always fetch fresh from network with cache-busting for login/root
+          const fetchOptions = isLoginRelatedRequest(url, event.request)
+            ? {
+                cache: 'no-store',
+                headers: {
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  Pragma: 'no-cache',
+                },
+              }
+            : {};
+
+          const res = await fetch(event.request, fetchOptions);
+
+          // Only cache authenticated app pages, NOT login page
+          if (!isLoginRelatedRequest(url, event.request) && res && res.status === 200) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, res.clone());
+          }
+
           return res;
         } catch (err) {
+          // For login page: NO cache fallback (must have network)
+          if (isLoginRelatedRequest(url, event.request)) {
+            return Response.error();
+          }
+          // For app pages: allow cache fallback for offline access
           const cached = await caches.match('/index.html');
           return cached || Response.error();
         }
@@ -76,22 +122,36 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For JS and CSS: network-first to ensure fresh code (prevents stale cache issues)
+  // For JS and CSS files
   if (event.request.destination === 'script' || event.request.destination === 'style') {
     event.respondWith(
       (async () => {
         try {
-          // Always try network first for code files
-          const response = await fetch(event.request, {
-            cache: 'no-cache', // Force revalidation
-          });
-          if (response && response.status === 200) {
+          // For login page assets: network-only, no cache
+          const fetchOptions =
+            event.request.referrer && new URL(event.request.referrer).pathname === '/login'
+              ? { cache: 'no-store' }
+              : { cache: 'no-cache' }; // Force revalidation for app assets
+
+          const response = await fetch(event.request, fetchOptions);
+
+          // Only cache app assets, not login page assets
+          if (
+            response &&
+            response.status === 200 &&
+            !(event.request.referrer && new URL(event.request.referrer).pathname === '/login')
+          ) {
             const cache = await caches.open(CACHE_NAME);
             cache.put(event.request, response.clone());
           }
+
           return response;
         } catch (err) {
-          // Fallback to cache only if offline
+          // For login page: NO cache fallback
+          if (event.request.referrer && new URL(event.request.referrer).pathname === '/login') {
+            return Response.error();
+          }
+          // For app: allow cache fallback for offline
           const cached = await caches.match(event.request);
           return cached || Response.error();
         }

@@ -139,7 +139,7 @@ export async function executeWithRollback<T>(
     let lastResult: unknown;
 
     for (const op of operations) {
-      console.log(`Executing: ${op.description}`);
+      // console.log(`Executing: ${op.description}`);
       lastResult = await op.execute();
 
       if (op.rollback) {

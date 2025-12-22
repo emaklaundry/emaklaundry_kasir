@@ -18,7 +18,8 @@ import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
-import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
+import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
+import { formatRupiah } from '@/utils/formatting';
 import { OrderStatus, PaymentStatus, Transaction, Customer, TransactionItem } from '@/types';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 
@@ -155,7 +156,7 @@ const TransactionDetailPage: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
             <p className="text-lg text-slate-500 dark:text-slate-400">
-              {transaction.invoiceCode || `#${transaction.id.substring(0, 8)}`}
+              {formatTransactionId(transaction)}
             </p>
           </div>
           <div className="flex gap-2">
@@ -290,9 +291,9 @@ const TransactionDetailPage: React.FC = () => {
                   <td className="px-4 py-3 text-center">
                     {item.quantity} {item.unit}
                   </td>
-                  <td className="px-4 py-3 text-right">Rp {item.price.toLocaleString('id-ID')}</td>
+                  <td className="px-4 py-3 text-right">Rp {formatRupiah(item.price)}</td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-200">
-                    Rp {item.subtotal.toLocaleString('id-ID')}
+                    Rp {formatRupiah(item.subtotal)}
                   </td>
                 </tr>
               ))}
@@ -309,11 +310,11 @@ const TransactionDetailPage: React.FC = () => {
                   {item.serviceName}
                 </span>
                 <span className="font-semibold text-right text-slate-700 dark:text-slate-200">
-                  Rp {item.subtotal.toLocaleString('id-ID')}
+                  Rp {formatRupiah(item.subtotal)}
                 </span>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {item.quantity} {item.unit} @ Rp {item.price.toLocaleString('id-ID')}
+                {item.quantity} {item.unit} @ Rp {formatRupiah(item.price)}
               </p>
               {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
                 <div className="pl-2 mt-2 space-y-0.5 border-l-2 border-slate-300 dark:border-slate-600">
@@ -342,32 +343,26 @@ const TransactionDetailPage: React.FC = () => {
         </div>
 
         <div className="w-full md:w-1/2 lg:w-1/3 ml-auto mt-6 space-y-2">
-          <DetailItem
-            label="Subtotal"
-            value={`Rp ${transaction.subtotal.toLocaleString('id-ID')}`}
-          />
+          <DetailItem label="Subtotal" value={`Rp ${formatRupiah(transaction.subtotal)}`} />
           {transaction.discount > 0 && (
             <DetailItem
               label="Diskon"
-              value={`- Rp ${transaction.discount.toLocaleString('id-ID')}`}
+              value={`- Rp ${formatRupiah(transaction.discount)}`}
               className="!text-red-600 dark:!text-red-400"
             />
           )}
           {transaction.tax > 0 && (
-            <DetailItem label="Pajak" value={`+ Rp ${transaction.tax.toLocaleString('id-ID')}`} />
+            <DetailItem label="Pajak" value={`+ Rp ${formatRupiah(transaction.tax)}`} />
           )}
           <DetailItem
             label="Grand Total"
-            value={`Rp ${transaction.total.toLocaleString('id-ID')}`}
+            value={`Rp ${formatRupiah(transaction.total)}`}
             className="text-xl font-bold border-t dark:border-slate-700 pt-3 !text-slate-900 dark:!text-white"
           />
-          <DetailItem
-            label="Sudah Dibayar"
-            value={`Rp ${transaction.amountPaid.toLocaleString('id-ID')}`}
-          />
+          <DetailItem label="Sudah Dibayar" value={`Rp ${formatRupiah(transaction.amountPaid)}`} />
           <DetailItem
             label="Sisa Tagihan"
-            value={`Rp ${remainingBalance > 0 ? remainingBalance.toLocaleString('id-ID') : 0}`}
+            value={`Rp ${remainingBalance > 0 ? formatRupiah(remainingBalance) : 0}`}
             className="text-lg font-bold !text-slate-900 dark:!text-white"
           />
         </div>

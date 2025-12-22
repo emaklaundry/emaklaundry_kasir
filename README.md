@@ -1,6 +1,6 @@
 # Laundry Management System (Web Kasir)
 
-**Versi:** 2.3.0  
+**Versi:** 2.4.0  
 **Update terakhir:** 19 Desember 2024  
 **Status:** ✅ Production Ready
 
@@ -219,6 +219,22 @@ Panduan lengkap: [database/setup/SETUP_GUIDE.md](./database/setup/SETUP_GUIDE.md
 ---
 
 ## 📝 Changelog
+
+### v2.4.0 - 19 Desember 2024 (Structural Refactor Edition)
+
+**🏗️ Major Refactoring (Structural Overhaul)**
+
+- ✅ **Component Reorganization**: Split `src/components` into `layout`, `widgets`, `features`, and `modals` for better scalability.
+- ✅ **Clean Architecture**: Improved separation of concerns between generic UI and business features.
+- ✅ **Standardized Formatting**: Implemented consistent currency formatting (`formatRupiah`) across all reports and expenses pages.
+
+**🔧 Improvements & fixes**
+
+- ✅ **Import Resolution**: Fixed all import paths affected by the structural refactor.
+- ✅ **False Positive Fix**: Verified and cleared phantom lint errors in IDE config.
+- ✅ **Audit Completion**: Achieved 100% Score on Final Production Audit (TSC, Lint, Unit Tests).
+
+---
 
 ### v2.3.0 - 19 Desember 2024
 

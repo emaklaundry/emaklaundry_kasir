@@ -14,7 +14,7 @@ const AuditLogPage: React.FC = () => {
   // Manual filtering for AuditLog to maintain proper types
   const logs = useMemo(() => {
     if (!currentUser) return allLogs;
-    
+
     if (currentUser.role === UserRole.SuperAdmin) {
       if (selectedStoreId === 'all') {
         return allLogs;

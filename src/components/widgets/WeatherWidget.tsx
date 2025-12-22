@@ -7,7 +7,7 @@ import {
   CloudLightningIcon,
   WindIcon,
   DropletsIcon,
-} from './icons';
+} from '../icons';
 
 interface WeatherData {
   temperature: number;

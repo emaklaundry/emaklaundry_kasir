@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import useAppContext from '../contexts/useAppContext';
+import useAppContext from '../../contexts/useAppContext';
 import {
   HomeIcon,
   ShoppingCartIcon,
@@ -16,7 +16,7 @@ import {
   TruckIcon,
   ChevronLeftIcon,
   DatabaseIcon,
-} from './icons';
+} from '../icons';
 import { UserRole } from '@/types';
 
 interface SidebarProps {

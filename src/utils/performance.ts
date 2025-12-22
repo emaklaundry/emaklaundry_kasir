@@ -198,6 +198,6 @@ export function measurePerformance(
  */
 export function logPerformanceReport(): void {
   if (import.meta.env.DEV) {
-    console.log(performanceMonitor.generateReport());
+    // console.log(performanceMonitor.generateReport());
   }
 }
