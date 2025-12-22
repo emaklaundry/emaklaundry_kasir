@@ -57,12 +57,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // CRITICAL: Never cache auth-related requests (prevents login issues)
+  // CRITICAL: Only intercept AUTHENTICATION requests, not all Supabase API calls
+  // This prevents removing API keys from regular database queries
   if (
-    url.pathname.includes('/auth/') ||
-    url.pathname.includes('/login') ||
-    (url.pathname === '/' && url.search.includes('auth')) ||
-    url.hostname.includes('supabase.co')
+    url.hostname.includes('supabase.co') &&
+    (url.pathname.includes('/auth/v1/') || // Supabase auth endpoints
+      url.pathname.includes('/auth/callback') ||
+      (url.pathname === '/' && url.search.includes('auth')))
   ) {
     event.respondWith(
       fetch(event.request, {
@@ -77,7 +78,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Don't cache API calls
+  // Don't cache Supabase REST API calls (but let them pass through with headers intact)
+  if (url.hostname.includes('supabase.co') && url.pathname.includes('/rest/')) {
+    // Let it pass through without caching, but DON'T modify headers
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Don't cache other API calls
   if (url.pathname.includes('/api/') || url.pathname.includes('/rest/')) {
     event.respondWith(fetch(event.request));
     return;

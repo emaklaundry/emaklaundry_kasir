@@ -178,6 +178,7 @@ const CustomersPage: React.FC = () => {
           storeId,
         });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
+        updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
       } else {
         await addCustomer({ ...customerData, phone: phone || undefined, storeId });
         addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);

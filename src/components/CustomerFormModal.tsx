@@ -6,7 +6,7 @@ import useToasts from '@/contexts/useToasts';
 interface CustomerFormModalProps {
   customer: Customer | null;
   onClose: () => void;
-  onSave: (customer: Omit<Customer, 'id' | 'storeId'>) => Promise<void> | void;
+  onSave: (customer: Omit<Customer, 'id' | 'storeId' | 'createdAt'>) => Promise<void> | void;
   disabled?: boolean;
 }
 
@@ -17,13 +17,12 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   disabled,
 }) => {
   const { addToast } = useToasts();
-  const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId'>>({
+  const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId' | 'createdAt'>>({
     name: customer?.name || '',
     phone: customer?.phone || '',
     address: customer?.address || '',
     notes: customer?.notes || '',
     defaultDiscount: customer?.defaultDiscount || 0,
-    createdAt: customer?.createdAt || new Date(),
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
