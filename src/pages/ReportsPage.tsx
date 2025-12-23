@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { useTransactions } from '../contexts/TransactionContext';
 import { fetchCustomers } from '../contexts/CustomerContext';
 import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
@@ -225,7 +224,6 @@ type Expense = {
 type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
 
 const ReportsPage: React.FC = () => {
-  const { transactions: allStoreTransactions } = useTransactions();
   const customersRaw = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
@@ -264,6 +262,62 @@ const ReportsPage: React.FC = () => {
     customEnd.setHours(23, 59, 59, 999);
     return { startDate: customStartDate, endDate: customEnd };
   }, [rangeType, customStartDate, customEndDate]);
+
+  // --- Fetch All Transactions (With Pagination Loop) ---
+  const { data: allStoreTransactions = [] } = useQuery<Transaction[]>({
+    queryKey: ['report-transactions', selectedStoreId, startDate, endDate],
+    queryFn: async () => {
+      const startIso = new Date(startDate);
+      startIso.setHours(0, 0, 0, 0);
+      const endIso = new Date(endDate);
+      endIso.setHours(23, 59, 59, 999);
+
+      let allTx: Transaction[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase
+          .from('transactions')
+          .select('*')
+          // Filter menggunakan ISO string agar konsisten dengan format DB
+          .gte('createdAt', startIso.toISOString())
+          .lte('createdAt', endIso.toISOString());
+
+        if (selectedStoreId && selectedStoreId !== 'all') {
+          query = query.eq('storeId', selectedStoreId);
+        }
+
+        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          // Normalize data types
+           const transactions = data.map((t) => {
+            const raw = t as { invoice_code?: string; invoiceCode?: string };
+            return {
+              ...t,
+              invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
+              customerId: t.customerId ?? undefined,
+              createdByUserId: t.createdByUserId ?? undefined,
+              paymentMethod: t.paymentMethod ?? undefined,
+            };
+          }) as unknown as Transaction[];
+          
+          allTx = [...allTx, ...transactions];
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allTx;
+    },
+  });
 
   // Customers
   const customers = useMemo(() => {
@@ -433,13 +487,27 @@ const ReportsPage: React.FC = () => {
     if (!t || typeof t !== 'object') return null;
     const obj = t as Record<string, unknown>;
     let createdAt: string;
-    if (typeof obj.createdAt === 'string') {
-      createdAt = obj.createdAt;
-    } else if (obj.createdAt instanceof Date) {
-      createdAt = obj.createdAt.toISOString();
-    } else {
+
+    try {
+      if (typeof obj.createdAt === 'string') {
+        // Safe check for invalid dates
+        const parsed = new Date(obj.createdAt);
+        if (isNaN(parsed.getTime())) {
+          return null; // Invalid date string
+        }
+        createdAt = obj.createdAt;
+      } else if (obj.createdAt instanceof Date) {
+         if (isNaN(obj.createdAt.getTime())) {
+          return null; // Invalid Date object
+        }
+        createdAt = obj.createdAt.toISOString();
+      } else {
+        return null;
+      }
+    } catch {
       return null;
     }
+
     const tx = { ...obj, createdAt } as unknown;
     return isTransaction(tx as unknown)
       ? (tx as Omit<Transaction, 'createdAt'> & { createdAt: string })
