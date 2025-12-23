@@ -1,0 +1,491 @@
+
+================================================================================
+FILE: full_backup_2025-12-17.xlsx
+================================================================================
+
+Jumlah sheets: 7
+Nama sheets: ℹ️ INFO, Customers, Services, Inventory, Assets, Expenses, Transactions
+
+
+────────────────────────────────────────────────────────────
+Sheet: ℹ️ INFO
+────────────────────────────────────────────────────────────
+Jumlah baris: 34
+Jumlah kolom: 1
+
+15 Baris Pertama:
+  Row 1: Full Backup Information
+  Row 2: 
+  Row 3: 💾 FULL BACKUP - SEMUA DATA APLIKASI
+  Row 4: 
+  Row 5: 📅 Tanggal Backup: 18/12/2025, 02.05.18
+  Row 6: 
+  Row 7: 📊 ISI BACKUP:
+  Row 8:    • 42 Pelanggan
+  Row 9:    • 66 Layanan
+  Row 10:    • 5 Item Inventori
+  Row 11:    • 10 Aset
+  Row 12:    • 16 Pengeluaran
+  Row 13:    • 56 Transaksi
+  Row 14: 
+  Row 15: ⚠️ PENTING:
+
+
+────────────────────────────────────────────────────────────
+Sheet: Customers
+────────────────────────────────────────────────────────────
+Jumlah baris: 43
+Jumlah kolom: 5
+
+15 Baris Pertama:
+  Row 1: ID | Nama | Nomor HP | Alamat | Catatan
+  Row 2: 400d33a3-b300-44ea-914a-2cf7b69a8122 | Guest Customer |  |  | 
+  Row 3: 9e0256d6-9b7c-4749-bc35-5352dd8a01dc | Guest Customer |  |  | 
+  Row 4: 12253d22-758d-41d9-b5b2-650d5ec3f417 | Guest Customer |  |  | 
+  Row 5: 47282850-2a21-4597-ae7d-28b2b431666d | Guest Customer |  |  | 
+  Row 6: 903e6666-8720-49b4-b9f2-e76ab15b6c68 | Guest Customer |  |  | 
+  Row 7: 5d708a98-8369-4064-8b39-9ec24ea1031e | Guest Customer |  |  | 
+  Row 8: 218461d0-3860-4c18-8d9b-2ca6593d23cf | Guest Customer |  |  | 
+  Row 9: cd544fab-d14f-4665-8df0-ff6ffe347bf1 | Guest Customer |  |  | 
+  Row 10: ded003dd-6c52-435b-bbaf-06abaf562e8f | Guest Customer |  |  | 
+  Row 11: 9b5dbab9-70df-4801-b7f1-67a4c0785e9b | Guest Customer |  |  | 
+  Row 12: 3a5533d5-c094-4ba7-bc48-cefbf1ac938f | Guest Customer |  |  | 
+  Row 13: 8cdcedea-d403-4067-96ca-f3673142e78a | Guest Customer |  |  | 
+  Row 14: 03ac3b42-eec3-4d14-a1c8-03f4f1fe1b0f | Guest Customer |  |  | 
+  Row 15: 8e48870f-570c-4a08-bec1-6681b5e1a31f | Guest Customer |  |  | 
+
+
+────────────────────────────────────────────────────────────
+Sheet: Services
+────────────────────────────────────────────────────────────
+Jumlah baris: 67
+Jumlah kolom: 7
+
+15 Baris Pertama:
+  Row 1: ID | Nama Layanan | Kategori | Harga | Unit | Durasi (hari) | Deskripsi
+  Row 2: 3435e1c3-48d3-4223-9b5a-6f39090f6ebd | Campuran | Kiloan | 10000 | kg | 1 | 
+  Row 3: f3dc088b-8bea-4cde-a39c-cea4b835f6d9 | Cuci dan lipat (min. 3 kg) - 1 hari | Kiloan | 8000 | kg | 1 | 
+  Row 4: bf6ab4dc-739d-48d7-8192-a1f5288bd6c1 | Cuci dan lipat (min. 3 kg) - 2 hari | Kiloan | 6000 | kg | 2 | 
+  Row 5: 3dae3242-4f20-4bb6-beaa-7b8f3bfa811c | Cuci dan setrika (min. 3 kg) - 3 hari | Kiloan | 5000 | kg | 3 | 
+  Row 6: 9aca98da-cb36-4819-a56e-afda5fcbb6c2 | Cuci dan setrika (min. 2 kg) - 2 hari | Kiloan | 13000 | kg | 2 | 
+  Row 7: 8ada7c12-46a6-4bc6-bb40-7eb19e453a0f | Cuci dan setrika (min. 2 kg) - 3 hari | Kiloan | 7500 | kg | 3 | 
+  Row 8: 38d615fc-8e0d-46f9-b813-5c5f474b8e90 | Cuci dan setrika (min. 2 kg) - 6 jam (ekspres) | Kiloan | 20000 | kg | 0 | 
+  Row 9: 08cc99e0-087a-46c8-a0be-e7b05a3f6de0 | Cuci ekspres - 3 jam | Kiloan | 25000 | kg | 0 | 
+  Row 10: 57b69c60-aac9-46b6-9ca5-8642002ab274 | Cuci lipat mitra laundry | Kiloan | 4000 | kg | 1 | 
+  Row 11: 85a8ce8d-d821-42fd-8776-766e6c6f840d | Cuci dan setrika (min. 2 kg) - 1 hari | Kiloan | 15000 | kg | 1 | 
+  Row 12: 488c0dcd-284f-4f56-994b-3c4db0daf605 | Fitrase | Kiloan | 15000 | kg | 1 | 
+  Row 13: 7eed58fc-a764-4673-95e0-28ef4af27cb8 | Gorden | Kiloan | 10000 | kg | 1 | 
+  Row 14: afc2f158-5a44-4405-ad20-de63f80ca7ef | Karpet cendol | Kiloan | 10000 | kg | 1 | 
+  Row 15: 55d4cd20-af71-41d7-a7b3-13f93ac7c923 | Karpet permadani | Kiloan | 15000 | kg | 1 | 
+
+
+────────────────────────────────────────────────────────────
+Sheet: Inventory
+────────────────────────────────────────────────────────────
+Jumlah baris: 6
+Jumlah kolom: 6
+
+15 Baris Pertama:
+  Row 1: ID | Nama Item | Stok | Min Stok | Unit | Kategori
+  Row 2: a1b2c3d4-1111-4444-8888-111111111111 | Sabun Soklin Liquid | 18 | 4 | Jerigen (5 Liter) | 
+  Row 3: a1b2c3d4-1111-4444-8888-111111111112 | Parfum Laundry Sakura | 25 | 5 | Botol (1 Liter) | 
+  Row 4: a1b2c3d4-1111-4444-8888-111111111113 | Plastik Packing 35x50 | 5 | 2 | Pack (50 lembar) | 
+  Row 5: a1b2c3d4-1111-4444-8888-111111111114 | Gas LPG 3kg | 6 | 2 | Tabung | 
+  Row 6: a1b2c3d4-1111-4444-8888-111111111115 | Label Tag Anti Air | 10 | 2 | Roll | 
+
+
+────────────────────────────────────────────────────────────
+Sheet: Assets
+────────────────────────────────────────────────────────────
+Jumlah baris: 11
+Jumlah kolom: 7
+
+15 Baris Pertama:
+  Row 1: ID | Nama Aset | Kategori | Status | Tanggal Beli | Harga Beli | Deskripsi
+  Row 2: b2c3d4e5-2222-5555-9999-222222222102 | Mesin Pengering Maytag Commercial |  | Active | 2019-12-12 | 0 | 
+  Row 3: b2c3d4e5-2222-5555-9999-222222222104 | Komputer Kasir & Printer (Paket POS Epson) |  | Active | 2019-12-12 | 0 | 
+  Row 4: b2c3d4e5-2222-5555-9999-222222222105 | Mesin Cuci Samsung WW70T3020WW |  | Active | 2019-12-12 | 0 | 
+  Row 5: b2c3d4e5-2222-5555-9999-222222222106 | Mesin Cuci Samsung WW70T3020WW |  | Active | 2019-12-12 | 0 | 
+  Row 6: b2c3d4e5-2222-5555-9999-222222222107 | Mesin Cuci Electrolux EWF800 |  | Active | 2019-12-12 | 0 | 
+  Row 7: b2c3d4e5-2222-5555-9999-222222222108 | Mesin Cuci Electrolux EWF800 |  | Active | 2019-12-12 | 0 | 
+  Row 8: b2c3d4e5-2222-5555-9999-222222222109 | Mesin Polisher Karpet |  | Active | 2019-12-12 | 0 | 
+  Row 9: b2c3d4e5-2222-5555-9999-222222222110 | Vacuum Cleaner Wet and Dry Flexio Power 1400W |  | Active | 2019-12-12 | 0 | 
+  Row 10: b2c3d4e5-2222-5555-9999-222222222101 | Mesin Cuci LG Front Load 20kg |  | Active | 2019-12-12 | 0 | 
+  Row 11: b2c3d4e5-2222-5555-9999-222222222103 | Setrika Uap Boiler 15L Maomoto |  | Active | 2019-12-12 | 0 | 
+
+
+────────────────────────────────────────────────────────────
+Sheet: Expenses
+────────────────────────────────────────────────────────────
+Jumlah baris: 17
+Jumlah kolom: 6
+
+15 Baris Pertama:
+  Row 1: ID | Deskripsi | Jumlah | Kategori | Tanggal | Store ID
+  Row 2: asset-purchase-b2c3d4e5-2222-5555-9999-222222222102 | Pembelian Aset: Mesin Pengering Maytag Commercial | 22000000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: asset-maint-b2c3d4e5-2222-5555-9999-222222222102-0 | Perawatan Aset: Mesin Pengering Maytag Commercial (Pembersihan lint filter dan pengecekan selang gas) | 150000 | Pemeliharaan Aset | 2024-12-01 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: asset-purchase-b2c3d4e5-2222-5555-9999-222222222104 | Pembelian Aset: Komputer Kasir & Printer (Paket POS Epson) | 4500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: asset-purchase-b2c3d4e5-2222-5555-9999-222222222105 | Pembelian Aset: Mesin Cuci Samsung WW70T3020WW | 3800000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: asset-purchase-b2c3d4e5-2222-5555-9999-222222222106 | Pembelian Aset: Mesin Cuci Samsung WW70T3020WW | 3800000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 7: asset-purchase-b2c3d4e5-2222-5555-9999-222222222107 | Pembelian Aset: Mesin Cuci Electrolux EWF800 | 5500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 8: asset-purchase-b2c3d4e5-2222-5555-9999-222222222108 | Pembelian Aset: Mesin Cuci Electrolux EWF800 | 5500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 9: asset-purchase-b2c3d4e5-2222-5555-9999-222222222109 | Pembelian Aset: Mesin Polisher Karpet | 7500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 10: asset-purchase-b2c3d4e5-2222-5555-9999-222222222110 | Pembelian Aset: Vacuum Cleaner Wet and Dry Flexio Power 1400W | 1100000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 11: asset-purchase-b2c3d4e5-2222-5555-9999-222222222101 | Pembelian Aset: Mesin Cuci LG Front Load 20kg | 18500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 12: asset-maint-b2c3d4e5-2222-5555-9999-222222222101-0 | Perawatan Aset: Mesin Cuci LG Front Load 20kg (Deep cleaning drum dan descaling) | 450000 | Pemeliharaan Aset | 2024-09-15 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 13: asset-maint-b2c3d4e5-2222-5555-9999-222222222101-1 | Perawatan Aset: Mesin Cuci LG Front Load 20kg ([Jadwal] - Deep cleaning drum dan descaling) | 0 | Pemeliharaan Aset | 2025-12-17 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 14: asset-purchase-b2c3d4e5-2222-5555-9999-222222222103 | Pembelian Aset: Setrika Uap Boiler 15L Maomoto | 3500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 15: asset-maint-b2c3d4e5-2222-5555-9999-222222222103-0 | Perawatan Aset: Setrika Uap Boiler 15L Maomoto (Penggantian safety valve yang lemah) | 250000 | Pemeliharaan Aset | 2024-08-20 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: Transactions
+────────────────────────────────────────────────────────────
+Jumlah baris: 57
+Jumlah kolom: 16
+
+15 Baris Pertama:
+  Row 1: ID Transaksi | Kode Invoice | Tanggal | Customer ID | Layanan | Subtotal | Diskon | Pajak | Total | Status Pesanan
+  Row 2: 22398a47-c425-4470-854d-10061c18305d | CAB-R9ZBAY | 17/12/2025, 19.51.42 | 7d06937f-06c9-4433-bd65-02a45ef194e1 | Cuci dan setrika (min. 2 kg) - 3 hari (4.18 kg × Rp 7.500) | 31349.999999999996 | 0 | 0 | 31349.999999999996 | Diproses
+  Row 3: b2b6ebcb-ac9c-4848-80b0-727598f44eb2 | CAB-D3LT4Y | 17/12/2025, 16.36.00 | 757e63b9-097c-4acb-a413-4db9c9a49585 | Kasur busa/lantai (4 kg × Rp 10.000), Sprei (kiloan) (1 kg × Rp 10.000) | 50000 | 0 | 0 | 50000 | Diproses
+  Row 4: 7ae33fef-e3a5-4154-9708-1fb867357aef | CAB-568KML | 17/12/2025, 15.39.58 | 53a5b2b0-acc7-418f-9a9f-263aa0c8c315 | Cuci dan setrika (min. 2 kg) - 1 hari (2.96 kg × Rp 15.000) | 44400 | 0 | 0 | 44400 | Diproses
+  Row 5: 42c430ee-e89b-4af7-b0e5-e591b44ab506 | CAB-PH2F3D | 17/12/2025, 15.32.58 | 36825988-f97d-42af-a612-2efe36f7dbc1 | Cuci dan setrika (min. 2 kg) - 3 hari (2.6 kg × Rp 7.500) | 19500 | 0 | 0 | 19500 | Diproses
+  Row 6: 9c547512-4ec9-4836-b50e-9c5337712587 | CAB-KT7H8G | 16/12/2025, 18.30.09 | 701f7041-4a31-4bf0-ad72-d7277ce59a73 | Setrika saja (min. 3 kg) (7.4 kg × Rp 5.000) | 37000 | 0 | 0 | 37000 | Diproses
+  Row 7: 315ef237-1cb2-4b63-87f9-148cd78f33c2 | CAB-5LCFST | 16/12/2025, 18.27.07 | 5887485c-3a8f-40f7-8a95-3b3949963df5 | Setrika saja (min. 3 kg) (8.4 kg × Rp 5.000) | 42000 | 0 | 0 | 42000 | Diproses
+  Row 8: 32c56f52-887e-480a-8436-8cff56cfdb61 | CAB-RWN2D8 | 16/12/2025, 18.25.07 | 8dcd0c41-3a67-45e7-a33d-9f1421a6f409 | Bed cover (1 pcs × Rp 18.000), Sprei (kiloan) (1 kg × Rp 10.000), Cuci dan setrika (min. 2 kg) - 3 hari (3.28 kg × Rp 7.500) | 52600 | 0 | 0 | 52600 | Diproses
+  Row 9: 282ce41f-3ddc-4fa7-8c0f-2c1f9862c846 | CAB-BSSHJ2 | 16/12/2025, 18.19.37 | 137781c5-3c6f-4445-a1c9-736f69959099 | Cuci dan setrika (min. 2 kg) - 3 hari (10.8 kg × Rp 7.500) | 81000 | 0 | 0 | 81000 | Diproses
+  Row 10: b12ecbde-e8ac-4b54-91b1-a0b3b7db37db | CAB-RQ43HT | 16/12/2025, 18.11.10 | 198ee5a3-1c3c-432f-925d-b7fff038787b | Cuci dan setrika (min. 2 kg) - 3 hari (9.34 kg × Rp 7.500) | 70050 | 0 | 0 | 70050 | Diproses
+  Row 11: 32253a57-b72b-4fb6-b3c1-829e145a89d4 | CAB-PPW2KX | 16/12/2025, 18.06.24 | d009b27b-e93e-45a4-8e13-e9c9e4bb3f47 | Setrika saja (min. 3 kg) (5 kg × Rp 5.000) | 25000 | 0 | 0 | 25000 | Diproses
+  Row 12: 06c73769-3452-405b-b578-dc34880cebe2 | CAB-ACQWNS | 16/12/2025, 18.03.26 | 70d7faba-8c9d-4999-aeea-4f20eb28e34a | Cuci dan setrika (min. 2 kg) - 6 jam (ekspres) (2 kg × Rp 20.000) | 40000 | 0 | 0 | 40000 | Selesai
+  Row 13: c27aae26-cf7d-4ab7-824a-7cbe150255ab | CAB-Z2HCXH | 16/12/2025, 17.59.21 | ec1f5c3a-53a8-4ff8-bb6f-bcbd9e3b1fe4 | Setrika saja (min. 3 kg) (5.93 kg × Rp 5.000) | 29650 | 0 | 0 | 29650 | Diproses
+  Row 14: 82fabc60-fc9a-44b2-9358-9a00677df50c | CAB-H9MURC | 15/12/2025, 08.43.00 | 373d08ad-34ec-4f07-8196-bf5b5771a82c | Karpet tebal (per m) (2 m2 × Rp 12.000) | 24000 | 0 | 0 | 24000 | Diproses
+  Row 15: 5a1dfce7-26b2-4c98-ba9d-682ee44c7fd9 | CAB-4ANZ8G | 15/12/2025, 08.41.09 | 373d08ad-34ec-4f07-8196-bf5b5771a82c | Karpet tebal (per m) (4 m2 × Rp 12.000) | 48000 | 0 | 0 | 48000 | Diproses
+
+
+================================================================================
+FILE: full_backup_2025-12-22.xlsx
+================================================================================
+
+Jumlah sheets: 7
+Nama sheets: ℹ️ INFO, 👥 Pelanggan, 🧺 Layanan, 📦 Inventaris, 🏢 Aset, 💰 Pengeluaran, 🧾 Transaksi
+
+
+────────────────────────────────────────────────────────────
+Sheet: ℹ️ INFO
+────────────────────────────────────────────────────────────
+Jumlah baris: 34
+Jumlah kolom: 1
+
+15 Baris Pertama:
+  Row 1: Full Backup Information
+  Row 2: 
+  Row 3: 💾 FULL BACKUP - SEMUA DATA APLIKASI
+  Row 4: 
+  Row 5: 📅 Tanggal Backup: 22/12/2025, 23.46.10
+  Row 6: 
+  Row 7: 📊 ISI BACKUP:
+  Row 8:    • 34 Pelanggan
+  Row 9:    • 66 Layanan
+  Row 10:    • 5 Item Inventori
+  Row 11:    • 10 Aset
+  Row 12:    • 14 Pengeluaran
+  Row 13:    • 34 Transaksi
+  Row 14: 
+  Row 15: ⚠️ PENTING:
+
+
+────────────────────────────────────────────────────────────
+Sheet: 👥 Pelanggan
+────────────────────────────────────────────────────────────
+Jumlah baris: 45
+Jumlah kolom: 6
+
+15 Baris Pertama:
+  Row 1: ID | Nama | Nomor HP | Alamat | Catatan | Store ID
+  Row 2: c18cc7a7-22f7-4ba2-b5cf-bafe1aedccc4 | bu nurhayati | 082118973818 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: b71c6a53-ec19-41f0-a36c-710d3bb2bd9c | Nadita | 0897678765 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: b211e295-fe4a-4355-a7e2-e448b26367ff | Tasy | 0896575646 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: 699fed53-ec3a-40e7-8bce-d08bccbb2f58 | Endah | 0897564635 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: fca22206-c70e-42f6-9b50-be4dcdbc892c | Kimung | 0897567467 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 7: 0b227c92-90c8-4a11-a5cd-b99c117dd8ce | BU ikeu | 0897764756 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 8: c71626aa-5a27-430d-bdd0-192fba6d6048 | Bu Ruskandar | 0897654632 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 9: 5af66a4b-b5bd-49c1-94de-c3fca9c48406 | Pa Solehan | 082260187593 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 10: c755731a-49dd-4fab-beb9-cefceb07bfc4 | Febri Dwi | 082191378788 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 11: 08bf940d-cb36-4903-b255-e66b83bc7085 | Lutfi | 082136055951 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 12: 2759add2-9371-41e4-8335-21522c18ac7b | Rais | 085524570934 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 13: 59b00aa4-15c8-4ca8-b744-f2c699750bc6 | anop |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 14: 7ce25581-e1db-4e69-8c47-7005eba14d19 | Pa Hanif | 085223008208 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 15: d2502e5d-883d-489d-8c61-f6462434596a | Khopipah | 081222786910 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 🧺 Layanan
+────────────────────────────────────────────────────────────
+Jumlah baris: 67
+Jumlah kolom: 8
+
+15 Baris Pertama:
+  Row 1: ID | Nama Layanan | Kategori | Harga | Unit | Durasi (hari) | Deskripsi | Store ID
+  Row 2: 21e348bb-cb90-4a4b-880b-cb4a5f0208a5 | Campuran | Kiloan | 10000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: 7ed51ae1-d5f6-4898-bb77-0c6e7acfb3e7 | Cuci dan lipat (min. 3 kg) - 1 hari | Kiloan | 8000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: 38c3eef0-b0fd-4958-b757-0ccdfaa6c8a3 | Cuci dan lipat (min. 3 kg) - 2 hari | Kiloan | 6000 | kg | 2 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: b6bfc02c-f4a3-40f4-b33c-e578f7a02acd | Cuci dan setrika (min. 3 kg) - 3 hari | Kiloan | 5000 | kg | 3 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: 2690918e-8dff-45ab-9de6-2c95d9491161 | Cuci dan setrika (min. 2 kg) - 2 hari | Kiloan | 13000 | kg | 2 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 7: 183213b7-b28d-4615-8d99-659a421ccf91 | Cuci dan setrika (min. 2 kg) - 3 hari | Kiloan | 7500 | kg | 3 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 8: 85f726e9-0d8a-47e3-9f78-1876c2a72fca | Cuci dan setrika (min. 2 kg) - 6 jam (ekspres) | Kiloan | 20000 | kg | 0 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 9: bfda4b09-b801-4fd2-8afb-6b2a5d4e153e | Cuci ekspres - 3 jam | Kiloan | 25000 | kg | 0 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 10: 538a1ccc-4d20-4799-b7ea-a8f925bbcc80 | Cuci lipat mitra laundry | Kiloan | 4000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 11: c88344da-8c34-4b04-8d86-5e035b17d830 | Cuci dan setrika (min. 2 kg) - 1 hari | Kiloan | 15000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 12: 552c7e8b-739d-411f-b88d-d91e1f529abc | Fitrase | Kiloan | 15000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 13: 7357449e-b995-4db7-8da5-87b059a61cd3 | Gorden | Kiloan | 10000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 14: 0ee8a0e6-f8c3-4a71-ae0c-3d6a784dbdcf | Karpet cendol | Kiloan | 10000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 15: 25fe071c-7233-4a84-9fd7-37e201ede7aa | Karpet permadani | Kiloan | 15000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 📦 Inventaris
+────────────────────────────────────────────────────────────
+Jumlah baris: 6
+Jumlah kolom: 7
+
+15 Baris Pertama:
+  Row 1: ID | Nama Item | Stok | Min Stok | Unit | Kategori | Store ID
+  Row 2: a1b2c3d4-1111-4444-8888-111111111111 | Sabun Soklin Liquid | 18 | 4 | Jerigen (5 Liter) |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: a1b2c3d4-1111-4444-8888-111111111112 | Parfum Laundry Sakura | 25 | 5 | Botol (1 Liter) |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: a1b2c3d4-1111-4444-8888-111111111113 | Plastik Packing 35x50 | 5 | 2 | Pack (50 lembar) |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: a1b2c3d4-1111-4444-8888-111111111114 | Gas LPG 3kg | 6 | 2 | Tabung |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: a1b2c3d4-1111-4444-8888-111111111115 | Label Tag Anti Air | 10 | 2 | Roll |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 🏢 Aset
+────────────────────────────────────────────────────────────
+Jumlah baris: 11
+Jumlah kolom: 8
+
+15 Baris Pertama:
+  Row 1: ID | Nama Aset | Serial Number | Status | Tanggal Beli | Harga Beli | Store ID | Riwayat Perawatan
+  Row 2: b2c3d4e5-2222-5555-9999-222222222101 | Mesin Cuci LG Front Load 20kg | LG-COM-101 | Active | 2019-12-12T00:00:00.000Z | 18500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | [{"cost":450000,"date":"2024-09-15","status":"Completed","technician":"Service LG","description":"Deep cleaning drum dan descaling"}]
+  Row 3: b2c3d4e5-2222-5555-9999-222222222102 | Mesin Pengering Maytag Commercial | MAYTAG-MDG20-102 | Active | 2019-12-12T00:00:00.000Z | 22000000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | [{"cost":150000,"date":"2024-12-01","status":"Completed","technician":"Budi Teknik","description":"Pembersihan lint filter dan pengecekan selang gas"}]
+  Row 4: b2c3d4e5-2222-5555-9999-222222222103 | Setrika Uap Boiler 15L Maomoto | MAOMOTO-15L-103 | Active | 2019-12-12T00:00:00.000Z | 3500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | [{"cost":250000,"date":"2024-08-20","status":"Completed","technician":"Service Maomoto","description":"Penggantian safety valve yang lemah"},{"cost":350000,"date":"2024-11-15","status":"Completed","technician":"Service Maomoto","description":"Perbaikan kebocoran kran output uap"}]
+  Row 5: b2c3d4e5-2222-5555-9999-222222222104 | Komputer Kasir & Printer (Paket POS Epson) | EPSON-POS-104 | Active | 2019-12-12T00:00:00.000Z | 4500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 6: b2c3d4e5-2222-5555-9999-222222222105 | Mesin Cuci Samsung WW70T3020WW | SAM-WW70-105 | Active | 2019-12-12T00:00:00.000Z | 3800000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 7: b2c3d4e5-2222-5555-9999-222222222106 | Mesin Cuci Samsung WW70T3020WW | SAM-WW70-106 | Active | 2019-12-12T00:00:00.000Z | 3800000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 8: b2c3d4e5-2222-5555-9999-222222222107 | Mesin Cuci Electrolux EWF800 | ELX-EWF800-107 | Active | 2019-12-12T00:00:00.000Z | 5500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 9: b2c3d4e5-2222-5555-9999-222222222108 | Mesin Cuci Electrolux EWF800 | ELX-EWF800-108 | Active | 2019-12-12T00:00:00.000Z | 5500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 10: b2c3d4e5-2222-5555-9999-222222222109 | Mesin Polisher Karpet | BRANDX-POLISH-109 | Active | 2019-12-12T00:00:00.000Z | 7500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 11: b2c3d4e5-2222-5555-9999-222222222110 | Vacuum Cleaner Wet and Dry Flexio Power 1400W | FLEXIO-1400-110 | Active | 2019-12-12T00:00:00.000Z | 1100000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+
+
+────────────────────────────────────────────────────────────
+Sheet: 💰 Pengeluaran
+────────────────────────────────────────────────────────────
+Jumlah baris: 15
+Jumlah kolom: 6
+
+15 Baris Pertama:
+  Row 1: ID | Deskripsi | Jumlah | Kategori | Tanggal | Store ID
+  Row 2: asset-purchase-b2c3d4e5-2222-5555-9999-222222222101 | Pembelian Aset: Mesin Cuci LG Front Load 20kg | 18500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: asset-maint-b2c3d4e5-2222-5555-9999-222222222101-0 | Perawatan Aset: Mesin Cuci LG Front Load 20kg (Deep cleaning drum dan descaling) | 450000 | Pemeliharaan Aset | 2024-09-15 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: asset-purchase-b2c3d4e5-2222-5555-9999-222222222102 | Pembelian Aset: Mesin Pengering Maytag Commercial | 22000000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: asset-maint-b2c3d4e5-2222-5555-9999-222222222102-0 | Perawatan Aset: Mesin Pengering Maytag Commercial (Pembersihan lint filter dan pengecekan selang gas) | 150000 | Pemeliharaan Aset | 2024-12-01 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: asset-purchase-b2c3d4e5-2222-5555-9999-222222222103 | Pembelian Aset: Setrika Uap Boiler 15L Maomoto | 3500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 7: asset-maint-b2c3d4e5-2222-5555-9999-222222222103-0 | Perawatan Aset: Setrika Uap Boiler 15L Maomoto (Penggantian safety valve yang lemah) | 250000 | Pemeliharaan Aset | 2024-08-20 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 8: asset-maint-b2c3d4e5-2222-5555-9999-222222222103-1 | Perawatan Aset: Setrika Uap Boiler 15L Maomoto (Perbaikan kebocoran kran output uap) | 350000 | Pemeliharaan Aset | 2024-11-15 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 9: asset-purchase-b2c3d4e5-2222-5555-9999-222222222104 | Pembelian Aset: Komputer Kasir & Printer (Paket POS Epson) | 4500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 10: asset-purchase-b2c3d4e5-2222-5555-9999-222222222105 | Pembelian Aset: Mesin Cuci Samsung WW70T3020WW | 3800000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 11: asset-purchase-b2c3d4e5-2222-5555-9999-222222222106 | Pembelian Aset: Mesin Cuci Samsung WW70T3020WW | 3800000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 12: asset-purchase-b2c3d4e5-2222-5555-9999-222222222107 | Pembelian Aset: Mesin Cuci Electrolux EWF800 | 5500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 13: asset-purchase-b2c3d4e5-2222-5555-9999-222222222108 | Pembelian Aset: Mesin Cuci Electrolux EWF800 | 5500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 14: asset-purchase-b2c3d4e5-2222-5555-9999-222222222109 | Pembelian Aset: Mesin Polisher Karpet | 7500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 15: asset-purchase-b2c3d4e5-2222-5555-9999-222222222110 | Pembelian Aset: Vacuum Cleaner Wet and Dry Flexio Power 1400W | 1100000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 🧾 Transaksi
+────────────────────────────────────────────────────────────
+Jumlah baris: 48
+Jumlah kolom: 17
+
+15 Baris Pertama:
+  Row 1: ID Transaksi | Kode Invoice | Tanggal | Customer ID | Layanan | Subtotal | Diskon | Pajak | Total | Status Pesanan
+  Row 2: a095a15d-2a6e-44bf-8ec2-bc5993fb5ab4 | CAB-2QYMMJ | 22/12/2025, 19.19.59 | 71b22574-64a8-4ade-8b8a-66112c85fc08 | Setrika saja (min. 3 kg) (5.24 kg × Rp 5.000) | 26200 | 0 | 0 | 26200 | Diproses
+  Row 3: 99b86e5d-18d8-403a-b150-31844f470529 | CAB-QHWVQF | 22/12/2025, 17.19.51 | f43ef99a-334c-4056-ba59-2dd1f371e154 | Bed cover jumbo/besar (1 pcs × Rp 25.000) | 25000 | 0 | 0 | 25000 | Diproses
+  Row 4: 0ad71084-6230-4703-b165-00f0c2e7a81c | CAB-EJUUYX | 21/12/2025, 16.58.21 | 92b665d2-5c5a-4763-b143-af0147daf1df | Setrika saja (min. 3 kg) (11.2 kg × Rp 5.000) | 56000 | 0 | 0 | 56000 | Diproses
+  Row 5: f9f0a3c0-ec82-4a3a-a13a-dcf457869999 | CAB-XXQS37 | 21/12/2025, 15.41.03 | 7caec787-abac-4290-801e-d3ae34230de8 | Cuci dan setrika (min. 2 kg) - 3 hari (4.97 kg × Rp 7.500) | 37275 | 0 | 0 | 37275 | Diproses
+  Row 6: 411688b5-a630-42fb-b62d-1a2bb6f88717 | CAB-ZNBL4F | 21/12/2025, 08.38.33 | b10c6a69-5eda-4abe-a752-b469b8f3ae37 | Setrika saja (min. 3 kg) (9.31 kg × Rp 5.000) | 46550 | 0 | 0 | 46550 | Diproses
+  Row 7: 6be7c96e-b88a-4986-964d-1a0b75e5e695 | CAB-2APU6B | 20/12/2025, 17.21.34 | dd47f445-2286-4d5a-b987-6b27bb1e7c15 | Cuci dan setrika (min. 3 kg) - 3 hari (3 kg × Rp 5.000) | 15000 | 0 | 0 | 15000 | Diproses
+  Row 8: c3aebef7-e579-4af2-9fa7-db71a1084d30 | CAB-W36ZC2 | 20/12/2025, 16.40.32 | 55e315fd-e6d1-47b1-b766-3bdc0e408910 | Cuci dan setrika (min. 2 kg) - 3 hari (2.22 kg × Rp 7.500) | 16650 | 0 | 0 | 16650 | Diproses
+  Row 9: c3d122e9-b291-4f66-93cc-09a045fbdaef | CAB-TBLVBR | 20/12/2025, 15.07.22 | f8f2f4b1-109f-4b3d-8376-106b1f685c90 | Cuci dan setrika (min. 2 kg) - 3 hari (2.8 kg × Rp 7.500) | 21000 | 0 | 0 | 21000 | Diproses
+  Row 10: 427d4bf3-1961-4157-9776-feb28d71ae89 | CAB-RB3KJB | 20/12/2025, 13.45.16 | 26816fa1-e91d-4797-95f7-050957eaf5e1 | Cuci dan setrika (min. 2 kg) - 3 hari (3.76 kg × Rp 7.500) | 28200 | 0 | 0 | 28200 | Diproses
+  Row 11: 7c3a79cc-d84f-4d4b-9bbf-a0000c1ad258 | CAB-DSW9UE | 20/12/2025, 11.59.39 | 1fc2f6ac-f764-4153-b652-fe0c07f76de5 | Selimut (4 pcs × Rp 17.000), Gorden (2 kg × Rp 10.000), Surpet (3.2 kg × Rp 10.000) | 120000 | 0 | 0 | 120000 | Diproses
+  Row 12: ab15a947-2ba2-45f6-bbfa-8cb7268c0741 | CAB-LCLKZP | 20/12/2025, 11.51.00 | c2e12de0-0a11-4298-bf24-400467308a0b | Karpet tebal (per m) (6 m2 × Rp 12.000) | 72000 | 0 | 0 | 72000 | Diproses
+  Row 13: 4d4e91a3-7cbc-4214-8f31-736b93dc78f1 | CAB-V2DFLW | 20/12/2025, 11.40.19 | 1fc2f6ac-f764-4153-b652-fe0c07f76de5 | Cuci dan setrika (min. 2 kg) - 3 hari (4.2 kg × Rp 7.500) | 31500 | 0 | 0 | 31500 | Diproses
+  Row 14: dd1c0572-09d5-4aad-a450-d8cb51d151b3 | CAB-JBK6TW | 20/12/2025, 11.15.17 | f78f7c42-9d3b-456c-bc6c-420489a1a534 | Cuci dan setrika (min. 2 kg) - 1 hari (5 kg × Rp 15.000) | 75000 | 0 | 0 | 75000 | Diproses
+  Row 15: e74bfee6-386c-45af-9f49-cca5b7341e5b | CAB-3HWUL9 | 20/12/2025, 10.23.57 | ddec9849-812a-4390-ae7d-e5fb1d471b4d | Cuci dan setrika (min. 2 kg) - 3 hari (4 kg × Rp 7.500) | 30000 | 0 | 0 | 30000 | Diproses
+
+
+================================================================================
+FILE: full_backup_2025-12-23.xlsx
+================================================================================
+
+Jumlah sheets: 7
+Nama sheets: ℹ️ INFO, 👥 Pelanggan, 🧺 Layanan, 📦 Inventaris, 🏢 Aset, 💰 Pengeluaran, 🧾 Transaksi
+
+
+────────────────────────────────────────────────────────────
+Sheet: ℹ️ INFO
+────────────────────────────────────────────────────────────
+Jumlah baris: 34
+Jumlah kolom: 1
+
+15 Baris Pertama:
+  Row 1: Full Backup Information
+  Row 2: 
+  Row 3: 💾 FULL BACKUP - SEMUA DATA APLIKASI
+  Row 4: 
+  Row 5: 📅 Tanggal Backup: 23/12/2025, 17.22.23
+  Row 6: 
+  Row 7: 📊 ISI BACKUP:
+  Row 8:    • 12 Pelanggan
+  Row 9:    • 66 Layanan
+  Row 10:    • 5 Item Inventori
+  Row 11:    • 10 Aset
+  Row 12:    • 14 Pengeluaran
+  Row 13:    • 15 Transaksi
+  Row 14: 
+  Row 15: ⚠️ PENTING:
+
+
+────────────────────────────────────────────────────────────
+Sheet: 👥 Pelanggan
+────────────────────────────────────────────────────────────
+Jumlah baris: 13
+Jumlah kolom: 6
+
+15 Baris Pertama:
+  Row 1: ID | Nama | Nomor HP | Alamat | Catatan | Store ID
+  Row 2: da2037e3-4ba5-40a3-982c-4c205e983272 | Yani |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: 790f2ffc-035d-4ba6-a468-19465c462959 | Rumah Poppy |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: 50285d2b-2b08-43c7-97e1-c6b7f78c8ff4 | Yani |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: 4aba0a75-fefb-435c-8699-91e6d2d966ac | Teh Cicih |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: f8f272bb-c6ad-4629-abb3-2821ffd1ce00 | Pa irwan |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 7: ba146f0b-ad3c-409c-bddc-2a0ce0f27501 | Diki |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 8: 5c13ae54-87c4-4490-b53d-adf5035bb838 | wahyu |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 9: c0b97ad4-187f-450d-a0a2-cf9d3bc7bf52 | Bu Sukmiasih |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 10: 5af33bf4-7d57-4455-b8fb-6b56600609f2 | Cindy Panatasan |  |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 11: 8523b69a-5e32-4d36-a655-c855582a1c9a | Ibu  Koni | 088229209445 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 12: eaf6cf8a-cad1-4422-9107-40202e89de10 | Angga Erlangga | 082343390533 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 13: eb3d252a-716a-42c8-a9d5-31066737856f | Pa Imam | 082218313399 |  |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 🧺 Layanan
+────────────────────────────────────────────────────────────
+Jumlah baris: 67
+Jumlah kolom: 8
+
+15 Baris Pertama:
+  Row 1: ID | Nama Layanan | Kategori | Harga | Unit | Durasi (hari) | Deskripsi | Store ID
+  Row 2: 730c4b94-a8ed-4277-8ea6-ad9979a3fe49 | Campuran | Kiloan | 10000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: 525227c6-7a3a-42fe-a2b6-882fcda7304f | Cuci dan lipat (min. 3 kg) - 1 hari | Kiloan | 8000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: b9890075-3b0f-4626-99b6-5697095131d6 | Cuci dan lipat (min. 3 kg) - 2 hari | Kiloan | 6000 | kg | 2 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: d0a62023-7e2e-4493-abb8-9240d054f157 | Cuci dan setrika (min. 3 kg) - 3 hari | Kiloan | 5000 | kg | 3 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: f3d5d98f-e593-4a8d-86a6-a0da799dc798 | Cuci dan setrika (min. 2 kg) - 2 hari | Kiloan | 13000 | kg | 2 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 7: f4c67aac-f773-4dfa-ba43-6b5d4d4c3e45 | Cuci dan setrika (min. 2 kg) - 3 hari | Kiloan | 7500 | kg | 3 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 8: 5430824e-f3a5-4e78-88e9-d71c0668dde3 | Cuci dan setrika (min. 2 kg) - 6 jam (ekspres) | Kiloan | 20000 | kg | 0 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 9: 0e065874-c876-4ec7-bb84-ac261790179b | Cuci ekspres - 3 jam | Kiloan | 25000 | kg | 0 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 10: 586718d8-7852-4754-83a6-fc7e6e24f5c1 | Cuci lipat mitra laundry | Kiloan | 4000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 11: ade11ad1-743e-4c69-8652-c99c60c53e80 | Cuci dan setrika (min. 2 kg) - 1 hari | Kiloan | 15000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 12: f160e205-417c-4d85-9baf-661e6a06c21e | Fitrase | Kiloan | 15000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 13: f7137ace-c46f-46f8-9210-3ac55a6514ec | Gorden | Kiloan | 10000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 14: f9eafad1-62c4-4dba-af18-055ca047e2fe | Karpet cendol | Kiloan | 10000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 15: ad359268-1495-4d53-9a2c-c9df28c83f10 | Karpet permadani | Kiloan | 15000 | kg | 1 |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 📦 Inventaris
+────────────────────────────────────────────────────────────
+Jumlah baris: 6
+Jumlah kolom: 7
+
+15 Baris Pertama:
+  Row 1: ID | Nama Item | Stok | Min Stok | Unit | Kategori | Store ID
+  Row 2: a1b2c3d4-1111-4444-8888-111111111111 | Sabun Soklin Liquid | 18 | 4 | Jerigen (5 Liter) |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: a1b2c3d4-1111-4444-8888-111111111112 | Parfum Laundry Sakura | 25 | 5 | Botol (1 Liter) |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: a1b2c3d4-1111-4444-8888-111111111113 | Plastik Packing 35x50 | 5 | 2 | Pack (50 lembar) |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: a1b2c3d4-1111-4444-8888-111111111114 | Gas LPG 3kg | 6 | 2 | Tabung |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: a1b2c3d4-1111-4444-8888-111111111115 | Label Tag Anti Air | 10 | 2 | Roll |  | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 🏢 Aset
+────────────────────────────────────────────────────────────
+Jumlah baris: 11
+Jumlah kolom: 8
+
+15 Baris Pertama:
+  Row 1: ID | Nama Aset | Serial Number | Status | Tanggal Beli | Harga Beli | Store ID | Riwayat Perawatan
+  Row 2: b2c3d4e5-2222-5555-9999-222222222101 | Mesin Cuci LG Front Load 20kg | LG-COM-101 | Active | 2019-12-12T00:00:00.000Z | 18500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | [{"cost":450000,"date":"2024-09-15","status":"Completed","technician":"Service LG","description":"Deep cleaning drum dan descaling"}]
+  Row 3: b2c3d4e5-2222-5555-9999-222222222102 | Mesin Pengering Maytag Commercial | MAYTAG-MDG20-102 | Active | 2019-12-12T00:00:00.000Z | 22000000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | [{"cost":150000,"date":"2024-12-01","status":"Completed","technician":"Budi Teknik","description":"Pembersihan lint filter dan pengecekan selang gas"}]
+  Row 4: b2c3d4e5-2222-5555-9999-222222222103 | Setrika Uap Boiler 15L Maomoto | MAOMOTO-15L-103 | Active | 2019-12-12T00:00:00.000Z | 3500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | [{"cost":250000,"date":"2024-08-20","status":"Completed","technician":"Service Maomoto","description":"Penggantian safety valve yang lemah"},{"cost":350000,"date":"2024-11-15","status":"Completed","technician":"Service Maomoto","description":"Perbaikan kebocoran kran output uap"}]
+  Row 5: b2c3d4e5-2222-5555-9999-222222222104 | Komputer Kasir & Printer (Paket POS Epson) | EPSON-POS-104 | Active | 2019-12-12T00:00:00.000Z | 4500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 6: b2c3d4e5-2222-5555-9999-222222222105 | Mesin Cuci Samsung WW70T3020WW | SAM-WW70-105 | Active | 2019-12-12T00:00:00.000Z | 3800000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 7: b2c3d4e5-2222-5555-9999-222222222106 | Mesin Cuci Samsung WW70T3020WW | SAM-WW70-106 | Active | 2019-12-12T00:00:00.000Z | 3800000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 8: b2c3d4e5-2222-5555-9999-222222222107 | Mesin Cuci Electrolux EWF800 | ELX-EWF800-107 | Active | 2019-12-12T00:00:00.000Z | 5500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 9: b2c3d4e5-2222-5555-9999-222222222108 | Mesin Cuci Electrolux EWF800 | ELX-EWF800-108 | Active | 2019-12-12T00:00:00.000Z | 5500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 10: b2c3d4e5-2222-5555-9999-222222222109 | Mesin Polisher Karpet | BRANDX-POLISH-109 | Active | 2019-12-12T00:00:00.000Z | 7500000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+  Row 11: b2c3d4e5-2222-5555-9999-222222222110 | Vacuum Cleaner Wet and Dry Flexio Power 1400W | FLEXIO-1400-110 | Active | 2019-12-12T00:00:00.000Z | 1100000 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456 | []
+
+
+────────────────────────────────────────────────────────────
+Sheet: 💰 Pengeluaran
+────────────────────────────────────────────────────────────
+Jumlah baris: 15
+Jumlah kolom: 6
+
+15 Baris Pertama:
+  Row 1: ID | Deskripsi | Jumlah | Kategori | Tanggal | Store ID
+  Row 2: asset-purchase-b2c3d4e5-2222-5555-9999-222222222101 | Pembelian Aset: Mesin Cuci LG Front Load 20kg | 18500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 3: asset-maint-b2c3d4e5-2222-5555-9999-222222222101-0 | Perawatan Aset: Mesin Cuci LG Front Load 20kg (Deep cleaning drum dan descaling) | 450000 | Pemeliharaan Aset | 2024-09-15 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 4: asset-purchase-b2c3d4e5-2222-5555-9999-222222222102 | Pembelian Aset: Mesin Pengering Maytag Commercial | 22000000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 5: asset-maint-b2c3d4e5-2222-5555-9999-222222222102-0 | Perawatan Aset: Mesin Pengering Maytag Commercial (Pembersihan lint filter dan pengecekan selang gas) | 150000 | Pemeliharaan Aset | 2024-12-01 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 6: asset-purchase-b2c3d4e5-2222-5555-9999-222222222103 | Pembelian Aset: Setrika Uap Boiler 15L Maomoto | 3500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 7: asset-maint-b2c3d4e5-2222-5555-9999-222222222103-0 | Perawatan Aset: Setrika Uap Boiler 15L Maomoto (Penggantian safety valve yang lemah) | 250000 | Pemeliharaan Aset | 2024-08-20 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 8: asset-maint-b2c3d4e5-2222-5555-9999-222222222103-1 | Perawatan Aset: Setrika Uap Boiler 15L Maomoto (Perbaikan kebocoran kran output uap) | 350000 | Pemeliharaan Aset | 2024-11-15 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 9: asset-purchase-b2c3d4e5-2222-5555-9999-222222222104 | Pembelian Aset: Komputer Kasir & Printer (Paket POS Epson) | 4500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 10: asset-purchase-b2c3d4e5-2222-5555-9999-222222222105 | Pembelian Aset: Mesin Cuci Samsung WW70T3020WW | 3800000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 11: asset-purchase-b2c3d4e5-2222-5555-9999-222222222106 | Pembelian Aset: Mesin Cuci Samsung WW70T3020WW | 3800000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 12: asset-purchase-b2c3d4e5-2222-5555-9999-222222222107 | Pembelian Aset: Mesin Cuci Electrolux EWF800 | 5500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 13: asset-purchase-b2c3d4e5-2222-5555-9999-222222222108 | Pembelian Aset: Mesin Cuci Electrolux EWF800 | 5500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 14: asset-purchase-b2c3d4e5-2222-5555-9999-222222222109 | Pembelian Aset: Mesin Polisher Karpet | 7500000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+  Row 15: asset-purchase-b2c3d4e5-2222-5555-9999-222222222110 | Pembelian Aset: Vacuum Cleaner Wet and Dry Flexio Power 1400W | 1100000 | Pembelian Aset | 2019-12-12 | 9b7e1c2a-1234-4bcd-8e9f-abcdef123456
+
+
+────────────────────────────────────────────────────────────
+Sheet: 🧾 Transaksi
+────────────────────────────────────────────────────────────
+Jumlah baris: 16
+Jumlah kolom: 17
+
+15 Baris Pertama:
+  Row 1: ID Transaksi | Kode Invoice | Tanggal | Customer ID | Layanan | Subtotal | Diskon | Pajak | Total | Status Pesanan
+  Row 2: f7b52afb-bf77-44b7-b1a0-5353597c792d | CIM-UMJPWZ | 23/12/2025, 17.04.09 | eb3d252a-716a-42c8-a9d5-31066737856f | Cuci dan setrika (min. 2 kg) - 1 hari (3.99 kg × Rp 15.000), Tas kecil (1 pcs × Rp 12.000) | 71850 | 350 | 0 | 71500 | Diproses
+  Row 3: c1133b27-c565-475c-b1f5-c97294c198ae | CIM-UEMWDH | 23/12/2025, 16.51.03 | eaf6cf8a-cad1-4422-9107-40202e89de10 | Cuci dan setrika (min. 2 kg) - 3 hari (6.53 kg × Rp 7.500) | 48975 | 475 | 0 | 48500 | Diproses
+  Row 4: cf0f2651-1d97-454b-8d45-b0f21248b262 | CIM-482R7P | 23/12/2025, 14.19.12 | 8523b69a-5e32-4d36-a655-c855582a1c9a | Setrika saja (min. 3 kg) (3 kg × Rp 5.000) | 15000 | 0 | 0 | 15000 | Diproses
+  Row 5: d1b1ffc1-8f88-453f-9ed6-e3a3891d9d63 | CIM-9YSAB7 | 23/12/2025, 13.41.33 | 5af33bf4-7d57-4455-b8fb-6b56600609f2 | Setrika saja (min. 3 kg) (10.1 kg × Rp 5.000) | 50500 | 0 | 0 | 50500 | Diproses
+  Row 6: b25de314-6fae-46ac-9b02-ecd2422ec222 | CIM-HJGLGD | 23/12/2025, 12.32.27 | c0b97ad4-187f-450d-a0a2-cf9d3bc7bf52 | Cuci dan setrika (min. 2 kg) - 3 hari (2.16 kg × Rp 7.500) | 16200.000000000002 | 200.00000000000182 | 0 | 16000 | Diproses
+  Row 7: 23d8abe0-7f0d-4e6a-9470-39188062633a | CIM-SQW9EG | 23/12/2025, 10.58.05 | 5c13ae54-87c4-4490-b53d-adf5035bb838 | Cuci dan setrika (min. 2 kg) - 3 hari (6.6 kg × Rp 7.500) | 49500 | 0 | 0 | 49500 | Diproses
+  Row 8: b4be5d76-464c-4418-bc30-c1a644cfdc68 | CIM-4CW8EE | 23/12/2025, 10.45.32 | ba146f0b-ad3c-409c-bddc-2a0ce0f27501 | Sepatu (Kets) (2 pcs × Rp 20.000) | 40000 | 0 | 0 | 40000 | Diproses
+  Row 9: 61de3492-5c87-43b1-a384-76dcbbbc1a69 | CIM-T993L5 | 23/12/2025, 10.44.48 | ba146f0b-ad3c-409c-bddc-2a0ce0f27501 | Cuci dan setrika (min. 2 kg) - 3 hari (9.81 kg × Rp 7.500) | 73575 | 75 | 0 | 73500 | Diproses
+  Row 10: 3051ea5a-df5a-4378-8f44-47fee9aeac12 | CIM-PBNRYL | 23/12/2025, 10.43.46 | f8f272bb-c6ad-4629-abb3-2821ffd1ce00 | Sepatu (1 pcs × Rp 20.000) | 20000 | 0 | 0 | 20000 | Diproses
+  Row 11: c8000478-76d7-4c1e-8b29-741e0bb641fe | CIM-9X9JZ5 | 23/12/2025, 10.42.58 | f8f272bb-c6ad-4629-abb3-2821ffd1ce00 | Cuci dan setrika (min. 2 kg) - 3 hari (6.73 kg × Rp 7.500) | 50475 | 475 | 0 | 50000 | Diproses
+  Row 12: 811d6329-a15b-47d0-9cba-01dc4e0a568e | CIM-LPCE9Q | 23/12/2025, 10.41.11 | f8f272bb-c6ad-4629-abb3-2821ffd1ce00 | Setrika saja (min. 3 kg) (4 kg × Rp 5.000) | 20000 | 0 | 0 | 20000 | Diproses
+  Row 13: af7f1e65-6459-4ebc-be3f-a8aea43153ed | CIM-GVVYLJ | 23/12/2025, 09.56.15 | 4aba0a75-fefb-435c-8699-91e6d2d966ac | Cuci dan setrika (min. 2 kg) - 3 hari (2.2 kg × Rp 7.500) | 16500 | 0 | 0 | 16500 | Diproses
+  Row 14: fcfb6583-567f-4b45-a549-e802d5737ec7 | CIM-W3453W | 23/12/2025, 09.08.30 | 50285d2b-2b08-43c7-97e1-c6b7f78c8ff4 | Cuci dan setrika (min. 2 kg) - 3 hari (6.4 kg × Rp 7.500) | 48000 | 0 | 0 | 48000 | Diproses
+  Row 15: 57e79b33-9747-46fb-a4fd-74d321edd9c1 | CIM-LX477X | 23/12/2025, 08.36.22 | 790f2ffc-035d-4ba6-a468-19465c462959 | Cuci dan setrika (min. 2 kg) - 1 hari (3.36 kg × Rp 15.000) | 50400 | 400 | 0 | 50000 | Diproses
+
+
+================================================================================
+Selesai membaca semua file Excel
+================================================================================
