@@ -1,7 +1,7 @@
 # Laundry Management System (Web Kasir)
 
-**Versi:** 2.4.0  
-**Update terakhir:** 19 Desember 2024  
+**Versi:** 2.6.0  
+**Update terakhir:** 24 Desember 2024  
 **Status:** ✅ Production Ready
 
 ---
