@@ -397,14 +397,14 @@ const NewTransactionPage: React.FC = () => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const handleSaveCustomer = async (customer: Omit<Customer, 'id' | 'storeId'>) => {
+  const handleSaveCustomer = async (customer: Omit<Customer, 'id' | 'storeId' | 'createdAt'>) => {
     if (!currentStoreId || currentStoreId === 'all') {
       addToast('Silakan pilih cabang spesifik untuk menambah pelanggan.', 'warning');
       return;
     }
     const toastId = addToast('Menambah pelanggan...', 'info');
     try {
-      const newCustomer = await addCustomer({ ...customer, storeId: currentStoreId });
+      const newCustomer = await addCustomer({ ...customer, createdAt: new Date(), storeId: currentStoreId });
       if (newCustomer) {
         // Map Supabase customer (nullable fields) to app Customer type
         setSelectedCustomer({

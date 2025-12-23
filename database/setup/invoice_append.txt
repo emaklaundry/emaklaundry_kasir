@@ -1,0 +1,85 @@
+﻿-- Step 1: Check how many transactions are missing invoiceCode
+SELECT 
+  COUNT(*) as total_transactions,
+  COUNT("invoiceCode") as with_invoice_code,
+  COUNT(*) - COUNT("invoiceCode") as missing_invoice_code
+FROM public.transactions;
+
+-- Step 2: Generate and update missing invoice codes
+-- This uses the same logic as the trigger function
+DO $$
+DECLARE
+  rec RECORD;
+  new_code TEXT;
+  store_prefix TEXT;
+  chars TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  max_attempts INT := 10;
+  attempt INT;
+  i INT;
+BEGIN
+  -- Loop through all transactions without invoiceCode
+  FOR rec IN 
+    SELECT id, "storeId" 
+    FROM public.transactions 
+    WHERE "invoiceCode" IS NULL
+  LOOP
+    -- Get store prefix
+    store_prefix := 'EM'; -- Default
+    
+    IF rec."storeId" IS NOT NULL THEN
+      SELECT upper(substr(regexp_replace(name, '[^a-zA-Z]', '', 'g'), 1, 3))
+      INTO store_prefix
+      FROM public.stores
+      WHERE id = rec."storeId";
+      
+      IF store_prefix IS NULL OR length(store_prefix) = 0 THEN
+        store_prefix := 'EM';
+      END IF;
+    END IF;
+    
+    -- Generate unique invoice code
+    attempt := 0;
+    WHILE attempt < max_attempts LOOP
+      -- Generate random 6-character code
+      new_code := store_prefix || '-';
+      FOR i IN 1..6 LOOP
+        new_code := new_code || substr(chars, floor(random() * length(chars))::int + 1, 1);
+      END LOOP;
+      
+      -- Check if unique
+      IF NOT EXISTS (SELECT 1 FROM public.transactions WHERE "invoiceCode" = new_code) THEN
+        -- Update transaction
+        UPDATE public.transactions 
+        SET "invoiceCode" = new_code 
+        WHERE id = rec.id;
+        
+        EXIT; -- Break loop
+      END IF;
+      
+      attempt := attempt + 1;
+    END LOOP;
+    
+    IF attempt >= max_attempts THEN
+      RAISE NOTICE 'Failed to generate unique code for transaction %', rec.id;
+    END IF;
+  END LOOP;
+  
+  RAISE NOTICE 'Invoice code generation completed';
+END $$;
+
+-- Step 3: Verify all transactions now have invoiceCode
+SELECT 
+  COUNT(*) as total_transactions,
+  COUNT("invoiceCode") as with_invoice_code,
+  COUNT(*) - COUNT("invoiceCode") as still_missing
+FROM public.transactions;
+
+-- Step 4: Show sample of updated codes
+SELECT 
+  id,
+  "invoiceCode",
+  "createdAt",
+  "storeId"
+FROM public.transactions
+ORDER BY "createdAt" DESC
+LIMIT 10;
