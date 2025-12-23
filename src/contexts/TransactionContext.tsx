@@ -76,12 +76,16 @@ const fetchTransactions = async (
     if (error) throw error;
 
     // Convert null to undefined for optional fields
-    const transactions = (data || []).map((t) => ({
-      ...t,
-      customerId: t.customerId ?? undefined,
-      createdByUserId: t.createdByUserId ?? undefined,
-      paymentMethod: t.paymentMethod ?? undefined,
-    })) as unknown as Transaction[];
+    const transactions = (data || []).map((t) => {
+      const raw = t as { invoice_code?: string; invoiceCode?: string };
+      return {
+        ...t,
+        invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
+        customerId: t.customerId ?? undefined,
+        createdByUserId: t.createdByUserId ?? undefined,
+        paymentMethod: t.paymentMethod ?? undefined,
+      };
+    }) as unknown as Transaction[];
 
     return { data: transactions, count: count || 0 };
   } catch (error) {
@@ -147,7 +151,23 @@ export function useTransactions(filter: TransactionFilter = {}) {
           { maxAttempts: 3, pollInterval: 300 },
         );
 
-        return verified;
+        // Explicitly map keys to match Transaction interface
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = verified as any;
+        return {
+          ...verified,
+          invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
+          customerId: verified.customerId ?? undefined,
+          createdByUserId: verified.createdByUserId ?? undefined,
+          paymentMethod: verified.paymentMethod ?? undefined,
+          items: Array.isArray(verified.items)
+            ? (verified.items as unknown as import('../types').TransactionItem[]).map((item) => ({
+                ...item,
+                itemDetails: item.itemDetails ?? [],
+              }))
+            : [],
+          createdAt: verified.createdAt ? new Date(verified.createdAt) : new Date(),
+        } as Transaction;
       } catch (error) {
         console.error('Error adding transaction:', error);
         throw new Error(
@@ -214,7 +234,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
       const dbRow = row as any;
       return {
         id: dbRow.id ?? '',
-        invoiceCode: dbRow.invoiceCode ?? undefined,
+        invoiceCode: dbRow.invoice_code ?? dbRow.invoiceCode ?? undefined,
         customerId: dbRow.customerId ?? '',
         items: Array.isArray(dbRow.items)
           ? (dbRow.items as import('../types').TransactionItem[]).map((item) => ({
