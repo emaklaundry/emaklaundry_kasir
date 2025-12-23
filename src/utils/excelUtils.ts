@@ -2105,7 +2105,13 @@ export async function exportAllData(
       amountPaid: transaction.amountPaid,
       change: transaction.change,
       paymentMethod: transaction.paymentMethod || '-',
-      estimatedCompletionDate: transaction.estimatedCompletionDate,
+      estimatedCompletionDate: transaction.estimatedCompletionDate
+        ? (typeof transaction.estimatedCompletionDate === 'object' &&
+          transaction.estimatedCompletionDate !== null &&
+          'toISOString' in transaction.estimatedCompletionDate
+            ? (transaction.estimatedCompletionDate as Date).toISOString()
+            : String(transaction.estimatedCompletionDate))
+        : '',
       storeId: transaction.storeId || '',
       notes: transaction.notes || '-',
     });
