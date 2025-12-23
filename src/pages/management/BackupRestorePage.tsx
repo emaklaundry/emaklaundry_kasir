@@ -739,37 +739,41 @@ const BackupRestorePage: React.FC = () => {
             })(),
             notes: t.notes ?? null,
             createdAt: (() => {
-              // Handle createdAt with Excel date format: "17/12/2025, 19.51.42"
-              if (!t.createdAt) return new Date().toISOString();
-              
-              if (typeof t.createdAt === 'string') {
-                // Try to parse Excel format: "dd/MM/yyyy, HH.mm.ss"
-                const excelMatch = t.createdAt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/);
-                if (excelMatch) {
-                  const [_, day, month, year, hour, minute, second] = excelMatch;
-                  // Convert to ISO: yyyy-MM-ddTHH:mm:ss.sssZ
-                  const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.000Z`;
-                  return isoDate;
+              // Handle createdAt - try multiple formats
+              try {
+                if (!t.createdAt) return new Date().toISOString();
+                
+                // If already a Date object
+                if (t.createdAt instanceof Date) {
+                  const iso = t.createdAt.toISOString();
+                  if (iso && iso !== 'Invalid Date') return iso;
                 }
                 
-                // Try standard ISO format
-                try {
-                  const parsed = new Date(t.createdAt);
+                // If it's a string, try parsing
+                if (typeof t.createdAt === 'string') {
+                  const str = String(t.createdAt);
+                  
+                  // Try Excel format: "dd/MM/yyyy, HH.mm.ss"
+                  const excelMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/);
+                  if (excelMatch) {
+                    const [, day, month, year, hour, minute, second] = excelMatch;
+                    const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.000Z`;
+                    return isoDate;
+                  }
+                  
+                  // Try standard Date parse
+                  const parsed = new Date(str);
                   if (!isNaN(parsed.getTime())) {
                     return parsed.toISOString();
                   }
-                } catch {
-                  // Continue to fallback
                 }
+                
+                // Fallback
+                return new Date().toISOString();
+              } catch (error) {
+                console.error('Error parsing createdAt:', t.createdAt, error);
+                return new Date().toISOString();
               }
-              
-              // If it's a Date object
-              if (typeof t.createdAt === 'object' && t.createdAt !== null && 'getTime' in t.createdAt) {
-                return (t.createdAt as Date).toISOString();
-              }
-              
-              // Fallback to current date
-              return new Date().toISOString();
             })(),
             storeId: finalStoreId,
             createdByUserId: t.createdByUserId ?? null,
