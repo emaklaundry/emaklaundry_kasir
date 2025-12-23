@@ -371,12 +371,17 @@ const BackupRestorePage: React.FC = () => {
     const toastId = addToast('Mempersiapkan full backup...', 'info');
 
     try {
+      // Filter out synthetic expenses (from Assets) before exporting
+      // These have IDs like "asset-purchase-..." or "asset-maint-..."
+      // We only want to backup REAL database expenses
+      const realExpenses = expenses.filter(e => !e.id.startsWith('asset-'));
+
       await exportAllData(
         customers as unknown as Customer[],
         services as unknown as Service[],
         inventory as unknown as InventoryItem[],
         assets as unknown as Asset[],
-        expenses,
+        realExpenses,
         transactions,
       );
 
@@ -448,9 +453,9 @@ const BackupRestorePage: React.FC = () => {
         try {
           if (!dateValue) return new Date().toISOString();
           if (dateValue instanceof Date) {
-            const iso = dateValue.toISOString();
-            if (iso === 'Invalid Date') return new Date().toISOString();
-            return iso;
+            // Check if date is valid before calling toISOString
+            if (isNaN(dateValue.getTime())) return new Date().toISOString();
+            return dateValue.toISOString();
           }
           if (typeof dateValue === 'string') {
             const parsed = new Date(dateValue);
@@ -700,7 +705,7 @@ const BackupRestorePage: React.FC = () => {
           return {
             id: t.id,
             invoiceCode: t.invoiceCode ?? null,
-            customerId: t.customerId ?? null,
+            customerId: t.customerId && t.customerId !== '' ? t.customerId : null,
             items: t.items as unknown as Json,
             subtotal: t.subtotal,
             discount: t.discount,
@@ -775,8 +780,8 @@ const BackupRestorePage: React.FC = () => {
                 return new Date().toISOString();
               }
             })(),
-            storeId: finalStoreId,
-            createdByUserId: t.createdByUserId ?? null,
+            storeId: finalStoreId && finalStoreId !== '' ? finalStoreId : null,
+            createdByUserId: t.createdByUserId && t.createdByUserId !== '' ? t.createdByUserId : null,
           };
         });
         

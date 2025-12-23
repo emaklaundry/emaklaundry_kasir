@@ -450,6 +450,7 @@ const TransactionPage: React.FC = () => {
   // Handler untuk pagination
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    setSelectedIds(new Set()); // Clear selection on page change
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
