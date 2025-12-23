@@ -53,6 +53,19 @@ Dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
 
 ---
 
+## 📝 Changelog
+
+### v2.6.0 (24 Desember 2024)
+
+**Critical Bug Fixes & Improvements**
+
+- **Fixed Reports Page** - Revenue calculations now use sales value for consistency
+- **Fixed Service ID Import** - Proper service name-to-ID mapping instead of hardcoded 'restored-id'
+- **Added Fallback Logic** - Handle deleted services/users gracefully
+- **Quality Assurance** - Passed comprehensive audit: 0 lint errors, 219/219 tests passing, production ready
+
+---
+
 ## 📂 Project Structure
 
 ```
