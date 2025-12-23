@@ -18,7 +18,7 @@ import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
-import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
+import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { formatRupiah } from '@/utils/formatting';
 import { OrderStatus, PaymentStatus, Transaction, Customer, TransactionItem } from '@/types';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
@@ -155,9 +155,7 @@ const TransactionDetailPage: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
-            <p className="text-lg text-slate-500 dark:text-slate-400">
-              {formatTransactionId(transaction)}
-            </p>
+
           </div>
           <div className="flex gap-2">
             {/* Tombol Kirim WA Manual */}

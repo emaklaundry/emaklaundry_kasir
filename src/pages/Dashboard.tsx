@@ -237,6 +237,8 @@ const Dashboard: React.FC = () => {
 
   const isCashier = currentUser?.role === UserRole.Cashier;
 
+
+
   const weeklyRevenueData = useMemo(() => {
     const data = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
@@ -585,13 +587,14 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <div className="space-y-4 sm:space-y-6 p-3 sm:p-0 pb-20 sm:pb-0">
-        <div className="mb-3 sm:mb-4">
+        <div className="mb-3 sm:mb-4 flex justify-between items-center">
           <h2 className="text-base sm:text-xl font-medium text-slate-600 dark:text-slate-400">
             Tampilan Data:{' '}
             <span className="font-semibold text-slate-800 dark:text-slate-200">
               {getStoreName()}
             </span>
           </h2>
+
         </div>
 
         {/* Weather Widget */}

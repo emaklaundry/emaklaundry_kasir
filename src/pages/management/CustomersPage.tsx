@@ -520,6 +520,7 @@ const CustomersPage: React.FC = () => {
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
+              <th className="px-6 py-3">No</th>
               <th className="px-6 py-3">
                 <button
                   onClick={() => requestSort('name')}
@@ -568,11 +569,14 @@ const CustomersPage: React.FC = () => {
           </thead>
           <tbody>
             {paginatedCustomers.length > 0 ? (
-              paginatedCustomers.map((customer) => (
+              paginatedCustomers.map((customer, index) => (
                 <tr
                   key={customer.id}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                    {(page - 1) * pageSize + index + 1}
+                  </td>
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     <Link
                       to={`/management/customers/${customer.id}`}

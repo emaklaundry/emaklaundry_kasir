@@ -14,6 +14,7 @@ import ExpenseFormModal from '../../components/ExpenseFormModal';
 import useAppContext from '../../contexts/useAppContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
+import Pagination from '../../components/Pagination';
 import { Expense, UserRole } from '@/types';
 
 type CombinedExpenseItem = {
@@ -454,6 +455,7 @@ const ExpensesPage: React.FC = () => {
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
+              <th className="px-6 py-3">No</th>
               <th className="px-6 py-3">Tanggal</th>
               <th className="px-6 py-3">Keterangan</th>
               <th className="px-6 py-3">Kategori</th>
@@ -464,11 +466,14 @@ const ExpensesPage: React.FC = () => {
           </thead>
           <tbody>
             {paginatedItems.length > 0 ? (
-              paginatedItems.map((item) => (
+              paginatedItems.map((item, index) => (
                 <tr
                   key={`${item.source}-${item.id}`}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
                   <td className="px-6 py-4">{new Date(item.date).toLocaleDateString('id-ID')}</td>
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     {item.description}
@@ -513,20 +518,15 @@ const ExpensesPage: React.FC = () => {
         </table>
       </div>
 
-      {/* Simple Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 rounded ${currentPage === page ? 'bg-blue-600 text-white' : 'bg-white border'}`}
-            >
-              {page}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Reusable Pagination Component */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={(page) => {
+          setCurrentPage(page);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
       <ExpenseFormModal
         isOpen={isFormModalOpen}

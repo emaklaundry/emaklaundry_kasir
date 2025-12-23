@@ -17,6 +17,14 @@ import type {
 } from '../types';
 
 // ============================================
+// CONSTANTS
+// ============================================
+const BRAND_BLUE = 'FF2563EB';
+const BRAND_WHITE = 'FFFFFFFF';
+const BORDER_COLOR = 'FFD1D5DB';
+const ALTERNATE_ROW_COLOR = 'FFF3F4F6';
+
+// ============================================
 // EXCEL EXPORT FUNCTIONS
 // ============================================
 
@@ -38,16 +46,19 @@ export async function exportCustomersToExcel(customers: Customer[]): Promise<voi
   ];
 
   // Style header
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: BRAND_WHITE } };
+  headerRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFE0E0E0' },
+    fgColor: { argb: BRAND_BLUE },
   };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 25;
 
   // Add data
-  customers.forEach((customer) => {
-    worksheet.addRow({
+  customers.forEach((customer, index) => {
+    const row = worksheet.addRow({
       id: customer.id,
       name: customer.name,
       phone: customer.phone || '',
@@ -55,6 +66,15 @@ export async function exportCustomersToExcel(customers: Customer[]): Promise<voi
       notes: customer.notes || '',
       defaultDiscount: customer.defaultDiscount || 0,
     });
+    
+    // Alternate row styling
+    if (index % 2 !== 0) {
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
+      };
+    }
   });
 
   // Generate file
@@ -94,16 +114,18 @@ export async function exportTransactionsToExcel(
   ];
 
   // Style header
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: BRAND_WHITE } };
+  headerRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF4472C4' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 25;
 
   // Add data
-  transactions.forEach((transaction) => {
+  transactions.forEach((transaction, index) => {
     const customer = customers.find((c) => c.id === transaction.customerId);
     const services = transaction.items
       .map(
@@ -112,7 +134,7 @@ export async function exportTransactionsToExcel(
       )
       .join(', ');
 
-    worksheet.addRow({
+    const row = worksheet.addRow({
       id: transaction.id,
       invoiceCode: transaction.invoiceCode || '-',
       createdAt: new Date(transaction.createdAt).toLocaleString('id-ID'),
@@ -131,6 +153,15 @@ export async function exportTransactionsToExcel(
       estimatedCompletionDate: transaction.estimatedCompletionDate,
       notes: transaction.notes || '-',
     });
+
+    // Alternate row styling
+    if (index % 2 !== 0) {
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
+      };
+    }
   });
 
   // Format currency columns
@@ -163,16 +194,19 @@ export async function exportServicesToExcel(services: Service[]): Promise<void> 
   ];
 
   // Style header
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: BRAND_WHITE } };
+  headerRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFE0E0E0' },
+    fgColor: { argb: BRAND_BLUE },
   };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 25;
 
   // Add data
-  services.forEach((service) => {
-    worksheet.addRow({
+  services.forEach((service, index) => {
+    const row = worksheet.addRow({
       id: service.id,
       name: service.name,
       category: service.category,
@@ -181,6 +215,15 @@ export async function exportServicesToExcel(services: Service[]): Promise<void> 
       unit: service.unit,
       durationDays: service.durationDays,
     });
+    
+    // Alternate row styling
+    if (index % 2 !== 0) {
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
+      };
+    }
   });
 
   // Generate file
@@ -205,22 +248,34 @@ export async function exportInventoryToExcel(items: InventoryItem[]): Promise<vo
   ];
 
   // Style header
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: BRAND_WHITE } };
+  headerRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFE0E0E0' },
+    fgColor: { argb: BRAND_BLUE },
   };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 25;
 
   // Add data
-  items.forEach((item) => {
-    worksheet.addRow({
+  items.forEach((item, index) => {
+    const row = worksheet.addRow({
       id: item.id,
       name: item.name,
       stock: item.stock,
       lowStockThreshold: item.lowStockThreshold,
       unit: item.unit,
     });
+    
+    // Alternate row styling
+    if (index % 2 !== 0) {
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
+      };
+    }
   });
 
   // Generate file
@@ -246,16 +301,19 @@ export async function exportAssetsToExcel(assets: Asset[]): Promise<void> {
   ];
 
   // Style header
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: BRAND_WHITE } };
+  headerRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFE0E0E0' },
+    fgColor: { argb: BRAND_BLUE },
   };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 25;
 
   // Add data
-  assets.forEach((asset) => {
-    worksheet.addRow({
+  assets.forEach((asset, index) => {
+    const row = worksheet.addRow({
       id: asset.id,
       name: asset.name,
       serialNumber: asset.serialNumber || '',
@@ -266,6 +324,15 @@ export async function exportAssetsToExcel(assets: Asset[]): Promise<void> {
       purchaseCost: asset.purchaseCost || 0,
       status: asset.status,
     });
+    
+    // Alternate row styling
+    if (index % 2 !== 0) {
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
+      };
+    }
   });
 
   // Generate file
@@ -290,28 +357,58 @@ export async function exportExpensesToExcel(expenses: Expense[]): Promise<void> 
   ];
 
   // Style header
-  worksheet.getRow(1).font = { bold: true };
-  worksheet.getRow(1).fill = {
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: BRAND_WHITE } };
+  headerRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFE0E0E0' },
+    fgColor: { argb: BRAND_BLUE },
   };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 25;
 
   // Add data
-  expenses.forEach((expense) => {
-    worksheet.addRow({
+  expenses.forEach((expense, index) => {
+    const row = worksheet.addRow({
       id: expense.id,
       date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
       category: expense.category,
       amount: expense.amount,
       description: expense.description,
     });
+    
+    // Alternate row styling
+    if (index % 2 !== 0) {
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
+      };
+    }
   });
 
   // Generate file
   const buffer = await workbook.xlsx.writeBuffer();
   downloadFile(buffer, 'expenses.xlsx');
 }
+
+// ============================================
+// EXCEL IMPORT FUNCTIONS
+// ============================================
+// ... (Import functions remain mostly unchanged, they just read data)
+// We will skip editing import functions as they don't affect visual templates, 
+// but we need to ensure we don't accidentally remove them. 
+// I will just collapse them in this replacement for brevity if the tool supports it, 
+// but wait, I can just not touch lines 320-530.
+// Actually, looking at the available lines in the context, I need to be careful.
+// I will replace the export functions block first.
+
+// Wait, the user wants consistency. The TEMPLATES that are downloaded are generated by
+// downloadCustomerTemplate, downloadServiceTemplate, etc.
+// These are further down in the file (lines 560+).
+// I need to update THOSE as well.
+
+
 
 // ============================================
 // EXCEL IMPORT FUNCTIONS
@@ -568,14 +665,15 @@ export async function downloadCustomerTemplate(): Promise<void> {
   instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
   // Header instruksi
-  instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  instructionSheet.getRow(1).fill = {
+  const headerRow = instructionSheet.getRow(1);
+  headerRow.font = { bold: true, size: 14, color: { argb: BRAND_WHITE } };
+  headerRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF2563EB' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  instructionSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  instructionSheet.getRow(1).height = 30;
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.height = 30;
 
   // Isi instruksi
   const instructions = [
@@ -615,7 +713,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
 
     if (text.includes('🎯') || text.includes('💾')) {
-      row.font = { bold: true, size: 12, color: { argb: 'FF2563EB' } };
+      row.font = { bold: true, size: 12, color: { argb: BRAND_BLUE } };
     } else if (text.includes('⚠️')) {
       row.font = { bold: true, size: 12, color: { argb: 'FFDC2626' } };
     } else if (text.match(/^\d️⃣/)) {
@@ -635,14 +733,15 @@ export async function downloadCustomerTemplate(): Promise<void> {
   ];
 
   // Style header
-  dataSheet.getRow(1).font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
-  dataSheet.getRow(1).fill = {
+  const dataHeaderRow = dataSheet.getRow(1);
+  dataHeaderRow.font = { bold: true, size: 11, color: { argb: BRAND_WHITE } };
+  dataHeaderRow.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF2563EB' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  dataSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  dataSheet.getRow(1).height = 25;
+  dataHeaderRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  dataHeaderRow.height = 25;
 
   // Add sample rows dengan berbagai contoh
   const sampleData = [
@@ -678,7 +777,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
       row.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFF3F4F6' },
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
       };
     }
   });
@@ -687,10 +786,10 @@ export async function downloadCustomerTemplate(): Promise<void> {
   dataSheet.eachRow((row, _rowNumber) => {
     row.eachCell((cell) => {
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+        top: { style: 'thin', color: { argb: BORDER_COLOR } },
+        left: { style: 'thin', color: { argb: BORDER_COLOR } },
+        bottom: { style: 'thin', color: { argb: BORDER_COLOR } },
+        right: { style: 'thin', color: { argb: BORDER_COLOR } },
       };
     });
   });
@@ -716,14 +815,15 @@ export async function downloadServiceTemplate(): Promise<void> {
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
   instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
-  instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  instructionSheet.getRow(1).fill = {
+  const instructionHeader = instructionSheet.getRow(1);
+  instructionHeader.font = { bold: true, size: 14, color: { argb: BRAND_WHITE } };
+  instructionHeader.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF10B981' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  instructionSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  instructionSheet.getRow(1).height = 30;
+  instructionHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+  instructionHeader.height = 30;
 
   const instructions = [
     '',
@@ -774,7 +874,7 @@ export async function downloadServiceTemplate(): Promise<void> {
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
 
     if (text.includes('🎯') || text.includes('💾')) {
-      row.font = { bold: true, size: 12, color: { argb: 'FF10B981' } };
+      row.font = { bold: true, size: 12, color: { argb: BRAND_BLUE } };
     } else if (text.includes('⚠️')) {
       row.font = { bold: true, size: 12, color: { argb: 'FFDC2626' } };
     } else if (text.match(/^\d️⃣/)) {
@@ -794,14 +894,15 @@ export async function downloadServiceTemplate(): Promise<void> {
     { header: 'Estimasi (hari)', key: 'estimatedDays', width: 18 },
   ];
 
-  dataSheet.getRow(1).font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
-  dataSheet.getRow(1).fill = {
+  const dataHeader = dataSheet.getRow(1);
+  dataHeader.font = { bold: true, size: 11, color: { argb: BRAND_WHITE } };
+  dataHeader.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF10B981' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  dataSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  dataSheet.getRow(1).height = 25;
+  dataHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+  dataHeader.height = 25;
 
   const sampleData = [
     {
@@ -854,7 +955,7 @@ export async function downloadServiceTemplate(): Promise<void> {
       row.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFF3F4F6' },
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
       };
     }
   });
@@ -862,10 +963,10 @@ export async function downloadServiceTemplate(): Promise<void> {
   dataSheet.eachRow((row) => {
     row.eachCell((cell) => {
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+        top: { style: 'thin', color: { argb: BORDER_COLOR } },
+        left: { style: 'thin', color: { argb: BORDER_COLOR } },
+        bottom: { style: 'thin', color: { argb: BORDER_COLOR } },
+        right: { style: 'thin', color: { argb: BORDER_COLOR } },
       };
     });
   });
@@ -890,14 +991,15 @@ export async function downloadInventoryTemplate(): Promise<void> {
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
   instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
-  instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  instructionSheet.getRow(1).fill = {
+  const instructionHeader = instructionSheet.getRow(1);
+  instructionHeader.font = { bold: true, size: 14, color: { argb: BRAND_WHITE } };
+  instructionHeader.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF8B5CF6' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  instructionSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  instructionSheet.getRow(1).height = 30;
+  instructionHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+  instructionHeader.height = 30;
 
   const instructions = [
     '',
@@ -946,7 +1048,7 @@ export async function downloadInventoryTemplate(): Promise<void> {
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
 
     if (text.includes('🎯') || text.includes('💾') || text.includes('💡')) {
-      row.font = { bold: true, size: 12, color: { argb: 'FF8B5CF6' } };
+      row.font = { bold: true, size: 12, color: { argb: BRAND_BLUE } };
     } else if (text.includes('⚠️')) {
       row.font = { bold: true, size: 12, color: { argb: 'FFDC2626' } };
     } else if (text.match(/^\d️⃣/)) {
@@ -965,14 +1067,15 @@ export async function downloadInventoryTemplate(): Promise<void> {
     { header: 'Unit', key: 'unit', width: 15 },
   ];
 
-  dataSheet.getRow(1).font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
-  dataSheet.getRow(1).fill = {
+  const dataHeader = dataSheet.getRow(1);
+  dataHeader.font = { bold: true, size: 11, color: { argb: BRAND_WHITE } };
+  dataHeader.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF8B5CF6' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  dataSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  dataSheet.getRow(1).height = 25;
+  dataHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+  dataHeader.height = 25;
 
   const sampleData = [
     {
@@ -1020,7 +1123,7 @@ export async function downloadInventoryTemplate(): Promise<void> {
       row.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFF3F4F6' },
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
       };
     }
   });
@@ -1028,10 +1131,10 @@ export async function downloadInventoryTemplate(): Promise<void> {
   dataSheet.eachRow((row) => {
     row.eachCell((cell) => {
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+        top: { style: 'thin', color: { argb: BORDER_COLOR } },
+        left: { style: 'thin', color: { argb: BORDER_COLOR } },
+        bottom: { style: 'thin', color: { argb: BORDER_COLOR } },
+        right: { style: 'thin', color: { argb: BORDER_COLOR } },
       };
     });
   });
@@ -1056,14 +1159,15 @@ export async function downloadAssetTemplate(): Promise<void> {
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
   instructionSheet.columns = [{ header: 'Panduan Penggunaan Template', key: 'guide', width: 80 }];
 
-  instructionSheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  instructionSheet.getRow(1).fill = {
+  const instructionHeader = instructionSheet.getRow(1);
+  instructionHeader.font = { bold: true, size: 14, color: { argb: BRAND_WHITE } };
+  instructionHeader.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFF59E0B' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  instructionSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  instructionSheet.getRow(1).height = 30;
+  instructionHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+  instructionHeader.height = 30;
 
   const instructions = [
     '',
@@ -1118,7 +1222,7 @@ export async function downloadAssetTemplate(): Promise<void> {
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
 
     if (text.includes('🎯') || text.includes('💾') || text.includes('💡')) {
-      row.font = { bold: true, size: 12, color: { argb: 'FFF59E0B' } };
+      row.font = { bold: true, size: 12, color: { argb: BRAND_BLUE } };
     } else if (text.includes('⚠️')) {
       row.font = { bold: true, size: 12, color: { argb: 'FFDC2626' } };
     } else if (text.match(/^\d️⃣/)) {
@@ -1138,14 +1242,15 @@ export async function downloadAssetTemplate(): Promise<void> {
     { header: 'Status', key: 'status', width: 22 },
   ];
 
-  dataSheet.getRow(1).font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
-  dataSheet.getRow(1).fill = {
+  const dataHeader = dataSheet.getRow(1);
+  dataHeader.font = { bold: true, size: 11, color: { argb: BRAND_WHITE } };
+  dataHeader.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFF59E0B' },
+    fgColor: { argb: BRAND_BLUE },
   };
-  dataSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  dataSheet.getRow(1).height = 25;
+  dataHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+  dataHeader.height = 25;
 
   const sampleData = [
     {
@@ -1198,7 +1303,7 @@ export async function downloadAssetTemplate(): Promise<void> {
       row.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFF3F4F6' },
+        fgColor: { argb: ALTERNATE_ROW_COLOR },
       };
     }
   });
@@ -1206,10 +1311,10 @@ export async function downloadAssetTemplate(): Promise<void> {
   dataSheet.eachRow((row) => {
     row.eachCell((cell) => {
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+        top: { style: 'thin', color: { argb: BORDER_COLOR } },
+        left: { style: 'thin', color: { argb: BORDER_COLOR } },
+        bottom: { style: 'thin', color: { argb: BORDER_COLOR } },
+        right: { style: 'thin', color: { argb: BORDER_COLOR } },
       };
     });
   });
@@ -1238,7 +1343,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
   instructionSheet.getRow(1).fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFEF4444' },
+    fgColor: { argb: BRAND_BLUE },
   };
   instructionSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
   instructionSheet.getRow(1).height = 30;
@@ -1295,7 +1400,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
     row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
 
     if (text.includes('🎯') || text.includes('💾') || text.includes('💡')) {
-      row.font = { bold: true, size: 12, color: { argb: 'FFEF4444' } };
+      row.font = { bold: true, size: 12, color: { argb: BRAND_BLUE } };
     } else if (text.includes('⚠️')) {
       row.font = { bold: true, size: 12, color: { argb: 'FFDC2626' } };
     } else if (text.match(/^\d️⃣/)) {
@@ -1319,7 +1424,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
   dataSheet.getRow(1).fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFEF4444' },
+    fgColor: { argb: BRAND_BLUE },
   };
   dataSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
   dataSheet.getRow(1).height = 25;
@@ -1940,7 +2045,14 @@ export async function exportAllData(
     { header: 'Catatan', key: 'notes', width: 30 },
     { header: 'Store ID', key: 'storeId', width: 40 },
   ];
-  customerSheet.getRow(1).font = { bold: true };
+  customerSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  customerSheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2563EB' },
+  };
+  customerSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  customerSheet.getRow(1).height = 25;
   customers.forEach((customer) => {
     customerSheet.addRow({
       id: customer.id,
@@ -1964,7 +2076,14 @@ export async function exportAllData(
     { header: 'Deskripsi', key: 'description', width: 40 },
     { header: 'Store ID', key: 'storeId', width: 40 },
   ];
-  serviceSheet.getRow(1).font = { bold: true };
+  serviceSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  serviceSheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2563EB' },
+  };
+  serviceSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  serviceSheet.getRow(1).height = 25;
   services.forEach((service) => {
     serviceSheet.addRow({
       id: service.id,
@@ -1990,7 +2109,14 @@ export async function exportAllData(
     { header: 'Kategori', key: 'category', width: 20 },
     { header: 'Store ID', key: 'storeId', width: 40 },
   ];
-  inventorySheet.getRow(1).font = { bold: true };
+  inventorySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  inventorySheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2563EB' },
+  };
+  inventorySheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  inventorySheet.getRow(1).height = 25;
   inventory.forEach((item) => {
     inventorySheet.addRow({
       id: item.id,
@@ -2015,7 +2141,14 @@ export async function exportAllData(
     { header: 'Store ID', key: 'storeId', width: 40 },
     { header: 'Riwayat Perawatan', key: 'maintenanceHistory', width: 50 },
   ];
-  assetSheet.getRow(1).font = { bold: true };
+  assetSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  assetSheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2563EB' },
+  };
+  assetSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  assetSheet.getRow(1).height = 25;
   assets.forEach((asset) => {
     assetSheet.addRow({
       id: asset.id,
@@ -2040,7 +2173,14 @@ export async function exportAllData(
     { header: 'Tanggal', key: 'date', width: 15 },
     { header: 'Store ID', key: 'storeId', width: 40 },
   ];
-  expenseSheet.getRow(1).font = { bold: true };
+  expenseSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  expenseSheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2563EB' },
+  };
+  expenseSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  expenseSheet.getRow(1).height = 25;
   expenses.forEach((expense) => {
     expenseSheet.addRow({
       id: expense.id,
@@ -2074,13 +2214,14 @@ export async function exportAllData(
     { header: 'Store ID', key: 'storeId', width: 40 },
     { header: 'Catatan', key: 'notes', width: 30 },
   ];
-  transactionSheet.getRow(1).font = { bold: true };
+  transactionSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
   transactionSheet.getRow(1).fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF4472C4' },
+    fgColor: { argb: 'FF2563EB' },
   };
-  transactionSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  transactionSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  transactionSheet.getRow(1).height = 25;
 
   transactions.forEach((transaction) => {
     const services = transaction.items
@@ -2105,7 +2246,13 @@ export async function exportAllData(
       amountPaid: transaction.amountPaid,
       change: transaction.change,
       paymentMethod: transaction.paymentMethod || '-',
-      estimatedCompletionDate: transaction.estimatedCompletionDate,
+      estimatedCompletionDate: transaction.estimatedCompletionDate
+        ? (typeof transaction.estimatedCompletionDate === 'object' &&
+          transaction.estimatedCompletionDate !== null &&
+          'toISOString' in transaction.estimatedCompletionDate
+            ? (transaction.estimatedCompletionDate as Date).toISOString()
+            : String(transaction.estimatedCompletionDate))
+        : '',
       storeId: transaction.storeId || '',
       notes: transaction.notes || '-',
     });

@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { useTransactions } from '../contexts/TransactionContext';
 import { fetchCustomers } from '../contexts/CustomerContext';
 import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
@@ -225,7 +224,6 @@ type Expense = {
 type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
 
 const ReportsPage: React.FC = () => {
-  const { transactions: allStoreTransactions } = useTransactions();
   const customersRaw = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
@@ -235,7 +233,7 @@ const ReportsPage: React.FC = () => {
   const { users: allUsers } = useUsers();
   const { addAuditLog } = useAuditLogs();
   const [reportType] = useState<'range' | 'yearlySummary'>('range');
-  const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom'>('monthly');
+  const [rangeType, setRangeType] = useState<'monthly' | 'weekly' | 'custom' | 'all'>('monthly');
   const today = new Date();
   const [customStartDate, setCustomStartDate] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -249,6 +247,12 @@ const ReportsPage: React.FC = () => {
     const now = new Date();
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
+
+    if (rangeType === 'all') {
+      // Set start date to a very early date to include all records
+      const firstDay = new Date(0); 
+      return { startDate: firstDay, endDate: endOfDay };
+    }
 
     if (rangeType === 'weekly') {
       const firstDayOfWeek = new Date(now);
@@ -264,6 +268,62 @@ const ReportsPage: React.FC = () => {
     customEnd.setHours(23, 59, 59, 999);
     return { startDate: customStartDate, endDate: customEnd };
   }, [rangeType, customStartDate, customEndDate]);
+
+  // --- Fetch All Transactions (With Pagination Loop) ---
+  const { data: allStoreTransactions = [] } = useQuery<Transaction[]>({
+    queryKey: ['report-transactions', selectedStoreId, startDate, endDate],
+    queryFn: async () => {
+      const startIso = new Date(startDate);
+      startIso.setHours(0, 0, 0, 0);
+      const endIso = new Date(endDate);
+      endIso.setHours(23, 59, 59, 999);
+
+      let allTx: Transaction[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase
+          .from('transactions')
+          .select('*')
+          // Filter menggunakan ISO string agar konsisten dengan format DB
+          .gte('createdAt', startIso.toISOString())
+          .lte('createdAt', endIso.toISOString());
+
+        if (selectedStoreId && selectedStoreId !== 'all') {
+          query = query.eq('storeId', selectedStoreId);
+        }
+
+        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          // Normalize data types
+           const transactions = data.map((t) => {
+            const raw = t as { invoice_code?: string; invoiceCode?: string };
+            return {
+              ...t,
+              invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
+              customerId: t.customerId ?? undefined,
+              createdByUserId: t.createdByUserId ?? undefined,
+              paymentMethod: t.paymentMethod ?? undefined,
+            };
+          }) as unknown as Transaction[];
+          
+          allTx = [...allTx, ...transactions];
+          if (data.length < pageSize) {
+            hasMore = false;
+          }
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allTx;
+    },
+  });
 
   // Customers
   const customers = useMemo(() => {
@@ -433,13 +493,27 @@ const ReportsPage: React.FC = () => {
     if (!t || typeof t !== 'object') return null;
     const obj = t as Record<string, unknown>;
     let createdAt: string;
-    if (typeof obj.createdAt === 'string') {
-      createdAt = obj.createdAt;
-    } else if (obj.createdAt instanceof Date) {
-      createdAt = obj.createdAt.toISOString();
-    } else {
+
+    try {
+      if (typeof obj.createdAt === 'string') {
+        // Safe check for invalid dates
+        const parsed = new Date(obj.createdAt);
+        if (isNaN(parsed.getTime())) {
+          return null; // Invalid date string
+        }
+        createdAt = obj.createdAt;
+      } else if (obj.createdAt instanceof Date) {
+         if (isNaN(obj.createdAt.getTime())) {
+          return null; // Invalid Date object
+        }
+        createdAt = obj.createdAt.toISOString();
+      } else {
+        return null;
+      }
+    } catch {
       return null;
     }
+
     const tx = { ...obj, createdAt } as unknown;
     return isTransaction(tx as unknown)
       ? (tx as Omit<Transaction, 'createdAt'> & { createdAt: string })
@@ -575,6 +649,29 @@ const ReportsPage: React.FC = () => {
     [revenueByCategory],
   );
 
+  const servicePerformance = useMemo(() => {
+    const stats: Record<string, { revenue: number; quantity: number }> = {};
+    (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
+      t.items.forEach((item: { serviceId: string; subtotal: number; quantity: number }) => {
+        if (!stats[item.serviceId]) {
+          stats[item.serviceId] = { revenue: 0, quantity: 0 };
+        }
+        stats[item.serviceId].revenue += item.subtotal;
+        stats[item.serviceId].quantity += item.quantity;
+      }),
+    );
+    return Object.entries(stats)
+      .map(([serviceId, stat]) => ({
+        serviceId,
+        name: serviceMap[serviceId]?.name || 'Layanan Dihapus',
+        category: serviceMap[serviceId]?.category || '-',
+        unit: serviceMap[serviceId]?.unit || 'unit',
+        revenue: stat.revenue,
+        quantity: stat.quantity,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [filteredData.transactions, serviceMap]);
+
   const detailedExpenses = useMemo(() => {
     return filteredData.expenses
       .map((expense) => ({
@@ -638,6 +735,9 @@ const ReportsPage: React.FC = () => {
       if (rangeType === 'monthly') {
         return `Laporan Bulanan (Hingga ${endStr})`;
       }
+      if (rangeType === 'all') {
+        return `Laporan Keseluruhan (Hingga ${endStr})`;
+      }
     }
     if (reportType === 'yearlySummary') {
       return `Ringkasan Tahunan ${new Date().getFullYear()}`;
@@ -688,6 +788,12 @@ const ReportsPage: React.FC = () => {
                 className={`px-3 py-1.5 text-base font-medium rounded-md ${rangeType === 'monthly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}
               >
                 Bulan Ini
+              </button>
+              <button
+                onClick={() => setRangeType('all')}
+                className={`px-3 py-1.5 text-base font-medium rounded-md ${rangeType === 'all' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow' : 'text-slate-600 dark:text-slate-300'}`}
+              >
+                Semua
               </button>
               <button
                 onClick={() => setRangeType('custom')}
@@ -873,6 +979,51 @@ const ReportsPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+              <PackageIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
+              Rincian Pendapatan per Layanan
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                  <tr>
+                    <th className="px-4 py-2">Nama Layanan</th>
+                    <th className="px-4 py-2">Kategori</th>
+                    <th className="px-4 py-2 text-center">Terjual</th>
+                    <th className="px-4 py-2 text-right">Pendapatan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {servicePerformance.length > 0 ? (
+                    servicePerformance.map((s) => (
+                      <tr key={s.serviceId} className="border-b dark:border-slate-700">
+                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
+                          {s.name}
+                        </td>
+                        <td className="px-4 py-2">{s.category}</td>
+                        <td className="px-4 py-2 text-center">
+                          {s.quantity} {s.unit}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          Rp {s.revenue.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="text-center py-6 text-slate-500 dark:text-slate-400"
+                      >
+                        Tidak ada data pendapatan layanan.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">

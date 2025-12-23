@@ -14,11 +14,11 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
     s.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // Kelompokkan layanan berdasarkan kategori
-  const servicesByCategory = filteredServices.reduce<Record<string, Service[]>>((acc, service) => {
-    const cat = service.category || 'Lainnya';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(service);
+  // Kelompokkan layanan berdasarkan Jenis Cucian (WashType)
+  const servicesByWashType = filteredServices.reduce<Record<string, Service[]>>((acc, service) => {
+    const type = service.washType || 'Lainnya';
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(service);
     return acc;
   }, {});
 
@@ -38,10 +38,10 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
       </div>
       <div className="max-h-[45vh] overflow-y-auto space-y-4 pr-2 -mr-2">
         {filteredServices.length > 0 ? (
-          Object.entries(servicesByCategory).map(([category, services]) => (
-            <div key={category}>
+          Object.entries(servicesByWashType).map(([type, services]) => (
+            <div key={type}>
               <div className="font-bold text-slate-700 dark:text-slate-200 mb-2 mt-4 text-base border-b border-slate-200 dark:border-slate-600 pb-1">
-                {category}
+                {type}
               </div>
               <div className="space-y-2">
                 {services.map((service) => (
@@ -55,6 +55,9 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
                       </div>
                       <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Rp {service.price.toLocaleString('id-ID')} / {service.unit}
+                      </div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 italic">
+                        {service.washType}
                       </div>
                     </div>
                     <button

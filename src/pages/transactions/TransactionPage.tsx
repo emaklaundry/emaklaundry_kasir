@@ -450,6 +450,7 @@ const TransactionPage: React.FC = () => {
   // Handler untuk pagination
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    setSelectedIds(new Set()); // Clear selection on page change
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -568,8 +569,8 @@ const TransactionPage: React.FC = () => {
             </div>
           </div>
         )}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Daftar Transaksi
           </h1>
           <div className="flex items-center gap-2 flex-wrap">
@@ -746,152 +747,159 @@ const TransactionPage: React.FC = () => {
         <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm sm:text-base text-left text-slate-500 dark:text-slate-400">
-              <thead className="text-xs sm:text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-                <tr>
-                  <th className="px-1 sm:px-2 py-2 sm:py-3 w-8 sm:w-10 text-center">
-                    <input
-                      type="checkbox"
-                      id="transaction-select-all"
-                      name="transaction-select-all"
-                      onChange={handleSelectAll}
-                      checked={
-                        sortedTransactions.length > 0 &&
-                        selectedIds.size === sortedTransactions.length
-                      }
-                      className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
-                    />
-                  </th>
-                  <th className="px-2 sm:px-4 py-2 sm:py-3">
-                    <button
-                      onClick={() => requestSort('id')}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
-                    >
-                      ID Transaksi {getSortIcon('id')}
-                    </button>
-                  </th>
-                  <th className="px-2 sm:px-4 py-2 sm:py-3">
-                    <button
-                      onClick={() => requestSort('customerName')}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
-                    >
-                      Pelanggan {getSortIcon('customerName')}
-                    </button>
-                  </th>
-                  <th className="px-2 sm:px-4 py-2 sm:py-3">
-                    <button
-                      onClick={() => requestSort('createdAt')}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                    >
-                      Jam Masuk {getSortIcon('createdAt')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => requestSort('total')}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
-                    >
-                      Total {getSortIcon('total')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3">
-                    <button
-                      onClick={() => requestSort('orderStatus')}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                    >
-                      Status Pesanan {getSortIcon('orderStatus')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3">
-                    <button
-                      onClick={() => requestSort('paymentStatus')}
-                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
-                    >
-                      Status Bayar {getSortIcon('paymentStatus')}
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedTransactions.length > 0 ? (
-                  paginatedTransactions.map((t: TransactionWithCustomer) => (
-                    <tr
-                      key={t.id}
-                      className={`border-b dark:border-slate-700 ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    >
-                      <td className="px-1 sm:px-2 py-2 sm:py-3 text-center">
-                        <input
-                          type="checkbox"
-                          id={`transaction-checkbox-${t.id}`}
-                          name={`transaction-checkbox-${t.id}`}
-                          onChange={() => handleSelectOne(t.id)}
-                          checked={selectedIds.has(t.id)}
-                          className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
-                        />
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-slate-900 dark:text-white text-xs sm:text-sm">
-                        {formatTransactionId(t)}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
-                        {t.customerName}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
-                        {t.createdAt
-                          ? new Date(t.createdAt).toLocaleString('id-ID', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '-'}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">
-                        Rp {t.total.toLocaleString('id-ID')}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3">
-                        <select
-                          id={`order-status-${t.id}`}
-                          name={`order-status-${t.id}`}
-                          value={t.orderStatus}
-                          onChange={(e) =>
-                            handleOrderStatusChange(t.id, e.target.value as OrderStatus)
-                          }
-                          className={`px-2 py-1 text-sm font-medium rounded-full border-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer ${getStatusBadge(t.orderStatus)}`}
-                          title={
-                            t.paymentStatus !== PaymentStatus.Paid
-                              ? 'Pelunasan diperlukan untuk menyelesaikan pesanan'
-                              : ''
-                          }
-                        >
-                          {Object.values(OrderStatus).map((status) => {
-                            // Tombol/toggle ke 'Selesai' hanya aktif jika sudah lunas DAN/ATAU sudah 'Siap Diambil'
-                            const disableCompleted =
-                              status === OrderStatus.Completed &&
-                              !(
-                                t.paymentStatus === PaymentStatus.Paid ||
-                                t.orderStatus === OrderStatus.Ready
+              <thead className="text-xs sm:text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
+                  <tr>
+                    <th className="px-1 sm:px-2 py-2 sm:py-3 w-8 sm:w-10 text-center">
+                      <input
+                        type="checkbox"
+                        id="transaction-select-all"
+                        name="transaction-select-all"
+                        onChange={handleSelectAll}
+                        checked={
+                          sortedTransactions.length > 0 &&
+                          selectedIds.size === sortedTransactions.length
+                        }
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                      />
+                    </th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">
+                      <button
+                        onClick={() => requestSort('id')}
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                      >
+                        ID Transaksi {getSortIcon('id')}
+                      </button>
+                    </th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">
+                      <button
+                        onClick={() => requestSort('customerName')}
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                      >
+                        Pelanggan {getSortIcon('customerName')}
+                      </button>
+                    </th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">
+                      <button
+                        onClick={() => requestSort('createdAt')}
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                      >
+                        Tanggal {getSortIcon('createdAt')}
+                      </button>
+                    </th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                      <button
+                        onClick={() => requestSort('total')}
+                        className="flex items-center justify-end w-full gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                      >
+                        Total {getSortIcon('total')}
+                      </button>
+                    </th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">
+                      <button
+                        onClick={() => requestSort('paymentStatus')}
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                      >
+                        Pembayaran {getSortIcon('paymentStatus')}
+                      </button>
+                    </th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                      <button
+                        onClick={() => requestSort('orderStatus')}
+                        className="flex items-center justify-end w-full gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                      >
+                        Status {getSortIcon('orderStatus')}
+                      </button>
+                    </th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedTransactions.length > 0 ? (
+                    paginatedTransactions.map((t: TransactionWithCustomer) => (
+                      <tr
+                        key={t.id}
+                        className={`border-b dark:border-slate-700 ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      >
+                        <td className="px-1 sm:px-2 py-2 sm:py-3 text-center">
+                          <input
+                            type="checkbox"
+                            id={`transaction-checkbox-${t.id}`}
+                            name={`transaction-checkbox-${t.id}`}
+                            onChange={() => handleSelectOne(t.id)}
+                            checked={selectedIds.has(t.id)}
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
+                          />
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-slate-900 dark:text-white text-xs sm:text-sm">
+                          {formatTransactionId(t)}
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
+                          {t.customerName}
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
+                          {t.createdAt
+                            ? new Date(t.createdAt).toLocaleString('id-ID', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : '-'}
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">
+                          Rp {t.total.toLocaleString('id-ID')}
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              t.paymentStatus === PaymentStatus.Paid
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
+                            }`}
+                          >
+                            {t.paymentStatus === PaymentStatus.Paid ? 'Lunas' : 'Belum Lunas'}
+                          </span>
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                          <select
+                            id={`order-status-${t.id}`}
+                            name={`order-status-${t.id}`}
+                            value={t.orderStatus}
+                            onChange={(e) =>
+                              handleOrderStatusChange(t.id, e.target.value as OrderStatus)
+                            }
+                            className={`px-2 py-1 text-sm font-medium rounded-full border-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer ${getStatusBadge(t.orderStatus)}`}
+                            title={
+                              t.paymentStatus !== PaymentStatus.Paid
+                                ? 'Pelunasan diperlukan untuk menyelesaikan pesanan'
+                                : ''
+                            }
+                          >
+                            {Object.values(OrderStatus).map((status) => {
+                              // Tombol/toggle ke 'Selesai' hanya aktif jika sudah lunas DAN/ATAU sudah 'Siap Diambil'
+                              const disableCompleted =
+                                status === OrderStatus.Completed &&
+                                !(
+                                  t.paymentStatus === PaymentStatus.Paid ||
+                                  t.orderStatus === OrderStatus.Ready
+                                );
+                              return (
+                                <option
+                                  key={status}
+                                  value={status}
+                                  className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                  disabled={disableCompleted}
+                                >
+                                  {status}
+                                </option>
                               );
-                            return (
-                              <option
-                                key={status}
-                                value={status}
-                                className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                disabled={disableCompleted}
-                              >
-                                {status}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div
-                          className={`px-2 py-1 text-sm font-medium rounded-full text-center ${getPaymentStatusBadge(t.paymentStatus)}`}
-                        >
-                          {t.paymentStatus}
-                        </div>
-                      </td>
+                            })}
+                          </select>
+                        </td>
+
                       <td className="px-4 py-3 text-center flex items-center justify-center space-x-1">
                         {t.paymentStatus !== PaymentStatus.Paid && (
                           <button

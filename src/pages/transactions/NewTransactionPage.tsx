@@ -552,7 +552,7 @@ const NewTransactionPage: React.FC = () => {
             : [],
           createdAt: savedTransaction.createdAt ? new Date(savedTransaction.createdAt) : new Date(),
           estimatedCompletionDate: savedTransaction.estimatedCompletionDate ?? '',
-          invoiceCode: savedTransaction.invoice_code ?? undefined,
+          invoiceCode: savedTransaction.invoiceCode ?? undefined,
           paymentStatus: savedTransaction.paymentStatus as PaymentStatus,
           orderStatus: savedTransaction.orderStatus as OrderStatus,
           paymentMethod: savedTransaction.paymentMethod

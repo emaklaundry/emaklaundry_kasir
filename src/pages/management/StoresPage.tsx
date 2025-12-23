@@ -221,6 +221,7 @@ const StoresPage: React.FC = () => {
         <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
           <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
             <tr>
+              <th className="px-4 py-3">No</th>
               <th className="px-4 py-3">
                 <button
                   onClick={() => requestSort('name')}
@@ -250,8 +251,11 @@ const StoresPage: React.FC = () => {
           </thead>
           <tbody>
             {sortedStores.length > 0 ? (
-              sortedStores.map((store) => (
+              sortedStores.map((store, index) => (
                 <tr key={store.id} className="border-b dark:border-slate-700">
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+                    {index + 1}
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {store.name}
                   </td>

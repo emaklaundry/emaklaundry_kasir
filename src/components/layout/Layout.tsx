@@ -37,13 +37,9 @@ const getPageTitle = (
   if (pathname.startsWith('/transactions/') && pathname !== '/transactions/new') {
     // Coba ambil ID dari params, jika tidak ada (undefined), ambil dari split URL
     // Asumsi format URL: /transactions/:id atau /transactions/:id/details
-    const segments = pathname.split('/');
-    // segments[0] = "", segments[1] = "transactions", segments[2] = ID
-    const transactionId = params.id || segments[2];
-    if (transactionId) {
-      return `Detail Transaksi: ${transactionId}`;
+
+      return 'Detail Transaksi';
     }
-  }
 
   if (pathname.startsWith('/management/customers/')) {
     // Sama, fallback ke URL jika params.id undefined

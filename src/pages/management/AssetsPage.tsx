@@ -476,6 +476,7 @@ const AssetsPage: React.FC = () => {
           <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
             <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
+                <th className="px-6 py-3">No</th>
                 <th className="px-6 py-3">
                   <button
                     onClick={() => requestSort('name')}
@@ -525,8 +526,11 @@ const AssetsPage: React.FC = () => {
             </thead>
             <tbody>
               {sortedAssets.length > 0 ? (
-                sortedAssets.map((asset) => (
+                sortedAssets.map((asset, index) => (
                   <tr key={asset.id} className="border-b dark:border-slate-700">
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                      {index + 1}
+                    </td>
                     <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                       {asset.name}
                     </td>

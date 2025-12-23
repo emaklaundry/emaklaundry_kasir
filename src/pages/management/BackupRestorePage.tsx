@@ -371,12 +371,17 @@ const BackupRestorePage: React.FC = () => {
     const toastId = addToast('Mempersiapkan full backup...', 'info');
 
     try {
+      // Filter out synthetic expenses (from Assets) before exporting
+      // These have IDs like "asset-purchase-..." or "asset-maint-..."
+      // We only want to backup REAL database expenses
+      const realExpenses = expenses.filter(e => !e.id.startsWith('asset-'));
+
       await exportAllData(
         customers as unknown as Customer[],
         services as unknown as Service[],
         inventory as unknown as InventoryItem[],
         assets as unknown as Asset[],
-        expenses,
+        realExpenses,
         transactions,
       );
 
@@ -443,72 +448,212 @@ const BackupRestorePage: React.FC = () => {
       // Import to database using Supabase
       const { supabase } = await import('../../utils/supabaseClient');
 
-      // Clear existing data (optional - bisa dikomentari jika ingin merge)
-      updateToast(toastId, 'Menghapus data lama...', 'info');
+      // Helper function to safely parse dates
+      const safeToISOString = (dateValue: unknown): string => {
+        try {
+          if (!dateValue) return new Date().toISOString();
+          if (dateValue instanceof Date) {
+            // Check if date is valid before calling toISOString
+            if (isNaN(dateValue.getTime())) return new Date().toISOString();
+            return dateValue.toISOString();
+          }
+          if (typeof dateValue === 'string') {
+            const parsed = new Date(dateValue);
+            if (isNaN(parsed.getTime())) return new Date().toISOString();
+            return parsed.toISOString();
+          }
+          return new Date().toISOString();
+        } catch {
+          console.warn(`Invalid date value: ${dateValue}, using current date`);
+          return new Date().toISOString();
+        }
+      };
 
-      // Delete all records using proper Supabase filter syntax
-      await supabase.from('transactions').delete().not('id', 'is', null);
-      await supabase.from('expenses').delete().not('id', 'is', null);
-      await supabase.from('assets').delete().not('id', 'is', null);
-      await supabase.from('inventory_items').delete().not('id', 'is', null);
-      await supabase.from('services').delete().not('id', 'is', null);
-      await supabase.from('customers').delete().not('id', 'is', null);
+      // Note: We use UPSERT instead of DELETE + INSERT because:
+      // 1. RLS policies may prevent DELETE for non-Super Admin users
+      // 2. UPSERT is safer and handles duplicates gracefully
+      // 3. Data with same ID will be updated instead of causing conflict
+      updateToast(toastId, 'Mempersiapkan restore data...', 'info');
 
-      // Insert new data
+      // Insert/Update data using UPSERT
       let insertedCount = 0;
 
       if (importedData.customers.length > 0) {
         updateToast(toastId, `Restore pelanggan (${importedData.customers.length})...`, 'info');
         // Convert Customer to database format
-        const dbCustomers = importedData.customers.map((c) => ({
-          ...c,
-          createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : c.createdAt,
-          phone: c.phone ?? null,
-          address: c.address ?? null,
-          notes: c.notes ?? null,
-        }));
-        const { error } = await supabase.from('customers').insert(dbCustomers);
+        const dbCustomers = importedData.customers.map((c) => {
+          // For non-Super Admin users, force storeId to current user's store
+          // This is required by RLS policy which checks storeId = get_my_store_id()
+          let finalStoreId: string | null = c.storeId || null;
+          if (currentUser?.role !== UserRole.SuperAdmin) {
+            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+          }
+          
+          return {
+            ...c,
+            storeId: finalStoreId,
+            createdAt: safeToISOString(c.createdAt),
+            phone: c.phone ?? null,
+            address: c.address ?? null,
+            notes: c.notes ?? null,
+          };
+        });
+        
+        // Deduplicate by ID - keep last occurrence
+        // This prevents "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+        const deduplicatedCustomers = Array.from(
+          new Map(dbCustomers.map(c => [c.id, c])).values()
+        );
+        
+        const duplicateCount = dbCustomers.length - deduplicatedCustomers.length;
+        if (duplicateCount > 0) {
+          console.warn(`Removed ${duplicateCount} duplicate customer IDs from import batch`);
+        }
+        
+        // Use upsert with ignoreDuplicates=true to avoid RLS policy violations on UPDATE
+        // This will INSERT new records, but SKIP existing records to prevent cross-store updates
+        const { error } = await supabase
+          .from('customers')
+          .upsert(deduplicatedCustomers, { 
+            onConflict: 'id',
+            ignoreDuplicates: true // Skip update if record exists to avoid RLS USING check
+          });
         if (error) throw new Error(`Gagal restore pelanggan: ${error.message}`);
-        insertedCount += importedData.customers.length;
+        insertedCount += deduplicatedCustomers.length;
       }
 
       if (importedData.services.length > 0) {
         updateToast(toastId, `Restore layanan (${importedData.services.length})...`, 'info');
-        const { error } = await supabase.from('services').insert(importedData.services);
+        const dbServices = importedData.services.map((s) => {
+          let finalStoreId: string | null = s.storeId || null;
+          if (currentUser?.role !== UserRole.SuperAdmin) {
+            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+          }
+          // Only include columns that exist in database schema
+          const sRecord = s as unknown as Record<string, unknown>;
+          return { 
+            id: s.id,
+            name: s.name,
+            category: s.category,
+            wash_type: (sRecord.wash_type as string) || (sRecord.washType as string) || 'Pakaian',
+            price: s.price,
+            unit: s.unit,
+            durationDays: s.durationDays,
+            storeId: finalStoreId 
+          };
+        });
+        
+        // Deduplicate by ID
+        const deduplicatedServices = Array.from(
+          new Map(dbServices.map(s => [s.id, s])).values()
+        );
+        
+        const { error } = await supabase
+          .from('services')
+          .upsert(deduplicatedServices, { 
+            onConflict: 'id',
+            ignoreDuplicates: true // Skip existing to avoid RLS violations
+          });
         if (error) throw new Error(`Gagal restore layanan: ${error.message}`);
-        insertedCount += importedData.services.length;
+        insertedCount += deduplicatedServices.length;
       }
 
       if (importedData.inventory.length > 0) {
         updateToast(toastId, `Restore inventaris (${importedData.inventory.length})...`, 'info');
-        const { error } = await supabase.from('inventory_items').insert(importedData.inventory);
+        const dbInventory = importedData.inventory.map((i) => {
+          let finalStoreId: string | null = i.storeId || null;
+          if (currentUser?.role !== UserRole.SuperAdmin) {
+            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+          }
+          return { ...i, storeId: finalStoreId };
+        });
+        
+        // Deduplicate by ID
+        const deduplicatedInventory = Array.from(
+          new Map(dbInventory.map(i => [i.id, i])).values()
+        );
+        
+        const { error } = await supabase
+          .from('inventory_items')
+          .upsert(deduplicatedInventory, { 
+            onConflict: 'id',
+            ignoreDuplicates: true // Skip existing to avoid RLS violations
+          });
         if (error) throw new Error(`Gagal restore inventaris: ${error.message}`);
-        insertedCount += importedData.inventory.length;
+        insertedCount += deduplicatedInventory.length;
       }
 
       if (importedData.assets.length > 0) {
         updateToast(toastId, `Restore aset (${importedData.assets.length})...`, 'info');
         // Convert Asset to database format
-        const dbAssets = importedData.assets.map((a) => ({
-          ...a,
-          maintenanceHistory: a.maintenanceHistory as unknown as Json,
-          serialNumber: a.serialNumber ?? null,
-          purchaseDate:
-            typeof a.purchaseDate === 'string'
-              ? a.purchaseDate
-              : (a.purchaseDate?.toISOString?.() ?? null),
-          purchaseCost: a.purchaseCost ?? null,
-          storeId: a.storeId ?? null,
-        }));
-        const { error } = await supabase.from('assets').insert(dbAssets);
+        const dbAssets = importedData.assets.map((a) => {
+          let finalStoreId: string | null = a.storeId || null;
+          if (currentUser?.role !== UserRole.SuperAdmin) {
+            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+          }
+          return {
+            ...a,
+            storeId: finalStoreId,
+            maintenanceHistory: a.maintenanceHistory as unknown as Json,
+            serialNumber: a.serialNumber ?? null,
+            purchaseDate:
+              typeof a.purchaseDate === 'string'
+                ? a.purchaseDate
+                : (a.purchaseDate?.toISOString?.() ?? null),
+            purchaseCost: a.purchaseCost ?? null,
+          };
+        });
+        
+        // Deduplicate by ID
+        const deduplicatedAssets = Array.from(
+          new Map(dbAssets.map(a => [a.id, a])).values()
+        );
+        
+        const { error } = await supabase
+          .from('assets')
+          .upsert(deduplicatedAssets, { 
+            onConflict: 'id',
+            ignoreDuplicates: true // Skip existing to avoid RLS violations
+          });
         if (error) throw new Error(`Gagal restore aset: ${error.message}`);
-        insertedCount += importedData.assets.length;
+        insertedCount += deduplicatedAssets.length;
       }
 
       if (importedData.expenses.length > 0) {
         updateToast(toastId, `Restore pengeluaran (${importedData.expenses.length})...`, 'info');
+        
+        // Helper function to check if ID is valid UUID
+        const isValidUUID = (id: string): boolean => {
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return uuidRegex.test(id);
+        };
+        
+        // Helper function to generate UUID v4
+        const generateUUID = (): string => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
+        
         // Convert Expense to database format
         const dbExpenses = importedData.expenses.map((e) => {
+          // For non-Super Admin users, force storeId to current user's store
+          let finalStoreId: string | null = e.storeId || null;
+          if (currentUser?.role !== UserRole.SuperAdmin) {
+            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+          }
+          
+          // Validate and fix UUID
+          let finalId = e.id;
+          if (!isValidUUID(e.id)) {
+            // Invalid UUID (e.g., "asset-purchase-xxx" or "asset-maint-xxx")
+            // Generate new UUID to avoid database error
+            finalId = generateUUID();
+            console.warn(`Invalid UUID "${e.id}" replaced with "${finalId}"`);
+          }
+          
           // Ensure date is properly formatted as YYYY-MM-DD for database
           let dateStr: string;
           if (e.date instanceof Date) {
@@ -525,33 +670,134 @@ const BackupRestorePage: React.FC = () => {
 
           return {
             ...e,
+            id: finalId,
             date: dateStr,
-            storeId: e.storeId ?? null,
+            storeId: finalStoreId,
           };
         });
-        const { error } = await supabase.from('expenses').insert(dbExpenses);
+        
+        // Deduplicate by ID
+        const deduplicatedExpenses = Array.from(
+          new Map(dbExpenses.map(e => [e.id, e])).values()
+        );
+        
+        const { error} = await supabase
+          .from('expenses')
+          .upsert(deduplicatedExpenses, { 
+            onConflict: 'id',
+            ignoreDuplicates: true // Skip existing to avoid RLS violations
+          });
         if (error) throw new Error(`Gagal restore pengeluaran: ${error.message}`);
-        insertedCount += importedData.expenses.length;
+        insertedCount += deduplicatedExpenses.length;
       }
 
       if (importedData.transactions.length > 0) {
         updateToast(toastId, `Restore transaksi (${importedData.transactions.length})...`, 'info');
         // Convert Transaction to database format
-        const dbTransactions = importedData.transactions.map((t) => ({
-          ...t,
-          items: t.items as unknown as Json,
-          createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt,
-          customerId: t.customerId ?? null,
-          createdByUserId: t.createdByUserId ?? null,
-          estimatedCompletionDate: t.estimatedCompletionDate ?? null,
-          paymentMethod: t.paymentMethod ?? null,
-          invoiceCode: t.invoiceCode ?? null,
-          notes: t.notes ?? null,
-          storeId: t.storeId ?? null,
-        }));
-        const { error } = await supabase.from('transactions').insert(dbTransactions);
+        const dbTransactions = importedData.transactions.map((t) => {
+          // For non-Super Admin users, force storeId to current user's store
+          let finalStoreId: string | null = t.storeId || null;
+          if (currentUser?.role !== UserRole.SuperAdmin) {
+            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+          }
+          
+          // Explicitly map only database schema fields to avoid sending unknown columns
+          return {
+            id: t.id,
+            invoiceCode: t.invoiceCode ?? null,
+            customerId: t.customerId && t.customerId !== '' ? t.customerId : null,
+            items: t.items as unknown as Json,
+            subtotal: t.subtotal,
+            discount: t.discount,
+            tax: t.tax,
+            total: t.total,
+            orderStatus: t.orderStatus,
+            paymentStatus: t.paymentStatus,
+            amountPaid: t.amountPaid,
+            change: t.change,
+            paymentMethod: t.paymentMethod ?? null,
+            estimatedCompletionDate: (() => {
+              // Handle estimatedCompletionDate properly
+              if (!t.estimatedCompletionDate || t.estimatedCompletionDate === '') {
+                return null;
+              }
+              
+              // If it's already a valid ISO string, use it
+              if (typeof t.estimatedCompletionDate === 'string') {
+                try {
+                  const parsed = new Date(t.estimatedCompletionDate);
+                  if (!isNaN(parsed.getTime())) {
+                    return parsed.toISOString();
+                  }
+                } catch {
+                  // Invalid date string
+                }
+              }
+              
+              // If it's a Date object
+              if (typeof t.estimatedCompletionDate === 'object' && t.estimatedCompletionDate !== null && 'getTime' in t.estimatedCompletionDate) {
+                return safeToISOString(t.estimatedCompletionDate as Date);
+              }
+              
+              // Default to null if can't parse
+              return null;
+            })(),
+            notes: t.notes ?? null,
+            createdAt: (() => {
+              // Handle createdAt - try multiple formats
+              try {
+                if (!t.createdAt) return new Date().toISOString();
+                
+                // If already a Date object
+                if (t.createdAt instanceof Date) {
+                  const iso = t.createdAt.toISOString();
+                  if (iso && iso !== 'Invalid Date') return iso;
+                }
+                
+                // If it's a string, try parsing
+                if (typeof t.createdAt === 'string') {
+                  const str = String(t.createdAt);
+                  
+                  // Try Excel format: "dd/MM/yyyy, HH.mm.ss"
+                  const excelMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/);
+                  if (excelMatch) {
+                    const [, day, month, year, hour, minute, second] = excelMatch;
+                    const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.000Z`;
+                    return isoDate;
+                  }
+                  
+                  // Try standard Date parse
+                  const parsed = new Date(str);
+                  if (!isNaN(parsed.getTime())) {
+                    return parsed.toISOString();
+                  }
+                }
+                
+                // Fallback
+                return new Date().toISOString();
+              } catch (error) {
+                console.error('Error parsing createdAt:', t.createdAt, error);
+                return new Date().toISOString();
+              }
+            })(),
+            storeId: finalStoreId && finalStoreId !== '' ? finalStoreId : null,
+            createdByUserId: t.createdByUserId && t.createdByUserId !== '' ? t.createdByUserId : null,
+          };
+        });
+        
+        // Deduplicate by ID
+        const deduplicatedTransactions = Array.from(
+          new Map(dbTransactions.map(t => [t.id, t])).values()
+        );
+        
+        const { error } = await supabase
+          .from('transactions')
+          .upsert(deduplicatedTransactions, { 
+            onConflict: 'id',
+            ignoreDuplicates: true // Skip existing to avoid RLS violations
+          });
         if (error) throw new Error(`Gagal restore transaksi: ${error.message}`);
-        insertedCount += importedData.transactions.length;
+        insertedCount += deduplicatedTransactions.length;
       }
 
       updateToast(
