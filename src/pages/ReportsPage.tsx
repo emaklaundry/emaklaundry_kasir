@@ -8,7 +8,7 @@ import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
 import { supabase } from '../utils/supabaseClient';
-import { UserRole, Service, User, ServiceCategory, MaintenanceLog, Transaction } from '@/types';
+import { UserRole, Service, User, ServiceCategory, MaintenanceLog, Transaction, PaymentStatus, OrderStatus, PaymentMethod, TransactionItem } from '@/types';
 import { formatRupiah } from '../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 
@@ -22,8 +22,8 @@ function isTransaction(obj: unknown): obj is Transaction {
     typeof t.amountPaid === 'number' &&
     typeof t.discount === 'number' &&
     typeof t.total === 'number' &&
-    typeof t.customerId === 'string' &&
-    typeof t.createdByUserId === 'string' &&
+    (typeof t.customerId === 'string' || typeof t.customerId === 'undefined' || t.customerId === null) &&
+    (typeof t.createdByUserId === 'string' || typeof t.createdByUserId === 'undefined' || t.createdByUserId === null) &&
     Array.isArray(t.items)
   );
 }
@@ -223,6 +223,48 @@ type Expense = {
 // Tipe transaksi hasil normalisasi (createdAt: string)
 type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
 
+// Raw DB types for snake_case mapping
+interface RawTransaction {
+  id: string;
+  invoice_code?: string;
+  invoiceCode?: string;
+  customer_id?: string;
+  customerId?: string;
+  subtotal?: number;
+  discount?: number;
+  tax?: number;
+  total?: number;
+  amount_paid?: number;
+  amountPaid?: number;
+  change?: number;
+  payment_status?: PaymentStatus;
+  paymentStatus?: PaymentStatus;
+  order_status?: OrderStatus;
+  orderStatus?: OrderStatus;
+  payment_method?: PaymentMethod;
+  paymentMethod?: PaymentMethod;
+  created_at?: string;
+  createdAt?: string | Date;
+  estimated_completion_date?: string;
+  estimatedCompletionDate?: string;
+  created_by_user_id?: string;
+  createdByUserId?: string;
+  store_id?: string;
+  storeId?: string;
+  items?: TransactionItem[];
+  notes?: string;
+}
+
+interface RawExpense {
+  id: string;
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+  store_id?: string;
+  storeId?: string;
+}
+
 const ReportsPage: React.FC = () => {
   const customersRaw = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -278,6 +320,8 @@ const ReportsPage: React.FC = () => {
       const endIso = new Date(endDate);
       endIso.setHours(23, 59, 59, 999);
 
+
+
       let allTx: Transaction[] = [];
       let page = 0;
       const pageSize = 1000;
@@ -300,15 +344,28 @@ const ReportsPage: React.FC = () => {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          // Normalize data types
+          // Normalize data types and map snake_case to camelCase
            const transactions = data.map((t) => {
-            const raw = t as { invoice_code?: string; invoiceCode?: string };
+            const raw = t as unknown as RawTransaction; // Safe cast to raw type
             return {
-              ...t,
+              id: raw.id,
               invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
-              customerId: t.customerId ?? undefined,
-              createdByUserId: t.createdByUserId ?? undefined,
-              paymentMethod: t.paymentMethod ?? undefined,
+              customerId: raw.customer_id ?? raw.customerId ?? undefined,
+              subtotal: Number(raw.subtotal ?? 0),
+              discount: Number(raw.discount ?? 0),
+              tax: Number(raw.tax ?? 0),
+              total: Number(raw.total ?? 0),
+              amountPaid: Number(raw.amount_paid ?? raw.amountPaid ?? 0),
+              change: Number(raw.change ?? 0),
+              paymentStatus: raw.payment_status ?? raw.paymentStatus ?? 'Unpaid',
+              orderStatus: raw.order_status ?? raw.orderStatus ?? 'Processing',
+              paymentMethod: raw.payment_method ?? raw.paymentMethod ?? undefined,
+              createdAt: raw.created_at ?? (raw.createdAt instanceof Date ? raw.createdAt.toISOString() : raw.createdAt) ?? new Date().toISOString(),
+              estimatedCompletionDate: raw.estimated_completion_date ?? raw.estimatedCompletionDate ?? '',
+              createdByUserId: raw.created_by_user_id ?? raw.createdByUserId ?? undefined,
+              storeId: raw.store_id ?? raw.storeId ?? undefined,
+              items: raw.items ?? [],
+              notes: raw.notes ?? undefined,
             };
           }) as unknown as Transaction[];
           
@@ -381,7 +438,19 @@ const ReportsPage: React.FC = () => {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          allOperationalExpenses = [...allOperationalExpenses, ...(data as Expense[])];
+          const mappedExpenses = data.map((e) => {
+             const raw = e as unknown as RawExpense;
+             return {
+               id: raw.id,
+               date: raw.date,
+               description: raw.description,
+               category: raw.category,
+               amount: raw.amount,
+               storeId: raw.store_id ?? raw.storeId ?? undefined,
+             };
+          }) as Expense[];
+
+          allOperationalExpenses = [...allOperationalExpenses, ...mappedExpenses];
           if (data.length < pageSize) {
             hasMore = false;
           }
@@ -417,27 +486,31 @@ const ReportsPage: React.FC = () => {
           // Validasi minimal
           if (!asset.id || !asset.name) return;
 
+          const purchaseDate = (asset.purchase_date ?? asset.purchaseDate) as string | Date | undefined;
+          const purchaseCost = Number(asset.purchase_cost ?? asset.purchaseCost) || 0;
+          const maintenanceHistoryRaw = (asset.maintenance_history ?? asset.maintenanceHistory);
+          const storeId = (asset.store_id ?? asset.storeId) as string | undefined;
+
           // A. Pembelian Aset
-          if (asset.purchaseDate) {
-            let purchaseDateStr = String(asset.purchaseDate);
+          if (purchaseDate) {
+            let purchaseDateStr = String(purchaseDate);
             if (purchaseDateStr.includes('T')) {
               purchaseDateStr = purchaseDateStr.split('T')[0];
             }
 
             // Filter tanggal sesuai range
             if (purchaseDateStr >= startDateStr && purchaseDateStr <= endDateStr) {
-              const cost = Number(asset.purchaseCost) || 0;
               const description = `Pembelian Aset: ${asset.name}`;
 
               // Cek apakah sudah ada di expenses (untuk mencegah duplikat data baru)
-              if (!isExpenseExist(description, purchaseDateStr, cost)) {
+              if (!isExpenseExist(description, purchaseDateStr, purchaseCost)) {
                 assetExpenses.push({
                   id: `asset-purchase-${asset.id}`,
                   date: purchaseDateStr,
                   description: description,
                   category: 'Pembelian Aset',
-                  amount: cost,
-                  storeId: typeof asset.storeId === 'string' ? asset.storeId : null,
+                  amount: purchaseCost,
+                  storeId: typeof storeId === 'string' ? storeId : null,
                 });
               }
             }
@@ -445,12 +518,12 @@ const ReportsPage: React.FC = () => {
 
           // B. Pemeliharaan Aset (History)
           let maintenanceHistory: MaintenanceLog[] = [];
-          if (asset.maintenanceHistory) {
-            if (Array.isArray(asset.maintenanceHistory)) {
-              maintenanceHistory = asset.maintenanceHistory;
-            } else if (typeof asset.maintenanceHistory === 'string') {
+          if (maintenanceHistoryRaw) {
+            if (Array.isArray(maintenanceHistoryRaw)) {
+              maintenanceHistory = maintenanceHistoryRaw as MaintenanceLog[];
+            } else if (typeof maintenanceHistoryRaw === 'string') {
               try {
-                maintenanceHistory = JSON.parse(asset.maintenanceHistory);
+                maintenanceHistory = JSON.parse(maintenanceHistoryRaw);
               } catch (error) {
                 console.error(`Failed to parse maintenanceHistory for asset ${asset.id}:`, error);
               }
@@ -538,7 +611,7 @@ const ReportsPage: React.FC = () => {
     return { transactions, expenses };
   }, [startDate, endDate, allStoreTransactions, allStoreExpenses]);
 
-  const totalRevenue = filteredData.transactions.reduce((acc: number, t) => acc + t.amountPaid, 0);
+  const totalRevenue = filteredData.transactions.reduce((acc: number, t) => acc + t.total, 0);
   const totalExpenses = filteredData.expenses.reduce((acc: number, e) => acc + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
 
@@ -556,16 +629,32 @@ const ReportsPage: React.FC = () => {
   const topServices = useMemo(() => {
     const serviceRevenue: { [key: string]: number } = {};
     (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
-      t.items.forEach((item: { serviceId: string; subtotal: number }) => {
+      t.items.forEach((item: { serviceId: string; serviceName?: string; subtotal: number }) => {
         serviceRevenue[item.serviceId] = (serviceRevenue[item.serviceId] || 0) + item.subtotal;
+        
+        // Simpan nama service dari item jika ada (fallback jika serviceMap kosong)
+        if (item.serviceName && !serviceMap[item.serviceId]) {
+           // Hacky way to inject name into serviceMap-like structure solely for this report? 
+           // Better to handle in the map below.
+        }
       }),
     );
     return Object.entries(serviceRevenue)
-      .map(([serviceId, revenue]) => ({
-        serviceId, // FIXED: Tambahkan serviceId untuk key yang unik
-        name: serviceMap[serviceId]?.name || 'Layanan Dihapus',
-        revenue,
-      }))
+      .map(([serviceId, revenue]) => {
+         // Find service name from ANY item with this serviceId? 
+         // Helper: find first transaction item with this id
+         let name = serviceMap[serviceId]?.name;
+         if (!name) {
+            const tx = (filteredData.transactions as NormalizedTransaction[]).find(t => t.items.some((i: TransactionItem) => i.serviceId === serviceId));
+            const item = tx?.items.find((i: TransactionItem) => i.serviceId === serviceId);
+            name = item?.serviceName || 'Layanan Dihapus';
+         }
+         return {
+            serviceId,
+            name,
+            revenue,
+         };
+      })
       .filter((s) => s.revenue > 0)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
@@ -574,11 +663,13 @@ const ReportsPage: React.FC = () => {
   const topCustomers = useMemo(() => {
     const customerSpending: { [key: string]: number } = {};
     (filteredData.transactions as NormalizedTransaction[]).forEach((t) => {
-      customerSpending[t.customerId] = (customerSpending[t.customerId] || 0) + t.total;
+      // Allow undefined customerId (External Customer / Umum)
+      const cid = t.customerId || 'unknown';
+      customerSpending[cid] = (customerSpending[cid] || 0) + t.total;
     });
     return Object.entries(customerSpending)
       .map(([customerId, total]) => ({
-        name: customers.find((c: { id: string }) => c.id === customerId)?.name || 'N/A',
+        name: customers.find((c: { id: string }) => c.id === customerId)?.name || (customerId === 'unknown' ? 'Umum' : 'N/A'),
         total,
       }))
       .sort((a, b) => b.total - a.total)
@@ -604,18 +695,21 @@ const ReportsPage: React.FC = () => {
       };
     } = {};
     (filteredData.transactions as NormalizedTransaction[]).forEach((t) => {
-      if (!t.createdByUserId || !userMap[t.createdByUserId]) return;
-      const user = userMap[t.createdByUserId];
-      if (!stats[user.id])
-        stats[user.id] = {
-          name: user.name,
+      // Fallback for unknown user
+      const userId = t.createdByUserId || 'unknown';
+      const user = userMap[userId];
+      const name = user?.name || (userId === 'unknown' ? 'Tanpa Kasir' : 'Unknown User');
+
+      if (!stats[userId])
+        stats[userId] = {
+          name: name,
           transactionCount: 0,
           totalRevenue: 0,
           totalDiscount: 0,
         };
-      stats[user.id].transactionCount++;
-      stats[user.id].totalRevenue += t.amountPaid;
-      stats[user.id].totalDiscount += t.discount;
+      stats[userId].transactionCount++;
+      stats[userId].totalRevenue += t.total;
+      stats[userId].totalDiscount += t.discount;
     });
     return Object.values(stats).sort((a, b) => b.totalRevenue - a.totalRevenue);
   }, [filteredData.transactions, userMap]);
@@ -628,11 +722,16 @@ const ReportsPage: React.FC = () => {
       Karpet: 0,
     };
     (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
-      t.items.forEach((item: { serviceId: string; subtotal: number }) => {
+      t.items.forEach((item: { serviceId: string; subtotal: number; unit?: string }) => {
         const service = serviceMap[item.serviceId];
+        // If service map fails, try to guess based on unit
         if (service) {
           const cat = service.category as ServiceCategory;
           categoryRevenue[cat] = (categoryRevenue[cat] || 0) + item.subtotal;
+        } else if (item.unit === 'kg') {
+          categoryRevenue['Kiloan'] = (categoryRevenue['Kiloan'] || 0) + item.subtotal;
+        } else if (item.unit === 'm2') {
+          categoryRevenue['Karpet'] = (categoryRevenue['Karpet'] || 0) + item.subtotal;
         }
       }),
     );
@@ -661,14 +760,24 @@ const ReportsPage: React.FC = () => {
       }),
     );
     return Object.entries(stats)
-      .map(([serviceId, stat]) => ({
-        serviceId,
-        name: serviceMap[serviceId]?.name || 'Layanan Dihapus',
-        category: serviceMap[serviceId]?.category || '-',
-        unit: serviceMap[serviceId]?.unit || 'unit',
-        revenue: stat.revenue,
-        quantity: stat.quantity,
-      }))
+      .map(([serviceId, stat]) => {
+         // Fallback name logic
+         let name = serviceMap[serviceId]?.name;
+         if (!name) {
+            const tx = (filteredData.transactions as NormalizedTransaction[]).find(t => t.items.some((i: TransactionItem) => i.serviceId === serviceId));
+            const item = tx?.items.find((i: TransactionItem) => i.serviceId === serviceId);
+            name = item?.serviceName || 'Layanan Dihapus';
+         }
+
+         return {
+            serviceId,
+            name,
+            category: serviceMap[serviceId]?.category || '-',
+            unit: serviceMap[serviceId]?.unit || 'unit',
+            revenue: stat.revenue,
+            quantity: Number(stat.quantity.toFixed(2)), // Fix rounding
+         };
+      })
       .sort((a, b) => b.revenue - a.revenue);
   }, [filteredData.transactions, serviceMap]);
 
