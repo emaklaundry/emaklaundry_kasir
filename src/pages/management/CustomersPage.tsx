@@ -134,7 +134,7 @@ const CustomersPage: React.FC = () => {
     setCurrentCustomer(null);
   };
 
-  const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId'>) => {
+  const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'storeId' | 'createdAt'>) => {
     // Pilih storeId sesuai role user
     const storeId =
       currentCustomer?.storeId ||
@@ -180,7 +180,7 @@ const CustomersPage: React.FC = () => {
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
         updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
       } else {
-        await addCustomer({ ...customerData, phone: phone || undefined, storeId });
+        await addCustomer({ ...customerData, phone: phone || undefined, createdAt: new Date(), storeId });
         addAuditLog(`Menambahkan pelanggan baru: "${customerData.name}".`, storeId);
         updateToast(toastId, 'Pelanggan baru berhasil ditambahkan!', 'success');
       }

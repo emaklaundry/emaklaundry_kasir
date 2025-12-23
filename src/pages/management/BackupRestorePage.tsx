@@ -446,12 +446,13 @@ const BackupRestorePage: React.FC = () => {
       // Clear existing data (optional - bisa dikomentari jika ingin merge)
       updateToast(toastId, 'Menghapus data lama...', 'info');
 
-      await supabase.from('transactions').delete().neq('id', '');
-      await supabase.from('expenses').delete().neq('id', '');
-      await supabase.from('assets').delete().neq('id', '');
-      await supabase.from('inventory_items').delete().neq('id', '');
-      await supabase.from('services').delete().neq('id', '');
-      await supabase.from('customers').delete().neq('id', '');
+      // Delete all records using proper Supabase filter syntax
+      await supabase.from('transactions').delete().not('id', 'is', null);
+      await supabase.from('expenses').delete().not('id', 'is', null);
+      await supabase.from('assets').delete().not('id', 'is', null);
+      await supabase.from('inventory_items').delete().not('id', 'is', null);
+      await supabase.from('services').delete().not('id', 'is', null);
+      await supabase.from('customers').delete().not('id', 'is', null);
 
       // Insert new data
       let insertedCount = 0;

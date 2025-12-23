@@ -432,7 +432,13 @@ CREATE POLICY "Allow INSERT/UPDATE/DELETE for Super Admins only" ON public.store
 CREATE POLICY "Allow SELECT for store users" ON public.customers
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.customers
-  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+  FOR INSERT WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin', 'Kasir')
+      AND "storeId" = public.get_my_store_id()
+    )
+  );
 CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.customers
   FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.customers
@@ -442,7 +448,13 @@ CREATE POLICY "Allow DELETE for Admins" ON public.customers
 CREATE POLICY "Allow SELECT for store users" ON public.services
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for Admins" ON public.services
-  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+  FOR INSERT WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() = 'Admin'
+      AND "storeId" = public.get_my_store_id()
+    )
+  );
 CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.services
   FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.services
@@ -452,7 +464,13 @@ CREATE POLICY "Allow DELETE for Admins" ON public.services
 CREATE POLICY "Allow SELECT for store users" ON public.inventory_items
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.inventory_items
-  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+  FOR INSERT WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin', 'Kasir')
+      AND "storeId" = public.get_my_store_id()
+    )
+  );
 CREATE POLICY "Allow UPDATE for Admins" ON public.inventory_items
   FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.inventory_items
@@ -462,7 +480,13 @@ CREATE POLICY "Allow DELETE for Admins" ON public.inventory_items
 CREATE POLICY "Allow SELECT for store users" ON public.assets
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for Admins" ON public.assets
-  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+  FOR INSERT WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() = 'Admin'
+      AND "storeId" = public.get_my_store_id()
+    )
+  );
 CREATE POLICY "Allow UPDATE for Admins" ON public.assets
   FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.assets
@@ -482,7 +506,13 @@ CREATE POLICY "Allow DELETE for Admins" ON public.scheduled_maintenances
 CREATE POLICY "Allow SELECT for store users" ON public.expenses
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.expenses
-  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+  FOR INSERT WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin', 'Kasir')
+      AND "storeId" = public.get_my_store_id()
+    )
+  );
 CREATE POLICY "Allow UPDATE for Admins" ON public.expenses
   FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.expenses
@@ -492,7 +522,13 @@ CREATE POLICY "Allow DELETE for Admins" ON public.expenses
 CREATE POLICY "Allow SELECT for store users" ON public.transactions
   FOR SELECT USING (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
 CREATE POLICY "Allow INSERT for store users" ON public.transactions
-  FOR INSERT WITH CHECK (public.get_my_role() = 'Super Admin' OR "storeId" = public.get_my_store_id());
+  FOR INSERT WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin', 'Kasir')
+      AND "storeId" = public.get_my_store_id()
+    )
+  );
 
 -- Trigger: Prevent update of immutable fields except by Super Admin
 CREATE OR REPLACE FUNCTION public.prevent_immutable_transaction_update()
@@ -1273,3 +1309,48 @@ SELECT * FROM public.backfill_invoice_codes();
 -- ============================================
 -- END OF COMPLETE SETUP
 -- ============================================
+-- ============================================
+-- POPULATE MISSING INVOICE CODES (ONE-TIME FIX)
+-- ============================================
+
+-- ============================================
+-- POPULATE MISSING INVOICE CODES
+-- ============================================
+DO $$
+DECLARE
+  rec RECORD;
+  new_code TEXT;
+  store_prefix TEXT;
+  chars TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  max_attempts INT := 10;
+  attempt INT;
+  i INT;
+  updated_count INT := 0;
+BEGIN
+  FOR rec IN 
+    SELECT id, "storeId" FROM public.transactions WHERE "invoiceCode" IS NULL
+  LOOP
+    store_prefix := 'EM';
+    IF rec."storeId" IS NOT NULL THEN
+      SELECT upper(substr(regexp_replace(name, '[^a-zA-Z]', '', 'g'), 1, 3))
+      INTO store_prefix FROM public.stores WHERE id = rec."storeId";
+      IF store_prefix IS NULL OR length(store_prefix) = 0 THEN
+        store_prefix := 'EM';
+      END IF;
+    END IF;
+    attempt := 0;
+    WHILE attempt < max_attempts LOOP
+      new_code := store_prefix || '-';
+      FOR i IN 1..6 LOOP
+        new_code := new_code || substr(chars, floor(random() * length(chars))::int + 1, 1);
+      END LOOP;
+      IF NOT EXISTS (SELECT 1 FROM public.transactions WHERE "invoiceCode" = new_code) THEN
+        UPDATE public.transactions SET "invoiceCode" = new_code WHERE id = rec.id;
+        updated_count := updated_count + 1;
+        EXIT;
+      END IF;
+      attempt := attempt + 1;
+    END LOOP;
+  END LOOP;
+  RAISE NOTICE 'Populated % missing invoice codes', updated_count;
+END $$;
