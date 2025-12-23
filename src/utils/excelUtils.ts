@@ -2449,6 +2449,12 @@ export async function importAllData(file: File): Promise<{
   const transactionSheet = workbook.getWorksheet('🧾 Transaksi');
   const transactions: Transaction[] = [];
   if (transactionSheet) {
+    // Create a map of service names to IDs for quick lookup
+    const serviceNameToIdMap = new Map<string, string>();
+    services.forEach(service => {
+      serviceNameToIdMap.set(service.name.toLowerCase().trim(), service.id);
+    });
+    
     transactionSheet.eachRow((row, _rowNumber) => {
       if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
@@ -2470,7 +2476,7 @@ export async function importAllData(file: File): Promise<{
         const notesStr = row.getCell(17).value?.toString();
 
         // Simple parsing for services string if needed, or fallback to empty array
-        // "Service Name (qty unit x Rp price), ..."
+        // "Service Name (qty unit × Rp price), ..."
         const items: TransactionItem[] = [];
         if (servicesStr) {
           const parts = servicesStr.split('), ');
@@ -2482,9 +2488,24 @@ export async function importAllData(file: File): Promise<{
             if (match) {
               const [_, name, qty, unit, priceStr] = match;
               const price = parseFloat(priceStr.replace(/\./g, '').replace(/,/g, ''));
+              const serviceName = name.trim();
+              const serviceNameLower = serviceName.toLowerCase();
+              
+              // Try to find service ID by name
+              let serviceId = serviceNameToIdMap.get(serviceNameLower);
+              
+              // If not found, generate a new UUID for this service
+              // This allows historical data with deleted services to still be imported
+              if (!serviceId) {
+                serviceId = crypto.randomUUID();
+                // Add to map to ensure consistency within this import
+                serviceNameToIdMap.set(serviceNameLower, serviceId);
+                console.warn(`Service "${serviceName}" not found in database, generated new UUID: ${serviceId}`);
+              }
+              
               items.push({
-                serviceId: 'restored-id', // Placeholder, service mapping is hard without IDs
-                serviceName: name.trim(),
+                serviceId: serviceId,
+                serviceName: serviceName,
                 quantity: parseFloat(qty),
                 unit: unit.trim(),
                 price: price,
