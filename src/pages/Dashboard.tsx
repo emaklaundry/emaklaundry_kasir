@@ -237,8 +237,6 @@ const Dashboard: React.FC = () => {
 
   const isCashier = currentUser?.role === UserRole.Cashier;
 
-
-
   const weeklyRevenueData = useMemo(() => {
     const data = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
@@ -594,7 +592,6 @@ const Dashboard: React.FC = () => {
               {getStoreName()}
             </span>
           </h2>
-
         </div>
 
         {/* Weather Widget */}

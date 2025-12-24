@@ -374,7 +374,7 @@ const BackupRestorePage: React.FC = () => {
       // Filter out synthetic expenses (from Assets) before exporting
       // These have IDs like "asset-purchase-..." or "asset-maint-..."
       // We only want to backup REAL database expenses
-      const realExpenses = expenses.filter(e => !e.id.startsWith('asset-'));
+      const realExpenses = expenses.filter((e) => !e.id.startsWith('asset-'));
 
       await exportAllData(
         customers as unknown as Customer[],
@@ -486,9 +486,12 @@ const BackupRestorePage: React.FC = () => {
           // This is required by RLS policy which checks storeId = get_my_store_id()
           let finalStoreId: string | null = c.storeId || null;
           if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+            finalStoreId =
+              selectedStoreId && selectedStoreId !== 'all'
+                ? selectedStoreId
+                : currentUser?.storeId || null;
           }
-          
+
           return {
             ...c,
             storeId: finalStoreId,
@@ -498,26 +501,24 @@ const BackupRestorePage: React.FC = () => {
             notes: c.notes ?? null,
           };
         });
-        
+
         // Deduplicate by ID - keep last occurrence
         // This prevents "ON CONFLICT DO UPDATE command cannot affect row a second time" error
         const deduplicatedCustomers = Array.from(
-          new Map(dbCustomers.map(c => [c.id, c])).values()
+          new Map(dbCustomers.map((c) => [c.id, c])).values(),
         );
-        
+
         const duplicateCount = dbCustomers.length - deduplicatedCustomers.length;
         if (duplicateCount > 0) {
           console.warn(`Removed ${duplicateCount} duplicate customer IDs from import batch`);
         }
-        
+
         // Use upsert with ignoreDuplicates=true to avoid RLS policy violations on UPDATE
         // This will INSERT new records, but SKIP existing records to prevent cross-store updates
-        const { error } = await supabase
-          .from('customers')
-          .upsert(deduplicatedCustomers, { 
-            onConflict: 'id',
-            ignoreDuplicates: true // Skip update if record exists to avoid RLS USING check
-          });
+        const { error } = await supabase.from('customers').upsert(deduplicatedCustomers, {
+          onConflict: 'id',
+          ignoreDuplicates: true, // Skip update if record exists to avoid RLS USING check
+        });
         if (error) throw new Error(`Gagal restore pelanggan: ${error.message}`);
         insertedCount += deduplicatedCustomers.length;
       }
@@ -527,11 +528,14 @@ const BackupRestorePage: React.FC = () => {
         const dbServices = importedData.services.map((s) => {
           let finalStoreId: string | null = s.storeId || null;
           if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+            finalStoreId =
+              selectedStoreId && selectedStoreId !== 'all'
+                ? selectedStoreId
+                : currentUser?.storeId || null;
           }
           // Only include columns that exist in database schema
           const sRecord = s as unknown as Record<string, unknown>;
-          return { 
+          return {
             id: s.id,
             name: s.name,
             category: s.category,
@@ -539,21 +543,17 @@ const BackupRestorePage: React.FC = () => {
             price: s.price,
             unit: s.unit,
             durationDays: s.durationDays,
-            storeId: finalStoreId 
+            storeId: finalStoreId,
           };
         });
-        
+
         // Deduplicate by ID
-        const deduplicatedServices = Array.from(
-          new Map(dbServices.map(s => [s.id, s])).values()
-        );
-        
-        const { error } = await supabase
-          .from('services')
-          .upsert(deduplicatedServices, { 
-            onConflict: 'id',
-            ignoreDuplicates: true // Skip existing to avoid RLS violations
-          });
+        const deduplicatedServices = Array.from(new Map(dbServices.map((s) => [s.id, s])).values());
+
+        const { error } = await supabase.from('services').upsert(deduplicatedServices, {
+          onConflict: 'id',
+          ignoreDuplicates: true, // Skip existing to avoid RLS violations
+        });
         if (error) throw new Error(`Gagal restore layanan: ${error.message}`);
         insertedCount += deduplicatedServices.length;
       }
@@ -563,22 +563,23 @@ const BackupRestorePage: React.FC = () => {
         const dbInventory = importedData.inventory.map((i) => {
           let finalStoreId: string | null = i.storeId || null;
           if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+            finalStoreId =
+              selectedStoreId && selectedStoreId !== 'all'
+                ? selectedStoreId
+                : currentUser?.storeId || null;
           }
           return { ...i, storeId: finalStoreId };
         });
-        
+
         // Deduplicate by ID
         const deduplicatedInventory = Array.from(
-          new Map(dbInventory.map(i => [i.id, i])).values()
+          new Map(dbInventory.map((i) => [i.id, i])).values(),
         );
-        
-        const { error } = await supabase
-          .from('inventory_items')
-          .upsert(deduplicatedInventory, { 
-            onConflict: 'id',
-            ignoreDuplicates: true // Skip existing to avoid RLS violations
-          });
+
+        const { error } = await supabase.from('inventory_items').upsert(deduplicatedInventory, {
+          onConflict: 'id',
+          ignoreDuplicates: true, // Skip existing to avoid RLS violations
+        });
         if (error) throw new Error(`Gagal restore inventaris: ${error.message}`);
         insertedCount += deduplicatedInventory.length;
       }
@@ -589,7 +590,10 @@ const BackupRestorePage: React.FC = () => {
         const dbAssets = importedData.assets.map((a) => {
           let finalStoreId: string | null = a.storeId || null;
           if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+            finalStoreId =
+              selectedStoreId && selectedStoreId !== 'all'
+                ? selectedStoreId
+                : currentUser?.storeId || null;
           }
           return {
             ...a,
@@ -603,48 +607,47 @@ const BackupRestorePage: React.FC = () => {
             purchaseCost: a.purchaseCost ?? null,
           };
         });
-        
+
         // Deduplicate by ID
-        const deduplicatedAssets = Array.from(
-          new Map(dbAssets.map(a => [a.id, a])).values()
-        );
-        
-        const { error } = await supabase
-          .from('assets')
-          .upsert(deduplicatedAssets, { 
-            onConflict: 'id',
-            ignoreDuplicates: true // Skip existing to avoid RLS violations
-          });
+        const deduplicatedAssets = Array.from(new Map(dbAssets.map((a) => [a.id, a])).values());
+
+        const { error } = await supabase.from('assets').upsert(deduplicatedAssets, {
+          onConflict: 'id',
+          ignoreDuplicates: true, // Skip existing to avoid RLS violations
+        });
         if (error) throw new Error(`Gagal restore aset: ${error.message}`);
         insertedCount += deduplicatedAssets.length;
       }
 
       if (importedData.expenses.length > 0) {
         updateToast(toastId, `Restore pengeluaran (${importedData.expenses.length})...`, 'info');
-        
+
         // Helper function to check if ID is valid UUID
         const isValidUUID = (id: string): boolean => {
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           return uuidRegex.test(id);
         };
-        
+
         // Helper function to generate UUID v4
         const generateUUID = (): string => {
           return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            const r = Math.random() * 16 | 0;
-            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
             return v.toString(16);
           });
         };
-        
+
         // Convert Expense to database format
         const dbExpenses = importedData.expenses.map((e) => {
           // For non-Super Admin users, force storeId to current user's store
           let finalStoreId: string | null = e.storeId || null;
           if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+            finalStoreId =
+              selectedStoreId && selectedStoreId !== 'all'
+                ? selectedStoreId
+                : currentUser?.storeId || null;
           }
-          
+
           // Validate and fix UUID
           let finalId = e.id;
           if (!isValidUUID(e.id)) {
@@ -653,7 +656,7 @@ const BackupRestorePage: React.FC = () => {
             finalId = generateUUID();
             console.warn(`Invalid UUID "${e.id}" replaced with "${finalId}"`);
           }
-          
+
           // Ensure date is properly formatted as YYYY-MM-DD for database
           let dateStr: string;
           if (e.date instanceof Date) {
@@ -675,18 +678,14 @@ const BackupRestorePage: React.FC = () => {
             storeId: finalStoreId,
           };
         });
-        
+
         // Deduplicate by ID
-        const deduplicatedExpenses = Array.from(
-          new Map(dbExpenses.map(e => [e.id, e])).values()
-        );
-        
-        const { error} = await supabase
-          .from('expenses')
-          .upsert(deduplicatedExpenses, { 
-            onConflict: 'id',
-            ignoreDuplicates: true // Skip existing to avoid RLS violations
-          });
+        const deduplicatedExpenses = Array.from(new Map(dbExpenses.map((e) => [e.id, e])).values());
+
+        const { error } = await supabase.from('expenses').upsert(deduplicatedExpenses, {
+          onConflict: 'id',
+          ignoreDuplicates: true, // Skip existing to avoid RLS violations
+        });
         if (error) throw new Error(`Gagal restore pengeluaran: ${error.message}`);
         insertedCount += deduplicatedExpenses.length;
       }
@@ -698,9 +697,12 @@ const BackupRestorePage: React.FC = () => {
           // For non-Super Admin users, force storeId to current user's store
           let finalStoreId: string | null = t.storeId || null;
           if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId = selectedStoreId && selectedStoreId !== 'all' ? selectedStoreId : currentUser?.storeId || null;
+            finalStoreId =
+              selectedStoreId && selectedStoreId !== 'all'
+                ? selectedStoreId
+                : currentUser?.storeId || null;
           }
-          
+
           // Explicitly map only database schema fields to avoid sending unknown columns
           return {
             id: t.id,
@@ -721,7 +723,7 @@ const BackupRestorePage: React.FC = () => {
               if (!t.estimatedCompletionDate || t.estimatedCompletionDate === '') {
                 return null;
               }
-              
+
               // If it's already a valid ISO string, use it
               if (typeof t.estimatedCompletionDate === 'string') {
                 try {
@@ -733,12 +735,16 @@ const BackupRestorePage: React.FC = () => {
                   // Invalid date string
                 }
               }
-              
+
               // If it's a Date object
-              if (typeof t.estimatedCompletionDate === 'object' && t.estimatedCompletionDate !== null && 'getTime' in t.estimatedCompletionDate) {
+              if (
+                typeof t.estimatedCompletionDate === 'object' &&
+                t.estimatedCompletionDate !== null &&
+                'getTime' in t.estimatedCompletionDate
+              ) {
                 return safeToISOString(t.estimatedCompletionDate as Date);
               }
-              
+
               // Default to null if can't parse
               return null;
             })(),
@@ -747,32 +753,34 @@ const BackupRestorePage: React.FC = () => {
               // Handle createdAt - try multiple formats
               try {
                 if (!t.createdAt) return new Date().toISOString();
-                
+
                 // If already a Date object
                 if (t.createdAt instanceof Date) {
                   const iso = t.createdAt.toISOString();
                   if (iso && iso !== 'Invalid Date') return iso;
                 }
-                
+
                 // If it's a string, try parsing
                 if (typeof t.createdAt === 'string') {
                   const str = String(t.createdAt);
-                  
+
                   // Try Excel format: "dd/MM/yyyy, HH.mm.ss"
-                  const excelMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/);
+                  const excelMatch = str.match(
+                    /^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/,
+                  );
                   if (excelMatch) {
                     const [, day, month, year, hour, minute, second] = excelMatch;
                     const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.000Z`;
                     return isoDate;
                   }
-                  
+
                   // Try standard Date parse
                   const parsed = new Date(str);
                   if (!isNaN(parsed.getTime())) {
                     return parsed.toISOString();
                   }
                 }
-                
+
                 // Fallback
                 return new Date().toISOString();
               } catch (error) {
@@ -781,21 +789,20 @@ const BackupRestorePage: React.FC = () => {
               }
             })(),
             storeId: finalStoreId && finalStoreId !== '' ? finalStoreId : null,
-            createdByUserId: t.createdByUserId && t.createdByUserId !== '' ? t.createdByUserId : null,
+            createdByUserId:
+              t.createdByUserId && t.createdByUserId !== '' ? t.createdByUserId : null,
           };
         });
-        
+
         // Deduplicate by ID
         const deduplicatedTransactions = Array.from(
-          new Map(dbTransactions.map(t => [t.id, t])).values()
+          new Map(dbTransactions.map((t) => [t.id, t])).values(),
         );
-        
-        const { error } = await supabase
-          .from('transactions')
-          .upsert(deduplicatedTransactions, { 
-            onConflict: 'id',
-            ignoreDuplicates: true // Skip existing to avoid RLS violations
-          });
+
+        const { error } = await supabase.from('transactions').upsert(deduplicatedTransactions, {
+          onConflict: 'id',
+          ignoreDuplicates: true, // Skip existing to avoid RLS violations
+        });
         if (error) throw new Error(`Gagal restore transaksi: ${error.message}`);
         insertedCount += deduplicatedTransactions.length;
       }

@@ -75,6 +75,13 @@ ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   role = EXCLUDED.role;
 
+-- Admin 5: budi
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('1fc6103d-82ba-48b0-9dcb-62a02a2eaea3', 'budi', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  role = EXCLUDED.role;
+
 -- Kasir 1: YOPI
 INSERT INTO public.profiles (id, name, role, store_id)
 VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
@@ -102,6 +109,7 @@ VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   role = EXCLUDED.role;
+
 
 
 -- ============================================

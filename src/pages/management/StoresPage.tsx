@@ -253,9 +253,7 @@ const StoresPage: React.FC = () => {
             {sortedStores.length > 0 ? (
               sortedStores.map((store, index) => (
                 <tr key={store.id} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
-                    {index + 1}
-                  </td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{index + 1}</td>
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                     {store.name}
                   </td>

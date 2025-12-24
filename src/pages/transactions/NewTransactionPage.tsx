@@ -404,7 +404,11 @@ const NewTransactionPage: React.FC = () => {
     }
     const toastId = addToast('Menambah pelanggan...', 'info');
     try {
-      const newCustomer = await addCustomer({ ...customer, createdAt: new Date(), storeId: currentStoreId });
+      const newCustomer = await addCustomer({
+        ...customer,
+        createdAt: new Date(),
+        storeId: currentStoreId,
+      });
       if (newCustomer) {
         // Map Supabase customer (nullable fields) to app Customer type
         setSelectedCustomer({

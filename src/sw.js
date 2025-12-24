@@ -30,12 +30,12 @@ self.addEventListener('activate', (event) => {
 // Helper function to detect login-related requests
 const isLoginRelatedRequest = (url, request) => {
   const pathname = url.pathname;
-  
+
   // Explicitly login page
   if (pathname === '/login') {
     return true;
   }
-  
+
   // For root path (/) - used by PWA start_url
   // Only treat as login page if no session cookie/auth header
   // This allows authenticated PWA to cache properly
@@ -43,12 +43,12 @@ const isLoginRelatedRequest = (url, request) => {
     // Check for session cookies or auth tokens
     const cookies = request.headers.get('Cookie') || '';
     const hasSession = cookies.includes('sb-') || cookies.includes('supabase');
-    
+
     // If no session detected, treat as login page (don't cache)
     // If session exists, allow normal caching (for offline PWA)
     return !hasSession;
   }
-  
+
   return false;
 };
 

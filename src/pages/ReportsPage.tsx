@@ -8,7 +8,18 @@ import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
 import { supabase } from '../utils/supabaseClient';
-import { UserRole, Service, User, ServiceCategory, MaintenanceLog, Transaction, PaymentStatus, OrderStatus, PaymentMethod, TransactionItem } from '@/types';
+import {
+  UserRole,
+  Service,
+  User,
+  ServiceCategory,
+  MaintenanceLog,
+  Transaction,
+  PaymentStatus,
+  OrderStatus,
+  PaymentMethod,
+  TransactionItem,
+} from '@/types';
 import { formatRupiah } from '../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 
@@ -22,8 +33,12 @@ function isTransaction(obj: unknown): obj is Transaction {
     typeof t.amountPaid === 'number' &&
     typeof t.discount === 'number' &&
     typeof t.total === 'number' &&
-    (typeof t.customerId === 'string' || typeof t.customerId === 'undefined' || t.customerId === null) &&
-    (typeof t.createdByUserId === 'string' || typeof t.createdByUserId === 'undefined' || t.createdByUserId === null) &&
+    (typeof t.customerId === 'string' ||
+      typeof t.customerId === 'undefined' ||
+      t.customerId === null) &&
+    (typeof t.createdByUserId === 'string' ||
+      typeof t.createdByUserId === 'undefined' ||
+      t.createdByUserId === null) &&
     Array.isArray(t.items)
   );
 }
@@ -292,7 +307,7 @@ const ReportsPage: React.FC = () => {
 
     if (rangeType === 'all') {
       // Set start date to a very early date to include all records
-      const firstDay = new Date(0); 
+      const firstDay = new Date(0);
       return { startDate: firstDay, endDate: endOfDay };
     }
 
@@ -320,8 +335,6 @@ const ReportsPage: React.FC = () => {
       const endIso = new Date(endDate);
       endIso.setHours(23, 59, 59, 999);
 
-
-
       let allTx: Transaction[] = [];
       let page = 0;
       const pageSize = 1000;
@@ -345,7 +358,7 @@ const ReportsPage: React.FC = () => {
 
         if (data && data.length > 0) {
           // Normalize data types and map snake_case to camelCase
-           const transactions = data.map((t) => {
+          const transactions = data.map((t) => {
             const raw = t as unknown as RawTransaction; // Safe cast to raw type
             return {
               id: raw.id,
@@ -360,15 +373,19 @@ const ReportsPage: React.FC = () => {
               paymentStatus: raw.payment_status ?? raw.paymentStatus ?? 'Unpaid',
               orderStatus: raw.order_status ?? raw.orderStatus ?? 'Processing',
               paymentMethod: raw.payment_method ?? raw.paymentMethod ?? undefined,
-              createdAt: raw.created_at ?? (raw.createdAt instanceof Date ? raw.createdAt.toISOString() : raw.createdAt) ?? new Date().toISOString(),
-              estimatedCompletionDate: raw.estimated_completion_date ?? raw.estimatedCompletionDate ?? '',
+              createdAt:
+                raw.created_at ??
+                (raw.createdAt instanceof Date ? raw.createdAt.toISOString() : raw.createdAt) ??
+                new Date().toISOString(),
+              estimatedCompletionDate:
+                raw.estimated_completion_date ?? raw.estimatedCompletionDate ?? '',
               createdByUserId: raw.created_by_user_id ?? raw.createdByUserId ?? undefined,
               storeId: raw.store_id ?? raw.storeId ?? undefined,
               items: raw.items ?? [],
               notes: raw.notes ?? undefined,
             };
           }) as unknown as Transaction[];
-          
+
           allTx = [...allTx, ...transactions];
           if (data.length < pageSize) {
             hasMore = false;
@@ -439,15 +456,15 @@ const ReportsPage: React.FC = () => {
 
         if (data && data.length > 0) {
           const mappedExpenses = data.map((e) => {
-             const raw = e as unknown as RawExpense;
-             return {
-               id: raw.id,
-               date: raw.date,
-               description: raw.description,
-               category: raw.category,
-               amount: raw.amount,
-               storeId: raw.store_id ?? raw.storeId ?? undefined,
-             };
+            const raw = e as unknown as RawExpense;
+            return {
+              id: raw.id,
+              date: raw.date,
+              description: raw.description,
+              category: raw.category,
+              amount: raw.amount,
+              storeId: raw.store_id ?? raw.storeId ?? undefined,
+            };
           }) as Expense[];
 
           allOperationalExpenses = [...allOperationalExpenses, ...mappedExpenses];
@@ -486,9 +503,12 @@ const ReportsPage: React.FC = () => {
           // Validasi minimal
           if (!asset.id || !asset.name) return;
 
-          const purchaseDate = (asset.purchase_date ?? asset.purchaseDate) as string | Date | undefined;
+          const purchaseDate = (asset.purchase_date ?? asset.purchaseDate) as
+            | string
+            | Date
+            | undefined;
           const purchaseCost = Number(asset.purchase_cost ?? asset.purchaseCost) || 0;
-          const maintenanceHistoryRaw = (asset.maintenance_history ?? asset.maintenanceHistory);
+          const maintenanceHistoryRaw = asset.maintenance_history ?? asset.maintenanceHistory;
           const storeId = (asset.store_id ?? asset.storeId) as string | undefined;
 
           // A. Pembelian Aset
@@ -576,7 +596,7 @@ const ReportsPage: React.FC = () => {
         }
         createdAt = obj.createdAt;
       } else if (obj.createdAt instanceof Date) {
-         if (isNaN(obj.createdAt.getTime())) {
+        if (isNaN(obj.createdAt.getTime())) {
           return null; // Invalid Date object
         }
         createdAt = obj.createdAt.toISOString();
@@ -631,29 +651,31 @@ const ReportsPage: React.FC = () => {
     (filteredData.transactions as NormalizedTransaction[]).forEach((t) =>
       t.items.forEach((item: { serviceId: string; serviceName?: string; subtotal: number }) => {
         serviceRevenue[item.serviceId] = (serviceRevenue[item.serviceId] || 0) + item.subtotal;
-        
+
         // Simpan nama service dari item jika ada (fallback jika serviceMap kosong)
         if (item.serviceName && !serviceMap[item.serviceId]) {
-           // Hacky way to inject name into serviceMap-like structure solely for this report? 
-           // Better to handle in the map below.
+          // Hacky way to inject name into serviceMap-like structure solely for this report?
+          // Better to handle in the map below.
         }
       }),
     );
     return Object.entries(serviceRevenue)
       .map(([serviceId, revenue]) => {
-         // Find service name from ANY item with this serviceId? 
-         // Helper: find first transaction item with this id
-         let name = serviceMap[serviceId]?.name;
-         if (!name) {
-            const tx = (filteredData.transactions as NormalizedTransaction[]).find(t => t.items.some((i: TransactionItem) => i.serviceId === serviceId));
-            const item = tx?.items.find((i: TransactionItem) => i.serviceId === serviceId);
-            name = item?.serviceName || 'Layanan Dihapus';
-         }
-         return {
-            serviceId,
-            name,
-            revenue,
-         };
+        // Find service name from ANY item with this serviceId?
+        // Helper: find first transaction item with this id
+        let name = serviceMap[serviceId]?.name;
+        if (!name) {
+          const tx = (filteredData.transactions as NormalizedTransaction[]).find((t) =>
+            t.items.some((i: TransactionItem) => i.serviceId === serviceId),
+          );
+          const item = tx?.items.find((i: TransactionItem) => i.serviceId === serviceId);
+          name = item?.serviceName || 'Layanan Dihapus';
+        }
+        return {
+          serviceId,
+          name,
+          revenue,
+        };
       })
       .filter((s) => s.revenue > 0)
       .sort((a, b) => b.revenue - a.revenue)
@@ -669,7 +691,9 @@ const ReportsPage: React.FC = () => {
     });
     return Object.entries(customerSpending)
       .map(([customerId, total]) => ({
-        name: customers.find((c: { id: string }) => c.id === customerId)?.name || (customerId === 'unknown' ? 'Umum' : 'N/A'),
+        name:
+          customers.find((c: { id: string }) => c.id === customerId)?.name ||
+          (customerId === 'unknown' ? 'Umum' : 'N/A'),
         total,
       }))
       .sort((a, b) => b.total - a.total)
@@ -761,22 +785,24 @@ const ReportsPage: React.FC = () => {
     );
     return Object.entries(stats)
       .map(([serviceId, stat]) => {
-         // Fallback name logic
-         let name = serviceMap[serviceId]?.name;
-         if (!name) {
-            const tx = (filteredData.transactions as NormalizedTransaction[]).find(t => t.items.some((i: TransactionItem) => i.serviceId === serviceId));
-            const item = tx?.items.find((i: TransactionItem) => i.serviceId === serviceId);
-            name = item?.serviceName || 'Layanan Dihapus';
-         }
+        // Fallback name logic
+        let name = serviceMap[serviceId]?.name;
+        if (!name) {
+          const tx = (filteredData.transactions as NormalizedTransaction[]).find((t) =>
+            t.items.some((i: TransactionItem) => i.serviceId === serviceId),
+          );
+          const item = tx?.items.find((i: TransactionItem) => i.serviceId === serviceId);
+          name = item?.serviceName || 'Layanan Dihapus';
+        }
 
-         return {
-            serviceId,
-            name,
-            category: serviceMap[serviceId]?.category || '-',
-            unit: serviceMap[serviceId]?.unit || 'unit',
-            revenue: stat.revenue,
-            quantity: Number(stat.quantity.toFixed(2)), // Fix rounding
-         };
+        return {
+          serviceId,
+          name,
+          category: serviceMap[serviceId]?.category || '-',
+          unit: serviceMap[serviceId]?.unit || 'unit',
+          revenue: stat.revenue,
+          quantity: Number(stat.quantity.toFixed(2)), // Fix rounding
+        };
       })
       .sort((a, b) => b.revenue - a.revenue);
   }, [filteredData.transactions, serviceMap]);

@@ -459,9 +459,7 @@ const ServicesPage: React.FC = () => {
                   key={service.id}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
-                    {index + 1}
-                  </td>
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{index + 1}</td>
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     {service.name}
                   </td>

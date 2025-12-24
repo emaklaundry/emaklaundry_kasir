@@ -66,7 +66,7 @@ export async function exportCustomersToExcel(customers: Customer[]): Promise<voi
       notes: customer.notes || '',
       defaultDiscount: customer.defaultDiscount || 0,
     });
-    
+
     // Alternate row styling
     if (index % 2 !== 0) {
       row.fill = {
@@ -215,7 +215,7 @@ export async function exportServicesToExcel(services: Service[]): Promise<void> 
       unit: service.unit,
       durationDays: service.durationDays,
     });
-    
+
     // Alternate row styling
     if (index % 2 !== 0) {
       row.fill = {
@@ -267,7 +267,7 @@ export async function exportInventoryToExcel(items: InventoryItem[]): Promise<vo
       lowStockThreshold: item.lowStockThreshold,
       unit: item.unit,
     });
-    
+
     // Alternate row styling
     if (index % 2 !== 0) {
       row.fill = {
@@ -324,7 +324,7 @@ export async function exportAssetsToExcel(assets: Asset[]): Promise<void> {
       purchaseCost: asset.purchaseCost || 0,
       status: asset.status,
     });
-    
+
     // Alternate row styling
     if (index % 2 !== 0) {
       row.fill = {
@@ -376,7 +376,7 @@ export async function exportExpensesToExcel(expenses: Expense[]): Promise<void> 
       amount: expense.amount,
       description: expense.description,
     });
-    
+
     // Alternate row styling
     if (index % 2 !== 0) {
       row.fill = {
@@ -396,9 +396,9 @@ export async function exportExpensesToExcel(expenses: Expense[]): Promise<void> 
 // EXCEL IMPORT FUNCTIONS
 // ============================================
 // ... (Import functions remain mostly unchanged, they just read data)
-// We will skip editing import functions as they don't affect visual templates, 
-// but we need to ensure we don't accidentally remove them. 
-// I will just collapse them in this replacement for brevity if the tool supports it, 
+// We will skip editing import functions as they don't affect visual templates,
+// but we need to ensure we don't accidentally remove them.
+// I will just collapse them in this replacement for brevity if the tool supports it,
 // but wait, I can just not touch lines 320-530.
 // Actually, looking at the available lines in the context, I need to be careful.
 // I will replace the export functions block first.
@@ -407,8 +407,6 @@ export async function exportExpensesToExcel(expenses: Expense[]): Promise<void> 
 // downloadCustomerTemplate, downloadServiceTemplate, etc.
 // These are further down in the file (lines 560+).
 // I need to update THOSE as well.
-
-
 
 // ============================================
 // EXCEL IMPORT FUNCTIONS
@@ -2247,11 +2245,11 @@ export async function exportAllData(
       change: transaction.change,
       paymentMethod: transaction.paymentMethod || '-',
       estimatedCompletionDate: transaction.estimatedCompletionDate
-        ? (typeof transaction.estimatedCompletionDate === 'object' &&
+        ? typeof transaction.estimatedCompletionDate === 'object' &&
           transaction.estimatedCompletionDate !== null &&
           'toISOString' in transaction.estimatedCompletionDate
-            ? (transaction.estimatedCompletionDate as Date).toISOString()
-            : String(transaction.estimatedCompletionDate))
+          ? (transaction.estimatedCompletionDate as Date).toISOString()
+          : String(transaction.estimatedCompletionDate)
         : '',
       storeId: transaction.storeId || '',
       notes: transaction.notes || '-',
@@ -2451,10 +2449,10 @@ export async function importAllData(file: File): Promise<{
   if (transactionSheet) {
     // Create a map of service names to IDs for quick lookup
     const serviceNameToIdMap = new Map<string, string>();
-    services.forEach(service => {
+    services.forEach((service) => {
       serviceNameToIdMap.set(service.name.toLowerCase().trim(), service.id);
     });
-    
+
     transactionSheet.eachRow((row, _rowNumber) => {
       if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
@@ -2490,19 +2488,21 @@ export async function importAllData(file: File): Promise<{
               const price = parseFloat(priceStr.replace(/\./g, '').replace(/,/g, ''));
               const serviceName = name.trim();
               const serviceNameLower = serviceName.toLowerCase();
-              
+
               // Try to find service ID by name
               let serviceId = serviceNameToIdMap.get(serviceNameLower);
-              
+
               // If not found, generate a new UUID for this service
               // This allows historical data with deleted services to still be imported
               if (!serviceId) {
                 serviceId = crypto.randomUUID();
                 // Add to map to ensure consistency within this import
                 serviceNameToIdMap.set(serviceNameLower, serviceId);
-                console.warn(`Service "${serviceName}" not found in database, generated new UUID: ${serviceId}`);
+                console.warn(
+                  `Service "${serviceName}" not found in database, generated new UUID: ${serviceId}`,
+                );
               }
-              
+
               items.push({
                 serviceId: serviceId,
                 serviceName: serviceName,
