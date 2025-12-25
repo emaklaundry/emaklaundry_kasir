@@ -67,6 +67,20 @@ ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   role = EXCLUDED.role;
 
+-- Test Super Admin
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('271ba75d-69c3-43e7-a3ba-3421e51f4045', 'superadmintest', 'Super Admin', NULL)
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  role = EXCLUDED.role;
+
+-- TEST ADMIN
+INSERT INTO public.profiles (id, name, role, store_id)
+VALUES ('aeb2315d-c43b-446d-aa61-24f483d4742a', 'admintest', 'Admin', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  role = EXCLUDED.role;
+
 -- Admin Cabang Kota Banjar
 -- Email: admin@emaklaundry.com
 INSERT INTO public.profiles (id, name, role, store_id)
@@ -74,6 +88,8 @@ VALUES ('0bbe08f0-2cbc-40d9-b2ec-5a2d3ba99c0e', 'emaklaundry', 'Admin', '9b7e1c2
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   role = EXCLUDED.role;
+
+
 
 -- Kasir 1: YOPI
 INSERT INTO public.profiles (id, name, role, store_id)
@@ -102,6 +118,7 @@ VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   role = EXCLUDED.role;
+
 
 
 -- ============================================

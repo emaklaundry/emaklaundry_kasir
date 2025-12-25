@@ -255,9 +255,7 @@ const UsersPage: React.FC = () => {
                   const isSuperAdmin = user.role === UserRole.SuperAdmin;
                   return (
                     <tr key={user.id} className="border-b dark:border-slate-700">
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
-                        {index + 1}
-                      </td>
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{index + 1}</td>
                       <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                         {user.name}
                       </td>
