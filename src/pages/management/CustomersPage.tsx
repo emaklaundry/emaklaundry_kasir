@@ -601,7 +601,7 @@ const CustomersPage: React.FC = () => {
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {customer.defaultDiscount && customer.defaultDiscount > 0 ? (
+                    {customer.defaultDiscount != null ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                         Rp {customer.defaultDiscount.toLocaleString('id-ID')}
                       </span>
@@ -694,7 +694,7 @@ const CustomersPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">💰 Saldo Diskon</p>
-                  {customer.defaultDiscount && customer.defaultDiscount > 0 ? (
+                  {customer.defaultDiscount != null ? (
                     <p className="font-semibold text-base text-green-600 dark:text-green-400">
                       Rp {customer.defaultDiscount.toLocaleString('id-ID')}
                     </p>
