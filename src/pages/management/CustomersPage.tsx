@@ -10,6 +10,7 @@ import {
   ArrowUpIcon,
   DownloadIcon,
   UploadIcon,
+  RefreshCwIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -30,6 +31,7 @@ import {
   downloadCustomerTemplate,
 } from '../../utils/excelUtils';
 import { supabase } from '../../utils/supabaseClient';
+import { recalculateAllCustomerDiscounts } from '../../utils/discountUtils';
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -416,6 +418,68 @@ const CustomersPage: React.FC = () => {
     }
   };
 
+  // Recalculate Discount Balances
+  const handleRecalculateDiscounts = async () => {
+    const toastId = addToast('Menghitung ulang saldo diskon...', 'info');
+    setIsSaving(true);
+    try {
+      // Fetch ALL customers to recalculate (not just current page)
+      const { data: allCustomers, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      if (!allCustomers || allCustomers.length === 0) {
+        updateToast(toastId, 'Tidak ada pelanggan untuk diproses.', 'warning');
+        setIsSaving(false);
+        return;
+      }
+
+      // Convert to Customer type
+      const customersToProcess = allCustomers.map((c) => ({
+        ...c,
+        address: c.address ?? undefined,
+        notes: c.notes ?? undefined,
+        phone: c.phone ?? undefined,
+        defaultDiscount: c.defaultDiscount ?? undefined,
+        storeId: c.storeId ?? undefined,
+      })) as unknown as Customer[];
+
+      updateToast(toastId, `Memproses ${customersToProcess.length} pelanggan...`, 'info');
+
+      const results = await recalculateAllCustomerDiscounts(
+        customersToProcess,
+        transactions,
+        updateCustomer,
+      );
+
+      if (results.updated === 0) {
+        updateToast(
+          toastId,
+          'Tidak ada saldo diskon yang perlu ditambahkan. Semua pelanggan sudah up-to-date.',
+          'info',
+        );
+      } else {
+        updateToast(
+          toastId,
+          `Berhasil! ${results.updated} pelanggan diupdate dengan total diskon Rp ${results.totalDiscountAdded.toLocaleString('id-ID')}`,
+          'success',
+        );
+
+        addAuditLog(
+          `Recalculate saldo diskon: ${results.updated} pelanggan, total Rp ${results.totalDiscountAdded.toLocaleString('id-ID')}`,
+          selectedStoreId !== 'all' ? selectedStoreId : undefined,
+        );
+      }
+    } catch (error) {
+      console.error('Recalculate error:', error);
+      updateToast(toastId, 'Gagal menghitung ulang saldo diskon', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const NoCustomersFound = () => (
     <EmptyState
       icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
@@ -441,7 +505,18 @@ const CustomersPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Recalculate Discount Balance Button */}
+          <button
+            onClick={handleRecalculateDiscounts}
+            disabled={isSaving || customers.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed"
+            title="Hitung Ulang Saldo Diskon dari History Transaksi"
+          >
+            <RefreshCwIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Hitung Ulang Diskon</span>
+          </button>
+
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
