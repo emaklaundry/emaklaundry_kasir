@@ -1,21 +1,21 @@
 -- ============================================
 -- FULL SEED BUNDLE (Services, Inventory, Assets, Maintenances)
 -- Laundry Management System
--- Version: 2.2.0
--- Generated: 2025-12-18
+-- Version: 2.7.0
+-- Updated: 2025-12-26 (Fixed encoding + wash_type fix)
 -- ============================================
 
 -- INSTRUCTIONS:
--- 1. Ensure `database/setup/1.seed_data_awal.sql` has been run first (to create Stores).
+-- 1. Ensure database/setup/1.seed_data_awal.sql has been run first (to create Stores).
 -- 2. Run this entire script in Supabase SQL Editor.
-
 -- ============================================
--- 1. SERVICES
+-- SEED DATA: SERVICES (Daftar Layanan)
+-- Laundry Management System
+-- Version: 1.0.0
 -- ============================================
 -- Create unique index untuk prevent duplicate
 CREATE UNIQUE INDEX IF NOT EXISTS services_name_store_idx 
   ON public.services (lower(name), "storeId");
-
 -- Insert/Update services untuk Cabang Kota Banjar
 WITH target_store AS (
   SELECT id FROM public.stores
@@ -113,9 +113,12 @@ ON CONFLICT (lower(name), "storeId") DO UPDATE SET
   "durationDays" = EXCLUDED."durationDays",
   category = EXCLUDED.category,
   wash_type = EXCLUDED.wash_type;
-
+-- Verification
+SELECT COUNT(*) as total_services FROM public.services;
 -- ============================================
--- 2. INVENTORY
+-- SEED DATA: INVENTORY ITEMS (Stok Barang)
+-- Laundry Management System
+-- Version: 1.0.0
 -- ============================================
 -- ID 1: Sabun Soklin Liquid
 INSERT INTO public.inventory_items (id, name, stock, "lowStockThreshold", unit, "storeId")
@@ -162,9 +165,12 @@ ON CONFLICT (id) DO UPDATE SET
   stock = EXCLUDED.stock,
   "lowStockThreshold" = EXCLUDED."lowStockThreshold",
   unit = EXCLUDED.unit;
-
+-- Verification
+SELECT COUNT(*) as total_inventory FROM public.inventory_items;
 -- ============================================
--- 3. ASSETS
+-- SEED DATA: ASSETS (Aset & Peralatan)
+-- Laundry Management System
+-- Version: 1.0.0
 -- ============================================
 -- ID 101: Mesin Cuci LG Front Load 20kg (dengan maintenance history)
 INSERT INTO public.assets (id, name, "serialNumber", "purchaseDate", "purchaseCost", status, "maintenanceHistory", "storeId")
@@ -255,9 +261,12 @@ ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   "serialNumber" = EXCLUDED."serialNumber",
   status = EXCLUDED.status;
-
+-- Verification
+SELECT COUNT(*) as total_assets FROM public.assets;
 -- ============================================
--- 4. MAINTENANCES
+-- SEED DATA: SCHEDULED MAINTENANCES (Jadwal Pemeliharaan)
+-- Laundry Management System
+-- Version: 1.0.0
 -- ============================================
 -- Maintenance Mesin Cuci LG 20kg (Quarterly - 3 bulan)
 INSERT INTO public.scheduled_maintenances (id, "assetId", description, "frequencyValue", "frequencyUnit", "nextDueDate", "lastCompletedDate")
@@ -339,3 +348,5 @@ ON CONFLICT (id) DO UPDATE SET
   description = EXCLUDED.description,
   "nextDueDate" = EXCLUDED."nextDueDate",
   "lastCompletedDate" = EXCLUDED."lastCompletedDate";
+-- Verification
+SELECT COUNT(*) as total_maintenances FROM public.scheduled_maintenances;

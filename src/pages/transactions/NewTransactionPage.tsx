@@ -569,17 +569,38 @@ const NewTransactionPage: React.FC = () => {
         );
 
         // Deduct used discount from customer's balance
+        let currentCustomerBalance = selectedCustomer.defaultDiscount || 0;
+        
         if (discountType === 'fixed' && discountValue && selectedCustomer.defaultDiscount) {
           const usedDiscount = typeof discountValue === 'number' ? discountValue : 0;
           if (usedDiscount > 0) {
-            const newBalance = Math.max(0, selectedCustomer.defaultDiscount - usedDiscount);
+            const newBalance = Math.max(0, currentCustomerBalance - usedDiscount);
             await updateCustomer(selectedCustomer.id, { defaultDiscount: newBalance });
             addAuditLog(
-              `Diskon Rp ${usedDiscount} digunakan. Saldo diskon ${selectedCustomer.name}: ${selectedCustomer.defaultDiscount} → ${newBalance}`,
+              `Diskon Rp ${usedDiscount} digunakan. Saldo diskon ${selectedCustomer.name}: ${currentCustomerBalance} → ${newBalance}`,
               currentStoreId,
             );
+            // Update tracked balance for next calculation
+            currentCustomerBalance = newBalance;
           }
         }
+
+        // Add rounding discount to customer's balance (for cash payments)
+        if (
+          isPayingNow &&
+          paymentMethod === PaymentMethod.Cash &&
+          roundingDifference > 0 &&
+          selectedCustomer
+        ) {
+          // Use tracked balance (which may have been updated above)
+          const newBalance = currentCustomerBalance + roundingDifference;
+          await updateCustomer(selectedCustomer.id, { defaultDiscount: newBalance });
+          addAuditLog(
+            `Pembulatan: Rp ${roundingDifference.toLocaleString('id-ID')} ditambahkan ke saldo diskon ${selectedCustomer.name}. Saldo: ${currentCustomerBalance} → ${newBalance}`,
+            currentStoreId,
+          );
+        }
+
 
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
@@ -892,7 +913,7 @@ const NewTransactionPage: React.FC = () => {
                   selectedCustomer.defaultDiscount > 0 && (
                     <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
                       <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
-                      Diskon {selectedCustomer.defaultDiscount}% otomatis diterapkan untuk{' '}
+                      Saldo diskon Rp {selectedCustomer.defaultDiscount.toLocaleString('id-ID')} tersedia untuk{' '}
                       {selectedCustomer.name}.
                     </div>
                   )}

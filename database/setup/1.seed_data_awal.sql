@@ -1,8 +1,8 @@
 -- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - SEED DATA
 -- Sample Data untuk Testing & Development
--- Version: 2.0.0
--- Date: December 17, 2024
+-- Version: 2.1.0
+-- Date: December 26, 2024
 -- ============================================
 --
 -- IMPORTANT: File ini berisi data contoh/sample
@@ -62,7 +62,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- Super Admin
 INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL)
+VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Anop', 'Super Admin', NULL)
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   role = EXCLUDED.role;

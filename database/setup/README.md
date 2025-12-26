@@ -4,135 +4,90 @@
 
 ### 🎯 Main Setup Files
 
-- **`complete_setup.sql`** - Complete schema, functions, RPC, security, triggers
-  - Schema: Tables, indexes, constraints
-  - Functions: Business logic, RPC functions
-  - Security: RLS policies, performance indexes
-  - Features: Maintenance mode, triggers
-  - **NO seed data** (schema only)
-  - Total: ~1100+ lines
+1. **`0.complete_setup.sql`** (Schema & Logic)
+   - **Tipe**: Schema & Functions
+   - **Isi**: Tables, Indexes, RLS Policies, RPC Functions, Triggers
+   - **Wajib**: YA, harus dijalankan pertama kali
+   - **Efek**: Membuat struktur database kosong yang aman & optimized
 
-- **`1.seed_data_awal.sql`** - Sample data untuk testing/development
-  - Stores: 1 toko default
-  - Profiles: 6 user dengan berbagai role
-  - Services: 66 layanan laundry lengkap
-  - Settings: Default configuration
-  - Safe to re-run (uses ON CONFLICT)
-  - Total: ~250 lines
+2. **`1.seed_data_awal.sql`** (Essential Data)
+   - **Tipe**: Basic Data
+   - **Isi**: 1 Store Default, 6 User Profiles, Default Settings
+   - **Wajib**: YA, untuk development & testing
+   - **Efek**: Mengisi data dasar agar aplikasi bisa dilogin dan dipakai
+
+3. **`../seeds/00_full_seed_bundle.sql`** (Content Data)
+   - **Tipe**: Content Data
+   - **Isi**: 66 Layanan, Inventaris, Aset, Jadwal Maintenance
+   - **Wajib**: OPSIONAL (Disarankan untuk demo/testing)
+   - **Efek**: Mengisi konten aplikasi agar tidak kosong
 
 ---
 
 ## 🚀 Quick Start
 
-### For Fresh Install (New Database)
+### For Fresh Install (Recommended)
+
+Jalankan script berikut secara berurutan di Supabase SQL Editor:
 
 ```sql
--- Step 1: Setup schema & functions
--- Jalankan di Supabase SQL Editor:
-1. Copy isi file complete_setup.sql
-2. Paste ke SQL Editor
-3. Run
+-- Step 1: Struktur & Logic (WAJIB)
+database/setup/0.complete_setup.sql
 
--- Step 2: (Optional) Insert sample data
-1. Copy isi file 1.seed_data_awal.sql
-2. Paste ke SQL Editor
-3. Run
+-- Step 2: Data Dasar (WAJIB untuk login)
+database/setup/1.seed_data_awal.sql
+
+-- Step 3: Isi Konten Lengkap (OPSIONAL)
+database/seeds/00_full_seed_bundle.sql
 ```
 
-### For Production
+### For Production (Clean)
 
 ```sql
--- Production Setup (tanpa sample data):
+-- Production Setup (Data Bersih):
 1. Jalankan 0.complete_setup.sql
-2. Skip 1.seed_data_awal.sql
-3. Insert data real sesuai kebutuhan
+2. Jalankan 1.seed_data_awal.sql (Hanya jika butuh user admin awal)
+3. Skip 00_full_seed_bundle.sql (Input data real manual via aplikasi)
 ```
 
 ---
 
 ## 📁 File Details
 
-### `complete_setup.sql` (v3.0.0)
+### `0.complete_setup.sql` (v3.0.0)
 
-**Section 1: DROP TABLES (Optional)**
-
-- Drop existing tables untuk reset database
-- **Default: COMMENTED OUT** untuk keamanan
-- Uncomment hanya jika perlu fresh install
-
-**Section 2: CREATE TABLES & FUNCTIONS**
-
-- Schema untuk 13 tabel utama
-- Helper functions: `handle_new_user`, dll
-- Row Level Security (RLS) policies untuk setiap tabel
-- Constraints dan foreign keys
-
-**Section 3: RPC FUNCTIONS**
-
-- `complete_scheduled_maintenance` - Update maintenance schedule
-- `get_laundry_status` - Query status cucian by invoice/ID
-- `update_transaction_status_safe` - Update transaction dengan validasi
-- Dan functions lainnya untuk business logic
-
-**Section 4: SECURITY & PERFORMANCE**
-
-- Additional RLS policies untuk granular access control
-- Performance optimizations
-- Database indexes untuk query cepat
-- Input validation di RPC functions
-
-**Section 5: TRIGGERS & AUTOMATION**
-
-- Auto-update `updatedAt` trigger
-- Maintenance Mode configuration
-- WhatsApp Custom Footer settings
-- Final verification
+- **DROP TABLES (Optional)**: Commented out by default. Uncomment untuk reset total.
+- **CREATE TABLES**: Stores, Profiles, Customers, Services, Transactions, Inventory, Assets, Expenses.
+- **FUNCTIONS & RPC**: Business logic (`get_public_services`, `update_transaction_status`).
+- **SECURITY**: RLS Policies (Row Level Security) ketat per store & role.
+- **TRIGGERS**: Auto timestamp, immutable checks.
 
 ### `1.seed_data_awal.sql`
 
-**Sample Data Included:**
+- **Store**: "Cimenyan, Kota Banjar"
+- **Users**: Super Admin, Admin, Kasir (Yopi, Ani, dll)
+- **Settings**: Default receipt header/footer
 
-- **1 Store**: "Laundry Emak" (default toko)
-- **6 Profiles**: Super Admin, Admin, Owner, Kasir dengan berbagai role
-- **66 Services**: Layanan lengkap (Kiloan, Satuan, Express, Setrika)
-- **1 Settings**: Default configuration untuk aplikasi
+### `00_full_seed_bundle.sql`
 
-**Features:**
-
-- Uses `ON CONFLICT DO NOTHING` untuk safe re-run
-- Data lengkap untuk testing environment
-- Production: Skip file ini dan input data real
+- Bundle gabungan dari: `seed_services`, `seed_inventory`, `seed_assets`, `seed_maintenances`.
+- Menggunakan encoding UTF-8 safe.
 
 ---
 
-## ✅ What Changed?
-
-### Version 2.1.0 (Dec 17, 2024)
+## ✅ What's New in v2.7.0?
 
 ```
-✅ 0.complete_setup.sql (v3.0.0) - Schema & functions only, NO seed data
-✅ 1.seed_data_awal.sql (NEW)    - Basic seed data (stores, users, settings)
-✅ database/seeds/*.sql (NEW)    - Modular seed data (services, inventory, assets, maintenances)
-❌ Migration files REMOVED       - All updates consolidated
-```
-
-### Before (Old Structure)
-
-```
-❌ 0.droptable.sql          - Merged to complete_setup.sql
-❌ 1.database.sql           - Merged to complete_setup.sql
-❌ 2.apply_rpc_and_seed.sql - Merged to complete_setup.sql
-❌ 3.security_and_performance.sql - Merged to complete_setup.sql
-❌ 4.add_maintenance_mode.sql - Merged to complete_setup.sql
-❌ 5.add_whatsapp_footer.sql  - Merged to complete_setup.sql
+✅ 0.complete_setup.sql    - Updated RPC get_public_services (added wash_type)
+✅ 00_full_seed_bundle.sql - Consolidated seed files into one easy bundle
+✅ fix_*.sql               - Removed temporary fix files (integrated to main setup)
 ```
 
 **Benefits:**
 
-- ✅ Lebih clean dan organized
-- ✅ 2 file saja: schema + seed
-- ✅ Tidak perlu migration file terpisah
-- ✅ Mudah maintenance dan update
+- ✅ **Single Source of Truth**: Semua logic ada di `complete_setup`.
+- ✅ **Module Seeding**: Data konten terpisah dari struktur.
+- ✅ **Clean**: Tidak ada file migrasi kecil-kecil yang membingungkan.
 
 ---
 
@@ -140,24 +95,14 @@
 
 ### Adding New Features to Schema
 
-1. Edit `complete_setup.sql` di section yang sesuai
-2. Test di development database
-3. Update version number di header
-4. Update README.md
+1. Edit `0.complete_setup.sql`.
+2. Gunakan `CREATE OR REPLACE` atau `IF NOT EXISTS`.
+3. Update version number.
 
-### Adding/Updating Sample Data
+### Adding New Seed Data
 
-1. Edit `1.seed_data_awal.sql` or files in `database/seeds/`
-2. Test untuk memastikan `ON CONFLICT` bekerja
-3. Dokumentasikan perubahan
-
-### Best Practices
-
-- ✅ Selalu gunakan `IF NOT EXISTS` untuk ALTER TABLE
-- ✅ Gunakan `CREATE OR REPLACE` untuk functions
-- ✅ Test di development dulu
-- ✅ Backup database sebelum major changes
-- ✅ Dokumentasikan perubahan dengan comment
+1. Tambahkan di file individual di `database/seeds/`.
+2. Rebuild bundle (jika perlu) atau jalankan file individual.
 
 ---
 
@@ -165,55 +110,25 @@
 
 Setelah run setup, verifikasi:
 
-### Database Tables
+### 1. Database Tables
 
 ```sql
--- Cek semua tables
-SELECT table_name FROM information_schema.tables
-WHERE table_schema = 'public'
-ORDER BY table_name;
--- Expected: 13 tables
+SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';
+-- Expected: ~15 tables
 ```
 
-### Functions & RPC
+### 2. Functions & RPC
 
 ```sql
--- Cek functions
-SELECT routine_name FROM information_schema.routines
-WHERE routine_schema = 'public'
-ORDER BY routine_name;
--- Expected: 5+ functions
+-- Cek RPC function baru
+SELECT * FROM pg_proc WHERE proname = 'get_public_services';
 ```
 
-### Seed Data (jika menjalankan 1.seed_data_awal.sql)
+### 3. Data (Jika run seed)
 
 ```sql
--- Cek stores
-SELECT COUNT(*) FROM stores;
--- Expected: 1 store
-
--- Cek profiles/users
-SELECT COUNT(*) FROM profiles;
--- Expected: 6 users
-
--- Cek services
-SELECT COUNT(*) FROM services;
--- Expected: 66 services
-
--- Cek settings
-SELECT * FROM settings LIMIT 1;
--- Expected: 1 row dengan default configuration
-```
-
-### Performance Indexes
-
-```sql
--- Cek indexes
-SELECT tablename, indexname
-FROM pg_indexes
-WHERE schemaname = 'public'
-ORDER BY tablename, indexname;
--- Expected: 10+ indexes
+SELECT count(*) FROM services; -- Expected: ~66 rows
+SELECT count(*) FROM profiles; -- Expected: ~6 rows
 ```
 
 ---
@@ -272,20 +187,12 @@ drop table if exists expenses cascade;
 
 ## 📊 File Statistics
 
-| File                   | Purpose                             |
-| ---------------------- | ----------------------------------- |
-| `0.complete_setup.sql` | Main setup - schema, functions, RLS |
-| `1.seed_data_awal.sql` | Basic seed data (stores, users)     |
-| `DEPLOYMENT.md`        | Production deployment guide         |
-| `README.md`            | This documentation file             |
-| `SETUP_GUIDE.md`       | Step-by-step setup guide            |
+| File                            | Purpose        | Priority   |
+| :------------------------------ | :------------- | :--------- |
+| `0.complete_setup.sql`          | Main Structure | ⭐⭐⭐⭐⭐ |
+| `1.seed_data_awal.sql`          | Basic Data     | ⭐⭐⭐⭐⭐ |
+| `seeds/00_full_seed_bundle.sql` | Content Data   | ⭐⭐⭐     |
 
-**Additional Seed Data:** See `database/seeds/` folder for services, inventory, assets, and maintenances.
-
-**Execution Time:** ~30-60 seconds for 0.complete_setup.sql
-
----
-
-**Last Updated:** December 18, 2024  
-**Database Version:** 2.1.0  
+**Last Updated:** December 26, 2024
+**Setup Version:** 3.1.0
 **Status:** ✅ Production Ready

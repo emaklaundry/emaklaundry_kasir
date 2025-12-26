@@ -22,9 +22,9 @@ emaklaundry_kasir/
 │   ├── backup/                      # SQL backups
 │   │   ├── README.md                # Backup guide
 │   │   ├── complete_backup.sql      # Full backup
-│   │   ├── full_backup.sql          # Alternative backup
-│   │   └── Rekap Keuangan Laundry.pdf # Financial report
+│   │   └── full_backup.sql          # All data backup
 │   ├── seeds/                       # Additional seed data (modular)
+│   │   ├── 00_full_seed_bundle.sql  # ⭐ ALL SEEDS BUNDLE (RECOMMENDED)
 │   │   ├── seed_services.sql        # Services data
 │   │   ├── seed_inventory.sql       # Inventory data
 │   │   ├── seed_assets.sql          # Assets data
@@ -37,68 +37,50 @@ emaklaundry_kasir/
 │       └── SETUP_GUIDE.md           # Setup instructions
 │
 ├── 💻 src/                          # Source code
-│   ├── components/                  # React components (70+ files)
+│   ├── components/                  # React components
+│   │   ├── features/                # Feature-specific components
+│   │   ├── layout/                  # Layout shell components
+│   │   ├── modals/                  # Pop-up modals
+│   │   ├── ui/                      # Generic UI Kit
+│   │   └── widgets/                 # Dashboard widgets
 │   ├── contexts/                    # State management
 │   ├── hooks/                       # Custom hooks
 │   ├── pages/                       # Page components
 │   ├── types/                       # TypeScript definitions
 │   ├── utils/                       # Utility functions
-│   ├── __tests__/                   # 🧪 Test files (78 files organized)
-│   │   ├── components/              # Component tests (34 files)
-│   │   ├── contexts/                # Context tests (13 files)
-│   │   ├── hooks/                   # Hook tests (5 files)
-│   │   ├── pages/                   # Page tests (14 files)
-│   │   ├── utils/                   # Utility tests (7 files)
-│   │   ├── types/                   # Type tests (3 files)
-│   │   ├── integration/             # Integration tests (2 files)
+│   ├── __tests__/                   # 🧪 Test files (organized)
+│   │   ├── components/              # Component tests
+│   │   ├── contexts/                # Context tests
+│   │   ├── hooks/                   # Hook tests
+│   │   ├── pages/                   # Page tests
+│   │   ├── utils/                   # Utility tests
 │   │   └── README.md                # Testing guide
 │   ├── App.tsx                      # Main app component
 │   ├── index.tsx                    # Entry point
 │   └── sw.js                        # Service worker (PWA)
 │
 ├── 🌐 public/                       # Static assets
-│   ├── favicon/                     # App icons
-│   │   ├── android-chrome-192x192.png
-│   │   ├── android-chrome-512x512.png
-│   │   ├── apple-touch-icon.png
-│   │   ├── favicon-16x16.png
-│   │   ├── favicon-32x32.png
-│   │   ├── favicon.ico
-│   │   └── site.webmanifest
+│   ├── favicon/                     # App icons (PWA)
 │   └── manifest.webmanifest         # PWA manifest
 │
 ├── ⚙️ supabase/                     # Supabase configuration
 │   ├── config.toml                  # Supabase config
 │   └── functions/                   # Edge functions
-│       └── create-user/             # User creation function
 │
 ├── 🔄 .github/                      # GitHub automation
-│   └── workflows/
-│       ├── backup.yml               # Daily database backup
-│       └── README.md                # Workflow documentation
+│   └── workflows/                   # Backup workflows
 │
 ├── 🔧 Configuration Files (Root)
 │   ├── .env                         # Environment variables (gitignored)
-│   ├── .gitignore                   # Git ignore rules
 │   ├── eslint.config.js             # ESLint config
 │   ├── package.json                 # Dependencies & scripts
-│   ├── postcss.config.cjs           # PostCSS config
 │   ├── tailwind.config.js           # Tailwind config
 │   ├── tsconfig.json                # TypeScript config
 │   ├── vite.config.ts               # Vite build config
 │   ├── vitest.config.ts             # Vitest test config
-│   ├── vitest.setup.ts              # Test setup
 │   └── vercel.json                  # Vercel deployment
 │
-├── 📄 README.md                     # Main project readme
-├── 📄 index.html                    # Entry HTML
-│
-└── 🗑️ Generated (gitignored)
-    ├── node_modules/                # Dependencies
-    ├── dist/                        # Build output
-    ├── coverage/                    # Test coverage
-    └── .supabase/                   # Supabase local data
-```
+└── 📄 README.md                     # Main project readme
 
 ---
 
@@ -112,23 +94,24 @@ emaklaundry_kasir/
 - **Public Assets** → `public/` folder
 - **Configuration** → Root level
 
-### 2. **Logical Grouping**
+### 2. **Component Architecture (New in v2.4+)**
 
 ```
-📦 Feature-based organization:
-src/
-├── components/ # Reusable UI components
-├── contexts/ # Global state
-├── hooks/ # Reusable logic
-├── pages/ # Route components
-├── types/ # Type definitions
-└── utils/ # Helper functions
+
+src/components/
+├── ui/ # Dumb/Pure components (Button, Input, Card)
+├── layout/ # Structural components (Navbar, Sidebar)
+├── features/ # Business logic components (TransactionList, ProductForm)
+├── widgets/ # Dashboard widgets (StatsCard, Chart)
+└── modals/ # Application modals (PaymentModal, UserModal)
+
 ```
 
 ### 3. **Clear Naming Conventions**
 
 | Type | Convention | Example |
-|------|-----------|---------|| Components | PascalCase.tsx | `CustomerFormModal.tsx` |
+|------|-----------|---------|
+| Components | PascalCase.tsx | `CustomerFormModal.tsx` |
 | Utilities | camelCase.ts | `supabaseClient.ts` |
 | Types | camelCase.ts | `database.types.ts` |
 | Config | kebab-case.js | `eslint.config.js` |
@@ -148,12 +131,11 @@ src/
 
 **Common tasks:**
 
-- Add component → `src/components/`
+- Add generic UI → `src/components/ui/`
+- Add business UI → `src/components/features/`
 - Add page → `src/pages/`
 - Add hook → `src/hooks/`
-- Add types → `src/types/`
 - Add test → `src/__tests__/` ([Testing Guide](../src/__tests__/README.md))
-- Run tests → `npm run test`
 
 ### 🚀 For DevOps
 
@@ -165,10 +147,9 @@ src/
 
 **Database:**
 
-- Setup → [database/setup/](../database/setup/)
-- Backup → [database/backup/](../database/backup/)
-- Seeds → [database/seeds/](../database/seeds/)
-- Guide → [database/README.md](../database/README.md)
+- Setup → [database/setup/](../database/setup/0.complete_setup.sql)
+- Seed → [database/setup/](../database/setup/1.seed_data_awal.sql)
+- Content → [database/seeds/](../database/seeds/)
 
 ### 📊 For Project Managers
 
@@ -176,31 +157,22 @@ src/
 
 - [reports/IMPROVEMENTS.md](./reports/IMPROVEMENTS.md) - What's been done
 - [reports/FINAL_AUDIT_REPORT.md](./reports/FINAL_AUDIT_REPORT.md) - Quality audit
-- [reports/DATA_CONSISTENCY.md](./reports/DATA_CONSISTENCY.md) - Data reliability
 
 ---
 
 ## 📊 Project Statistics
 
-### File Count
-
-```
-Documentation: 15+ files
-Database scripts: 10+ files
-Source files: 150+ files
-Test files: 78 test files (organized in __tests__/)
-Config files: 13 files
-Public assets: 10+ files
-```
-
 ### Code Organization
 
 ```
-Components: 70+ components
+
+UI Components: 30+
+Feature Components: 40+
 Contexts: 15+ contexts
 Pages: 10+ pages
 Hooks: 15+ custom hooks
 Utils: 10+ utilities
+
 ```
 
 ---
@@ -224,9 +196,10 @@ Utils: 10+ utilities
 
 - [database/setup/0.complete_setup.sql](../database/setup/0.complete_setup.sql) - Complete schema setup
 - [database/setup/1.seed_data_awal.sql](../database/setup/1.seed_data_awal.sql) - Basic seed data
-- [database/backup/complete_backup.sql](../database/backup/complete_backup.sql) - Full backup
+- [database/seeds/00_full_seed_bundle.sql](../database/seeds/00_full_seed_bundle.sql) - Content bundle
 
 ---
 
-**Structure organized:** December 18, 2024  
+**Structure organized:** December 26, 2024 (v2.7.0)
 **Documentation:** Complete & up-to-date
+```

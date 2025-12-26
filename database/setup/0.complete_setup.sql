@@ -1,8 +1,8 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
 -- Complete Schema & Functions Setup
--- Version: 3.0.0
--- Date: December 15, 2025
+-- Version: 3.1.0
+-- Date: December 26, 2025
 -- ============================================
 -- 
 -- IMPORTANT: Jalankan script ini di Supabase SQL Editor
@@ -163,8 +163,13 @@ CREATE TABLE public.inventory_items (
   stock integer NOT NULL,
   "lowStockThreshold" integer NOT NULL,
   unit text NOT NULL,
+  "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
+
+-- Add updatedAt column if missing (for existing tables)
+ALTER TABLE public.inventory_items 
+ADD COLUMN IF NOT EXISTS "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW();
 
 CREATE TABLE public.assets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -611,12 +616,14 @@ CREATE POLICY "Allow ALL for Admins" ON public.settings
 
 -- === RPC: get_public_services ===
 -- Return a safe list of services (no pricing) for a given store
+DROP FUNCTION IF EXISTS public.get_public_services(uuid);
 CREATE OR REPLACE FUNCTION public.get_public_services(
   store_id_input uuid
 )
 RETURNS TABLE (
   service_name text,
   category text,
+  wash_type text,
   duration_days integer
 )
 LANGUAGE sql
@@ -626,6 +633,7 @@ AS $$
   SELECT
     s.name AS service_name,
     s.category::text AS category,
+    s.wash_type,
     s."durationDays"::integer AS duration_days
   FROM
     public.services AS s
@@ -1131,23 +1139,9 @@ GRANT EXECUTE ON FUNCTION public.cleanup_old_audit_logs TO authenticated;
 -- ---------------------------------------------
 
 -- Trigger untuk auto-update updatedAt pada transactions
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  NEW."updatedAt" = NOW();
-  RETURN NEW;
-END;
-$$;
+-- (Function update_updated_at_column already defined above)
 
-DROP TRIGGER IF EXISTS update_transactions_updated_at ON public.transactions;
-CREATE TRIGGER update_transactions_updated_at
-  BEFORE UPDATE ON public.transactions
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
+-- (Trigger update_transactions_updated_at already defined above)
 
 
 -- ---------------------------------------------
