@@ -185,6 +185,7 @@ const ServicesPage: React.FC = () => {
       const servicesToExport = allServices.map((s) => ({
         ...s,
         storeId: s.storeId ?? undefined,
+        washType: s.wash_type,
       })) as unknown as Service[];
 
       await exportServicesToExcel(servicesToExport);

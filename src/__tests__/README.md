@@ -94,16 +94,15 @@ src/__tests__/
 │   ├── supabaseClient.test.ts
 │   └── uiHelpers.test.ts
 │
-├── types/               # 3 files - Type definition tests
+├── types/               # 2 files - Type definition tests
 │   ├── index.test.ts
-│   ├── shims-react-router-dom.test.ts
 │   └── shims.test.ts
 │
 └── integration/         # 2 files - Integration/E2E tests
     ├── audit-tracking.test.tsx
     └── critical-flows.test.tsx
 
-Total: 78 test files
+Total: 77 test files
 ```
 
 ---
@@ -167,9 +166,9 @@ npm test -- --coverage
 | **Pages**       | 14     | Page component tests     |
 | **Utils**       | 7      | Utility function tests   |
 | **Hooks**       | 5      | Custom React hooks tests |
-| **Types**       | 3      | TypeScript type tests    |
+| **Types**       | 2      | TypeScript type tests    |
 | **Integration** | 2      | End-to-end flow tests    |
-| **Total**       | **78** | All test files           |
+| **Total**       | **77** | All test files           |
 
 ---
 

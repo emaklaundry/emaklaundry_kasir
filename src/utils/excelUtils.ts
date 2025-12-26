@@ -507,12 +507,16 @@ export async function importInventoryFromExcel(file: File): Promise<Partial<Inve
     // Skip header row
     if (_rowNumber === 1) return;
 
-    // Structure without ID: Name, Stock, LowStockThreshold, Unit
+    const rawId = row.getCell(1).value?.toString();
+    const id = rawId && rawId.trim() !== '' ? rawId : undefined;
+
+    // Structure: ID, Name, Stock, LowStockThreshold, Unit
     const item: Partial<InventoryItem> = {
-      name: row.getCell(1).value?.toString() || '',
-      stock: Number(row.getCell(2).value) || 0,
-      lowStockThreshold: Number(row.getCell(3).value) || 0,
-      unit: row.getCell(4).value?.toString() || 'pcs',
+      id,
+      name: row.getCell(2).value?.toString() || '',
+      stock: Number(row.getCell(3).value) || 0,
+      lowStockThreshold: Number(row.getCell(4).value) || 0,
+      unit: row.getCell(5).value?.toString() || 'pcs',
     };
 
     // Only add if name is not empty
@@ -723,6 +727,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
   const dataSheet = workbook.addWorksheet('Customers');
 
   dataSheet.columns = [
+    { header: 'ID', key: 'id', width: 40 },
     { header: 'Nama Pelanggan', key: 'name', width: 35 },
     { header: 'Nomor HP', key: 'phone', width: 20 },
     { header: 'Alamat', key: 'address', width: 50 },
@@ -884,6 +889,7 @@ export async function downloadServiceTemplate(): Promise<void> {
   const dataSheet = workbook.addWorksheet('Services');
 
   dataSheet.columns = [
+    { header: 'ID', key: 'id', width: 40 },
     { header: 'Nama Layanan', key: 'name', width: 35 },
     { header: 'Kategori', key: 'category', width: 15 },
     { header: 'Jenis Cucian', key: 'washType', width: 15 },
@@ -2041,6 +2047,7 @@ export async function exportAllData(
     { header: 'Nomor HP', key: 'phone', width: 20 },
     { header: 'Alamat', key: 'address', width: 40 },
     { header: 'Catatan', key: 'notes', width: 30 },
+    { header: 'Saldo Diskon', key: 'defaultDiscount', width: 15 },
     { header: 'Store ID', key: 'storeId', width: 40 },
   ];
   customerSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2058,9 +2065,11 @@ export async function exportAllData(
       phone: customer.phone || '',
       address: customer.address || '',
       notes: customer.notes || '',
+      defaultDiscount: customer.defaultDiscount || 0,
       storeId: customer.storeId || '',
     });
   });
+  customerSheet.getColumn('F').numFmt = 'Rp #,##0';
 
   // Sheet 3: Services
   const serviceSheet = workbook.addWorksheet('🧺 Layanan');
@@ -2068,6 +2077,7 @@ export async function exportAllData(
     { header: 'ID', key: 'id', width: 40 },
     { header: 'Nama Layanan', key: 'name', width: 30 },
     { header: 'Kategori', key: 'category', width: 15 },
+    { header: 'Jenis Cucian', key: 'washType', width: 15 },
     { header: 'Harga', key: 'price', width: 15 },
     { header: 'Unit', key: 'unit', width: 15 },
     { header: 'Durasi (hari)', key: 'durationDays', width: 15 },
@@ -2087,6 +2097,7 @@ export async function exportAllData(
       id: service.id,
       name: service.name,
       category: service.category,
+      washType: service.washType || 'Pakaian',
       price: service.price,
       unit: service.unit,
       durationDays: service.durationDays,
@@ -2094,7 +2105,7 @@ export async function exportAllData(
       storeId: service.storeId || '',
     });
   });
-  serviceSheet.getColumn('D').numFmt = 'Rp #,##0';
+  serviceSheet.getColumn('E').numFmt = 'Rp #,##0';
 
   // Sheet 4: Inventory
   const inventorySheet = workbook.addWorksheet('📦 Inventaris');
@@ -2102,7 +2113,7 @@ export async function exportAllData(
     { header: 'ID', key: 'id', width: 40 },
     { header: 'Nama Item', key: 'name', width: 30 },
     { header: 'Stok', key: 'stock', width: 12 },
-    { header: 'Min Stok', key: 'lowStockThreshold', width: 15 },
+    { header: 'Min Stok Alert', key: 'lowStockThreshold', width: 18 },
     { header: 'Unit', key: 'unit', width: 20 },
     { header: 'Kategori', key: 'category', width: 20 },
     { header: 'Store ID', key: 'storeId', width: 40 },
@@ -2133,9 +2144,9 @@ export async function exportAllData(
     { header: 'ID', key: 'id', width: 40 },
     { header: 'Nama Aset', key: 'name', width: 30 },
     { header: 'Serial Number', key: 'serialNumber', width: 25 },
-    { header: 'Status', key: 'status', width: 15 },
     { header: 'Tanggal Beli', key: 'purchaseDate', width: 15 },
     { header: 'Harga Beli', key: 'purchaseCost', width: 15 },
+    { header: 'Status', key: 'status', width: 15 },
     { header: 'Store ID', key: 'storeId', width: 40 },
     { header: 'Riwayat Perawatan', key: 'maintenanceHistory', width: 50 },
   ];
@@ -2152,23 +2163,23 @@ export async function exportAllData(
       id: asset.id,
       name: asset.name,
       serialNumber: asset.serialNumber || '',
-      status: asset.status,
       purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString() : '',
       purchaseCost: asset.purchaseCost || 0,
+      status: asset.status,
       storeId: asset.storeId || '',
       maintenanceHistory: JSON.stringify(asset.maintenanceHistory || []),
     });
   });
-  assetSheet.getColumn('F').numFmt = 'Rp #,##0';
+  assetSheet.getColumn('E').numFmt = 'Rp #,##0';
 
   // Sheet 6: Expenses
   const expenseSheet = workbook.addWorksheet('💰 Pengeluaran');
   expenseSheet.columns = [
     { header: 'ID', key: 'id', width: 40 },
-    { header: 'Deskripsi', key: 'description', width: 40 },
-    { header: 'Jumlah', key: 'amount', width: 15 },
-    { header: 'Kategori', key: 'category', width: 20 },
     { header: 'Tanggal', key: 'date', width: 15 },
+    { header: 'Kategori', key: 'category', width: 20 },
+    { header: 'Jumlah', key: 'amount', width: 15 },
+    { header: 'Deskripsi', key: 'description', width: 40 },
     { header: 'Store ID', key: 'storeId', width: 40 },
   ];
   expenseSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2182,14 +2193,14 @@ export async function exportAllData(
   expenses.forEach((expense) => {
     expenseSheet.addRow({
       id: expense.id,
-      description: expense.description,
-      amount: expense.amount,
-      category: expense.category,
       date: expense.date instanceof Date ? expense.date.toISOString().split('T')[0] : expense.date,
+      category: expense.category,
+      amount: expense.amount,
+      description: expense.description,
       storeId: expense.storeId || '',
     });
   });
-  expenseSheet.getColumn('C').numFmt = 'Rp #,##0';
+  expenseSheet.getColumn('D').numFmt = 'Rp #,##0';
 
   // Sheet 7: Transactions
   const transactionSheet = workbook.addWorksheet('🧾 Transaksi');
@@ -2291,15 +2302,20 @@ export async function importAllData(file: File): Promise<{
         const name = row.getCell(2).value as string;
         const phone = row.getCell(3).value as string;
         const address = row.getCell(4).value as string;
+        const notes = row.getCell(5).value as string;
+        const defaultDiscount = Number(row.getCell(6).value) || 0;
+        const storeId = row.getCell(7).value as string;
 
         if (id && name) {
-          // @ts-expect-error - Partial customer from Excel, missing storeId and createdAt
+          // @ts-expect-error - Partial customer from Excel, missing createdAt
           customers.push({
             id,
             name,
             phone: phone || undefined,
             address: address || undefined,
-            notes: undefined,
+            notes: notes || undefined,
+            defaultDiscount: defaultDiscount || 0,
+            storeId: storeId || '',
           });
         }
       }
@@ -2315,18 +2331,23 @@ export async function importAllData(file: File): Promise<{
         const id = row.getCell(1).value as string;
         const name = row.getCell(2).value as string;
         const category = row.getCell(3).value as ServiceCategory;
-        const price = Number(row.getCell(4).value) || 0;
-        const unit = row.getCell(5).value as string;
-        const durationDays = Number(row.getCell(6).value) || 0;
+        const washType = (row.getCell(4).value as WashType) || 'Pakaian';
+        const price = Number(row.getCell(5).value) || 0;
+        const unit = row.getCell(6).value as string;
+        const durationDays = Number(row.getCell(7).value) || 0;
+        const description = row.getCell(8).value as string;
+        const storeId = row.getCell(9).value as string;
 
         if (id && name && category && unit) {
           services.push({
             id,
             name,
             category,
+            washType,
             price,
             unit,
             durationDays,
+            storeId: storeId || '',
             // @ts-expect-error - isActive may not exist on Service
             isActive: true,
           });
@@ -2344,9 +2365,10 @@ export async function importAllData(file: File): Promise<{
         const id = row.getCell(1).value as string;
         const name = row.getCell(2).value as string;
         const stock = Number(row.getCell(3).value) || 0;
-        const unit = row.getCell(4).value as string;
-        const lowStockThreshold = Number(row.getCell(5).value) || 0;
-        const storeId = row.getCell(6).value as string;
+        const lowStockThreshold = Number(row.getCell(4).value) || 0;
+        const unit = row.getCell(5).value as string;
+        const category = row.getCell(6).value as string; // Read category but dont use it yet as it is not in interface
+        const storeId = row.getCell(7).value as string;
 
         if (id && name && unit && storeId) {
           inventory.push({
@@ -2371,9 +2393,9 @@ export async function importAllData(file: File): Promise<{
         const id = row.getCell(1).value as string;
         const name = row.getCell(2).value as string;
         const serialNumber = row.getCell(3).value as string;
-        const status = row.getCell(4).value as AssetStatus;
-        const purchaseDate = row.getCell(5).value as string;
-        const purchaseCost = Number(row.getCell(6).value) || 0;
+        const purchaseDate = row.getCell(4).value as string;
+        const purchaseCost = Number(row.getCell(5).value) || 0;
+        const status = row.getCell(6).value as AssetStatus;
         const storeId = row.getCell(7).value as string;
         const maintenanceHistoryStr = row.getCell(8).value as string;
 
@@ -2389,7 +2411,7 @@ export async function importAllData(file: File): Promise<{
           }
         }
 
-        if (id && name && status && purchaseDate && storeId) {
+        if (id && name && status && purchaseDate) {
           assets.push({
             id,
             name,
@@ -2398,7 +2420,7 @@ export async function importAllData(file: File): Promise<{
             // @ts-expect-error - purchaseDate type mismatch
             purchaseDate,
             purchaseCost,
-            storeId,
+            storeId: storeId || '',
             maintenanceHistory,
           });
         }
@@ -2413,13 +2435,13 @@ export async function importAllData(file: File): Promise<{
     expenseSheet.eachRow((row, _rowNumber) => {
       if (_rowNumber > 1) {
         const id = row.getCell(1).value as string;
-        const description = row.getCell(2).value as string;
-        const amount = Number(row.getCell(3).value) || 0;
-        const category = row.getCell(4).value as string;
-        const dateValue = row.getCell(5).value;
+        const dateValue = row.getCell(2).value;
+        const category = row.getCell(3).value as string;
+        const amount = Number(row.getCell(4).value) || 0;
+        const description = row.getCell(5).value as string;
         const storeId = row.getCell(6).value as string;
 
-        if (id && description && category && dateValue && storeId) {
+        if (id && description && category && dateValue) {
           // Convert date to Date object
           let dateObj: Date;
           if (dateValue instanceof Date) {
@@ -2436,7 +2458,7 @@ export async function importAllData(file: File): Promise<{
             amount,
             category,
             date: dateObj,
-            storeId,
+            storeId: storeId || '',
           });
         }
       }
