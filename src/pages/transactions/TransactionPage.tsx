@@ -541,7 +541,7 @@ const TransactionPage: React.FC = () => {
 
   return (
     <>
-      <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="relative bg-slate-50 dark:bg-slate-800 p-3 sm:p-6 rounded-lg shadow-md">
         {(isSavingPayment || isBulkProcessing) && (
           <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
             <div className="flex items-center gap-3">
@@ -742,7 +742,7 @@ const TransactionPage: React.FC = () => {
         )}
 
         {/* Transactions Table */}
-        <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
+        <div className="hidden md:block bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm sm:text-base text-left text-slate-500 dark:text-slate-400">
               <thead className="text-xs sm:text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
@@ -971,12 +971,12 @@ const TransactionPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="md:hidden space-y-4">
+        <div className="md:hidden space-y-3 sm:space-y-4">
           {paginatedTransactions.length > 0 ? (
             paginatedTransactions.map((t: TransactionWithCustomer) => (
               <div
                 key={t.id}
-                className={`p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-slate-50 dark:bg-slate-800'}`}
+                className={`p-3 sm:p-4 rounded-lg shadow-md text-slate-600 dark:text-slate-300 relative min-h-[120px] ${selectedIds.has(t.id) ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : 'bg-white dark:bg-slate-800'}`}
               >
                 <div className="absolute top-3 left-2">
                   <input
@@ -989,7 +989,7 @@ const TransactionPage: React.FC = () => {
                   />
                 </div>
                 <div className="ml-8">
-                  <div className="flex justify-between items-center mb-1">
+                  <div className="flex justify-between items-start gap-2 mb-2">
                     <p className="font-bold text-lg text-slate-900 dark:text-white">
                       {t.customerName}
                     </p>
@@ -1005,10 +1005,10 @@ const TransactionPage: React.FC = () => {
                         : '-'}
                     </p>
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                     {formatTransactionId(t)}
                   </p>
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2 mb-3">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-500 dark:text-slate-400 text-base">Total:</span>
                       <span className="font-bold text-lg text-slate-900 dark:text-white">

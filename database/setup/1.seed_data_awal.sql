@@ -62,7 +62,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- Super Admin
 INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Super Admin', 'Super Admin', NULL)
+VALUES ('11c86333-295c-4bd9-9302-a69fda4811c0', 'Anop', 'Super Admin', NULL)
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   role = EXCLUDED.role;
