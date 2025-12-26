@@ -77,5 +77,5 @@ docs/
 ## 📝 Notes
 
 - Semua dokumentasi menggunakan format Markdown
-- Update terakhir: 18 Desember 2024
+- Update terakhir: 26 Desember 2024
 - Untuk pertanyaan, lihat [CONTRIBUTING.md](CONTRIBUTING.md)

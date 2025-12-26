@@ -1,7 +1,7 @@
 -- ============================================
 -- FULL SEED BUNDLE (Services, Inventory, Assets, Maintenances)
 -- Laundry Management System
--- Version: 2.4.0
+-- Version: 2.7.0
 -- Updated: 2025-12-26 (Fixed encoding + wash_type fix)
 -- ============================================
 

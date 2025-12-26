@@ -1,8 +1,8 @@
 -- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - SEED DATA
 -- Sample Data untuk Testing & Development
--- Version: 2.0.0
--- Date: December 17, 2024
+-- Version: 2.1.0
+-- Date: December 26, 2024
 -- ============================================
 --
 -- IMPORTANT: File ini berisi data contoh/sample

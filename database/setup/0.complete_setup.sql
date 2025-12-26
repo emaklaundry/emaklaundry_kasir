@@ -1,8 +1,8 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
 -- Complete Schema & Functions Setup
--- Version: 3.0.0
--- Date: December 15, 2025
+-- Version: 3.1.0
+-- Date: December 26, 2025
 -- ============================================
 -- 
 -- IMPORTANT: Jalankan script ini di Supabase SQL Editor
