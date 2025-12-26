@@ -1,4 +1,4 @@
-import { Customer, PaymentMethod, PaymentStatus, Transaction } from '../types';
+import { Customer, PaymentStatus, Transaction } from '../types';
 
 /**
  * Recalculate customer discount balances from transaction history

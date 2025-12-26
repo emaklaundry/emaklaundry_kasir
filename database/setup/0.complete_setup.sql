@@ -617,6 +617,7 @@ CREATE OR REPLACE FUNCTION public.get_public_services(
 RETURNS TABLE (
   service_name text,
   category text,
+  wash_type text,
   duration_days integer
 )
 LANGUAGE sql
@@ -626,6 +627,7 @@ AS $$
   SELECT
     s.name AS service_name,
     s.category::text AS category,
+    s.wash_type,
     s."durationDays"::integer AS duration_days
   FROM
     public.services AS s
