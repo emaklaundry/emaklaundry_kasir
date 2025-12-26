@@ -92,6 +92,7 @@ const BackupRestorePage: React.FC = () => {
       return (data || []).map((s: Record<string, unknown>) => ({
         ...s,
         storeId: s.storeId ?? undefined,
+        washType: s.wash_type,
       }));
     },
   });
