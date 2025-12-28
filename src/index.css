@@ -136,8 +136,8 @@ html {
 
 /* Named page for Thermal Receipts */
 @page thermal-receipt {
-  size: 58mm auto; /* Explicitly set width to 58mm */
-  margin: 0; /* Zero margin on page, use checking padding instead */
+  size: 58mm auto;
+  margin: 0;
 }
 
 @media print {
@@ -172,6 +172,7 @@ html {
   body {
     background-color: white !important;
     color: black !important;
+    overflow: visible !important;
   }
 
   * {
@@ -180,51 +181,50 @@ html {
   }
 
   /* --- THERMAL RECEIPT STYLES --- */
+  /* Use strict absolute positioning to escape any layout constraints */
   .receipt-print {
-    page: thermal-receipt;
-    width: 100% !important; /* Occupy full printable area */
-    max-width: 58mm !important; /* Enforce 58mm max width */
-    margin: 0 auto !important;
-    padding: 2mm 3mm !important; /* Add margins (top/bottom: 2mm, left/right: 3mm) */
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 58mm !important; /* Fixed width matching page size */
+    margin: 0 !important;
+    padding: 0 4mm !important; /* Safe horizontal padding */
+    
+    /* Ensure it sits on top of everything else and has a background */
+    z-index: 9999 !important;
+    background-color: white !important;
+    min-height: 100vh; /* Cover vertical space */
 
-    /* Ensure font is readable on thermal */
+    /* Typography */
     font-family: 'Courier New', Courier, monospace !important;
   }
 
   .receipt-print * {
-    font-size: 9pt !important; /* Smaller base font for 58mm */
+    font-size: 9pt !important;
     color: black !important;
-    line-height: 1.1 !important; /* Tighter line height */
-  }
-
-  .receipt-print h1,
-  .receipt-print h2,
-  .receipt-print h3,
-  .receipt-print p,
-  .receipt-print span,
-  .receipt-print div {
-    margin: 0 !important;
-    padding: 0 !important;
+    line-height: 1.1 !important;
+    visibility: visible !important;
   }
 
   .receipt-print h1 {
-    font-size: 12pt !important; /* Reduce title size */
+    font-size: 12pt !important;
     font-weight: bold !important;
     margin-bottom: 3mm !important;
     text-align: center;
   }
-  
+
+  /* UTILITY OVERRIDES FOR PRINT */
   .receipt-print .text-center {
     text-align: center !important;
   }
-  
+
   .receipt-print .flex.justify-between {
     display: flex !important;
     justify-content: space-between !important;
     align-items: flex-start !important;
     gap: 2mm;
   }
-  
+
   /* Dashed lines */
   .receipt-print .border-dashed {
     border-style: dashed !important;
@@ -233,15 +233,14 @@ html {
     margin: 2mm 0 !important;
     padding-bottom: 2mm !important;
   }
-  
-  /* Ensure spacing between sections */
+
   .receipt-print > div {
     margin-bottom: 2mm !important;
   }
-  
-  /* Fix spacing for item lists */
-  .receipt-print .space-y-2 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 1mm !important;
+
+  /* Hide elements explicitly marked to hide in print */
+  .receipt-print .print-hide {
+    display: none !important;
   }
 
   /* --- REPORT STYLES --- */
