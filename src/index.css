@@ -136,8 +136,8 @@ html {
 
 /* Named page for Thermal Receipts */
 @page thermal-receipt {
-  size: auto; /* Allow printer driver to handle width (58mm/80mm) */
-  margin: 0;
+  size: 58mm auto; /* Explicitly set width to 58mm */
+  margin: 0; /* Zero margin on page, use checking padding instead */
 }
 
 @media print {
@@ -182,19 +182,19 @@ html {
   /* --- THERMAL RECEIPT STYLES --- */
   .receipt-print {
     page: thermal-receipt;
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 100% !important; /* Occupy full printable area */
+    max-width: 58mm !important; /* Enforce 58mm max width */
     margin: 0 auto !important;
-    padding: 0 1mm !important;
+    padding: 2mm 3mm !important; /* Add margins (top/bottom: 2mm, left/right: 3mm) */
 
     /* Ensure font is readable on thermal */
     font-family: 'Courier New', Courier, monospace !important;
   }
 
   .receipt-print * {
-    font-size: 10pt !important;
+    font-size: 9pt !important; /* Smaller base font for 58mm */
     color: black !important;
-    line-height: 1.2 !important;
+    line-height: 1.1 !important; /* Tighter line height */
   }
 
   .receipt-print h1,
@@ -208,9 +208,40 @@ html {
   }
 
   .receipt-print h1 {
-    font-size: 14pt !important;
+    font-size: 12pt !important; /* Reduce title size */
     font-weight: bold !important;
+    margin-bottom: 3mm !important;
+    text-align: center;
+  }
+  
+  .receipt-print .text-center {
+    text-align: center !important;
+  }
+  
+  .receipt-print .flex.justify-between {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 2mm;
+  }
+  
+  /* Dashed lines */
+  .receipt-print .border-dashed {
+    border-style: dashed !important;
+    border-width: 0 0 1px 0 !important;
+    border-color: #000 !important;
+    margin: 2mm 0 !important;
+    padding-bottom: 2mm !important;
+  }
+  
+  /* Ensure spacing between sections */
+  .receipt-print > div {
     margin-bottom: 2mm !important;
+  }
+  
+  /* Fix spacing for item lists */
+  .receipt-print .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1mm !important;
   }
 
   /* --- REPORT STYLES --- */
