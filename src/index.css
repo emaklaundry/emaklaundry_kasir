@@ -198,19 +198,24 @@ html {
     /* Typography */
     font-family: 'Courier New', Courier, monospace !important;
   }
-
+  /* CONTENT STYLING */
   .receipt-print * {
-    font-size: 9pt !important;
-    color: black !important;
-    line-height: 1.1 !important;
+    font-size: 10pt !important; /* Slightly larger for better visibility */
+    color: #000000 !important;
+    font-weight: 600 !important; /* Make text bolder/blacker */
+    line-height: 1.2 !important;
     visibility: visible !important;
+    -webkit-font-smoothing: none !important; /* Sharper text for thermal printers */
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
   }
 
   .receipt-print h1 {
-    font-size: 12pt !important;
-    font-weight: bold !important;
+    font-size: 14pt !important;
+    font-weight: 800 !important; /* Extra bold for title */
     margin-bottom: 3mm !important;
     text-align: center;
+    text-transform: uppercase; /* Make title standout more */
   }
 
   /* UTILITY OVERRIDES FOR PRINT */
@@ -225,11 +230,11 @@ html {
     gap: 2mm;
   }
 
-  /* Dashed lines */
+  /* Dashed lines - Make them thicker/darker */
   .receipt-print .border-dashed {
     border-style: dashed !important;
-    border-width: 0 0 1px 0 !important;
-    border-color: #000 !important;
+    border-width: 0 0 2px 0 !important; /* Thicker line */
+    border-color: #000000 !important;
     margin: 2mm 0 !important;
     padding-bottom: 2mm !important;
   }
