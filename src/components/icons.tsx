@@ -447,3 +447,18 @@ export const MapIcon: React.FC<{ className?: string }> = ({ className }) => (
     <line x1="16" y1="6" x2="16" y2="22" />
   </Icon>
 );
+
+export const BookOpenIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </Icon>
+);
+
+export const ArchiveBoxIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <polyline points="21 8 21 21 3 21 3 8" />
+    <rect x="1" y="3" width="22" height="5" />
+    <line x1="10" y1="12" x2="14" y2="12" />
+  </Icon>
+);
