@@ -1,12 +1,17 @@
 {
-  "extends": "../../../tsconfig.json",
   "compilerOptions": {
-    "module": "esnext",
     "target": "esnext",
-    "strict": true,
+    "module": "esnext",
+    "lib": ["esnext", "dom"],
+    "strict": false,
+    "noEmit": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noImplicitAny": false
   },
-  "include": ["index.ts"]
+  "include": ["index.ts", "deno.d.ts"]
 }
+

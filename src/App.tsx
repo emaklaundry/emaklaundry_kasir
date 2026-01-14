@@ -222,12 +222,7 @@ const AppRoutes: React.FC = () => {
                 </AdminRoute>
               }
             />
-             <Route
-              path="/docs"
-              element={
-                <DocumentationPage />
-              }
-            />
+            <Route path="/docs" element={<DocumentationPage />} />
             {/* Tambahkan catch-all route di bawah ini */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

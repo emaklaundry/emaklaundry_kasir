@@ -4,7 +4,7 @@ import { Customer, PaymentStatus, Transaction } from '../types';
  * Recalculate customer discount balances from transaction history
  * This utility processes all paid transactions and calculates the total rounding discount
  * that should have been earned by each customer
- * 
+ *
  * LOGIC:
  * - For each transaction, calculate expected subtotal without rounding: subtotal - tax
  * - Detect rounding discount by checking if discount exists and total is rounded to 500
@@ -22,7 +22,7 @@ export const recalculateAllCustomerDiscounts = async (
   console.log('🔍 DEBUG: Starting recalculation');
   console.log(`📊 Total customers: ${customers.length}`);
   console.log(`📊 Total transactions: ${transactions.length}`);
-  
+
   const results = {
     updated: 0,
     totalDiscountAdded: 0,
@@ -46,15 +46,15 @@ export const recalculateAllCustomerDiscounts = async (
       // Calculate what the total SHOULD be before rounding
       // subtotal - discount + tax = total
       // So: subtotal + tax - total = discount (including rounding)
-      
+
       const expectedTotalWithoutRounding = t.subtotal - t.discount + t.tax;
-      
+
       // Check if rounding was applied (total is multiple of 500 AND discount exists)
       if (t.total % 500 === 0 && t.discount > 0) {
         // Calculate the rounding component
         // If expected total has remainder, the difference is rounding discount
         const remainder = expectedTotalWithoutRounding % 500;
-        
+
         if (remainder > 0 && remainder < 500) {
           console.log(
             `  ✅ Transaction: Expected Rp ${expectedTotalWithoutRounding.toLocaleString('id-ID')}, ` +
@@ -83,7 +83,9 @@ export const recalculateAllCustomerDiscounts = async (
           customerName: customer.name,
           discountAdded: totalRoundingDiscount,
         });
-        console.log(`✅ Updated ${customer.name} with Rp ${totalRoundingDiscount.toLocaleString('id-ID')}`);
+        console.log(
+          `✅ Updated ${customer.name} with Rp ${totalRoundingDiscount.toLocaleString('id-ID')}`,
+        );
       } catch (error) {
         console.error(`❌ Failed to update customer ${customer.name}:`, error);
       }

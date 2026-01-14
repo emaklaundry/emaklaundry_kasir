@@ -189,7 +189,7 @@ html {
     width: 58mm !important; /* Fixed width matching page size */
     margin: 0 !important;
     padding: 0 4mm !important; /* Safe horizontal padding */
-    
+
     /* Ensure it sits on top of everything else and has a background */
     z-index: 9999 !important;
     background-color: white !important;
