@@ -7,7 +7,7 @@ import react from 'eslint-plugin-react';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage'] },
+  { ignores: ['dist', 'node_modules', 'coverage', 'supabase/functions'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended, eslintConfigPrettier],
     files: ['**/*.{ts,tsx}'],
@@ -15,11 +15,7 @@ export default tseslint.config(
       ecmaVersion: 2022,
       globals: globals.browser,
       parserOptions: {
-        project: [
-          './tsconfig.json',
-          './supabase/functions/create-user/tsconfig.json',
-          './supabase/functions/check-order/tsconfig.json',
-        ],
+        project: ['./tsconfig.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },

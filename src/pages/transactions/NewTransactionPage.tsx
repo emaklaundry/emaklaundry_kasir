@@ -570,7 +570,7 @@ const NewTransactionPage: React.FC = () => {
 
         // Deduct used discount from customer's balance
         let currentCustomerBalance = selectedCustomer.defaultDiscount || 0;
-        
+
         if (discountType === 'fixed' && discountValue && selectedCustomer.defaultDiscount) {
           const usedDiscount = typeof discountValue === 'number' ? discountValue : 0;
           if (usedDiscount > 0) {
@@ -600,7 +600,6 @@ const NewTransactionPage: React.FC = () => {
             currentStoreId,
           );
         }
-
 
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
@@ -913,8 +912,10 @@ const NewTransactionPage: React.FC = () => {
                   selectedCustomer.defaultDiscount > 0 && (
                     <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
                       <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
-                      Saldo diskon Rp {selectedCustomer.defaultDiscount.toLocaleString('id-ID')} tersedia untuk{' '}
-                      {selectedCustomer.name}.
+                      Saldo diskon Rp {selectedCustomer.defaultDiscount.toLocaleString(
+                        'id-ID',
+                      )}{' '}
+                      tersedia untuk {selectedCustomer.name}.
                     </div>
                   )}
                 <div>

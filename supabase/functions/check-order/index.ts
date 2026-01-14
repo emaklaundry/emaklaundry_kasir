@@ -1,6 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Type definitions for API response data
+interface TransactionItem {
+  serviceName: string;
+  quantity: number;
+  unit: string;
+}
+
+interface CustomerData {
+  name: string;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -34,7 +45,8 @@ serve(async (req) => {
     // Note: Database field is likely 'invoice_code' (snake_case)
     const { data, error } = await supabaseAdmin
       .from('transactions')
-      .select(`
+      .select(
+        `
         id,
         invoice_code,
         customer_name: customers(name),
@@ -44,7 +56,8 @@ serve(async (req) => {
         amountPaid,
         estimatedCompletionDate,
         items
-      `)
+      `,
+      )
       .eq('invoice_code', invoice)
       .maybeSingle();
 
@@ -58,28 +71,36 @@ serve(async (req) => {
     }
 
     // 3. Format response for public view (security: dont expose internal IDs if not needed)
+    const customerName = Array.isArray(data.customer_name)
+      ? (data.customer_name[0] as CustomerData)?.name
+      : (data.customer_name as CustomerData | null)?.name ?? 'Pelanggan';
+
+    const items = Array.isArray(data.items)
+      ? (data.items as TransactionItem[]).map((item) => ({
+          service: item.serviceName,
+          qty: item.quantity,
+          unit: item.unit,
+        }))
+      : [];
+
     const responseData = {
       invoice: data.invoice_code,
-      customerName: Array.isArray(data.customer_name) ? data.customer_name[0]?.name : (data.customer_name as any)?.name ?? 'Pelanggan',
+      customerName,
       status: data.orderStatus,
       paymentStatus: data.paymentStatus,
       total: data.total,
       amountPaid: data.amountPaid,
       estimatedCompletion: data.estimatedCompletionDate,
-      items: (data.items as any[])?.map((item: any) => ({
-        service: item.serviceName,
-        qty: item.quantity,
-        unit: item.unit
-      })) ?? []
+      items,
     };
 
     return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
