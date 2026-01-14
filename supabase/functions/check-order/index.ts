@@ -34,21 +34,18 @@ serve(async (req) => {
       });
     }
 
-    // 1. Init Supabase Admin Client (to bypass RLS for public search by invoice)
-    // We use SERVICE_ROLE_KEY because public/anon users might not have SELECT permission on all transactions
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // 2. Query transaction with invoice number
-    // Note: Database field is likely 'invoice_code' (snake_case)
+    // PERBAIKAN: Menggunakan nama kolom yang sesuai dengan database ("invoiceCode", bukan "invoice_code")
     const { data, error } = await supabaseAdmin
       .from('transactions')
       .select(
         `
         id,
-        invoice_code,
+        invoiceCode,
         customer_name: customers(name),
         orderStatus,
         paymentStatus,
@@ -58,10 +55,13 @@ serve(async (req) => {
         items
       `,
       )
-      .eq('invoice_code', invoice)
+      .eq('invoiceCode', invoice) // PERBAIKAN DISINI
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+        console.error("Supabase Query Error:", error); // Logging error agar terlihat di Dashboard
+        throw error;
+    }
 
     if (!data) {
       return new Response(JSON.stringify({ error: 'Transaction not found' }), {
@@ -70,7 +70,6 @@ serve(async (req) => {
       });
     }
 
-    // 3. Format response for public view (security: dont expose internal IDs if not needed)
     const customerName = Array.isArray(data.customer_name)
       ? (data.customer_name[0] as CustomerData)?.name
       : (data.customer_name as CustomerData | null)?.name ?? 'Pelanggan';
@@ -84,7 +83,7 @@ serve(async (req) => {
       : [];
 
     const responseData = {
-      invoice: data.invoice_code,
+      invoice: data.invoiceCode, // Sesuaikan dengan hasil query
       customerName,
       status: data.orderStatus,
       paymentStatus: data.paymentStatus,
@@ -100,6 +99,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("Function Error:", errorMessage); // Logging error
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
