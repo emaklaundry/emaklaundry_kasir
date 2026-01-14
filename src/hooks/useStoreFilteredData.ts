@@ -8,6 +8,18 @@ interface StoreDataItem {
   [key: string]: unknown;
 }
 
+/**
+ * Filters data by current user's store.
+ *
+ * @warning DO NOT use this hook with paginated data (e.g., transactions).
+ * Store filtering for paginated data MUST be done at the database query level
+ * to avoid empty results when items on current page are from other stores.
+ *
+ * Use this hook ONLY for small, fully-loaded lookup data:
+ * - Service categories
+ * - Small inventory lists
+ * - User lists
+ */
 const useStoreFilteredData = function <T extends StoreDataItem>(data: T[]): T[] {
   const { currentUser, selectedStoreId } = useAppContext();
 
