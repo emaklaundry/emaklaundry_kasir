@@ -26,8 +26,8 @@ const fetchTransactions = async (
     if (page < 1) {
       throw new Error('Page number must be greater than 0');
     }
-    if (pageSize < 1 || pageSize > 100) {
-      throw new Error('Page size must be between 1 and 100');
+    if (pageSize < 1 || pageSize > 1000) {
+      throw new Error('Page size must be between 1 and 1000');
     }
 
     let query = supabase.from('transactions').select('*', { count: 'exact' });

@@ -195,7 +195,7 @@ const Dashboard: React.FC = () => {
       ? inventoryQuery.data
       : (inventoryQuery.data?.data ?? []);
   }, [inventoryQuery.data]);
-  const { transactions, updateTransaction } = useTransactions();
+  const { transactions, updateTransaction } = useTransactions({ pageSize: 1000 });
   const customersQuery = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
