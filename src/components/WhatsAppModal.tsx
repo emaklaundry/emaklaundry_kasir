@@ -43,10 +43,10 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const rawRemaining = total - amountPaid;
     const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
     const invoiceNumber = formatTransactionId(transaction);
-    const trackingUrl = `https://www.emaklaundry.my.id/?invoice=${encodeURIComponent(invoiceNumber)}`;
+    const trackingUrl = `https://emaklaundry.my.id/?invoice=${encodeURIComponent(invoiceNumber)}`;
 
     // Footer custom dari settings atau default
-    const defaultFooter = `🔍 Cek status cucian Anda:\nhttps://www.emaklaundry.my.id/\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9`;
+    const defaultFooter = `🔍 Cek status cucian Anda:\nhttps://emaklaundry.my.id/\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9`;
     const footer = settings?.whatsappFooter || defaultFooter;
 
     if (transaction.orderStatus === OrderStatus.Processing) {
@@ -66,7 +66,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `Halo ${customer.name},\n\n` +
         `Terima kasih telah mempercayakan laundry Anda kepada kami. Berikut adalah detail pesanan Anda:\n` +
         `─────────────────────────────\n` +
-        `🧾 *No. Invoice*: ${invoiceNumber} ${trackingUrl}\n` +
+        `🧾 *No. Invoice*: ${invoiceNumber}\n` +
+        `🔗 *Cek Status*: ${trackingUrl}\n` +
         `📅 *Tanggal*: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n` +
         `─────────────────────────────\n` +
         `*Daftar Item:*\n${itemsList}\n` +
@@ -93,7 +94,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
       defaultMessage =
         `Halo ${customer.name},\n\n` +
-        `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* ${trackingUrl} sudah *SIAP DIAMBIL*.\n` +
+        `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
+        `🔗 *Cek Status*: ${trackingUrl}\n` +
         `─────────────────────────────\n` +
         `*Daftar Item:*\n${itemsList}\n` +
         `─────────────────────────────\n` +
@@ -113,7 +115,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
       defaultMessage =
         `Halo ${customer.name},\n\n` +
-        `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* ${trackingUrl} sudah *SELESAI*.\n` +
+        `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
+        `🔗 *Cek Status*: ${trackingUrl}\n` +
         `─────────────────────────────\n` +
         `*Daftar Item:*\n${itemsList}\n` +
         `─────────────────────────────\n` +

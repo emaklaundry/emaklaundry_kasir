@@ -30,6 +30,7 @@ const CustomerDetailPage = lazy(() => import('./pages/management/CustomerDetailP
 const ReceiptPage = lazy(() => import('./pages/transactions/ReceiptPage'));
 const TransactionDetailPage = lazy(() => import('./pages/transactions/TransactionDetailPage'));
 const StoresPage = lazy(() => import('./pages/management/StoresPage'));
+const DocumentationPage = lazy(() => import('./pages/DocumentationPage'));
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAppContext();
@@ -219,6 +220,12 @@ const AppRoutes: React.FC = () => {
                 <AdminRoute>
                   <AuditLogPage />
                 </AdminRoute>
+              }
+            />
+             <Route
+              path="/docs"
+              element={
+                <DocumentationPage />
               }
             />
             {/* Tambahkan catch-all route di bawah ini */}

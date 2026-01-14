@@ -15,7 +15,11 @@ export default tseslint.config(
       ecmaVersion: 2022,
       globals: globals.browser,
       parserOptions: {
-        project: ['./tsconfig.json', './supabase/functions/create-user/tsconfig.json'],
+        project: [
+          './tsconfig.json',
+          './supabase/functions/create-user/tsconfig.json',
+          './supabase/functions/check-order/tsconfig.json',
+        ],
         tsconfigRootDir: import.meta.dirname,
       },
     },
