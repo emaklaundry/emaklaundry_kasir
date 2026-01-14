@@ -103,9 +103,9 @@ export function useTransactions(filter: TransactionFilter = {}) {
     queryFn: () => fetchTransactions(queryFilter),
     placeholderData: keepPreviousData,
     enabled: enabled,
-    // HANYA untuk TransactionPage: refetch on window focus
-    // Untuk halaman lain (form input), ini akan disabled
-    refetchOnWindowFocus: queryFilter.page !== undefined, // Hanya jika ada pagination
+    // Disabled untuk POS: andalkan invalidateQueries setelah mutasi
+    // Mencegah gangguan UX saat user pindah tab dan kembali ke form input
+    refetchOnWindowFocus: false,
     staleTime: queryFilter.page !== undefined ? 30 * 1000 : 5 * 60 * 1000, // 30s untuk list, 5min untuk detail
   });
   const transactions = result?.data || [];

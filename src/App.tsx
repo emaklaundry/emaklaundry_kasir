@@ -64,28 +64,17 @@ import pkg from '../package.json';
 const APP_VERSION = `v${pkg.version}`;
 
 const AppRoutes: React.FC = () => {
-  const { currentUser, signOut } = useAppContext();
+  const { currentUser, signOut, loading: authLoading } = useAppContext();
   const { settings, isLoading: isLoadingSettings } = useSettings();
-  const [isAuthChecking, setIsAuthChecking] = React.useState(true);
-
-  // Tunggu auth check selesai
-  React.useEffect(() => {
-    const checkAuth = async () => {
-      // Beri waktu untuk auth check selesai
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      setIsAuthChecking(false);
-    };
-    checkAuth();
-  }, []);
 
   // Handler untuk logout dari maintenance mode
   const handleMaintenanceLogout = React.useCallback(async () => {
     await signOut();
-    window.location.href = '/login';
+    window.location.assign('/login');
   }, [signOut]);
 
   // Tampilkan loader saat checking auth ATAU loading settings
-  if (isAuthChecking || isLoadingSettings) {
+  if (authLoading || isLoadingSettings) {
     return <PageLoader />;
   }
 

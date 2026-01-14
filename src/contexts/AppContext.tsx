@@ -9,6 +9,7 @@ import useToasts from './useToasts'; // 1. IMPOR useToasts
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 menit = 300000ms
 
 export interface AppContextType {
+  loading: boolean;
   currentUser: User | null;
   signOut: () => Promise<void>;
   stores: Store[];
@@ -18,6 +19,7 @@ export interface AppContextType {
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { stores } = useStores();
+  const [loading, setLoading] = useState(true);
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { addToast } = useToasts(); // 2. INISIALISASI HOOK
@@ -28,63 +30,67 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     const getProfile = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        if (error) {
-          console.error('Error fetching profile:', error);
-        }
-        if (data) {
-          if (data.isActive === false) {
-            addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
-            await supabase.auth.signOut();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (error) {
+            console.error('Error fetching profile:', error);
+          }
+          if (data) {
+            if (data.isActive === false) {
+              addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
+              await supabase.auth.signOut();
+              setCurrentUser(null);
+              prevLoggedInRef.current = false;
+            } else {
+              // Deteksi transisi dari logout ke login
+              if (!prevLoggedInRef.current) {
+                const newLog = {
+                  timestamp: new Date().toISOString(),
+                  user: data.name ?? null,
+                  action: 'Melakukan login.',
+                  storeId: data.store_id ?? null,
+                };
+                supabase.from('audit_logs').insert([newLog]).then();
+              }
+              setCurrentUser({
+                id: data.id,
+                name: data.name,
+                role: data.role as import('../types').UserRole,
+                storeId: data.store_id ?? undefined,
+                createdAt: data.created_at ? new Date(data.created_at) : undefined,
+                isActive: data.isActive ?? false,
+                canGiveDiscount: data.canGiveDiscount ?? false,
+              });
+
+              // Automatically select the store if the user is bound to one
+              if (data.store_id) {
+                setSelectedStoreId(data.store_id);
+              }
+
+              prevLoggedInRef.current = true;
+            }
+          } else {
+            // Profil tidak ditemukan (bisa karena trigger belum jalan)
+            console.warn('User login berhasil, tapi profil tidak ditemukan di database.');
+            // Opsi: Logout otomatis atau biarkan null
+            // await supabase.auth.signOut();
             setCurrentUser(null);
             prevLoggedInRef.current = false;
-          } else {
-            // Deteksi transisi dari logout ke login
-            if (!prevLoggedInRef.current) {
-              const newLog = {
-                timestamp: new Date().toISOString(),
-                user: data.name ?? null,
-                action: 'Melakukan login.',
-                storeId: data.store_id ?? null,
-              };
-              supabase.from('audit_logs').insert([newLog]).then();
-            }
-            setCurrentUser({
-              id: data.id,
-              name: data.name,
-              role: data.role as import('../types').UserRole,
-              storeId: data.store_id ?? undefined,
-              createdAt: data.created_at ? new Date(data.created_at) : undefined,
-              isActive: data.isActive ?? false,
-              canGiveDiscount: data.canGiveDiscount ?? false,
-            });
-
-            // Automatically select the store if the user is bound to one
-            if (data.store_id) {
-              setSelectedStoreId(data.store_id);
-            }
-
-            prevLoggedInRef.current = true;
           }
         } else {
-          // Profil tidak ditemukan (bisa karena trigger belum jalan)
-          console.warn('User login berhasil, tapi profil tidak ditemukan di database.');
-          // Opsi: Logout otomatis atau biarkan null
-          // await supabase.auth.signOut();
           setCurrentUser(null);
           prevLoggedInRef.current = false;
         }
-      } else {
-        setCurrentUser(null);
-        prevLoggedInRef.current = false;
+      } finally {
+        setLoading(false);
       }
     };
     getProfile();
@@ -186,7 +192,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider
-      value={{ currentUser, signOut, stores, selectedStoreId, setSelectedStoreId }}
+      value={{ loading, currentUser, signOut, stores, selectedStoreId, setSelectedStoreId }}
     >
       {children}
     </AppContext.Provider>
