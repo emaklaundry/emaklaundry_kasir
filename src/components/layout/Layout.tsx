@@ -73,7 +73,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         }`}
       >
         <Header pageTitle={pageTitle} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className={`p-2 sm:p-4 md:p-6 flex-1 pb-20 sm:pb-6 print-main-content`}>
+        <main className={`p-2 sm:p-4 md:p-6 flex-1 pb-24 sm:pb-6 print-main-content`}>
           {children}
         </main>
         <footer className="print-hide bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-2 sm:py-3 px-4 text-center hidden sm:block">

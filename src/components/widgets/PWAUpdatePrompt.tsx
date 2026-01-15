@@ -37,7 +37,7 @@ const PWAUpdatePrompt: React.FC = () => {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-md">
+    <div className="fixed bottom-20 sm:bottom-4 right-4 z-[60] max-w-md">
       <div className="bg-blue-600 text-white rounded-lg shadow-lg p-4 flex items-start gap-3">
         <RefreshCwIcon className="w-6 h-6 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
