@@ -28,6 +28,7 @@ describe('AuditLogPage', () => {
       stores: mockStores,
       selectedStoreId: 'all',
       setSelectedStoreId: vi.fn(),
+      loading: false,
     };
     render(
       <QueryClientProvider client={queryClient}>

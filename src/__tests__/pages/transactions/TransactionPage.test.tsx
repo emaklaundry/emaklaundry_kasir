@@ -111,6 +111,7 @@ vi.mock('@/contexts/useAppContext', () => ({
       storeId: 'store-1',
       name: 'Test Admin',
     },
+    loading: false,
   })),
 }));
 

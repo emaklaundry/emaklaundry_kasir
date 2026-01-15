@@ -40,7 +40,8 @@ export async function exportBackup(): Promise<BackupData> {
   const data: Record<string, unknown[]> = {};
 
   for (const table of tables) {
-    const { data: tableData, error } = await supabase.from(table).select('*');
+    // Explicitly cast table string to a valid table name key
+    const { data: tableData, error } = await supabase.from(table as keyof import('@/types/supabase').Database['public']['Tables']).select('*');
 
     if (error) {
       console.error(`Error fetching ${table}:`, error);
@@ -152,7 +153,7 @@ export async function importBackup(
       // For each record, try to upsert
       for (const record of tableData) {
         const { error } = await supabase
-          .from(table)
+          .from(table as keyof import('@/types/supabase').Database['public']['Tables'])
           .upsert(record as never, { onConflict: 'id' });
 
         if (error) {

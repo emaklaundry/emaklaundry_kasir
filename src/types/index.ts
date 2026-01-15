@@ -87,6 +87,11 @@ export interface TransactionItem {
   taggedItems?: string; // For Kiloan item tagging
 }
 
+export interface ExtendedTransactionItem extends TransactionItem {
+  length?: number;
+  width?: number;
+}
+
 export interface Transaction {
   id: string;
   invoiceCode?: string; // UBAH dari invoice_code menjadi invoiceCode (camelCase, sesuai DB)

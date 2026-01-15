@@ -35,6 +35,7 @@ describe('NewTransactionPage', () => {
                 stores: mockStores,
                 selectedStoreId: 'all',
                 setSelectedStoreId: vi.fn(),
+                loading: false,
               }}
             >
               <NewTransactionPage />

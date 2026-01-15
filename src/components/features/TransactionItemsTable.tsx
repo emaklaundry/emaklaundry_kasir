@@ -1,0 +1,188 @@
+
+import React from 'react';
+import { Trash2Icon, MessageSquareIcon, TagIcon } from '../icons';
+import { Service, ServiceCategory, ExtendedTransactionItem } from '@/types';
+
+interface TransactionItemsTableProps {
+  items: ExtendedTransactionItem[];
+  services: Service[];
+  handleItemChange: (
+    index: number,
+    field: 'quantity' | 'taggedItems' | 'itemDetails' | 'length' | 'width',
+    value: number | string | Array<{ note: string }>
+  ) => void;
+  handleOpenNotesModal: (index: number) => void;
+  handleOpenKiloanTaggingModal: (index: number) => void;
+  handleRemoveItem: (index: number) => void;
+}
+
+const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
+  items,
+  services,
+  handleItemChange,
+  handleOpenNotesModal,
+  handleOpenKiloanTaggingModal,
+  handleRemoveItem,
+}) => {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-lg text-left text-slate-500 dark:text-slate-400">
+        <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <tr>
+            <th className="px-4 py-3">Layanan</th>
+            <th className="px-4 py-3">Jumlah</th>
+            <th className="px-4 py-3 text-center">Aksi</th>
+            <th className="px-4 py-3 text-right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.length > 0 ? (
+            items.map((item, index) => {
+              const service = services.find((s) => s.id === item.serviceId);
+              const isSatuan = service?.category === ServiceCategory.Satuan;
+              const isKiloan = service?.category === ServiceCategory.Kiloan;
+
+              return (
+                <tr key={index} className="border-b dark:border-slate-700">
+                  <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
+                    {item.serviceName}
+                  </td>
+                  <td className="px-4 py-2 w-48">
+                    {item.unit.toLowerCase() === 'm2' ||
+                    item.unit.toLowerCase() === 'meter' ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500 w-4">P:</span>
+                          <input
+                            type="number"
+                            id={`item-length-${index}`}
+                            name={`item-length-${index}`}
+                            min="0"
+                            step="0.1"
+                            placeholder="P"
+                            value={item.length}
+                            onChange={(e) =>
+                              handleItemChange(
+                                index,
+                                'length',
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
+                            className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                            autoComplete="off"
+                          />
+                          <span className="text-sm text-slate-500">m</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500 w-4">L:</span>
+                          <input
+                            type="number"
+                            id={`item-width-${index}`}
+                            name={`item-width-${index}`}
+                            min="0"
+                            step="0.1"
+                            placeholder="L"
+                            value={item.width}
+                            onChange={(e) =>
+                              handleItemChange(
+                                index,
+                                'width',
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
+                            className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div className="text-sm font-bold text-blue-600 mt-1">
+                          = {item.quantity} {item.unit}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <input
+                          type="number"
+                          id={`item-quantity-${index}`}
+                          name={`item-quantity-${index}`}
+                          min="0"
+                          step={item.unit === 'kg' ? '0.01' : '1'}
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              'quantity',
+                              parseFloat(e.target.value) || 0,
+                            )
+                          }
+                          className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          autoComplete="off"
+                        />
+                        <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
+                          {item.unit}
+                        </span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-center">
+                    <div className="flex items-center justify-center">
+                      {isSatuan && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenNotesModal(index)}
+                          title="Catatan per Item"
+                          className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <MessageSquareIcon className="w-6 h-6" />
+                          {item.itemDetails
+                            ?.slice(0, item.quantity)
+                            .some((d) => d.note) && (
+                            <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
+                          )}
+                        </button>
+                      )}
+                      {isKiloan && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenKiloanTaggingModal(index)}
+                          title="Tag Item Kiloan"
+                          className="p-2 text-purple-600 hover:text-purple-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <TagIcon className="w-6 h-6" />
+                          {item.taggedItems && (
+                            <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
+                          )}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(index)}
+                        title="Hapus Item"
+                        className="p-2 text-red-600 hover:text-red-900 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        <Trash2Icon className="w-6 h-6" />
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    Rp {item.subtotal.toLocaleString('id-ID')}
+                  </td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr>
+              <td
+                colSpan={4}
+                className="text-center py-4 text-slate-500 dark:text-slate-400"
+              >
+                Belum ada layanan yang ditambahkan.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default TransactionItemsTable;

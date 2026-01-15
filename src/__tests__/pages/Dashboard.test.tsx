@@ -38,6 +38,7 @@ vi.mock('@/contexts/useAppContext', () => ({
     stores: [{ id: 'test-store', name: 'Test Store' }],
     selectedStoreId: 'test-store',
     setSelectedStoreId: vi.fn(),
+    loading: false,
   })),
 }));
 

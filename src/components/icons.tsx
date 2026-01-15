@@ -96,6 +96,13 @@ export const UsersIcon: React.FC<{ className?: string }> = ({ className }) => (
   </Icon>
 );
 
+export const UserIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </Icon>
+);
+
 export const UserPlusIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Icon className={className}>
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -186,6 +193,8 @@ export const Trash2Icon: React.FC<{ className?: string }> = ({ className }) => (
     <line x1="14" y1="11" x2="14" y2="17" />
   </Icon>
 );
+
+export const TrashIcon = Trash2Icon;
 
 export const ChevronDownIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Icon className={className}>

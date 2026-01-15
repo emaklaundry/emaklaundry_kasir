@@ -1,0 +1,13 @@
+﻿
+> laundry-management-system@2.7.1 lint
+> eslint .
+
+
+C:\.github_mhmdnvn18@gmail.com\emaklaundry_kasir\src\contexts\EmployeeContext.tsx
+  214:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\.github_mhmdnvn18@gmail.com\emaklaundry_kasir\src\pages\transactions\NewTransactionPage.tsx
+  24:3  error  'TransactionItem' is defined but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 2 problems (1 error, 1 warning)
+
