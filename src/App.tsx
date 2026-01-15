@@ -30,6 +30,8 @@ const CustomerDetailPage = lazy(() => import('./pages/management/CustomerDetailP
 const ReceiptPage = lazy(() => import('./pages/transactions/ReceiptPage'));
 const TransactionDetailPage = lazy(() => import('./pages/transactions/TransactionDetailPage'));
 const StoresPage = lazy(() => import('./pages/management/StoresPage'));
+const EmployeesPage = lazy(() => import('./pages/management/EmployeesPage'));
+const AttendancePage = lazy(() => import('./pages/management/AttendancePage'));
 const DocumentationPage = lazy(() => import('./pages/DocumentationPage'));
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -208,6 +210,22 @@ const AppRoutes: React.FC = () => {
               element={
                 <AdminRoute>
                   <AuditLogPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/employees"
+              element={
+                <AdminRoute>
+                  <EmployeesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/attendance"
+              element={
+                <AdminRoute>
+                  <AttendancePage />
                 </AdminRoute>
               }
             />

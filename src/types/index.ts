@@ -171,6 +171,7 @@ export interface Settings {
   isMaintenanceMode?: boolean;
   maintenanceMessage?: string;
   whatsappFooter?: string;
+  qrisStaticCode?: string; // QRIS statis merchant untuk generate dinamis
 }
 
 export interface ScheduledMaintenance {

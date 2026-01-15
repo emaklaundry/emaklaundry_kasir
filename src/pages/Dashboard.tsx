@@ -18,6 +18,7 @@ import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
 import PaymentModal from '../components/PaymentModal';
+import WashSettingsModal from '../components/WashSettingsModal';
 import {
   WrenchIcon,
   PlusCircleIcon,
@@ -25,6 +26,7 @@ import {
   ChevronRightIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
+  BookOpenIcon,
 } from '../components/icons';
 
 import {
@@ -234,6 +236,7 @@ const Dashboard: React.FC = () => {
   const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [transactionForPayment, setTransactionForPayment] = useState<Transaction | null>(null);
+  const [isWashSettingsModalOpen, setIsWashSettingsModalOpen] = useState(false);
 
   const isCashier = currentUser?.role === UserRole.Cashier;
 
@@ -820,6 +823,18 @@ const Dashboard: React.FC = () => {
                 Lapor Kerusakan
               </span>
             </button>
+
+            <button
+              onClick={() => setIsWashSettingsModalOpen(true)}
+              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+            >
+              <div className="p-2 sm:p-3 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex-shrink-0">
+                <BookOpenIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
+                Panduan Mesin Cuci
+              </span>
+            </button>
           </div>
           {isActionDisabled && (
             <p className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 mt-3">
@@ -1112,6 +1127,10 @@ const Dashboard: React.FC = () => {
         onClose={() => setIsPaymentModalOpen(false)}
         transaction={transactionForPayment}
         onSave={handleSavePayment}
+      />
+      <WashSettingsModal
+        isOpen={isWashSettingsModalOpen}
+        onClose={() => setIsWashSettingsModalOpen(false)}
       />
     </>
   );

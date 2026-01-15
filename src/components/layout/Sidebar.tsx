@@ -46,6 +46,8 @@ const navItems: NavItem[] = [
       { path: '/management/stores', label: 'Cabang', icon: TruckIcon, superAdminOnly: true },
       { path: '/management/customers', label: 'Pelanggan', icon: UsersIcon },
       { path: '/management/services', label: 'Layanan', icon: PackageIcon },
+      { path: '/management/employees', label: 'Karyawan', icon: UsersIcon },
+      { path: '/management/attendance', label: 'Absensi', icon: HistoryIcon },
       { path: '/management/inventory', label: 'Inventaris', icon: WrenchIcon },
       { path: '/management/assets', label: 'Aset & Pemeliharaan', icon: WrenchIcon },
       { path: '/management/expenses', label: 'Pengeluaran', icon: DollarSignIcon },

@@ -2,8 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { formatRupiah, parseRupiah } from '@/utils/formatting';
 import { formatTransactionId } from '@/utils/uiHelpers';
 import useToasts from '../contexts/useToasts';
+import { useSettings } from '../contexts/SettingsContext';
 import Modal from './Modal';
-// import { SpinnerIcon, DollarSignIcon } from './icons';
+import DynamicQRIS from './DynamicQRIS';
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 
 interface PaymentModalProps {
@@ -24,6 +25,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   const { addToast } = useToasts();
+  const { settings } = useSettings();
 
   const remainingBalance = useMemo(() => {
     if (!transaction) return 0;
@@ -224,6 +226,30 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
         </div>
 
+        {/* Dynamic QRIS Display */}
+        {method === PaymentMethod.QRIS && settings?.qrisStaticCode && (
+          <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <DynamicQRIS
+              staticQRIS={settings.qrisStaticCode}
+              amount={amountToPay}
+              size={180}
+              showAmount={true}
+            />
+          </div>
+        )}
+
+        {/* QRIS Not Configured Warning */}
+        {method === PaymentMethod.QRIS && !settings?.qrisStaticCode && (
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+            <p className="text-yellow-800 dark:text-yellow-200 text-sm text-center">
+              ⚠️ QRIS belum dikonfigurasi
+            </p>
+            <p className="text-yellow-600 dark:text-yellow-400 text-xs text-center mt-1">
+              Tambahkan kode QRIS statis di menu Pengaturan untuk mengaktifkan Dynamic QRIS
+            </p>
+          </div>
+        )}
+
         <div>
           <label
             htmlFor="amountToPay"
@@ -308,3 +334,4 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 };
 
 export default PaymentModal;
+

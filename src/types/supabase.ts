@@ -81,6 +81,179 @@ export type Database = {
           },
         ];
       };
+      employees: {
+        Row: {
+          id: string;
+          store_id: string | null;
+          name: string;
+          phone: string | null;
+          role: string;
+          base_salary: number;
+          commission_rate: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id?: string | null;
+          name: string;
+          phone?: string | null;
+          role: string;
+          base_salary?: number;
+          commission_rate?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string | null;
+          name?: string;
+          phone?: string | null;
+          role?: string;
+          base_salary?: number;
+          commission_rate?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "employees_store_id_fkey";
+            columns: ["store_id"];
+            isOneToOne: false;
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      attendance: {
+        Row: {
+          id: string;
+          employee_id: string;
+          date: string;
+          clock_in: string | null;
+          clock_out: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          employee_id: string;
+          date: string;
+          clock_in?: string | null;
+          clock_out?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          employee_id?: string;
+          date?: string;
+          clock_in?: string | null;
+          clock_out?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "attendance_employee_id_fkey";
+            columns: ["employee_id"];
+            isOneToOne: false;
+            referencedRelation: "employees";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      advances: {
+        Row: {
+          id: string;
+          employee_id: string;
+          amount: number;
+          date: string;
+          reason: string | null;
+          is_deducted: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          employee_id: string;
+          amount: number;
+          date: string;
+          reason?: string | null;
+          is_deducted?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          employee_id?: string;
+          amount?: number;
+          date?: string;
+          reason?: string | null;
+          is_deducted?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "advances_employee_id_fkey";
+            columns: ["employee_id"];
+            isOneToOne: false;
+            referencedRelation: "employees";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      payroll: {
+        Row: {
+          id: string;
+          employee_id: string;
+          period_start: string;
+          period_end: string;
+          base_salary: number;
+          commission_total: number;
+          deductions: number;
+          net_salary: number;
+          status: string;
+          paid_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          employee_id: string;
+          period_start: string;
+          period_end: string;
+          base_salary: number;
+          commission_total: number;
+          deductions: number;
+          net_salary: number;
+          status: string;
+          paid_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          employee_id?: string;
+          period_start?: string;
+          period_end?: string;
+          base_salary?: number;
+          commission_total?: number;
+          deductions?: number;
+          net_salary?: number;
+          status?: string;
+          paid_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payroll_employee_id_fkey";
+            columns: ["employee_id"];
+            isOneToOne: false;
+            referencedRelation: "employees";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       customers: {
         Row: {
           address: string | null;
