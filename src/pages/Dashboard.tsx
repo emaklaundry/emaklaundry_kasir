@@ -584,7 +584,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4 sm:space-y-6 p-3 sm:p-0 pb-20 sm:pb-0">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
         <div className="mb-3 sm:mb-4 flex justify-between items-center">
           <h2 className="text-base sm:text-xl font-medium text-slate-600 dark:text-slate-400">
             Tampilan Data:{' '}

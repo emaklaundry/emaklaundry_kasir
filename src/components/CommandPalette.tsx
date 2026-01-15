@@ -230,7 +230,7 @@ const CommandPalette: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 bg-black bg-opacity-60"
+      className="fixed inset-0 z-[60] flex items-start justify-center pt-16 sm:pt-24 bg-black bg-opacity-60"
       onClick={close}
       role="dialog"
       aria-modal="true"

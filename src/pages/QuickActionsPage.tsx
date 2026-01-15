@@ -79,7 +79,7 @@ const QuickActionsPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-3 sm:p-4 pb-20 sm:pb-4">
+    <div className="p-3 sm:p-4">
       <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-slate-900 dark:text-white">
         Aksi Cepat
       </h1>
