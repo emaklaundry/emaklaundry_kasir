@@ -1,18 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useEmployees } from '../../contexts/EmployeeContext';
+import { useUsers } from '../../contexts/UserContext';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
 import Modal from '../../components/Modal';
 import { Employee, EmployeeFormData, EmployeeRole } from '../../types/hrm';
-import { PlusCircleIcon, EditIcon, TrashIcon, UserIcon } from '../../components/icons';
+import { User, UserRole } from '../../types';
+import { PlusCircleIcon, EditIcon, TrashIcon, UserIcon, ArrowDownIcon } from '../../components/icons';
 import { formatRupiah } from '../../utils/formatting';
+
+const mapUserRoleToEmployeeRole = (userRole: UserRole): EmployeeRole => {
+  switch (userRole) {
+    case UserRole.Cashier:
+      return 'kasir';
+    case UserRole.Admin:
+    case UserRole.SuperAdmin:
+      return 'admin';
+    default:
+      return 'operator';
+  }
+};
 
 const EmployeesPage: React.FC = () => {
   const { employees, isLoading, fetchEmployees, addEmployee, updateEmployee, deleteEmployee } = useEmployees();
+  const { users } = useUsers();
   const { selectedStoreId } = useAppContext();
   const { addToast } = useToasts();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<EmployeeFormData>({
     storeId: selectedStoreId || '',
@@ -23,6 +39,22 @@ const EmployeesPage: React.FC = () => {
     commissionRate: 0,
     isActive: true,
   });
+
+  const handleImportUser = (user: User) => {
+    setIsImportModalOpen(false);
+    setEditingEmployee(null);
+    setFormData({
+      storeId: user.storeId || selectedStoreId || '',
+      name: user.name,
+      phone: '',
+      role: mapUserRoleToEmployeeRole(user.role),
+      baseSalary: 0,
+      commissionRate: 0,
+      isActive: true,
+    });
+    setIsModalOpen(true);
+    addToast('Data pengguna dimuat. Silakan lengkapi gaji dan komisi.', 'info');
+  };
 
   useEffect(() => {
     if (selectedStoreId) {
@@ -106,7 +138,7 @@ const EmployeesPage: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6" id="employees-header">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Manajemen Karyawan
@@ -115,13 +147,24 @@ const EmployeesPage: React.FC = () => {
             Kelola data karyawan dan komisi
           </p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-        >
-          <PlusCircleIcon className="w-5 h-5" />
-          <span className="hidden sm:inline">Tambah Karyawan</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            id="employees-import-btn"
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+          >
+            <ArrowDownIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">Import dari Pengguna</span>
+          </button>
+          <button
+            id="employees-add-btn"
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <PlusCircleIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">Tambah Karyawan</span>
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -130,7 +173,7 @@ const EmployeesPage: React.FC = () => {
           <p className="text-slate-500 mt-3">Memuat data...</p>
         </div>
       ) : employees.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg">
+        <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg" id="employees-list">
           <UserIcon className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400">Belum ada data karyawan</p>
           <button
@@ -141,7 +184,7 @@ const EmployeesPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="employees-list">
           {employees.map((employee) => (
             <div
               key={employee.id}
@@ -312,6 +355,63 @@ const EmployeesPage: React.FC = () => {
             </label>
           </div>
         </form>
+      </Modal>
+
+      {/* Import User Modal */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Import dari Pengguna"
+        footer={
+          <button
+            onClick={() => setIsImportModalOpen(false)}
+            className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium dark:bg-slate-700 dark:text-slate-300"
+          >
+            Tutup
+          </button>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Pilih pengguna aplikasi yang ingin dijadikan karyawan. Data nama dan peran akan otomatis diambil.
+          </p>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {users.filter(u => u.role !== UserRole.SuperAdmin).length === 0 ? (
+              <p className="text-center py-4 text-slate-500">Tidak ada pengguna yang tersedia.</p>
+            ) : (
+              users
+                .filter(u => u.role !== UserRole.SuperAdmin) // Filter SuperAdmin out normally
+                .map((user) => {
+                  const isAlreadyEmployee = employees.some(e => e.name.toLowerCase() === user.name.toLowerCase());
+                  return (
+                    <button
+                      key={user.id}
+                      onClick={() => !isAlreadyEmployee && handleImportUser(user)}
+                      disabled={isAlreadyEmployee}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-colors ${
+                        isAlreadyEmployee
+                          ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed dark:bg-slate-800 dark:border-slate-700'
+                          : 'bg-white border-slate-200 hover:bg-blue-50 hover:border-blue-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isAlreadyEmployee ? 'bg-slate-200' : 'bg-blue-100 text-blue-600'}`}>
+                          <UserIcon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-white">{user.name}</p>
+                          <p className="text-xs text-slate-500">{user.role}</p>
+                        </div>
+                      </div>
+                      {isAlreadyEmployee && (
+                        <span className="text-xs font-medium text-slate-400">Sudah Ditambahkan</span>
+                      )}
+                    </button>
+                  );
+                })
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

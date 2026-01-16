@@ -7,6 +7,7 @@ interface CustomerSelectorProps {
   selectedCustomer: Customer | null;
   onSelectCustomer: (customer: Customer | null) => void;
   onAddNewCustomer: () => void;
+  id?: string;
 }
 
 const CustomerSelector: React.FC<CustomerSelectorProps> = ({
@@ -14,6 +15,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   selectedCustomer,
   onSelectCustomer,
   onAddNewCustomer,
+  id,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -64,7 +66,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   };
 
   return (
-    <div className="relative">
+    <div className="relative" id={id}>
       <label
         htmlFor="customerName"
         className="block mb-2 text-base font-medium text-slate-900 dark:text-white"

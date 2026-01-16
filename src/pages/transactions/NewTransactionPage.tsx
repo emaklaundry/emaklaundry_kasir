@@ -722,7 +722,7 @@ const NewTransactionPage: React.FC = () => {
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pilih Layanan
               </h2>
-              <ServiceSelector services={services} onAddService={handleAddService} />
+              <ServiceSelector id="service-selector" services={services} onAddService={handleAddService} />
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
@@ -730,6 +730,7 @@ const NewTransactionPage: React.FC = () => {
                 Item Transaksi
               </h2>
                 <TransactionItemsTable
+                  id="transaction-items"
                   items={items}
                   services={services}
                   handleItemChange={handleItemChange}
@@ -741,12 +742,13 @@ const NewTransactionPage: React.FC = () => {
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible">
+            <div id="payment-section" className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible">
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Detail & Total
               </h2>
               <div className="space-y-4">
                 <CustomerSelector
+                  id="customer-selector"
                   customers={customers}
                   selectedCustomer={selectedCustomer}
                   onSelectCustomer={setSelectedCustomer}
@@ -764,7 +766,7 @@ const NewTransactionPage: React.FC = () => {
                       tersedia untuk {selectedCustomer.name}.
                     </div>
                   )}
-                <div>
+                <div id="notes-section">
                   <label
                     htmlFor="notes"
                     className="block mb-2 text-base font-medium text-slate-900 dark:text-white"

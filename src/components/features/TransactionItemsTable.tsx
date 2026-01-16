@@ -14,6 +14,7 @@ interface TransactionItemsTableProps {
   handleOpenNotesModal: (index: number) => void;
   handleOpenKiloanTaggingModal: (index: number) => void;
   handleRemoveItem: (index: number) => void;
+  id?: string;
 }
 
 const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
@@ -23,9 +24,10 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
   handleOpenNotesModal,
   handleOpenKiloanTaggingModal,
   handleRemoveItem,
+  id,
 }) => {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" id={id}>
       <table className="w-full text-lg text-left text-slate-500 dark:text-slate-400">
         <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
           <tr>

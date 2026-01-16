@@ -50,6 +50,8 @@ const getPageTitle = (
   return 'Laundry POS';
 };
 
+import Tutorial from '../features/Tutorial';
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const params = useParams();
@@ -65,6 +67,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col">
+      <Tutorial />
       <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       <div

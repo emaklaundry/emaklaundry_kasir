@@ -32,9 +32,12 @@ import {
 } from '../../utils/excelUtils';
 import { supabase } from '../../utils/supabaseClient';
 import { recalculateAllCustomerDiscounts } from '../../utils/discountUtils';
+import GoogleContactsImportModal from '../../components/GoogleContactsImportModal';
+import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts';
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
+  const { createContact, signIn, isAuthenticated, isLoading: isGoogleLoading } = useGoogleContacts();
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +66,8 @@ const CustomersPage: React.FC = () => {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [activityFilter, setActivityFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isGoogleImportModalOpen, setIsGoogleImportModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const customerStats = useMemo(() => {
     const stats: { [key: string]: { transactionCount: number; totalSpent: number } } = {};
@@ -480,6 +485,128 @@ const CustomersPage: React.FC = () => {
     }
   };
 
+  // Google Contacts Import
+  const handleGoogleContactsImport = async (contacts: GoogleContact[]) => {
+    const storeId =
+      currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId;
+    if (!storeId || storeId === 'all') {
+      addToast('Pilih cabang spesifik untuk import kontak.', 'warning');
+      return;
+    }
+
+    const toastId = addToast(`Mengimport ${contacts.length} kontak...`, 'info');
+    setIsSaving(true);
+
+    let successCount = 0;
+    let skipCount = 0;
+    let errorCount = 0;
+
+    for (const contact of contacts) {
+      try {
+        // Normalize phone number
+        let phone = contact.phone.replace(/\D/g, '');
+        if (phone.startsWith('0')) {
+          phone = '62' + phone.substring(1);
+        } else if (phone.startsWith('8')) {
+          phone = '62' + phone;
+        }
+
+        // Check for duplicate
+        const existingCustomer = customers.find(
+          (c) => c.phone?.replace(/\D/g, '') === phone,
+        );
+        if (existingCustomer) {
+          skipCount++;
+          continue;
+        }
+
+        await addCustomer({
+          name: contact.name,
+          phone: phone,
+          address: contact.address || undefined,
+          notes: `Imported from Google Contacts`,
+          defaultDiscount: 0,
+          storeId: storeId,
+          createdAt: new Date(),
+        });
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    }
+
+    setIsSaving(false);
+
+    if (skipCount > 0 || errorCount > 0) {
+      updateToast(
+        toastId,
+        `Import selesai: ${successCount} berhasil, ${skipCount} duplikat, ${errorCount} gagal`,
+        skipCount > 0 ? 'warning' : 'error',
+      );
+    } else {
+      updateToast(toastId, `Berhasil import ${successCount} kontak dari Google!`, 'success');
+    }
+
+    addAuditLog(`Import ${successCount} pelanggan dari Google Contacts.`, storeId);
+  };
+
+  // Google Contacts Sync (Export)
+  const handleSyncToGoogle = async () => {
+    if (!isAuthenticated) {
+      signIn();
+      return;
+    }
+
+    if (customers.length === 0) {
+      addToast('Tidak ada pelanggan untuk disinkronisasi.', 'warning');
+      return;
+    }
+
+    const toastId = addToast('Sinkronisasi ke Google Contacts...', 'info');
+    setIsSyncing(true);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Filter customers who have valid names and phones
+    const customersToSync = customers.filter((c) => c.name && c.phone);
+
+    updateToast(toastId, `Memproses ${customersToSync.length} kontak...`, 'info');
+
+    for (const customer of customersToSync) {
+      try {
+        await createContact({
+          name: customer.name,
+          phone: customer.phone!, // Filtered above
+          address: customer.address || undefined,
+        });
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to sync ${customer.name}:`, error);
+        errorCount++;
+      }
+    }
+
+    setIsSyncing(false);
+
+    if (errorCount > 0) {
+      updateToast(
+        toastId,
+        `Sinkronisasi selesai: ${successCount} berhasil, ${errorCount} gagal.`,
+        'warning',
+      );
+    } else {
+      updateToast(toastId, `Berhasil sinkronisasi ${successCount} kontak ke Google!`, 'success');
+    }
+
+    addAuditLog(`Sync ${successCount} pelanggan ke Google Contacts.`, selectedStoreId !== 'all' ? selectedStoreId : undefined);
+  };
+
+  // Get existing phone numbers for deduplication
+  const existingPhones = useMemo(() => {
+    return customers.map((c) => c.phone || '').filter(Boolean);
+  }, [customers]);
+
   const NoCustomersFound = () => (
     <EmptyState
       icon={<UsersIcon className="mx-auto w-12 h-12 text-slate-400" />}
@@ -543,7 +670,38 @@ const CustomersPage: React.FC = () => {
             title="Import dari Excel"
           >
             <UploadIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Import</span>
+            <span className="hidden sm:inline text-sm">Excel</span>
+          </button>
+
+          <button
+            onClick={() => setIsGoogleImportModalOpen(true)}
+            disabled={!canAddNewCustomer || isSaving}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed"
+            title="Import dari Google Contacts"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+            <span className="hidden sm:inline text-sm">Import Google</span>
+          </button>
+
+          <button
+            onClick={handleSyncToGoogle}
+            disabled={customers.length === 0 || isSyncing || isGoogleLoading}
+            className="flex items-center gap-2 px-3 py-2 text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 disabled:bg-indigo-300 disabled:cursor-not-allowed"
+            title="Sinkronisasi ke Google Contacts"
+          >
+            {isSyncing ? (
+              <RefreshCwIcon className="w-4 h-4 animate-spin" />
+            ) : (
+               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
+               </svg>
+            )}
+            <span className="hidden sm:inline text-sm">Sync to Google</span>
           </button>
 
           <button
@@ -804,6 +962,13 @@ const CustomersPage: React.FC = () => {
           message={`Apakah Anda yakin ingin menghapus pelanggan "${customerToDelete.name}"? Semua data transaksi terkait akan tetap ada.`}
         />
       )}
+
+      <GoogleContactsImportModal
+        isOpen={isGoogleImportModalOpen}
+        onClose={() => setIsGoogleImportModalOpen(false)}
+        onImport={handleGoogleContactsImport}
+        existingPhones={existingPhones}
+      />
     </div>
   );
 };

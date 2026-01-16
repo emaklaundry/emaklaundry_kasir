@@ -1,8 +1,0 @@
-﻿
-> laundry-management-system@2.7.1 type-check
-> tsc
-
-src/__tests__/pages/AuditLogPage.test.tsx(36,34): error TS2741: Property 'loading' is missing in type '{ currentUser: { id: string; name: string; role: UserRole; storeId: string; createdAt: Date; isActive: boolean; canGiveDiscount: boolean; }; signOut: Mock<Procedure>; stores: { ...; }[]; selectedStoreId: string; setSelectedStoreId: Mock<...>; }' but required in type 'AppContextType'.
-src/__tests__/pages/QuickActionsPage.test.tsx(32,15): error TS2741: Property 'loading' is missing in type '{ currentUser: { id: string; name: string; role: UserRole; storeId: string; createdAt: Date; isActive: boolean; canGiveDiscount: boolean; }; signOut: Mock<Procedure>; stores: { ...; }[]; selectedStoreId: string; setSelectedStoreId: Mock<...>; }' but required in type 'AppContextType'.
-src/__tests__/pages/ReportsPage.test.tsx(32,15): error TS2741: Property 'loading' is missing in type '{ currentUser: { id: string; name: string; role: UserRole; storeId: string; createdAt: Date; isActive: boolean; canGiveDiscount: boolean; }; signOut: Mock<Procedure>; stores: { ...; }[]; selectedStoreId: string; setSelectedStoreId: Mock<...>; }' but required in type 'AppContextType'.
-src/__tests__/pages/transactions/NewTransactionPage.test.tsx(32,15): error TS2741: Property 'loading' is missing in type '{ currentUser: { id: string; name: string; role: UserRole; storeId: string; createdAt: Date; isActive: boolean; canGiveDiscount: boolean; }; signOut: Mock<Procedure>; stores: { ...; }[]; selectedStoreId: string; setSelectedStoreId: Mock<...>; }' but required in type 'AppContextType'.

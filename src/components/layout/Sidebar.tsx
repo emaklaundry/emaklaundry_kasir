@@ -17,7 +17,9 @@ import {
   ChevronLeftIcon,
   DatabaseIcon,
   BookOpenIcon,
+  HelpCircleIcon,
 } from '../icons';
+import { useTutorial } from '../../hooks/useTutorial';
 import { UserRole } from '@/types';
 
 interface SidebarProps {
@@ -63,6 +65,7 @@ const navItems: NavItem[] = [
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { currentUser } = useAppContext();
+  const { startTour } = useTutorial();
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>(['/management']);
 
@@ -189,6 +192,31 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           </div>
 
           <ul className="space-y-2 font-medium flex-1">{renderNavLinks(navItems)}</ul>
+
+          {/* Tutorial Button */}
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => {
+                if (location.pathname === '/' || location.pathname === '/dashboard') {
+                  startTour('dashboard');
+                } else if (location.pathname === '/transactions/new') {
+                  startTour('new_transaction');
+                } else if (location.pathname === '/transactions') {
+                  startTour('transaction_list');
+                } else if (location.pathname === '/management/employees') {
+                  startTour('employees');
+                } else {
+                  // Fallback to dashboard tour if on other pages
+                  startTour('dashboard');
+                }
+                if (window.innerWidth < 640) onToggle(); // Close sidebar on mobile
+              }}
+              className="w-full flex items-center p-3 text-base rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 group"
+            >
+              <HelpCircleIcon className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-brand-blue-600 dark:group-hover:text-brand-blue-400 transition-colors" />
+              <span className="ml-3 font-medium">Bantuan / Tutorial</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>

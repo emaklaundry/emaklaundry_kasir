@@ -404,6 +404,12 @@ export const CheckCircleIcon: React.FC<{ className?: string }> = ({ className })
   </Icon>
 );
 
+export const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <polyline points="20 6 9 17 4 12" />
+  </Icon>
+);
+
 export const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Icon className={className}>
     <circle cx="12" cy="12" r="10" />
@@ -471,3 +477,12 @@ export const ArchiveBoxIcon: React.FC<{ className?: string }> = ({ className }) 
     <line x1="10" y1="12" x2="14" y2="12" />
   </Icon>
 );
+
+export const HelpCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </Icon>
+);
+
