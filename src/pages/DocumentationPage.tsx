@@ -419,6 +419,496 @@ const DocumentationPage: React.FC = () => {
         </div>
       ),
     },
+    {
+      id: 'electrical-wiring',
+      title: 'Wiring & Infrastruktur Listrik',
+      icon: BoltIcon,
+      content: (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Wiring & Infrastruktur Listrik
+          </h2>
+          <p className="text-slate-600 dark:text-slate-300">
+            Dokumentasi Master Blueprint (DED) untuk infrastruktur kelistrikan usaha Emak Laundry.
+            Desain ini mengutamakan: <strong>Safety & Compliance</strong> (PUIL 2011/2020),{' '}
+            <strong>Scalability</strong> (siap upgrade ke 3500VA-5500VA),{' '}
+            <strong>Smart Monitoring</strong> (IoT Low-cost), dan <strong>Cost Efficiency</strong>.
+          </p>
+
+          {/* Ringkasan Teknis */}
+          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
+              1. Ringkasan Teknis
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-100 dark:bg-slate-700">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Parameter
+                    </th>
+                    <th className="px-3 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Spesifikasi
+                    </th>
+                    <th className="px-3 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Catatan
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
+                  <tr>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Sistem Tegangan</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      1 Phase, 2 Wire + PE (220V / 50Hz)
+                    </td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      Standar PLN Indonesia
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Kapasitas Panel</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      Max 32 Ampere (~7000 Watt)
+                    </td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      Over-spec untuk keamanan jangka panjang
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Earthing System</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      TN-S (Terra Neutral-Separate)
+                    </td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      Fasa, Netral, dan Ground terpisah
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Target Grounding</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">&lt; 5 Ohm</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      Wajib untuk proteksi kebocoran arus air
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Proteksi Manusia</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      RCBO 30mA (High Sensitivity)
+                    </td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      Trip jika ada sengatan listrik kecil
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Proteksi Aset</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      SPD & MCB Separate Group
+                    </td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                      Mencegah kerusakan PC/Server
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* BoM - Komponen Panel Utama */}
+          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
+              2. Rencana Anggaran Biaya (BoM)
+            </h3>
+
+            <h4 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-2">
+              A. Komponen Panel Utama
+            </h4>
+            <div className="overflow-x-auto mb-4">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-100 dark:bg-slate-700">
+                  <tr>
+                    <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Nama Barang
+                    </th>
+                    <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Spesifikasi
+                    </th>
+                    <th className="px-2 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                      Qty
+                    </th>
+                    <th className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                      Est. Harga
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Box Panel 18 Modul</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      Outbow/Inbow, Pintu Transparan
+                    </td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 120.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Main MCB 2-Pole</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">32A, 4.5kA, Kurva C</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 55.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">RCBO Slim Type</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">1P+N, 10A, 30mA</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">3</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 255.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">MCB Heavy Duty</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">1-Pole, 16A, 4.5kA</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 35.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Busbar Sisir</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">1 Fasa, Tembaga Murni</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 35.000
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot className="bg-slate-50 dark:bg-slate-700">
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                      Subtotal A:
+                    </td>
+                    <td className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                      Rp 500.000
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <h4 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-2">
+              B. Kabel & Distribusi Daya
+            </h4>
+            <div className="overflow-x-auto mb-4">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-100 dark:bg-slate-700">
+                  <tr>
+                    <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Nama Barang
+                    </th>
+                    <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Spesifikasi
+                    </th>
+                    <th className="px-2 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                      Qty
+                    </th>
+                    <th className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                      Est. Harga
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Kabel Feeder</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">NYM 3x4mm²</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">5m</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 175.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Kabel Distribusi</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">NYM 3x2.5mm²</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">30m</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 540.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Kabel Wiring Panel</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">NYAF 6mm²</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">3m</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 30.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Stop Kontak</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      Panasonic/Broco + Inbow Dus
+                    </td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">6</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 210.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Steker Heavy Duty</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">Arde, Broco/Panasonic</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">2</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 30.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Skun Kabel</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      Paket Pin + Ring + Heatshrink
+                    </td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 50.000
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot className="bg-slate-50 dark:bg-slate-700">
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                      Subtotal B:
+                    </td>
+                    <td className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                      Rp 1.035.000
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <h4 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-2">
+              C. Modul Smart Monitoring (IoT)
+            </h4>
+            <div className="overflow-x-auto mb-4">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-100 dark:bg-slate-700">
+                  <tr>
+                    <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Nama Barang
+                    </th>
+                    <th className="px-2 py-2 text-left font-semibold text-slate-700 dark:text-slate-200">
+                      Spesifikasi
+                    </th>
+                    <th className="px-2 py-2 text-center font-semibold text-slate-700 dark:text-slate-200">
+                      Qty
+                    </th>
+                    <th className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                      Est. Harga
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Power Meter Sensor</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      PZEM-004T v3.0 (100A) + CT
+                    </td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 85.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Microcontroller</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">ESP32 DevKit V1</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 65.000
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Casing 3D Print</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      Custom Case DIN Rail Mount
+                    </td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
+                    <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
+                      Rp 50.000
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot className="bg-slate-50 dark:bg-slate-700">
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                      Subtotal C:
+                    </td>
+                    <td className="px-2 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                      Rp 200.000
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
+              <p className="text-green-800 dark:text-green-200 font-semibold">
+                💰 Grand Total Estimasi: Rp 1.735.000,-
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                Investasi aset jangka panjang untuk keamanan bisnis dan data. Belum termasuk ongkos
+                tukang.
+              </p>
+            </div>
+          </section>
+
+          {/* Wiring Diagram */}
+          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
+              3. Wiring Diagram & Layout Panel
+            </h3>
+            <pre className="bg-slate-900 text-slate-100 p-4 rounded text-xs overflow-x-auto font-mono leading-relaxed">
+              {`[ KABEL DARI KWH METER (NYM 3x4mm) ]
+| L (Fasa)  | N (Netral)
+v           v
++----------------------------------+
+|    MAIN MCB 2-POLE (32A)         | <--- Saklar Induk
++----------------------------------+
+|  Out L    |  Out N
+    [CT PZEM] ----O     |
+    (Kalungkan)   |     +-----------> KE BUSBAR NOL (Biru)
+                  |     |
+                  +----[Kabel PZEM]--> POWER MONITORING
+                  |
++==================================+ <--- BUSBAR SISIR TEMBAGA (Fasa)
+|     |     |     |     |
++------+ +------+ +------+ +------+ +------+
+| SPD  | | RCBO | | RCBO | | RCBO | | MCB  |
+|(Opt) | | 10A  | | 10A  | | 10A  | | 16A  |
++------+ +------+ +------+ +------+ +------+
+   |        |        |        |        |
+  GND       v        v        v        v
+(Ke Rod)  RUMAH   LAUNDRY  LAUNDRY  HEAVY
+         (Server) (Mesin   (Mesin  (Vakum)
+                  1 & 2)   3 & 4)`}
+            </pre>
+          </section>
+
+          {/* Catatan Instalasi */}
+          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
+              4. Catatan Kritis Instalasi (SOP)
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                  A. Persiapan (Pre-Install)
+                </h4>
+                <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300 ml-2">
+                  <li>
+                    <strong>Cek Grounding:</strong> Ukur resistansi tanah. Jika &gt;5 Ohm, tambah
+                    batang arde.
+                  </li>
+                  <li>
+                    <strong>Balancing Beban:</strong> Tandai kabel keluaran. Pastikan beban terbagi
+                    rata di RCBO.
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                  B. Saat Terminasi Kabel
+                </h4>
+                <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300 ml-2">
+                  <li>
+                    <strong>Pengupasan:</strong> Gunakan wire stripper. Jangan sampai tembaga
+                    tergores.
+                  </li>
+                  <li>
+                    <strong>Crimping:</strong> Pasang Ferrules (Skun Jarum) pada ujung kabel serabut
+                    sebelum masuk MCB.
+                  </li>
+                  <li>
+                    <strong>Torque:</strong> Kencangkan baut terminal, wiggle (goyang) kabel,
+                    kencangkan lagi. Ulangi 2x.
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                  C. Integrasi IoT (PZEM)
+                </h4>
+                <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300 ml-2">
+                  <li>
+                    <strong>Safety Gap:</strong> Beri jarak minimal 1 modul (18mm) antara komponen
+                    tegangan tinggi dengan ESP32.
+                  </li>
+                  <li>
+                    <strong>CT Direction:</strong> Pasang CT sensor pada kabel Fasa Utama. Pastikan
+                    klip terkunci ("Klik").
+                  </li>
+                  <li>
+                    <strong>Powering ESP32:</strong> Gunakan charger HP bekas, bungkus heatshrink.
+                    Output 5V USB ke ESP32.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Scalability Roadmap */}
+          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
+              5. Skema Pengembangan (Scalability Roadmap)
+            </h3>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                <h4 className="font-bold text-blue-900 dark:text-blue-100">
+                  Tahap 1 (Sekarang - 2200VA)
+                </h4>
+                <ul className="text-sm text-blue-800 dark:text-blue-200 mt-2 space-y-1">
+                  <li>• SOP manajemen beban (tidak semua nyala bareng)</li>
+                  <li>• Panel sudah siap beban penuh</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+                <h4 className="font-bold text-amber-900 dark:text-amber-100">
+                  Tahap 2 (Upgrade 3500VA/4400VA)
+                </h4>
+                <ul className="text-sm text-amber-800 dark:text-amber-200 mt-2 space-y-1">
+                  <li>• Panggil PLN ganti MCB Meteran</li>
+                  <li>• Panel: Tidak ada perubahan</li>
+                  <li>• Semua mesin bisa nyala bersamaan</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800">
+                <h4 className="font-bold text-purple-900 dark:text-purple-100">
+                  Tahap 3 (Expand - 3 Phase)
+                </h4>
+                <ul className="text-sm text-purple-800 dark:text-purple-200 mt-2 space-y-1">
+                  <li>• Jika mesin &gt;8 unit</li>
+                  <li>• Ganti Main MCB jadi 4-Pole</li>
+                  <li>• Ganti Busbar Sisir 3 Phase</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </div>
+      ),
+    },
   ];
 
   const activeContent = sections.find((s) => s.id === activeSection)?.content;

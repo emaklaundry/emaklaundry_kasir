@@ -32,7 +32,10 @@ const TransactionDetailPage = lazy(() => import('./pages/transactions/Transactio
 const StoresPage = lazy(() => import('./pages/management/StoresPage'));
 const EmployeesPage = lazy(() => import('./pages/management/EmployeesPage'));
 const AttendancePage = lazy(() => import('./pages/management/AttendancePage'));
+const SOPPage = lazy(() => import('./pages/management/SOPPage'));
 const DocumentationPage = lazy(() => import('./pages/DocumentationPage'));
+const BusinessGuidePage = lazy(() => import('./pages/BusinessGuidePage'));
+const BusinessCalculatorPage = lazy(() => import('./pages/business/BusinessCalculatorPage'));
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAppContext();
@@ -229,6 +232,16 @@ const AppRoutes: React.FC = () => {
                 </AdminRoute>
               }
             />
+            <Route
+              path="/management/sop"
+              element={
+                <AdminRoute>
+                  <SOPPage />
+                </AdminRoute>
+              }
+            />
+            <Route path="/business-guide" element={<BusinessGuidePage />} />
+            <Route path="/business/calculator" element={<BusinessCalculatorPage />} />
             <Route path="/docs" element={<DocumentationPage />} />
             {/* Tambahkan catch-all route di bawah ini */}
             <Route path="*" element={<Navigate to="/" replace />} />

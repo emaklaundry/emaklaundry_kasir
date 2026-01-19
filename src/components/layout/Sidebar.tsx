@@ -18,6 +18,9 @@ import {
   DatabaseIcon,
   BookOpenIcon,
   HelpCircleIcon,
+  ArrowTrendingUpIcon,
+  CalculatorIcon,
+  FileTextIcon,
 } from '../icons';
 import { useTutorial } from '../../hooks/useTutorial';
 import { UserRole } from '@/types';
@@ -53,6 +56,7 @@ const navItems: NavItem[] = [
       { path: '/management/inventory', label: 'Inventaris', icon: WrenchIcon },
       { path: '/management/assets', label: 'Aset & Pemeliharaan', icon: WrenchIcon },
       { path: '/management/expenses', label: 'Pengeluaran', icon: DollarSignIcon },
+      { path: '/management/sop', label: 'SOP (Prosedur)', icon: FileTextIcon },
       { path: '/management/users', label: 'Pengguna', icon: UsersIcon },
     ],
   },
@@ -60,6 +64,8 @@ const navItems: NavItem[] = [
   { path: '/audit-log', label: 'Log Audit', icon: HistoryIcon, adminOnly: true },
   { path: '/management/backup', label: 'Backup & Restore', icon: DatabaseIcon, adminOnly: true },
   { path: '/docs', label: 'Dokumentasi', icon: BookOpenIcon },
+  { path: '/business-guide', label: 'Panduan Bisnis', icon: ArrowTrendingUpIcon },
+  { path: '/business/calculator', label: 'Kalkulator Bisnis', icon: CalculatorIcon },
   { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
 ];
 

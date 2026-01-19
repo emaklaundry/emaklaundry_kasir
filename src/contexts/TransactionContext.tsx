@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
 import { retrySupabaseOperation, verifyDataSaved } from '../utils/retryUtils';
 import { Transaction } from '@/types';
+import { autoDeductInventory } from './InventoryRecipeContext';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
 // Pagination-aware fetchTransactions
@@ -175,9 +176,20 @@ export function useTransactions(filter: TransactionFilter = {}) {
         );
       }
     },
-    onSuccess: () => {
+    onSuccess: async (savedTransaction, variables) => {
+      // Auto-deduct 1 sachet sabun liquid dari inventory
+      try {
+        await autoDeductInventory(
+          savedTransaction.id,
+          variables.storeId
+        );
+      } catch (deductError) {
+        console.error('Auto-deduct inventory failed:', deductError);
+        // Don't throw - transaction is already saved
+      }
       // Invalidate untuk force refresh dari server
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
   });
 

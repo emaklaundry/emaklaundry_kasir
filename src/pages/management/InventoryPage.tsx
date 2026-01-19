@@ -11,6 +11,8 @@ import {
   ArrowDownIcon,
   DownloadIcon,
   UploadIcon,
+  SettingsIcon,
+  CheckCircleIcon,
 } from '../../components/icons';
 import {
   exportInventoryToExcel,
@@ -30,6 +32,8 @@ import { useDebounce } from '../../hooks/useDebounce';
 
 import Pagination from '../../components/Pagination';
 import { InventoryItem, UserRole } from '@/types';
+import RecipeConfigModal from '../../components/RecipeConfigModal';
+import StockOpnameModal from '../../components/StockOpnameModal';
 
 const InventoryPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -69,6 +73,8 @@ const InventoryPage: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
+  const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
+  const [isOpnameModalOpen, setIsOpnameModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -374,7 +380,28 @@ const InventoryPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Inventaris</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Recipe Config & Stock Opname Buttons */}
+          <button
+            onClick={() => setIsRecipeModalOpen(true)}
+            disabled={!canAddNewItem}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600 disabled:opacity-50"
+            title="Konfigurasi Resep Bahan"
+          >
+            <SettingsIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Resep</span>
+          </button>
+
+          <button
+            onClick={() => setIsOpnameModalOpen(true)}
+            disabled={inventory.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600 disabled:opacity-50"
+            title="Stock Opname"
+          >
+            <CheckCircleIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Opname</span>
+          </button>
+
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
@@ -682,6 +709,24 @@ const InventoryPage: React.FC = () => {
           onConfirm={confirmDelete}
           title="Hapus Item Inventaris"
           message={`Apakah Anda yakin ingin menghapus item "${itemToDelete.name}"?`}
+        />
+      )}
+
+      {isRecipeModalOpen && selectedStoreId && selectedStoreId !== 'all' && (
+        <RecipeConfigModal
+          isOpen={isRecipeModalOpen}
+          onClose={() => setIsRecipeModalOpen(false)}
+          inventoryItems={inventory}
+          storeId={selectedStoreId}
+        />
+      )}
+
+      {isOpnameModalOpen && selectedStoreId && selectedStoreId !== 'all' && (
+        <StockOpnameModal
+          isOpen={isOpnameModalOpen}
+          onClose={() => setIsOpnameModalOpen(false)}
+          inventoryItems={inventory}
+          storeId={selectedStoreId}
         />
       )}
     </div>

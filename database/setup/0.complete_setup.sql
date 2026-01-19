@@ -1454,3 +1454,82 @@ CREATE INDEX IF NOT EXISTS idx_payroll_employee_id ON payroll(employee_id);
 -- ============================================
 -- END OF HRM LITE TABLES
 -- ============================================
+
+
+-- ============================================
+-- SECTION 7: INVENTORY RECIPES, STOCK OPNAME, & SOP (Added Jan 2026)
+-- ============================================
+
+-- 1. Inventory Recipes
+CREATE TABLE IF NOT EXISTS public.inventory_recipes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+    usage_per_kg NUMERIC NOT NULL DEFAULT 0,
+    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(inventory_item_id, store_id)
+);
+
+-- 2. Stock Opname
+CREATE TABLE IF NOT EXISTS public.stock_opname (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE SET NULL,
+    virtual_stock NUMERIC NOT NULL,
+    physical_stock NUMERIC NOT NULL,
+    discrepancy NUMERIC, -- Will be calculated in application or trigger
+    notes TEXT,
+    recorded_by TEXT,
+    recorded_at TIMESTAMPTZ DEFAULT NOW(),
+    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE
+);
+
+-- 3. Inventory Usage Log
+CREATE TABLE IF NOT EXISTS public.inventory_usage_log (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE SET NULL,
+    transaction_id UUID REFERENCES public.transactions(id) ON DELETE SET NULL,
+    quantity_used NUMERIC NOT NULL,
+    total_kg NUMERIC DEFAULT 0,
+    usage_per_kg NUMERIC DEFAULT 0,
+    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Standard Operating Procedures (SOP)
+CREATE TABLE IF NOT EXISTS public.standard_operating_procedures (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'Umum',
+    content TEXT NOT NULL,
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.inventory_recipes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stock_opname ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory_usage_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.standard_operating_procedures ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'inventory_recipes' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.inventory_recipes FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'stock_opname' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.stock_opname FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'inventory_usage_log' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.inventory_usage_log FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'standard_operating_procedures' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.standard_operating_procedures FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+END $$;
+

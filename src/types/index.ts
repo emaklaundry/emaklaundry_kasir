@@ -118,8 +118,44 @@ export interface InventoryItem {
   id: string;
   name: string;
   stock: number;
+  virtualStock?: number; // auto-deducted stock for recipe tracking
   lowStockThreshold: number;
   unit: string;
+  storeId: string;
+  recipe?: InventoryRecipe;
+}
+
+export interface InventoryRecipe {
+  id: string;
+  inventoryItemId: string;
+  usagePerKg: number; // ml/pcs per kg cucian
+  storeId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface StockOpname {
+  id: string;
+  inventoryItemId: string;
+  inventoryItemName?: string; // for display
+  virtualStock: number;
+  physicalStock: number;
+  discrepancy: number; // virtual - physical (positive = missing)
+  notes?: string;
+  recordedBy: string;
+  recordedAt: Date;
+  storeId: string;
+}
+
+export interface InventoryUsageLog {
+  id: string;
+  inventoryItemId: string;
+  inventoryItemName?: string;
+  transactionId?: string;
+  quantityUsed: number;
+  totalKg: number;
+  usagePerKg: number;
+  createdAt: Date;
   storeId: string;
 }
 

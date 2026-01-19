@@ -273,7 +273,7 @@ const NewTransactionPage: React.FC = () => {
       hasShownDiscountToast.current = false; // Reset when no discount
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount]);
+  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, subtotal, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   // Show error toast if settings failed to load

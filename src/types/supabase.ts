@@ -365,6 +365,103 @@ export type Database = {
           },
         ];
       };
+      inventory_recipes: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          inventory_item_id: string | null;
+          store_id: string | null;
+          updated_at: string | null;
+          usage_per_kg: number;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          store_id?: string | null;
+          updated_at?: string | null;
+          usage_per_kg: number;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          store_id?: string | null;
+          updated_at?: string | null;
+          usage_per_kg?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'inventory_recipes_inventory_item_id_fkey';
+            columns: ['inventory_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'inventory_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'inventory_recipes_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      inventory_usage_log: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          inventory_item_id: string | null;
+          quantity_used: number;
+          store_id: string | null;
+          total_kg: number;
+          transaction_id: string | null;
+          usage_per_kg: number;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          quantity_used: number;
+          store_id?: string | null;
+          total_kg: number;
+          transaction_id?: string | null;
+          usage_per_kg: number;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          quantity_used?: number;
+          store_id?: string | null;
+          total_kg?: number;
+          transaction_id?: string | null;
+          usage_per_kg?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'inventory_usage_log_inventory_item_id_fkey';
+            columns: ['inventory_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'inventory_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'inventory_usage_log_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'inventory_usage_log_transaction_id_fkey';
+            columns: ['transaction_id'];
+            isOneToOne: false;
+            referencedRelation: 'transactions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           canGiveDiscount: boolean | null;
@@ -506,6 +603,87 @@ export type Database = {
         };
         Relationships: [];
       };
+      standard_operating_procedures: {
+          Row: {
+            category: string;
+            content: string;
+            created_at: string | null;
+            display_order: number;
+            id: string;
+            title: string;
+            updated_at: string | null;
+          };
+          Insert: {
+            category: string;
+            content: string;
+            created_at?: string | null;
+            display_order?: number;
+            id?: string;
+            title: string;
+            updated_at?: string | null;
+          };
+          Update: {
+            category?: string;
+            content?: string;
+            created_at?: string | null;
+            display_order?: number;
+            id?: string;
+            title?: string;
+            updated_at?: string | null;
+          };
+          Relationships: [];
+        };
+        stock_opname: {
+          Row: {
+            discrepancy: number | null;
+            id: string;
+            inventory_item_id: string | null;
+            notes: string | null;
+            physical_stock: number;
+            recorded_at: string | null;
+            recorded_by: string | null;
+            store_id: string | null;
+            virtual_stock: number;
+          };
+          Insert: {
+            discrepancy?: number | null;
+            id?: string;
+            inventory_item_id?: string | null;
+            notes?: string | null;
+            physical_stock: number;
+            recorded_at?: string | null;
+            recorded_by?: string | null;
+            store_id?: string | null;
+            virtual_stock: number;
+          };
+          Update: {
+            discrepancy?: number | null;
+            id?: string;
+            inventory_item_id?: string | null;
+            notes?: string | null;
+            physical_stock?: number;
+            recorded_at?: string | null;
+            recorded_by?: string | null;
+            store_id?: string | null;
+            virtual_stock?: number;
+          };
+          Relationships: [
+            {
+              foreignKeyName: 'stock_opname_inventory_item_id_fkey';
+              columns: ['inventory_item_id'];
+              isOneToOne: false;
+              referencedRelation: 'inventory_items';
+              referencedColumns: ['id'];
+            },
+            {
+              foreignKeyName: 'stock_opname_store_id_fkey';
+              columns: ['store_id'];
+              isOneToOne: false;
+              referencedRelation: 'stores';
+              referencedColumns: ['id'];
+            },
+          ];
+        };
       stores: {
         Row: {
           address: string | null;
