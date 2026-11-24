@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useEmployees } from '../../contexts/EmployeeContext';
+import { useEmployees } from '../../contexts/useEmployees';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
 import { Employee, Attendance } from '../../types/hrm';

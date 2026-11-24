@@ -718,14 +718,14 @@ const NewTransactionPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pilih Layanan
               </h2>
               <ServiceSelector id="service-selector" services={services} onAddService={handleAddService} />
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+            <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Item Transaksi
               </h2>

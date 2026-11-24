@@ -15,9 +15,6 @@ import {
   ServiceCategory,
   MaintenanceLog,
   Transaction,
-  PaymentStatus,
-  OrderStatus,
-  PaymentMethod,
   TransactionItem,
 } from '@/types';
 import { formatRupiah } from '../utils/formatting';
@@ -238,38 +235,6 @@ type Expense = {
 
 // Tipe transaksi hasil normalisasi (createdAt: string)
 type NormalizedTransaction = Omit<Transaction, 'createdAt'> & { createdAt: string };
-
-// Raw DB types for snake_case mapping
-interface RawTransaction {
-  id: string;
-  invoice_code?: string;
-  invoiceCode?: string;
-  customer_id?: string;
-  customerId?: string;
-  subtotal?: number;
-  discount?: number;
-  tax?: number;
-  total?: number;
-  amount_paid?: number;
-  amountPaid?: number;
-  change?: number;
-  payment_status?: PaymentStatus;
-  paymentStatus?: PaymentStatus;
-  order_status?: OrderStatus;
-  orderStatus?: OrderStatus;
-  payment_method?: PaymentMethod;
-  paymentMethod?: PaymentMethod;
-  created_at?: string;
-  createdAt?: string | Date;
-  estimated_completion_date?: string;
-  estimatedCompletionDate?: string;
-  created_by_user_id?: string;
-  createdByUserId?: string;
-  store_id?: string;
-  storeId?: string;
-  items?: TransactionItem[];
-  notes?: string;
-}
 
 interface RawExpense {
   id: string;
@@ -608,10 +573,8 @@ const ReportsPage: React.FC = () => {
     return { transactions, expenses };
   }, [startDate, endDate, allStoreTransactions, allStoreExpenses]);
 
-  // Realized revenue (amount paid) vs total billed
+  // Realized revenue (amount paid)
   const totalRevenue = filteredData.transactions.reduce((acc: number, t) => acc + (t.amountPaid || 0), 0);
-  const totalBilled = filteredData.transactions.reduce((acc: number, t) => acc + t.total, 0);
-  const totalReceivables = Math.max(0, totalBilled - totalRevenue);
   const totalExpenses = filteredData.expenses.reduce((acc: number, e) => acc + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
 

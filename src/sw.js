@@ -6,10 +6,11 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 // Injected or fallback version to force runtime cache invalidation on updates
 const APP_VERSION = typeof __SW_VERSION__ !== 'undefined' ? __SW_VERSION__ : '2.7.1';
 const CACHE_NAME = `laundry-management-v${APP_VERSION}-runtime`;
+const RUNTIME_CACHE_PREFIX = 'laundry-management-';
 
 self.addEventListener('install', (event) => {
   // Force immediate activation of new service worker
-  self.skipWaiting();
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
@@ -18,38 +19,24 @@ self.addEventListener('activate', (event) => {
       await self.clients.claim();
       const cacheNames = await caches.keys();
       await Promise.all(
-        cacheNames.map((name) => {
-          if (name !== CACHE_NAME) return caches.delete(name);
-          return Promise.resolve();
-        }),
+        cacheNames
+          .filter((name) => name.startsWith(RUNTIME_CACHE_PREFIX) && name !== CACHE_NAME)
+          .map((name) => caches.delete(name)),
       );
     })(),
   );
 });
 
 // Helper function to detect login-related requests
-const isLoginRelatedRequest = (url, request) => {
-  const pathname = url.pathname;
+const isLoginRelatedRequest = (url) => url.pathname === '/login';
 
-  // Explicitly login page
-  if (pathname === '/login') {
-    return true;
+const cacheRuntimeResponse = async (request, response) => {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  } catch (error) {
+    console.warn('Failed to cache runtime response:', error);
   }
-
-  // For root path (/) - used by PWA start_url
-  // Only treat as login page if no session cookie/auth header
-  // This allows authenticated PWA to cache properly
-  if (pathname === '/' || pathname === '/index.html') {
-    // Check for session cookies or auth tokens
-    const cookies = request.headers.get('Cookie') || '';
-    const hasSession = cookies.includes('sb-') || cookies.includes('supabase');
-
-    // If no session detected, treat as login page (don't cache)
-    // If session exists, allow normal caching (for offline PWA)
-    return !hasSession;
-  }
-
-  return false;
 };
 
 self.addEventListener('fetch', (event) => {
@@ -65,16 +52,7 @@ self.addEventListener('fetch', (event) => {
       url.pathname.includes('/auth/callback') ||
       (url.pathname === '/' && url.search.includes('auth')))
   ) {
-    event.respondWith(
-      fetch(event.request, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-          Pragma: 'no-cache',
-          Expires: '0',
-        },
-      }),
-    );
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
 
@@ -97,28 +75,19 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           // Always fetch fresh from network with cache-busting for login/root
-          const fetchOptions = isLoginRelatedRequest(url, event.request)
-            ? {
-                cache: 'no-store',
-                headers: {
-                  'Cache-Control': 'no-cache, no-store, must-revalidate',
-                  Pragma: 'no-cache',
-                },
-              }
-            : {};
+          const fetchOptions = isLoginRelatedRequest(url) ? { cache: 'no-store' } : {};
 
           const res = await fetch(event.request, fetchOptions);
 
           // Only cache authenticated app pages, NOT login page
-          if (!isLoginRelatedRequest(url, event.request) && res && res.status === 200) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(event.request, res.clone());
+          if (!isLoginRelatedRequest(url) && res && res.status === 200) {
+            await cacheRuntimeResponse(event.request, res);
           }
 
           return res;
         } catch (err) {
           // For login page: NO cache fallback (must have network)
-          if (isLoginRelatedRequest(url, event.request)) {
+          if (isLoginRelatedRequest(url)) {
             return Response.error();
           }
           // For app pages: allow cache fallback for offline access
@@ -149,8 +118,7 @@ self.addEventListener('fetch', (event) => {
             response.status === 200 &&
             !(event.request.referrer && new URL(event.request.referrer).pathname === '/login')
           ) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(event.request, response.clone());
+            await cacheRuntimeResponse(event.request, response);
           }
 
           return response;
@@ -177,8 +145,7 @@ self.addEventListener('fetch', (event) => {
         try {
           const response = await fetch(event.request);
           if (response && response.status === 200) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(event.request, response.clone());
+            await cacheRuntimeResponse(event.request, response);
           }
           return response;
         } catch (err) {

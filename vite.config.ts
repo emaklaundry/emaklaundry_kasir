@@ -72,21 +72,6 @@ export default defineConfig(() => {
               purpose: 'maskable',
             },
           ],
-          screenshots: [
-            {
-              src: '/screenshots/desktop.png',
-              sizes: '1024x1024',
-              type: 'image/png',
-              form_factor: 'wide',
-              label: 'Dashboard Desktop',
-            },
-            {
-              src: '/screenshots/mobile.png',
-              sizes: '1024x1024',
-              type: 'image/png',
-              label: 'Mobile View',
-            },
-          ],
           categories: ['business', 'productivity'],
         },
       }),
@@ -101,6 +86,7 @@ export default defineConfig(() => {
       __SW_VERSION__: JSON.stringify(pkg.version),
     },
     build: {
+      target: 'es2024',
       rollupOptions: {
         output: {
           manualChunks: {

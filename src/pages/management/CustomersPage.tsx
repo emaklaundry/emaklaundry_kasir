@@ -912,7 +912,7 @@ const CustomersPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
+              <div className="mt-4 grid grid-cols-1 min-[360px]:grid-cols-3 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Transaksi</p>
                   <p className="font-semibold text-base text-slate-800 dark:text-slate-200">

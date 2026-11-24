@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { Database } from '../types/supabase';
 import { Employee, Attendance, Advance, EmployeeFormData, AdvanceFormData } from '../types/hrm';
+import EmployeeContext from './EmployeeContextContext';
 
 // Helper to convert snake_case to camelCase
 function toCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
@@ -22,25 +23,6 @@ function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
   }
   return result;
 }
-
-interface EmployeeContextType {
-  employees: Employee[];
-  attendance: Attendance[];
-  advances: Advance[];
-  isLoading: boolean;
-  error: string | null;
-  fetchEmployees: (storeId?: string) => Promise<void>;
-  addEmployee: (employee: EmployeeFormData) => Promise<Employee | null>;
-  updateEmployee: (id: string, employee: Partial<EmployeeFormData>) => Promise<void>;
-  deleteEmployee: (id: string) => Promise<void>;
-  clockIn: (employeeId: string) => Promise<void>;
-  clockOut: (employeeId: string) => Promise<void>;
-  fetchAttendance: (date?: string, employeeId?: string) => Promise<void>;
-  addAdvance: (advance: AdvanceFormData) => Promise<void>;
-  fetchAdvances: (employeeId?: string) => Promise<void>;
-}
-
-const EmployeeContext = createContext<EmployeeContextType | null>(null);
 
 export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -209,12 +191,4 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       {children}
     </EmployeeContext.Provider>
   );
-};
-
-export const useEmployees = () => {
-  const context = useContext(EmployeeContext);
-  if (!context) {
-    throw new Error('useEmployees must be used within EmployeeProvider');
-  }
-  return context;
 };

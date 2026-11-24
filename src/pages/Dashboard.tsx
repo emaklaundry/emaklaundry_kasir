@@ -277,7 +277,7 @@ const Dashboard: React.FC = () => {
     );
     const average = currentWeekTotal / 7;
 
-    const sortedByRevenue = [...weeklyRevenueData].sort((a, b) => b.revenue - a.revenue);
+    const sortedByRevenue = weeklyRevenueData.toSorted((a, b) => b.revenue - a.revenue);
     const highest = sortedByRevenue[0];
     const lowest = sortedByRevenue[sortedByRevenue.length - 1];
 

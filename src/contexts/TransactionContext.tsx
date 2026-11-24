@@ -152,6 +152,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
         console.error('Error adding transaction:', error);
         throw new Error(
           `Gagal menyimpan transaksi: ${error instanceof Error ? error.message : 'Unknown error'}. Data tidak tersimpan, silakan coba lagi.`,
+          { cause: error },
         );
       }
     },
