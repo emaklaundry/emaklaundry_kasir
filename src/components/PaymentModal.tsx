@@ -4,11 +4,8 @@ import { formatTransactionId } from '@/utils/uiHelpers';
 import useToasts from '../contexts/useToasts';
 import { useSettings } from '../contexts/SettingsContext';
 import Modal from './Modal';
-<<<<<<< Updated upstream
 import DynamicQRIS from './DynamicQRIS';
-=======
 import { SpinnerIcon } from './icons';
->>>>>>> Stashed changes
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
 import { calculateRounding } from '@/utils/roundingUtils';
 

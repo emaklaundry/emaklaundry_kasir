@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import type ExcelJS from 'exceljs';
 import type {
   Customer,
   Service,
@@ -23,9 +24,9 @@ const getExcelJS = async () => {
   return mod.default || mod;
 };
 
-const createWorkbook = async (): Promise<any> => {
-  const ExcelJS = await getExcelJS();
-  return new ExcelJS.Workbook();
+const createWorkbook = async (): Promise<ExcelJS.Workbook> => {
+  const ExcelJSModule = await getExcelJS();
+  return new ExcelJSModule.Workbook();
 };
 
 // ============================================
@@ -646,7 +647,7 @@ export async function importExpensesFromExcel(file: File): Promise<Partial<Expen
 /**
  * Read Excel file
  */
-async function readExcelFile(file: File): Promise<any> {
+async function readExcelFile(file: File): Promise<ExcelJS.Workbook> {
   const workbook = await createWorkbook();
   const arrayBuffer = await file.arrayBuffer();
   await workbook.xlsx.load(arrayBuffer);
@@ -656,7 +657,7 @@ async function readExcelFile(file: File): Promise<any> {
 /**
  * Download file to browser
  */
-function downloadFile(buffer: any, filename: string): void {
+function downloadFile(buffer: ExcelJS.Buffer, filename: string): void {
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });

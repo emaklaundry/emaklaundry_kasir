@@ -2,11 +2,8 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
 import { retrySupabaseOperation, verifyDataSaved } from '../utils/retryUtils';
 import { Transaction } from '@/types';
-<<<<<<< Updated upstream
 import { autoDeductInventory } from './InventoryRecipeContext';
-=======
 import { mapDBtoTransaction, RawDBTransaction } from '../utils/mappers';
->>>>>>> Stashed changes
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
 // Pagination-aware fetchTransactions
