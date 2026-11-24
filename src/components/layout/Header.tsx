@@ -81,7 +81,7 @@ const Header: React.FC<{ pageTitle: string; onToggleSidebar?: () => void }> = ({
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className="p-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+              className="p-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0 touch-target"
               aria-label="Toggle Sidebar"
               title="Toggle Sidebar"
             >
