@@ -54,7 +54,9 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const { data, error: err } = await supabase
         .from('employees')
         .insert([
-          toSnakeCase(employee as unknown as Record<string, unknown>) as Database['public']['Tables']['employees']['Insert'],
+          toSnakeCase(
+            employee as unknown as Record<string, unknown>,
+          ) as Database['public']['Tables']['employees']['Insert'],
         ])
         .select()
         .single();
@@ -70,12 +72,12 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateEmployee = useCallback(async (id: string, employee: Partial<EmployeeFormData>) => {
     try {
-      const payload = toSnakeCase(employee as unknown as Record<string, unknown>) as Database['public']['Tables']['employees']['Update'];
+      const payload = toSnakeCase(
+        employee as unknown as Record<string, unknown>,
+      ) as Database['public']['Tables']['employees']['Update'];
       const { error: err } = await supabase.from('employees').update(payload).eq('id', id);
       if (err) throw err;
-      setEmployees((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, ...employee } : e)),
-      );
+      setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...employee } : e)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update employee');
     }
@@ -104,38 +106,44 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const clockIn = useCallback(async (employeeId: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    try {
-      const { error: err } = await supabase.from('attendance').upsert(
-        {
-          employee_id: employeeId,
-          date: today,
-          clock_in: new Date().toISOString(),
-        },
-        { onConflict: 'employee_id,date' },
-      );
-      if (err) throw err;
-      await fetchAttendance(today);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clock in');
-    }
-  }, [fetchAttendance]);
+  const clockIn = useCallback(
+    async (employeeId: string) => {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        const { error: err } = await supabase.from('attendance').upsert(
+          {
+            employee_id: employeeId,
+            date: today,
+            clock_in: new Date().toISOString(),
+          },
+          { onConflict: 'employee_id,date' },
+        );
+        if (err) throw err;
+        await fetchAttendance(today);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to clock in');
+      }
+    },
+    [fetchAttendance],
+  );
 
-  const clockOut = useCallback(async (employeeId: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    try {
-      const { error: err } = await supabase
-        .from('attendance')
-        .update({ clock_out: new Date().toISOString() })
-        .eq('employee_id', employeeId)
-        .eq('date', today);
-      if (err) throw err;
-      await fetchAttendance(today);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clock out');
-    }
-  }, [fetchAttendance]);
+  const clockOut = useCallback(
+    async (employeeId: string) => {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        const { error: err } = await supabase
+          .from('attendance')
+          .update({ clock_out: new Date().toISOString() })
+          .eq('employee_id', employeeId)
+          .eq('date', today);
+        if (err) throw err;
+        await fetchAttendance(today);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to clock out');
+      }
+    },
+    [fetchAttendance],
+  );
 
   const fetchAdvances = useCallback(async (employeeId?: string) => {
     try {
@@ -149,21 +157,24 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const addAdvance = useCallback(async (advance: AdvanceFormData) => {
-    try {
-      const { error: err } = await supabase
-        .from('advances')
-        .insert([
-          toSnakeCase(advance as unknown as Record<string, unknown>) as Database['public']['Tables']['advances']['Insert'],
-        ]);
-      if (err) throw err;
-      await fetchAdvances(advance.employeeId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add advance');
-    }
-  }, [fetchAdvances]);
-
-
+  const addAdvance = useCallback(
+    async (advance: AdvanceFormData) => {
+      try {
+        const { error: err } = await supabase
+          .from('advances')
+          .insert([
+            toSnakeCase(
+              advance as unknown as Record<string, unknown>,
+            ) as Database['public']['Tables']['advances']['Insert'],
+          ]);
+        if (err) throw err;
+        await fetchAdvances(advance.employeeId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to add advance');
+      }
+    },
+    [fetchAdvances],
+  );
 
   useEffect(() => {
     fetchEmployees();

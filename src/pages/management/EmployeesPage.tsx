@@ -6,7 +6,13 @@ import useToasts from '../../contexts/useToasts';
 import Modal from '../../components/Modal';
 import { Employee, EmployeeFormData, EmployeeRole } from '../../types/hrm';
 import { User, UserRole } from '../../types';
-import { PlusCircleIcon, EditIcon, TrashIcon, UserIcon, ArrowDownIcon } from '../../components/icons';
+import {
+  PlusCircleIcon,
+  EditIcon,
+  TrashIcon,
+  UserIcon,
+  ArrowDownIcon,
+} from '../../components/icons';
 import { formatRupiah } from '../../utils/formatting';
 
 const mapUserRoleToEmployeeRole = (userRole: UserRole): EmployeeRole => {
@@ -22,7 +28,8 @@ const mapUserRoleToEmployeeRole = (userRole: UserRole): EmployeeRole => {
 };
 
 const EmployeesPage: React.FC = () => {
-  const { employees, isLoading, fetchEmployees, addEmployee, updateEmployee, deleteEmployee } = useEmployees();
+  const { employees, isLoading, fetchEmployees, addEmployee, updateEmployee, deleteEmployee } =
+    useEmployees();
   const { users } = useUsers();
   const { selectedStoreId } = useAppContext();
   const { addToast } = useToasts();
@@ -96,7 +103,7 @@ const EmployeesPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       addToast('Nama karyawan wajib diisi', 'error');
       return;
@@ -140,9 +147,7 @@ const EmployeesPage: React.FC = () => {
     <div className="p-4 sm:p-6">
       <div className="flex justify-between items-center mb-6" id="employees-header">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Manajemen Karyawan
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Karyawan</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Kelola data karyawan dan komisi
           </p>
@@ -173,7 +178,10 @@ const EmployeesPage: React.FC = () => {
           <p className="text-slate-500 mt-3">Memuat data...</p>
         </div>
       ) : employees.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg" id="employees-list">
+        <div
+          className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg"
+          id="employees-list"
+        >
           <UserIcon className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400">Belum ada data karyawan</p>
           <button
@@ -222,7 +230,9 @@ const EmployeesPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Status</span>
-                  <span className={`font-medium ${employee.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                  <span
+                    className={`font-medium ${employee.isActive ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {employee.isActive ? 'Aktif' : 'Nonaktif'}
                   </span>
                 </div>
@@ -333,7 +343,9 @@ const EmployeesPage: React.FC = () => {
               <input
                 type="number"
                 value={formData.commissionRate}
-                onChange={(e) => setFormData({ ...formData, commissionRate: Number(e.target.value) })}
+                onChange={(e) =>
+                  setFormData({ ...formData, commissionRate: Number(e.target.value) })
+                }
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                 min="0"
                 max="100"
@@ -373,16 +385,19 @@ const EmployeesPage: React.FC = () => {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Pilih pengguna aplikasi yang ingin dijadikan karyawan. Data nama dan peran akan otomatis diambil.
+            Pilih pengguna aplikasi yang ingin dijadikan karyawan. Data nama dan peran akan otomatis
+            diambil.
           </p>
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {users.filter(u => u.role !== UserRole.SuperAdmin).length === 0 ? (
+            {users.filter((u) => u.role !== UserRole.SuperAdmin).length === 0 ? (
               <p className="text-center py-4 text-slate-500">Tidak ada pengguna yang tersedia.</p>
             ) : (
               users
-                .filter(u => u.role !== UserRole.SuperAdmin) // Filter SuperAdmin out normally
+                .filter((u) => u.role !== UserRole.SuperAdmin) // Filter SuperAdmin out normally
                 .map((user) => {
-                  const isAlreadyEmployee = employees.some(e => e.name.toLowerCase() === user.name.toLowerCase());
+                  const isAlreadyEmployee = employees.some(
+                    (e) => e.name.toLowerCase() === user.name.toLowerCase(),
+                  );
                   return (
                     <button
                       key={user.id}
@@ -395,7 +410,9 @@ const EmployeesPage: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isAlreadyEmployee ? 'bg-slate-200' : 'bg-blue-100 text-blue-600'}`}>
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${isAlreadyEmployee ? 'bg-slate-200' : 'bg-blue-100 text-blue-600'}`}
+                        >
                           <UserIcon className="w-5 h-5" />
                         </div>
                         <div>
@@ -404,7 +421,9 @@ const EmployeesPage: React.FC = () => {
                         </div>
                       </div>
                       {isAlreadyEmployee && (
-                        <span className="text-xs font-medium text-slate-400">Sudah Ditambahkan</span>
+                        <span className="text-xs font-medium text-slate-400">
+                          Sudah Ditambahkan
+                        </span>
                       )}
                     </button>
                   );

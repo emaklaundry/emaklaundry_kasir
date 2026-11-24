@@ -10,7 +10,7 @@ const getCorsHeaders = (req: Request) => {
   ].filter(Boolean);
 
   const isAllowed = allowedOrigins.includes(origin) || allowedOrigins.includes('*');
-  const allowedOrigin = isAllowed ? origin : (allowedOrigins[0] || '*');
+  const allowedOrigin = isAllowed ? origin : allowedOrigins[0] || '*';
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,

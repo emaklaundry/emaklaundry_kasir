@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import React from 'react';
 import { vi } from 'vitest';
 
 describe('ConfirmationModal', () => {

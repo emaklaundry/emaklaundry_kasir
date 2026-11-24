@@ -39,10 +39,10 @@ const DynamicQRIS: React.FC<DynamicQRISProps> = ({
 
   if (error) {
     return (
-      <div className={`flex flex-col items-center justify-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg ${className}`}>
-        <p className="text-red-600 dark:text-red-400 text-sm text-center">
-          ⚠️ {error}
-        </p>
+      <div
+        className={`flex flex-col items-center justify-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg ${className}`}
+      >
+        <p className="text-red-600 dark:text-red-400 text-sm text-center">⚠️ {error}</p>
         <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
           Silakan setting QRIS di Pengaturan
         </p>
@@ -74,9 +74,7 @@ const DynamicQRIS: React.FC<DynamicQRISProps> = ({
           <p className="text-2xl font-bold text-slate-900 dark:text-white">
             {formatQRISAmount(amount)}
           </p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {merchantName}
-          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{merchantName}</p>
         </div>
       )}
 

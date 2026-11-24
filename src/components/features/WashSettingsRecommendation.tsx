@@ -102,11 +102,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
         <SettingBadge label="Program" value={recommendation.program} icon="📋" />
         <SettingBadge label="Suhu" value={recommendation.temperature} icon="🌡️" />
         <SettingBadge label="Spin" value={`${recommendation.spinSpeed} RPM`} icon="🔄" />
-        <SettingBadge
-          label="Detergen"
-          value={recommendation.detergentAmount}
-          icon="🧴"
-        />
+        <SettingBadge label="Detergen" value={recommendation.detergentAmount} icon="🧴" />
       </div>
 
       {recommendation.notes && (
@@ -132,7 +128,10 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
           {showTips && (
             <ul className="mt-2 space-y-1">
               {recommendation.tips.map((tip, i) => (
-                <li key={i} className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                <li
+                  key={i}
+                  className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2"
+                >
                   <span className="text-green-500">✓</span>
                   {tip}
                 </li>

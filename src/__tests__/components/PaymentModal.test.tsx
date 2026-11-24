@@ -46,7 +46,7 @@ describe('PaymentModal', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <ToastProvider>{ui}</ToastProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
   it('renders modal when open', () => {

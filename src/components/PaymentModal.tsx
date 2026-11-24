@@ -49,7 +49,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const tenderedAmount = parseRupiah(tenderedAmountStr);
 
   // Rounding calculation via central utility
-  const { roundedTotal: roundedAmountToPay, roundingDiscount: pointsEarnedFromRounding, shouldRound: shouldRoundTotal } = useMemo(() => {
+  const {
+    roundedTotal: roundedAmountToPay,
+    roundingDiscount: pointsEarnedFromRounding,
+    shouldRound: shouldRoundTotal,
+  } = useMemo(() => {
     return calculateRounding(amountToPay, method, 500);
   }, [amountToPay, method]);
 
@@ -339,4 +343,3 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 };
 
 export default PaymentModal;
-

@@ -111,7 +111,9 @@ const ReceiptPage: React.FC = () => {
                 Rp {item.subtotal.toLocaleString('id-ID')}
               </p>
             </div>
-            {item.itemDetails?.slice(0, item.quantity).some((d: TransactionItemDetail) => d.note) && (
+            {item.itemDetails
+              ?.slice(0, item.quantity)
+              .some((d: TransactionItemDetail) => d.note) && (
               <div className="pl-4 mt-1 space-y-0.5">
                 {item.itemDetails?.slice(0, item.quantity).map(
                   (detail: TransactionItemDetail, detailIndex: number) =>

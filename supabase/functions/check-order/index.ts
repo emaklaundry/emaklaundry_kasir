@@ -20,7 +20,7 @@ const getCorsHeaders = (req: Request) => {
   ].filter(Boolean);
 
   const isAllowed = allowedOrigins.includes(origin) || allowedOrigins.includes('*');
-  const allowedOrigin = isAllowed ? origin : (allowedOrigins[0] || '*');
+  const allowedOrigin = isAllowed ? origin : allowedOrigins[0] || '*';
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
@@ -92,7 +92,7 @@ serve(async (req) => {
 
     const customerName = Array.isArray(data.customer_name)
       ? (data.customer_name[0] as CustomerData)?.name
-      : (data.customer_name as CustomerData | null)?.name ?? 'Pelanggan';
+      : ((data.customer_name as CustomerData | null)?.name ?? 'Pelanggan');
 
     const items = Array.isArray(data.items)
       ? (data.items as TransactionItem[]).map((item) => ({

@@ -159,10 +159,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
     onSuccess: async (savedTransaction, variables) => {
       // Auto-deduct 1 sachet sabun liquid dari inventory
       try {
-        await autoDeductInventory(
-          savedTransaction.id,
-          variables.storeId
-        );
+        await autoDeductInventory(savedTransaction.id, variables.storeId);
       } catch (deductError) {
         console.error('Auto-deduct inventory failed:', deductError);
         // Don't throw - transaction is already saved

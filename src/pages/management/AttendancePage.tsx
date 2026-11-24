@@ -6,13 +6,12 @@ import { Employee, Attendance } from '../../types/hrm';
 import { ClockIcon, UserIcon, CheckCircleIcon } from '../../components/icons';
 
 const AttendancePage: React.FC = () => {
-  const { employees, attendance, isLoading, fetchEmployees, fetchAttendance, clockIn, clockOut } = useEmployees();
+  const { employees, attendance, isLoading, fetchEmployees, fetchAttendance, clockIn, clockOut } =
+    useEmployees();
   const { selectedStoreId } = useAppContext();
   const { addToast } = useToasts();
 
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     if (selectedStoreId) {
@@ -70,9 +69,7 @@ const AttendancePage: React.FC = () => {
     <div className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Absensi Karyawan
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Absensi Karyawan</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Clock-in dan clock-out harian
           </p>
@@ -157,13 +154,17 @@ const AttendancePage: React.FC = () => {
                 <div className="flex gap-6 text-sm">
                   <div className="text-center">
                     <p className="text-slate-500 dark:text-slate-400">Masuk</p>
-                    <p className={`font-medium ${hasClockedIn ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`}>
+                    <p
+                      className={`font-medium ${hasClockedIn ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`}
+                    >
                       {formatTime(att?.clockIn)}
                     </p>
                   </div>
                   <div className="text-center">
                     <p className="text-slate-500 dark:text-slate-400">Pulang</p>
-                    <p className={`font-medium ${hasClockedOut ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'}`}>
+                    <p
+                      className={`font-medium ${hasClockedOut ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'}`}
+                    >
                       {formatTime(att?.clockOut)}
                     </p>
                   </div>

@@ -262,7 +262,7 @@ const App: React.FC = () => {
   useTheme(); // Initialize and apply theme
   return (
     <AppProviders>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Router>
         <AppRoutes />
       </Router>
     </AppProviders>

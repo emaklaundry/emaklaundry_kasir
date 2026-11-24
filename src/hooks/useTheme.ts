@@ -15,10 +15,8 @@ const getInitialTheme = (): Theme => {
     console.warn('Theme preference could not be read from localStorage:', error);
   }
 
-  return (
-    typeof window.matchMedia === 'function' &&
+  return typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-color-scheme: dark)').matches
-  )
     ? 'dark'
     : 'light';
 };

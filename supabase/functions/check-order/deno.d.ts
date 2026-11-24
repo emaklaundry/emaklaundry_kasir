@@ -19,8 +19,14 @@ declare module 'https://esm.sh/@supabase/supabase-js@2' {
     supabaseKey: string,
   ): {
     from(table: string): {
-      select(columns: string, options?: { count?: 'exact' | 'planned' | 'estimated' }): {
-        eq(column: string, value: string): {
+      select(
+        columns: string,
+        options?: { count?: 'exact' | 'planned' | 'estimated' },
+      ): {
+        eq(
+          column: string,
+          value: string,
+        ): {
           maybeSingle(): Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
         };
       };

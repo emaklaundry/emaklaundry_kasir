@@ -76,7 +76,8 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
   const getDefaultValue = (itemName: string): number => {
     const name = itemName.toLowerCase();
     if (name.includes('deterjen') || name.includes('detergent')) return 10;
-    if (name.includes('softener') || name.includes('pewangi') || name.includes('pelembut')) return 5;
+    if (name.includes('softener') || name.includes('pewangi') || name.includes('pelembut'))
+      return 5;
     if (name.includes('plastik') || name.includes('kantong')) return 1;
     return 0;
   };
@@ -105,8 +106,8 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
         {/* Info box */}
         <div className="mx-4 mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>📊 Logika:</strong> Setiap transaksi kiloan akan otomatis mengurangi stok virtual
-            berdasarkan resep yang dikonfigurasi di sini.
+            <strong>📊 Logika:</strong> Setiap transaksi kiloan akan otomatis mengurangi stok
+            virtual berdasarkan resep yang dikonfigurasi di sini.
           </p>
           <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
             Contoh: 1 kg cucian = 10 ml deterjen + 5 ml softener + 1 pcs plastik
@@ -131,7 +132,9 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
                 {inventoryItems.map((item) => {
                   const defaultVal = getDefaultValue(item.name);
                   const currentValue = recipeValues[item.id] || '';
-                  const hasRecipe = recipes.some((r: InventoryRecipe) => r.inventoryItemId === item.id);
+                  const hasRecipe = recipes.some(
+                    (r: InventoryRecipe) => r.inventoryItemId === item.id,
+                  );
 
                   return (
                     <tr key={item.id}>

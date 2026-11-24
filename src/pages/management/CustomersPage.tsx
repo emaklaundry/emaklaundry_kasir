@@ -37,7 +37,12 @@ import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts'
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const { createContact, signIn, isAuthenticated, isLoading: isGoogleLoading } = useGoogleContacts();
+  const {
+    createContact,
+    signIn,
+    isAuthenticated,
+    isLoading: isGoogleLoading,
+  } = useGoogleContacts();
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [searchTerm, setSearchTerm] = useState('');
@@ -512,9 +517,7 @@ const CustomersPage: React.FC = () => {
         }
 
         // Check for duplicate
-        const existingCustomer = customers.find(
-          (c) => c.phone?.replace(/\D/g, '') === phone,
-        );
+        const existingCustomer = customers.find((c) => c.phone?.replace(/\D/g, '') === phone);
         if (existingCustomer) {
           skipCount++;
           continue;
@@ -599,7 +602,10 @@ const CustomersPage: React.FC = () => {
       updateToast(toastId, `Berhasil sinkronisasi ${successCount} kontak ke Google!`, 'success');
     }
 
-    addAuditLog(`Sync ${successCount} pelanggan ke Google Contacts.`, selectedStoreId !== 'all' ? selectedStoreId : undefined);
+    addAuditLog(
+      `Sync ${successCount} pelanggan ke Google Contacts.`,
+      selectedStoreId !== 'all' ? selectedStoreId : undefined,
+    );
   };
 
   // Get existing phone numbers for deduplication
@@ -697,9 +703,9 @@ const CustomersPage: React.FC = () => {
             {isSyncing ? (
               <RefreshCwIcon className="w-4 h-4 animate-spin" />
             ) : (
-               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
-               </svg>
+              </svg>
             )}
             <span className="hidden sm:inline text-sm">Sync to Google</span>
           </button>

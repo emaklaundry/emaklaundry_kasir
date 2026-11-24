@@ -273,7 +273,13 @@ const NewTransactionPage: React.FC = () => {
       hasShownDiscountToast.current = false; // Reset when no discount
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, subtotal, settings?.discountRate]);
+  }, [
+    canApplyDiscount,
+    selectedCustomer?.id,
+    selectedCustomer?.defaultDiscount,
+    subtotal,
+    settings?.discountRate,
+  ]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   // Show error toast if settings failed to load
@@ -722,27 +728,34 @@ const NewTransactionPage: React.FC = () => {
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pilih Layanan
               </h2>
-              <ServiceSelector id="service-selector" services={services} onAddService={handleAddService} />
+              <ServiceSelector
+                id="service-selector"
+                services={services}
+                onAddService={handleAddService}
+              />
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Item Transaksi
               </h2>
-                <TransactionItemsTable
-                  id="transaction-items"
-                  items={items}
-                  services={services}
-                  handleItemChange={handleItemChange}
-                  handleOpenNotesModal={handleOpenNotesModal}
-                  handleOpenKiloanTaggingModal={handleOpenKiloanTaggingModal}
-                  handleRemoveItem={handleRemoveItem}
-                />
+              <TransactionItemsTable
+                id="transaction-items"
+                items={items}
+                services={services}
+                handleItemChange={handleItemChange}
+                handleOpenNotesModal={handleOpenNotesModal}
+                handleOpenKiloanTaggingModal={handleOpenKiloanTaggingModal}
+                handleRemoveItem={handleRemoveItem}
+              />
             </div>
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <div id="payment-section" className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible">
+            <div
+              id="payment-section"
+              className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible"
+            >
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Detail & Total
               </h2>

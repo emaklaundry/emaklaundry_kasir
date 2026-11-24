@@ -74,9 +74,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Stock Opname
-            </h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Stock Opname</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Catat stok fisik untuk perbandingan dengan stok virtual
             </p>
@@ -111,19 +109,12 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
                 const isSaved = savedItems.includes(item.id);
 
                 return (
-                  <tr
-                    key={item.id}
-                    className={isSaved ? 'bg-green-50 dark:bg-green-900/20' : ''}
-                  >
+                  <tr key={item.id} className={isSaved ? 'bg-green-50 dark:bg-green-900/20' : ''}>
                     <td className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
                       {item.name}
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-500">
-                      {item.unit}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono">
-                      {virtualStock.toFixed(2)}
-                    </td>
+                    <td className="px-3 py-2 text-right text-slate-500">{item.unit}</td>
+                    <td className="px-3 py-2 text-right font-mono">{virtualStock.toFixed(2)}</td>
                     <td className="px-3 py-2">
                       <input
                         type="number"
@@ -149,9 +140,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
                         >
                           {discrepancy > 0 ? '-' : discrepancy < 0 ? '+' : ''}
                           {Math.abs(discrepancy).toFixed(2)}
-                          {discrepancy > 0 && (
-                            <AlertTriangleIcon className="inline w-4 h-4 ml-1" />
-                          )}
+                          {discrepancy > 0 && <AlertTriangleIcon className="inline w-4 h-4 ml-1" />}
                         </span>
                       )}
                     </td>

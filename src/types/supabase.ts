@@ -120,12 +120,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "employees_store_id_fkey";
-            columns: ["store_id"];
+            foreignKeyName: 'employees_store_id_fkey';
+            columns: ['store_id'];
             isOneToOne: false;
-            referencedRelation: "stores";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
         ];
       };
       attendance: {
@@ -158,12 +158,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "attendance_employee_id_fkey";
-            columns: ["employee_id"];
+            foreignKeyName: 'attendance_employee_id_fkey';
+            columns: ['employee_id'];
             isOneToOne: false;
-            referencedRelation: "employees";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
         ];
       };
       advances: {
@@ -196,12 +196,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "advances_employee_id_fkey";
-            columns: ["employee_id"];
+            foreignKeyName: 'advances_employee_id_fkey';
+            columns: ['employee_id'];
             isOneToOne: false;
-            referencedRelation: "employees";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
         ];
       };
       payroll: {
@@ -246,12 +246,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "payroll_employee_id_fkey";
-            columns: ["employee_id"];
+            foreignKeyName: 'payroll_employee_id_fkey';
+            columns: ['employee_id'];
             isOneToOne: false;
-            referencedRelation: "employees";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
         ];
       };
       customers: {
@@ -604,86 +604,86 @@ export type Database = {
         Relationships: [];
       };
       standard_operating_procedures: {
-          Row: {
-            category: string;
-            content: string;
-            created_at: string | null;
-            display_order: number;
-            id: string;
-            title: string;
-            updated_at: string | null;
-          };
-          Insert: {
-            category: string;
-            content: string;
-            created_at?: string | null;
-            display_order?: number;
-            id?: string;
-            title: string;
-            updated_at?: string | null;
-          };
-          Update: {
-            category?: string;
-            content?: string;
-            created_at?: string | null;
-            display_order?: number;
-            id?: string;
-            title?: string;
-            updated_at?: string | null;
-          };
-          Relationships: [];
+        Row: {
+          category: string;
+          content: string;
+          created_at: string | null;
+          display_order: number;
+          id: string;
+          title: string;
+          updated_at: string | null;
         };
-        stock_opname: {
-          Row: {
-            discrepancy: number | null;
-            id: string;
-            inventory_item_id: string | null;
-            notes: string | null;
-            physical_stock: number;
-            recorded_at: string | null;
-            recorded_by: string | null;
-            store_id: string | null;
-            virtual_stock: number;
-          };
-          Insert: {
-            discrepancy?: number | null;
-            id?: string;
-            inventory_item_id?: string | null;
-            notes?: string | null;
-            physical_stock: number;
-            recorded_at?: string | null;
-            recorded_by?: string | null;
-            store_id?: string | null;
-            virtual_stock: number;
-          };
-          Update: {
-            discrepancy?: number | null;
-            id?: string;
-            inventory_item_id?: string | null;
-            notes?: string | null;
-            physical_stock?: number;
-            recorded_at?: string | null;
-            recorded_by?: string | null;
-            store_id?: string | null;
-            virtual_stock?: number;
-          };
-          Relationships: [
-            {
-              foreignKeyName: 'stock_opname_inventory_item_id_fkey';
-              columns: ['inventory_item_id'];
-              isOneToOne: false;
-              referencedRelation: 'inventory_items';
-              referencedColumns: ['id'];
-            },
-            {
-              foreignKeyName: 'stock_opname_store_id_fkey';
-              columns: ['store_id'];
-              isOneToOne: false;
-              referencedRelation: 'stores';
-              referencedColumns: ['id'];
-            },
-          ];
+        Insert: {
+          category: string;
+          content: string;
+          created_at?: string | null;
+          display_order?: number;
+          id?: string;
+          title: string;
+          updated_at?: string | null;
         };
+        Update: {
+          category?: string;
+          content?: string;
+          created_at?: string | null;
+          display_order?: number;
+          id?: string;
+          title?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      stock_opname: {
+        Row: {
+          discrepancy: number | null;
+          id: string;
+          inventory_item_id: string | null;
+          notes: string | null;
+          physical_stock: number;
+          recorded_at: string | null;
+          recorded_by: string | null;
+          store_id: string | null;
+          virtual_stock: number;
+        };
+        Insert: {
+          discrepancy?: number | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          notes?: string | null;
+          physical_stock: number;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+          store_id?: string | null;
+          virtual_stock: number;
+        };
+        Update: {
+          discrepancy?: number | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          notes?: string | null;
+          physical_stock?: number;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+          store_id?: string | null;
+          virtual_stock?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'stock_opname_inventory_item_id_fkey';
+            columns: ['inventory_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'inventory_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stock_opname_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       stores: {
         Row: {
           address: string | null;

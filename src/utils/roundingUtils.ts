@@ -19,7 +19,8 @@ export function calculateRounding(
   precision: number = 500,
 ): RoundingResult {
   const remainder = rawTotal % precision;
-  const shouldRound = paymentMethod === PaymentMethod.Cash && remainder > 0 && remainder < precision;
+  const shouldRound =
+    paymentMethod === PaymentMethod.Cash && remainder > 0 && remainder < precision;
   return {
     roundedTotal: shouldRound ? rawTotal - remainder : rawTotal,
     roundingDiscount: shouldRound ? remainder : 0,

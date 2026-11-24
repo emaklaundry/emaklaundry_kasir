@@ -9,7 +9,6 @@ import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
 import { UserRole } from '../../types';
 
-
 // Template default untuk WhatsApp footer
 const DEFAULT_WHATSAPP_FOOTER = `🔍 Cek status cucian Anda:
 https://www.emaklaundry.my.id/
@@ -30,8 +29,6 @@ const SettingsPage: React.FC = () => {
     longitude: 0,
   });
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-
-
 
   // Only Super Admin can toggle maintenance mode
   const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
@@ -112,8 +109,6 @@ const SettingsPage: React.FC = () => {
       setIsSaving(false);
     }
   };
-
-
 
   if (!formData) {
     return <div>Loading settings...</div>;
@@ -374,14 +369,22 @@ const SettingsPage: React.FC = () => {
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-6 space-y-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-purple-500 rounded-full p-2">
-              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              <svg
+                className="h-6 w-6 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                />
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Dynamic QRIS
-              </h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Dynamic QRIS</h2>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Generate QR code pembayaran dengan nominal otomatis
               </p>
@@ -406,7 +409,8 @@ const SettingsPage: React.FC = () => {
               className="bg-white dark:bg-slate-700 border border-purple-200 dark:border-purple-700 text-slate-900 dark:text-white text-sm rounded-lg block w-full p-3 font-mono"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              💡 Cara mendapatkan kode: Scan QRIS stiker Anda dengan aplikasi scanner QR, lalu copy teks hasilnya.
+              💡 Cara mendapatkan kode: Scan QRIS stiker Anda dengan aplikasi scanner QR, lalu copy
+              teks hasilnya.
             </p>
           </div>
 
@@ -455,8 +459,6 @@ const SettingsPage: React.FC = () => {
             />
           </div>
         </div>
-
-
 
         <button
           type="submit"

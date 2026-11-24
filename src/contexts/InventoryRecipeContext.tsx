@@ -13,7 +13,7 @@ export async function fetchRecipes(storeId?: string): Promise<InventoryRecipe[]>
   }
   const { data, error } = await query;
   if (error) throw error;
-  
+
   return (data || []).map((r) => ({
     id: String(r.id),
     inventoryItemId: r.inventory_item_id || '',
@@ -36,18 +36,21 @@ export function useRecipeMutations() {
   const queryClient = useQueryClient();
 
   const upsertRecipe = useMutation({
-    mutationFn: async (recipe: Omit<InventoryRecipe, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => {
+    mutationFn: async (
+      recipe: Omit<InventoryRecipe, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+    ) => {
       const payload = {
         inventory_item_id: recipe.inventoryItemId,
         usage_per_kg: recipe.usagePerKg,
         store_id: recipe.storeId,
         updated_at: new Date().toISOString(),
       };
-      
-      const { data, error } = await supabase.from('inventory_recipes')
+
+      const { data, error } = await supabase
+        .from('inventory_recipes')
         .upsert(payload, { onConflict: 'inventory_item_id,store_id' })
         .select();
-      
+
       if (error) throw error;
       return data?.[0];
     },
@@ -81,7 +84,7 @@ export function useRecipeMutations() {
  */
 export async function autoDeductInventory(
   transactionId: string,
-  storeId: string
+  storeId: string,
 ): Promise<{ success: boolean; deduction?: { itemName: string; quantity: number } }> {
   try {
     // Find "sabun liquid" inventory item (case insensitive)
@@ -131,9 +134,9 @@ export async function autoDeductInventory(
       // Usage log insert skipped (table may not exist)
     }
 
-    return { 
-      success: true, 
-      deduction: { itemName: sabunItem.name, quantity: 1 } 
+    return {
+      success: true,
+      deduction: { itemName: sabunItem.name, quantity: 1 },
     };
   } catch (error) {
     console.error('Auto-deduct error:', error);
@@ -148,9 +151,10 @@ export async function autoDeductInventory(
 export async function fetchStockOpname(
   storeId?: string,
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
 ): Promise<StockOpname[]> {
-  let query = supabase.from('stock_opname')
+  let query = supabase
+    .from('stock_opname')
     .select('*, inventory_items(name)')
     .order('recorded_at', { ascending: false });
 
@@ -194,7 +198,8 @@ export function useStockOpnameMutations() {
 
   const recordOpname = useMutation({
     mutationFn: async (opname: Omit<StockOpname, 'id' | 'discrepancy' | 'recordedAt'>) => {
-      const { data, error } = await supabase.from('stock_opname')
+      const { data, error } = await supabase
+        .from('stock_opname')
         .insert({
           inventory_item_id: opname.inventoryItemId,
           virtual_stock: opname.virtualStock,
@@ -234,9 +239,10 @@ export function useStockOpnameMutations() {
 export async function fetchUsageLog(
   storeId?: string,
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
 ): Promise<InventoryUsageLog[]> {
-  let query = supabase.from('inventory_usage_log')
+  let query = supabase
+    .from('inventory_usage_log')
     .select('*, inventory_items(name)')
     .order('created_at', { ascending: false });
 

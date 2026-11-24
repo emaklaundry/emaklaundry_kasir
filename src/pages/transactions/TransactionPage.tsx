@@ -569,7 +569,10 @@ const TransactionPage: React.FC = () => {
             </div>
           </div>
         )}
-        <div id="transaction-actions" className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div
+          id="transaction-actions"
+          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+        >
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Daftar Transaksi</h1>
           <div className="flex items-center gap-2 flex-wrap">
             {currentUser?.role !== UserRole.Cashier && (
@@ -622,7 +625,10 @@ const TransactionPage: React.FC = () => {
           </div>
         </div>
 
-        <div id="transaction-filters" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <div
+          id="transaction-filters"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700"
+        >
           <div className="relative">
             <label htmlFor="searchTerm" className="sr-only">
               Cari Transaksi
@@ -742,7 +748,10 @@ const TransactionPage: React.FC = () => {
         )}
 
         {/* Transactions Table */}
-        <div id="transaction-table" className="hidden md:block bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
+        <div
+          id="transaction-table"
+          className="hidden md:block bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-sm sm:text-base text-left text-slate-500 dark:text-slate-400">
               <thead className="text-xs sm:text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">

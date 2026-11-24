@@ -24,7 +24,7 @@ export default defineConfig(() => {
           // Files to include in the precache manifest
           globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
           // Injected manifest will exclude these
-          globIgnores: ['**/node_modules/**/*'],
+          globIgnores: ['**/node_modules/**/*', '**/exceljs.min-*.js'],
         },
         registerType: 'autoUpdate', // ✅ Changed to autoUpdate for immediate updates
         workbox: {
