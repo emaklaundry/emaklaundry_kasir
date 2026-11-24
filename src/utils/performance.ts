@@ -125,7 +125,7 @@ class PerformanceMonitor {
    * @param limit - Jumlah operasi yang ditampilkan (default: 10)
    */
   getSlowestOperations(limit: number = 10): PerformanceMetric[] {
-    return [...this.metrics].sort((a, b) => b.duration - a.duration).slice(0, limit);
+    return this.metrics.toSorted((a, b) => b.duration - a.duration).slice(0, limit);
   }
 
   /**

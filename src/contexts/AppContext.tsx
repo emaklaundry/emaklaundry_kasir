@@ -8,6 +8,31 @@ import useToasts from './useToasts'; // 1. IMPOR useToasts
 // Konfigurasi waktu timeout (5 menit)
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 menit = 300000ms
 
+const getSessionStorageItem = (key: string): string | null => {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch (error) {
+    console.warn('Session state could not be read:', error);
+    return null;
+  }
+};
+
+const setSessionStorageItem = (key: string, value: string): void => {
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch (error) {
+    console.warn('Session state could not be saved:', error);
+  }
+};
+
+const removeSessionStorageItem = (key: string): void => {
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch (error) {
+    console.warn('Session state could not be cleared:', error);
+  }
+};
+
 export interface AppContextType {
   loading: boolean;
   currentUser: User | null;
@@ -166,21 +191,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const handleBeforeUnload = () => {
       // Set flag bahwa user sedang refresh/reload
-      sessionStorage.setItem('isRefreshing', 'true');
+      setSessionStorageItem('isRefreshing', 'true');
     };
 
     const handleVisibilityChange = () => {
       // Alternative to unload: use visibilitychange
       if (document.visibilityState === 'hidden') {
-        const wasRefreshing = sessionStorage.getItem('isRefreshing');
+        const wasRefreshing = getSessionStorageItem('isRefreshing');
         if (!wasRefreshing) {
           // User potentially closing tab/browser
-          sessionStorage.setItem('maybeClosing', 'true');
+          setSessionStorageItem('maybeClosing', 'true');
         }
       } else if (document.visibilityState === 'visible') {
         // User came back, clear the flag
-        sessionStorage.removeItem('maybeClosing');
-        sessionStorage.removeItem('isRefreshing');
+        removeSessionStorageItem('maybeClosing');
+        removeSessionStorageItem('isRefreshing');
       }
     };
 
@@ -191,8 +216,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       // Clean up flags
-      sessionStorage.removeItem('isRefreshing');
-      sessionStorage.removeItem('maybeClosing');
+      removeSessionStorageItem('isRefreshing');
+      removeSessionStorageItem('maybeClosing');
     };
   }, [currentUser]);
   // -------------------------

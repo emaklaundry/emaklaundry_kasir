@@ -171,16 +171,7 @@ const CommandPalette: React.FC = () => {
   }, [query, allCommands]);
 
   const groupedCommands = useMemo(() => {
-    return filteredCommands.reduce(
-      (acc, cmd) => {
-        if (!acc[cmd.section]) {
-          acc[cmd.section] = [];
-        }
-        acc[cmd.section].push(cmd);
-        return acc;
-      },
-      {} as Record<string, Command[]>,
-    );
+    return Object.groupBy(filteredCommands, (cmd) => cmd.section);
   }, [filteredCommands]);
 
   useEffect(() => {
@@ -258,13 +249,13 @@ const CommandPalette: React.FC = () => {
         </div>
         <div ref={resultsRef} className="max-h-[60vh] overflow-y-auto p-2">
           {query &&
-            Object.entries(groupedCommands).map(([section, commands]: [string, Command[]]) => (
+            Object.entries(groupedCommands).map(([section, commands]) => (
               <div key={section} className="mb-2">
                 <h3 className="px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {section}
                 </h3>
                 <ul>
-                  {commands.map((cmd) => {
+                  {commands?.map((cmd) => {
                     const globalIndex = filteredCommands.findIndex((fc) => fc.id === cmd.id);
                     return (
                       <li key={cmd.id} id={`command-item-${globalIndex}`}>

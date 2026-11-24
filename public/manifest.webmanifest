@@ -34,21 +34,6 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/desktop.png",
-      "sizes": "1024x1024",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard Desktop"
-    },
-    {
-      "src": "/screenshots/mobile.png",
-      "sizes": "1024x1024",
-      "type": "image/png",
-      "label": "Mobile View"
-    }
-  ],
   "categories": ["business", "productivity"],
   "prefer_related_applications": false
 }

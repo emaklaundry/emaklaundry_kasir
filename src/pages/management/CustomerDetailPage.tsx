@@ -43,7 +43,7 @@ const CustomerDetailPage: React.FC = () => {
   const avgTransactionValue =
     customerTransactions.length > 0 ? totalSpent / customerTransactions.length : 0;
 
-  const sortedTransactions = [...customerTransactions].sort(
+  const sortedTransactions = customerTransactions.toSorted(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
   const mostRecentTransaction = sortedTransactions.length > 0 ? sortedTransactions[0] : null;

@@ -119,11 +119,7 @@ const SOPPage = () => {
   };
 
   // Group SOPs by category
-  const groupedSops = sops.reduce((acc, sop) => {
-    if (!acc[sop.category]) acc[sop.category] = [];
-    acc[sop.category].push(sop);
-    return acc;
-  }, {} as Record<string, SOP[]>);
+  const groupedSops = Object.groupBy(sops, (sop) => sop.category);
 
   return (
     <div className="min-h-screen bg-slate-50 print:bg-white print:min-h-0">
@@ -273,7 +269,7 @@ const SOPPage = () => {
                     {category}
                   </h2>
                   <div className="space-y-6">
-                    {items.map((sop) => (
+                    {items?.map((sop) => (
                       <div key={sop.id} className="group relative bg-white rounded-lg border border-slate-200 p-6 print:border-black print:rounded-none print:p-4 break-inside-avoid shadow-sm print:shadow-none hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-3">
                            <h3 className="text-lg font-bold text-slate-900 print:text-black">{sop.title}</h3>

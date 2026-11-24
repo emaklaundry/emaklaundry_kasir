@@ -16,12 +16,10 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
   );
 
   // Kelompokkan layanan berdasarkan Jenis Cucian (WashType)
-  const servicesByWashType = filteredServices.reduce<Record<string, Service[]>>((acc, service) => {
-    const type = service.washType || 'Lainnya';
-    if (!acc[type]) acc[type] = [];
-    acc[type].push(service);
-    return acc;
-  }, {});
+  const servicesByWashType = Object.groupBy(
+    filteredServices,
+    (service) => service.washType || 'Lainnya',
+  );
 
   return (
     <div className="space-y-4" id={id}>
@@ -45,7 +43,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
                 {type}
               </div>
               <div className="space-y-2">
-                {services.map((service) => (
+                {services?.map((service) => (
                   <div
                     key={service.id}
                     className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-slate-700/50 hover:bg-brand-blue-50 dark:hover:bg-brand-blue-900/50 border-slate-300 dark:border-slate-600"
