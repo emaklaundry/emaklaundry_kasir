@@ -178,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             </NavLink>
             <button
               onClick={onToggle}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors hidden sm:block"
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors touch-target"
               aria-label="Toggle Sidebar"
               title="Sembunyikan Sidebar"
             >

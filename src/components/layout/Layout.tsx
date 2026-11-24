@@ -53,7 +53,26 @@ const getPageTitle = (
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const params = useParams();
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(() => {
+    return typeof window === 'undefined' ? true : window.innerWidth >= 640;
+  });
+
+  React.useEffect(() => {
+    const desktopMedia = window.matchMedia('(min-width: 640px)');
+    const syncSidebarWithViewport = (event: MediaQueryList | MediaQueryListEvent) => {
+      setIsSidebarOpen(event.matches);
+    };
+
+    syncSidebarWithViewport(desktopMedia);
+    desktopMedia.addEventListener('change', syncSidebarWithViewport);
+    return () => desktopMedia.removeEventListener('change', syncSidebarWithViewport);
+  }, []);
+
+  React.useEffect(() => {
+    if (window.innerWidth < 640) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]);
 
   const { data: customersRaw = [] } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -73,7 +92,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         }`}
       >
         <Header pageTitle={pageTitle} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className={`p-2 sm:p-4 md:p-6 flex-1 pb-24 sm:pb-6 print-main-content`}>
+        <main className={`p-2 sm:p-4 md:p-6 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-6 print-main-content`}>
           {children}
         </main>
         <footer className="print-hide bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-2 sm:py-3 px-4 text-center hidden sm:block">
