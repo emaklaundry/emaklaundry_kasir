@@ -22,6 +22,7 @@ import {
 } from '@/types';
 import { formatRupiah } from '../utils/formatting';
 import { useAuditLogs } from '../contexts/AuditLogContext';
+import { mapDBtoTransaction, RawDBTransaction } from '../utils/mappers';
 
 // Type guard for Transaction
 function isTransaction(obj: unknown): obj is Transaction {
@@ -357,34 +358,10 @@ const ReportsPage: React.FC = () => {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          // Normalize data types and map snake_case to camelCase
-          const transactions = data.map((t) => {
-            const raw = t as unknown as RawTransaction; // Safe cast to raw type
-            return {
-              id: raw.id,
-              invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
-              customerId: raw.customer_id ?? raw.customerId ?? undefined,
-              subtotal: Number(raw.subtotal ?? 0),
-              discount: Number(raw.discount ?? 0),
-              tax: Number(raw.tax ?? 0),
-              total: Number(raw.total ?? 0),
-              amountPaid: Number(raw.amount_paid ?? raw.amountPaid ?? 0),
-              change: Number(raw.change ?? 0),
-              paymentStatus: raw.payment_status ?? raw.paymentStatus ?? 'Unpaid',
-              orderStatus: raw.order_status ?? raw.orderStatus ?? 'Processing',
-              paymentMethod: raw.payment_method ?? raw.paymentMethod ?? undefined,
-              createdAt:
-                raw.created_at ??
-                (raw.createdAt instanceof Date ? raw.createdAt.toISOString() : raw.createdAt) ??
-                new Date().toISOString(),
-              estimatedCompletionDate:
-                raw.estimated_completion_date ?? raw.estimatedCompletionDate ?? '',
-              createdByUserId: raw.created_by_user_id ?? raw.createdByUserId ?? undefined,
-              storeId: raw.store_id ?? raw.storeId ?? undefined,
-              items: raw.items ?? [],
-              notes: raw.notes ?? undefined,
-            };
-          }) as unknown as Transaction[];
+          // Normalize data types and map using centralized mapper
+          const transactions = data.map((t) =>
+            mapDBtoTransaction(t as unknown as RawDBTransaction),
+          );
 
           allTx = [...allTx, ...transactions];
           if (data.length < pageSize) {
@@ -631,7 +608,10 @@ const ReportsPage: React.FC = () => {
     return { transactions, expenses };
   }, [startDate, endDate, allStoreTransactions, allStoreExpenses]);
 
-  const totalRevenue = filteredData.transactions.reduce((acc: number, t) => acc + t.total, 0);
+  // Realized revenue (amount paid) vs total billed
+  const totalRevenue = filteredData.transactions.reduce((acc: number, t) => acc + (t.amountPaid || 0), 0);
+  const totalBilled = filteredData.transactions.reduce((acc: number, t) => acc + t.total, 0);
+  const totalReceivables = Math.max(0, totalBilled - totalRevenue);
   const totalExpenses = filteredData.expenses.reduce((acc: number, e) => acc + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
 

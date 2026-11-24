@@ -3,8 +3,8 @@ import { precacheAndRoute } from 'workbox-precaching';
 // Injected at build time by workbox (may be an empty array in dev)
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// Use version-based cache name to force cache invalidation on updates
-const APP_VERSION = '2.5.0'; // ✅ UPDATED to match package.json
+// Injected or fallback version to force runtime cache invalidation on updates
+const APP_VERSION = typeof __SW_VERSION__ !== 'undefined' ? __SW_VERSION__ : '2.7.1';
 const CACHE_NAME = `laundry-management-v${APP_VERSION}-runtime`;
 
 self.addEventListener('install', (event) => {

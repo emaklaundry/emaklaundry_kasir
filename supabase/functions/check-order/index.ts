@@ -1,7 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Type definitions for API response data
 interface TransactionItem {
   serviceName: string;
   quantity: number;
@@ -12,12 +11,27 @@ interface CustomerData {
   name: string;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get('Origin') ?? '';
+  const allowedOrigins = [
+    Deno.env.get('ALLOWED_ORIGIN'),
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ].filter(Boolean);
+
+  const isAllowed = allowedOrigins.includes(origin) || allowedOrigins.includes('*');
+  const allowedOrigin = isAllowed ? origin : (allowedOrigins[0] || '*');
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  };
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -25,10 +39,17 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const invoice = url.searchParams.get('invoice');
+    const invoice = url.searchParams.get('invoice')?.trim();
 
     if (!invoice) {
       return new Response(JSON.stringify({ error: 'Invoice number is required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    if (invoice.length > 50 || /[^a-zA-Z0-9\-_]/.test(invoice)) {
+      return new Response(JSON.stringify({ error: 'Invalid invoice format' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
@@ -39,7 +60,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // PERBAIKAN: Menggunakan nama kolom yang sesuai dengan database ("invoiceCode", bukan "invoice_code")
     const { data, error } = await supabaseAdmin
       .from('transactions')
       .select(
@@ -55,12 +75,12 @@ serve(async (req) => {
         items
       `,
       )
-      .eq('invoiceCode', invoice) // PERBAIKAN DISINI
+      .eq('invoiceCode', invoice)
       .maybeSingle();
 
     if (error) {
-        console.error("Supabase Query Error:", error); // Logging error agar terlihat di Dashboard
-        throw error;
+      console.error('Supabase Query Error:', error);
+      throw error;
     }
 
     if (!data) {
@@ -82,8 +102,9 @@ serve(async (req) => {
         }))
       : [];
 
+    // Projection aman untuk konsumsi publik
     const responseData = {
-      invoice: data.invoiceCode, // Sesuaikan dengan hasil query
+      invoice: data.invoiceCode,
       customerName,
       status: data.orderStatus,
       paymentStatus: data.paymentStatus,
@@ -99,7 +120,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error("Function Error:", errorMessage); // Logging error
+    console.error('Function Error:', errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

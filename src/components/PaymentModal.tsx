@@ -4,8 +4,13 @@ import { formatTransactionId } from '@/utils/uiHelpers';
 import useToasts from '../contexts/useToasts';
 import { useSettings } from '../contexts/SettingsContext';
 import Modal from './Modal';
+<<<<<<< Updated upstream
 import DynamicQRIS from './DynamicQRIS';
+=======
+import { SpinnerIcon } from './icons';
+>>>>>>> Stashed changes
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
+import { calculateRounding } from '@/utils/roundingUtils';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -24,6 +29,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const { addToast } = useToasts();
   const { settings } = useSettings();
 
@@ -37,6 +43,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       setTimeout(() => {
         setMethod(transaction.paymentMethod || PaymentMethod.Cash);
         setTenderedAmountStr('');
+        setIsSaving(false);
       }, 0);
     }
   }, [transaction]);
@@ -44,13 +51,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const amountToPay = remainingBalance;
   const tenderedAmount = parseRupiah(tenderedAmountStr);
 
-  // UPDATED: Rounding only for CASH payments, minimum 500 rupiah
-  // Calculate remainder when divided by 500
-  const totalRemainder = amountToPay % 500;
-  // Only round for Cash method AND if remainder exists (< 500)
-  const shouldRoundTotal = method === PaymentMethod.Cash && totalRemainder > 0;
-  const roundedAmountToPay = shouldRoundTotal ? amountToPay - totalRemainder : amountToPay;
-  const pointsEarnedFromRounding = shouldRoundTotal ? totalRemainder : 0;
+  // Rounding calculation via central utility
+  const { roundedTotal: roundedAmountToPay, roundingDiscount: pointsEarnedFromRounding, shouldRound: shouldRoundTotal } = useMemo(() => {
+    return calculateRounding(amountToPay, method, 500);
+  }, [amountToPay, method]);
 
   // Calculate cash change (only applies to Cash payment)
   const change = useMemo(() => {
@@ -61,10 +65,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   }, [method, tenderedAmount, roundedAmountToPay]);
 
   const handleSave = async () => {
-    if (!transaction) return;
+    if (!transaction || isSaving) return;
 
     try {
-      // FIXED: Lock values immediately to prevent race conditions
+      setIsSaving(true);
       const lockedAmountToPay = amountToPay;
       const lockedRemainingBalance = remainingBalance;
       const lockedTenderedAmount = tenderedAmount;
@@ -80,7 +84,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         await onSave({
           ...transaction,
           paymentStatus: PaymentStatus.Paid,
-          amountPaid: transaction.total, // pastikan tidak berlebih
+          amountPaid: transaction.total,
         });
         onClose();
         return;
@@ -113,7 +117,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         transaction.total,
       );
 
-      // --- FIX: Adjust Total & Discount if Rounding Applied ---
+      // Adjust Total & Discount if Rounding Applied
       let finalTotal = transaction.total;
       let finalDiscount = transaction.discount;
 
@@ -123,7 +127,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         finalTotal -= roundingDifference;
         finalDiscount += roundingDifference;
       }
-      // --------------------------------------------------------
 
       let newStatus = PaymentStatus.Unpaid;
 
@@ -144,7 +147,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           paymentStatus: newStatus,
           paymentMethod: method,
           change: finalChange,
-          // Update total & discount to reflect rounding "write-off"
           total: finalTotal,
           discount: finalDiscount,
         },
@@ -155,6 +157,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     } catch (error) {
       console.error('Error saving payment:', error);
       addToast('Terjadi kesalahan saat menyimpan pembayaran. Silakan coba lagi.', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -163,25 +167,26 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      // PERBAIKAN: Gunakan invoice_code jika ada, jika tidak baru gunakan ID
+      onClose={isSaving ? () => {} : onClose}
       title={`Pembayaran: ${formatTransactionId(transaction)}`}
       footer={
         <>
           <button
             onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
+            disabled={isSaving}
+            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Batalkan pembayaran"
           >
             Batal
           </button>
           <button
             onClick={handleSave}
-            disabled={disabled || amountToPay <= 0 || amountToPay > remainingBalance}
-            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 active:bg-blue-900 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={disabled || isSaving || amountToPay <= 0 || amountToPay > remainingBalance}
+            className="flex justify-center items-center gap-2 text-white bg-blue-700 hover:bg-blue-800 active:bg-blue-900 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             type="button"
           >
-            Simpan Pembayaran
+            {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin" />}
+            <span>{isSaving ? 'Menyimpan...' : 'Simpan Pembayaran'}</span>
           </button>
         </>
       }
@@ -211,6 +216,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 key={m}
                 type="button"
+                disabled={isSaving}
                 onClick={() => setMethod(m)}
                 className={`flex items-center justify-center p-3 border rounded-lg gap-2 transition-all duration-200
                   ${
@@ -218,6 +224,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                       ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
                       : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:border-slate-600 dark:text-white'
                   }
+                  ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
               >
                 <span className="font-medium">{m}</span>
@@ -285,6 +292,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               type="text"
               id="tenderedAmount"
               name="tenderedAmount"
+              disabled={isSaving}
               value={tenderedAmountStr}
               onChange={(e) => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
               className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -320,9 +328,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   💰 Pembulatan Otomatis (Tunai)
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  Total dibulatkan ke Rp 500 terdekat: Rp {formatRupiah(amountToPay)}
+                  Total dibulatkan ke Rp 500 terdekat: Rp {formatRupiah(roundedAmountToPay)}
                   <br />
-                  (Sudah termasuk dalam total tagihan)
+                  (Diskon receh Rp {formatRupiah(pointsEarnedFromRounding)})
                 </p>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Customer } from '../types';
 import { supabase } from '../utils/supabaseClient';
+import { escapeLikePattern } from '../utils/sanitize';
 
 export interface CustomerFilter {
   page?: number;
@@ -17,8 +18,9 @@ export async function fetchCustomers(
   if (storeId && storeId !== 'all') {
     query = query.eq('storeId', storeId);
   }
-  if (searchTerm) {
-    query = query.ilike('name', `%${searchTerm}%`);
+  if (searchTerm && searchTerm.trim()) {
+    const sanitized = escapeLikePattern(searchTerm.trim());
+    query = query.ilike('name', `%${sanitized}%`);
   }
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;

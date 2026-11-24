@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
 import { retrySupabaseOperation, verifyDataSaved } from '../utils/retryUtils';
 import { Transaction } from '@/types';
+<<<<<<< Updated upstream
 import { autoDeductInventory } from './InventoryRecipeContext';
+=======
+import { mapDBtoTransaction, RawDBTransaction } from '../utils/mappers';
+>>>>>>> Stashed changes
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
 // Pagination-aware fetchTransactions
@@ -76,17 +80,10 @@ const fetchTransactions = async (
     const { data, error, count } = await query;
     if (error) throw error;
 
-    // Convert null to undefined for optional fields
-    const transactions = (data || []).map((t) => {
-      const raw = t as { invoice_code?: string; invoiceCode?: string };
-      return {
-        ...t,
-        invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
-        customerId: t.customerId ?? undefined,
-        createdByUserId: t.createdByUserId ?? undefined,
-        paymentMethod: t.paymentMethod ?? undefined,
-      };
-    }) as unknown as Transaction[];
+    // Convert and normalize using centralized mapper
+    const transactions = (data || []).map((t) =>
+      mapDBtoTransaction(t as unknown as RawDBTransaction),
+    );
 
     return { data: transactions, count: count || 0 };
   } catch (error) {
@@ -152,23 +149,8 @@ export function useTransactions(filter: TransactionFilter = {}) {
           { maxAttempts: 3, pollInterval: 300 },
         );
 
-        // Explicitly map keys to match Transaction interface
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const raw = verified as any;
-        return {
-          ...verified,
-          invoiceCode: raw.invoice_code ?? raw.invoiceCode ?? undefined,
-          customerId: verified.customerId ?? undefined,
-          createdByUserId: verified.createdByUserId ?? undefined,
-          paymentMethod: verified.paymentMethod ?? undefined,
-          items: Array.isArray(verified.items)
-            ? (verified.items as unknown as import('../types').TransactionItem[]).map((item) => ({
-                ...item,
-                itemDetails: item.itemDetails ?? [],
-              }))
-            : [],
-          createdAt: verified.createdAt ? new Date(verified.createdAt) : new Date(),
-        } as Transaction;
+        // Explicitly map keys to match Transaction interface using centralized mapper
+        return mapDBtoTransaction(verified as unknown as RawDBTransaction);
       } catch (error) {
         console.error('Error adding transaction:', error);
         throw new Error(
@@ -241,37 +223,7 @@ export function useTransactions(filter: TransactionFilter = {}) {
         if (updatedRow && updatedRow[0]) row = updatedRow[0];
       }
       if (!row) return null;
-      // Explicitly map all required Transaction fields
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dbRow = row as any;
-      return {
-        id: dbRow.id ?? '',
-        invoiceCode: dbRow.invoice_code ?? dbRow.invoiceCode ?? undefined,
-        customerId: dbRow.customerId ?? '',
-        items: Array.isArray(dbRow.items)
-          ? (dbRow.items as import('../types').TransactionItem[]).map((item) => ({
-              ...item,
-              itemDetails: item.itemDetails ?? [],
-            }))
-          : [],
-        subtotal: dbRow.subtotal ?? 0,
-        discount: dbRow.discount ?? 0,
-        tax: dbRow.tax ?? 0,
-        total: dbRow.total ?? 0,
-        paymentStatus: dbRow.paymentStatus as import('../types').PaymentStatus,
-        orderStatus: dbRow.orderStatus as import('../types').OrderStatus,
-        createdAt: dbRow.createdAt ? new Date(dbRow.createdAt) : new Date(),
-        estimatedCompletionDate: dbRow.estimatedCompletionDate ?? '',
-        amountPaid: dbRow.amountPaid ?? 0,
-        change: dbRow.change ?? 0,
-        paymentMethod: dbRow.paymentMethod
-          ? (dbRow.paymentMethod as import('../types').PaymentMethod)
-          : undefined,
-        createdByUserId: dbRow.createdByUserId ?? '',
-        storeId: dbRow.storeId ?? '',
-        notes: dbRow.notes ?? undefined,
-        idempotencyKey: dbRow.idempotencyKey ?? undefined,
-      };
+      return mapDBtoTransaction(row as unknown as RawDBTransaction);
     },
     // Conservative approach: TIDAK ada optimistic update
     // Tunggu hingga server confirm sebelum update UI

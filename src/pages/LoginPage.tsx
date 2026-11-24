@@ -146,19 +146,7 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Version Info - Consistent with website style */}
-      <div
-        style={{
-          position: 'fixed',
-          right: 12,
-          bottom: 8,
-          zIndex: 50,
-          fontSize: 12,
-          color: '#64748b',
-          opacity: 0.7,
-          pointerEvents: 'none',
-          userSelect: 'none',
-        }}
-      >
+      <div className="fixed right-3 bottom-2 z-50 text-xs text-slate-500 opacity-70 pointer-events-none select-none">
         {APP_VERSION}
       </div>
     </div>

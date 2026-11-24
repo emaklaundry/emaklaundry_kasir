@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */ import ExcelJS from 'exceljs';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   Customer,
   Service,
@@ -16,6 +17,17 @@ import type {
   MaintenanceLog,
 } from '../types';
 
+// Dynamic import to prevent ExcelJS from bloating the initial bundle
+const getExcelJS = async () => {
+  const mod = await import('exceljs');
+  return mod.default || mod;
+};
+
+const createWorkbook = async (): Promise<any> => {
+  const ExcelJS = await getExcelJS();
+  return new ExcelJS.Workbook();
+};
+
 // ============================================
 // CONSTANTS
 // ============================================
@@ -32,7 +44,7 @@ const ALTERNATE_ROW_COLOR = 'FFF3F4F6';
  * Export customers to Excel file
  */
 export async function exportCustomersToExcel(customers: Customer[]): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const worksheet = workbook.addWorksheet('Customers');
 
   // Define columns
@@ -89,7 +101,7 @@ export async function exportTransactionsToExcel(
   transactions: Transaction[],
   customers: { id: string; name: string; phone: string }[],
 ): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const worksheet = workbook.addWorksheet('Transaksi');
 
   // Define columns
@@ -179,7 +191,7 @@ export async function exportTransactionsToExcel(
  * Export services to Excel file
  */
 export async function exportServicesToExcel(services: Service[]): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const worksheet = workbook.addWorksheet('Services');
 
   // Define columns
@@ -235,7 +247,7 @@ export async function exportServicesToExcel(services: Service[]): Promise<void> 
  * Export inventory items to Excel file
  */
 export async function exportInventoryToExcel(items: InventoryItem[]): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const worksheet = workbook.addWorksheet('Inventory');
 
   // Define columns
@@ -287,7 +299,7 @@ export async function exportInventoryToExcel(items: InventoryItem[]): Promise<vo
  * Export assets to Excel file
  */
 export async function exportAssetsToExcel(assets: Asset[]): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const worksheet = workbook.addWorksheet('Assets');
 
   // Define columns
@@ -344,7 +356,7 @@ export async function exportAssetsToExcel(assets: Asset[]): Promise<void> {
  * Export expenses to Excel file
  */
 export async function exportExpensesToExcel(expenses: Expense[]): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const worksheet = workbook.addWorksheet('Expenses');
 
   // Define columns
@@ -634,8 +646,8 @@ export async function importExpensesFromExcel(file: File): Promise<Partial<Expen
 /**
  * Read Excel file
  */
-async function readExcelFile(file: File): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
+async function readExcelFile(file: File): Promise<any> {
+  const workbook = await createWorkbook();
   const arrayBuffer = await file.arrayBuffer();
   await workbook.xlsx.load(arrayBuffer);
   return workbook;
@@ -644,7 +656,7 @@ async function readExcelFile(file: File): Promise<ExcelJS.Workbook> {
 /**
  * Download file to browser
  */
-function downloadFile(buffer: ExcelJS.Buffer, filename: string): void {
+function downloadFile(buffer: any, filename: string): void {
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
@@ -660,7 +672,7 @@ function downloadFile(buffer: ExcelJS.Buffer, filename: string): void {
  * Generate Excel template for customers
  */
 export async function downloadCustomerTemplate(): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
 
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
@@ -812,7 +824,7 @@ export async function downloadCustomerTemplate(): Promise<void> {
  * Generate Excel template for services
  */
 export async function downloadServiceTemplate(): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
 
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
@@ -989,7 +1001,7 @@ export async function downloadServiceTemplate(): Promise<void> {
  * Generate Excel template for inventory
  */
 export async function downloadInventoryTemplate(): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
 
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
@@ -1157,7 +1169,7 @@ export async function downloadInventoryTemplate(): Promise<void> {
  * Generate Excel template for assets
  */
 export async function downloadAssetTemplate(): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
 
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
@@ -1337,7 +1349,7 @@ export async function downloadAssetTemplate(): Promise<void> {
  * Generate Excel template for expenses
  */
 export async function downloadExpenseTemplate(): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
 
   // Sheet 1: Instruksi
   const instructionSheet = workbook.addWorksheet('📋 INSTRUKSI');
@@ -1515,7 +1527,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
  * Note: Transaction template is for EXPORT only, not for import
  */
 export async function downloadTransactionTemplate(): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
 
   // Sheet 1: Informasi
   const infoSheet = workbook.addWorksheet('ℹ️ INFORMASI');
@@ -1762,7 +1774,7 @@ export async function importTransactionsFromExcel(
   existingServices: Service[],
   existingTransactions: Transaction[],
 ): Promise<ImportTransactionResult> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   await workbook.xlsx.load(await file.arrayBuffer());
 
   const worksheet = workbook.getWorksheet('Transaksi');
@@ -1975,7 +1987,7 @@ export async function exportAllData(
   expenses: Expense[],
   transactions: Transaction[],
 ): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const timestamp = new Date().toISOString().split('T')[0];
 
   // Sheet 1: Info
@@ -2287,7 +2299,7 @@ export async function importAllData(file: File): Promise<{
   expenses: Expense[];
   transactions: Transaction[];
 }> {
-  const workbook = new ExcelJS.Workbook();
+  const workbook = await createWorkbook();
   const arrayBuffer = await file.arrayBuffer();
   await workbook.xlsx.load(arrayBuffer);
 
