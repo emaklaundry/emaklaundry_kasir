@@ -98,6 +98,20 @@ export default defineConfig(() => {
     },
     define: {
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
+      __SW_VERSION__: JSON.stringify(pkg.version),
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-supabase': ['@supabase/supabase-js'],
+            'vendor-tanstack': ['@tanstack/react-query'],
+            'vendor-icons': ['lucide-react'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 600,
     },
   };
 });

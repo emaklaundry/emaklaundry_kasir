@@ -18,6 +18,7 @@ import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
 import PaymentModal from '../components/PaymentModal';
+import WashSettingsModal from '../components/WashSettingsModal';
 import {
   WrenchIcon,
   PlusCircleIcon,
@@ -25,6 +26,7 @@ import {
   ChevronRightIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
+  BookOpenIcon,
 } from '../components/icons';
 
 import {
@@ -234,6 +236,7 @@ const Dashboard: React.FC = () => {
   const [transactionForWhatsApp, setTransactionForWhatsApp] = useState<Transaction | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [transactionForPayment, setTransactionForPayment] = useState<Transaction | null>(null);
+  const [isWashSettingsModalOpen, setIsWashSettingsModalOpen] = useState(false);
 
   const isCashier = currentUser?.role === UserRole.Cashier;
 
@@ -605,6 +608,7 @@ const Dashboard: React.FC = () => {
 
         {/* Trend Stats - Admin View */}
         <div
+          id="dashboard-stats"
           className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}
         >
           <Link to={`/transactions?status=${OrderStatus.Completed}`}>
@@ -710,7 +714,7 @@ const Dashboard: React.FC = () => {
           {/* Pendapatan 7 Hari Terakhir Stats - Hidden for Cashier */}
           {!isCashier && (
             <>
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div id="dashboard-chart" className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
                   Total Pendapatan (7 hari)
                 </p>
@@ -820,6 +824,18 @@ const Dashboard: React.FC = () => {
                 Lapor Kerusakan
               </span>
             </button>
+
+            <button
+              onClick={() => setIsWashSettingsModalOpen(true)}
+              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+            >
+              <div className="p-2 sm:p-3 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex-shrink-0">
+                <BookOpenIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
+                Panduan Mesin Cuci
+              </span>
+            </button>
           </div>
           {isActionDisabled && (
             <p className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 mt-3">
@@ -828,7 +844,7 @@ const Dashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md">
+        <div id="dashboard-recent" className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
               Progres Pesanan Aktif
@@ -1112,6 +1128,10 @@ const Dashboard: React.FC = () => {
         onClose={() => setIsPaymentModalOpen(false)}
         transaction={transactionForPayment}
         onSave={handleSavePayment}
+      />
+      <WashSettingsModal
+        isOpen={isWashSettingsModalOpen}
+        onClose={() => setIsWashSettingsModalOpen(false)}
       />
     </>
   );

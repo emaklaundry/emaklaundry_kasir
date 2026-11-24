@@ -11,6 +11,8 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { supabase } from '../../utils/supabaseClient';
 import { formatTransactionId } from '@/utils/uiHelpers';
 
+import { Transaction, TransactionItem, TransactionItemDetail } from '@/types';
+
 const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
@@ -28,8 +30,7 @@ const ReceiptPage: React.FC = () => {
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
 
   const transaction = transactions.find((t) => t.id === id);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [fetchedTransaction, setFetchedTransaction] = React.useState<any>(null);
+  const [fetchedTransaction, setFetchedTransaction] = React.useState<Transaction | null>(null);
   React.useEffect(() => {
     if (!transaction && id) {
       supabase
@@ -38,7 +39,7 @@ const ReceiptPage: React.FC = () => {
         .eq('id', id)
         .single()
         .then(({ data }) => {
-          if (data) setFetchedTransaction(data);
+          if (data) setFetchedTransaction(data as unknown as Transaction);
         });
     }
   }, [transaction, id]);
@@ -95,8 +96,7 @@ const ReceiptPage: React.FC = () => {
       </div>
 
       <div className="space-y-2 mb-4">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {tx.items.map((item: any, index: number) => (
+        {tx.items.map((item: TransactionItem, index: number) => (
           <div key={index} className="flex flex-col text-base py-1">
             <div className="flex justify-between">
               <div>
@@ -111,12 +111,10 @@ const ReceiptPage: React.FC = () => {
                 Rp {item.subtotal.toLocaleString('id-ID')}
               </p>
             </div>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {item.itemDetails?.slice(0, item.quantity).some((d: any) => d.note) && (
+            {item.itemDetails?.slice(0, item.quantity).some((d: TransactionItemDetail) => d.note) && (
               <div className="pl-4 mt-1 space-y-0.5">
                 {item.itemDetails?.slice(0, item.quantity).map(
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (detail: any, detailIndex: number) =>
+                  (detail: TransactionItemDetail, detailIndex: number) =>
                     detail.note && (
                       <p key={detailIndex} className="text-sm text-slate-500 dark:text-slate-400">
                         - Item #{detailIndex + 1}: {detail.note}

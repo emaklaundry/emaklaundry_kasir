@@ -1,4 +1,5 @@
 import { Customer, PaymentStatus, Transaction } from '../types';
+import { debugLog } from './sanitize';
 
 /**
  * Recalculate customer discount balances from transaction history
@@ -19,9 +20,9 @@ export const recalculateAllCustomerDiscounts = async (
   totalDiscountAdded: number;
   details: Array<{ customerId: string; customerName: string; discountAdded: number }>;
 }> => {
-  console.log('🔍 DEBUG: Starting recalculation');
-  console.log(`📊 Total customers: ${customers.length}`);
-  console.log(`📊 Total transactions: ${transactions.length}`);
+  debugLog('🔍 DEBUG: Starting recalculation');
+  debugLog(`📊 Total customers: ${customers.length}`);
+  debugLog(`📊 Total transactions: ${transactions.length}`);
 
   const results = {
     updated: 0,
@@ -36,7 +37,7 @@ export const recalculateAllCustomerDiscounts = async (
     );
 
     if (paidTransactions.length > 0) {
-      console.log(`💰 Customer: ${customer.name} has ${paidTransactions.length} paid transactions`);
+      debugLog(`💰 Customer: ${customer.name} has ${paidTransactions.length} paid transactions`);
     }
 
     // Calculate total rounding discount from transaction history
@@ -56,7 +57,7 @@ export const recalculateAllCustomerDiscounts = async (
         const remainder = expectedTotalWithoutRounding % 500;
 
         if (remainder > 0 && remainder < 500) {
-          console.log(
+          debugLog(
             `  ✅ Transaction: Expected Rp ${expectedTotalWithoutRounding.toLocaleString('id-ID')}, ` +
               `Actual Rp ${t.total.toLocaleString('id-ID')}, Discount Rp ${t.discount.toLocaleString('id-ID')}, ` +
               `Rounding: Rp ${remainder}`,
@@ -67,7 +68,7 @@ export const recalculateAllCustomerDiscounts = async (
     });
 
     if (totalRoundingDiscount > 0) {
-      console.log(
+      debugLog(
         `💵 ${customer.name}: Total rounding discount to add: Rp ${totalRoundingDiscount.toLocaleString('id-ID')}`,
       );
     }
@@ -83,7 +84,7 @@ export const recalculateAllCustomerDiscounts = async (
           customerName: customer.name,
           discountAdded: totalRoundingDiscount,
         });
-        console.log(
+        debugLog(
           `✅ Updated ${customer.name} with Rp ${totalRoundingDiscount.toLocaleString('id-ID')}`,
         );
       } catch (error) {
@@ -92,8 +93,8 @@ export const recalculateAllCustomerDiscounts = async (
     }
   }
 
-  console.log('✅ Recalculation complete:', results);
-  console.log(
+  debugLog('✅ Recalculation complete:', results);
+  debugLog(
     `📊 Summary: ${results.updated} customers updated, total Rp ${results.totalDiscountAdded.toLocaleString('id-ID')}`,
   );
   return results;

@@ -94,8 +94,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
     getProfile();
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      getProfile();
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'SIGNED_OUT' ||
+        event === 'USER_UPDATED' ||
+        event === 'PASSWORD_RECOVERY'
+      ) {
+        getProfile();
+      }
     });
     return () => {
       listener.subscription.unsubscribe();

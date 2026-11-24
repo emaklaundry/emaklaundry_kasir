@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
+import WashSettingsModal from '../components/WashSettingsModal';
 import useAppContext from '../contexts/useAppContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
@@ -14,6 +15,7 @@ import {
   WrenchIcon,
   DollarSignIcon,
   PlusCircleIcon,
+  BookOpenIcon,
 } from '@/components/icons';
 
 const QuickActionsPage: React.FC = () => {
@@ -25,6 +27,7 @@ const QuickActionsPage: React.FC = () => {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+  const [isWashSettingsModalOpen, setIsWashSettingsModalOpen] = useState(false);
 
   const isActionDisabled = currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all';
 
@@ -63,6 +66,13 @@ const QuickActionsPage: React.FC = () => {
       onClick: () => setIsMaintenanceModalOpen(true),
       modal: null,
     },
+    {
+      label: 'Panduan Mesin Cuci',
+      icon: BookOpenIcon,
+      color: 'bg-indigo-500 hover:bg-indigo-600',
+      onClick: () => setIsWashSettingsModalOpen(true),
+      modal: null,
+    },
     // ...existing actions for navigation
     {
       label: 'Transaksi Baru',
@@ -89,7 +99,7 @@ const QuickActionsPage: React.FC = () => {
             <button
               key={action.label}
               onClick={action.onClick}
-              disabled={isActionDisabled}
+              disabled={action.label !== 'Panduan Mesin Cuci' && isActionDisabled}
               className={`${action.color} text-white rounded-xl p-5 sm:p-6 flex flex-col items-center justify-center text-center shadow-lg transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[140px] sm:min-h-[160px] touch-target`}
             >
               <action.icon className="w-12 h-12 sm:w-14 sm:h-14 mb-3" />
@@ -127,8 +137,13 @@ const QuickActionsPage: React.FC = () => {
         isOpen={isMaintenanceModalOpen}
         onClose={() => setIsMaintenanceModalOpen(false)}
       />
+      <WashSettingsModal
+        isOpen={isWashSettingsModalOpen}
+        onClose={() => setIsWashSettingsModalOpen(false)}
+      />
     </div>
   );
 };
 
 export default QuickActionsPage;
+

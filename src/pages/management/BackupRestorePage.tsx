@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   DownloadIcon,
@@ -10,6 +10,14 @@ import {
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
 import { exportAllData, importAllData } from '../../utils/excelUtils';
+import {
+  exportBackup,
+  downloadBackup,
+  readBackupFile,
+  validateBackup,
+  importBackup,
+  BackupData,
+} from '../../utils/backupUtils';
 import {
   UserRole,
   Transaction,
@@ -28,6 +36,13 @@ const BackupRestorePage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // JSON Backup states
+  const [isExportingJson, setIsExportingJson] = useState(false);
+  const [isImportingJson, setIsImportingJson] = useState(false);
+  const [importJsonProgress, setImportJsonProgress] = useState(0);
+  const [pendingJsonBackup, setPendingJsonBackup] = useState<BackupData | null>(null);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch all data without pagination limits
   const customersQuery = useQuery({
@@ -827,6 +842,78 @@ const BackupRestorePage: React.FC = () => {
     }
   };
 
+  // JSON Backup Handlers
+  const handleExportJson = async () => {
+    setIsExportingJson(true);
+    const toastId = addToast('Mengekspor data ke JSON...', 'info');
+    try {
+      const backup = await exportBackup();
+      downloadBackup(backup);
+      updateToast(toastId, 'Backup JSON berhasil didownload!', 'success');
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      updateToast(toastId, `Gagal export JSON: ${errMsg}`, 'error');
+    } finally {
+      setIsExportingJson(false);
+    }
+  };
+
+  const handleJsonFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await readBackupFile(file);
+      if (!validateBackup(data)) {
+        addToast('File backup tidak valid atau format tidak sesuai.', 'error');
+        return;
+      }
+      setPendingJsonBackup(data as BackupData);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      addToast(`Gagal membaca file: ${errMsg}`, 'error');
+    }
+
+    // Reset input
+    if (jsonFileInputRef.current) {
+      jsonFileInputRef.current.value = '';
+    }
+  };
+
+  const handleImportJson = async () => {
+    if (!pendingJsonBackup) return;
+
+    setIsImportingJson(true);
+    setImportJsonProgress(0);
+    const toastId = addToast('Mengimpor data JSON...', 'info');
+
+    try {
+      const result = await importBackup(pendingJsonBackup, {
+        onProgress: (_table, progress) => {
+          setImportJsonProgress(Math.round(progress));
+        },
+      });
+
+      if (result.success) {
+        updateToast(toastId, 'Import JSON berhasil! Halaman akan direfresh...', 'success');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        updateToast(toastId, `Import selesai dengan ${result.errors.length} error.`, 'warning');
+        console.error('Import errors:', result.errors);
+      }
+
+      setPendingJsonBackup(null);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      updateToast(toastId, `Gagal import: ${errMsg}`, 'error');
+    } finally {
+      setIsImportingJson(false);
+      setImportJsonProgress(0);
+    }
+  };
+
   // Check if user has permission
   const canBackup = currentUser?.role !== UserRole.Cashier;
 
@@ -1094,6 +1181,114 @@ const BackupRestorePage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* JSON Backup & Restore Section */}
+      <div className="bg-slate-50 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-lg p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <DatabaseIcon className="w-5 h-5 text-slate-500" />
+          Quick Backup (JSON)
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Format backup yang lebih ringan dan cepat. Cocok untuk backup harian.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Export JSON */}
+          <button
+            onClick={handleExportJson}
+            disabled={isExportingJson}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition-colors"
+          >
+            {isExportingJson ? (
+              <div className="w-5 h-5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <DownloadIcon className="w-5 h-5" />
+            )}
+            Download JSON Backup
+          </button>
+
+          {/* Import JSON */}
+          <div className="flex gap-2">
+            <input
+              type="file"
+              accept=".json"
+              ref={jsonFileInputRef}
+              onChange={handleJsonFileSelect}
+              className="hidden"
+            />
+            <button
+              onClick={() => jsonFileInputRef.current?.click()}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition-colors"
+            >
+              <UploadIcon className="w-5 h-5" />
+              Pilih File JSON
+            </button>
+          </div>
+        </div>
+
+        {/* JSON Import Confirmation */}
+        {pendingJsonBackup && (
+          <div className="mt-4 p-4 border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 rounded-lg animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-start gap-3">
+              <DatabaseIcon className="w-6 h-6 text-blue-600 dark:text-blue-400 mt-1" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                  Konfirmasi Restore JSON
+                </h4>
+                <div className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-300">
+                  <p>Versi Backup: {pendingJsonBackup.version}</p>
+                  <p>
+                    Tanggal:{' '}
+                    {new Date(pendingJsonBackup.exportedAt).toLocaleDateString('id-ID', {
+                      dateStyle: 'full',
+                      timeStyle: 'medium',
+                    })}
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 p-2 bg-blue-100 dark:bg-blue-900/40 rounded">
+                    <p>Stores: {pendingJsonBackup.data.stores.length}</p>
+                    <p>Customers: {pendingJsonBackup.data.customers.length}</p>
+                    <p>Services: {pendingJsonBackup.data.services.length}</p>
+                    <p>Inventory: {pendingJsonBackup.data.inventory_items.length}</p>
+                    <p>Assets: {pendingJsonBackup.data.assets.length}</p>
+                    <p>Expenses: {pendingJsonBackup.data.expenses.length}</p>
+                    <p>Transactions: {pendingJsonBackup.data.transactions.length}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={handleImportJson}
+                    disabled={isImportingJson}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    {isImportingJson ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Processing {importJsonProgress}%...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadIcon className="w-4 h-4" />
+                        Restore Sekarang
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPendingJsonBackup(null);
+                      if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
+                    }}
+                    disabled={isImportingJson}
+                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Info Box */}

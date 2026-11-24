@@ -1,8 +1,8 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
 -- Complete Schema & Functions Setup
--- Version: 3.1.0
--- Date: December 26, 2025
+-- Version: 3.2.0
+-- Date: January 16, 2026
 -- ============================================
 -- 
 -- IMPORTANT: Jalankan script ini di Supabase SQL Editor
@@ -15,9 +15,11 @@
 -- 3. RPC FUNCTIONS
 -- 4. SECURITY & PERFORMANCE
 -- 5. TRIGGERS & AUTOMATION
+-- 6. HRM LITE TABLES (Employees, Attendance, Advances, Payroll)
 -- 
 -- Untuk data sample/testing, jalankan seed_data.sql setelah ini
 -- ============================================
+
 
 -- ============================================
 -- SECTION 1: DROP EXISTING TABLES (OPTIONAL)
@@ -1348,3 +1350,186 @@ BEGIN
   END LOOP;
   RAISE NOTICE 'Populated % missing invoice codes', updated_count;
 END $$;
+
+-- ============================================
+-- SECTION 6: HRM LITE TABLES
+-- ============================================
+-- Fitur HRM Lite: Karyawan, Absensi, Kasbon, Payroll
+
+-- 1. Employees table
+CREATE TABLE IF NOT EXISTS employees (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'operator', -- operator, kasir, admin
+  base_salary NUMERIC NOT NULL DEFAULT 0,
+  commission_rate NUMERIC NOT NULL DEFAULT 0, -- percentage per kg
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2. Attendance table (clock-in/out)
+CREATE TABLE IF NOT EXISTS attendance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  clock_in TIMESTAMPTZ,
+  clock_out TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(employee_id, date)
+);
+
+-- 3. Advances table (kasbon)
+CREATE TABLE IF NOT EXISTS advances (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  amount NUMERIC NOT NULL,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  reason TEXT,
+  is_deducted BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 4. Payroll table
+CREATE TABLE IF NOT EXISTS payroll (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  base_salary NUMERIC NOT NULL DEFAULT 0,
+  commission_total NUMERIC NOT NULL DEFAULT 0,
+  deductions NUMERIC NOT NULL DEFAULT 0,
+  net_salary NUMERIC NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending', -- pending, paid
+  paid_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
+-- HRM Row Level Security (RLS) Policies
+-- ============================================
+
+ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE advances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payroll ENABLE ROW LEVEL SECURITY;
+
+-- Employees RLS
+CREATE POLICY "employees_select" ON employees FOR SELECT USING (true);
+CREATE POLICY "employees_insert" ON employees FOR INSERT WITH CHECK (true);
+CREATE POLICY "employees_update" ON employees FOR UPDATE USING (true);
+CREATE POLICY "employees_delete" ON employees FOR DELETE USING (true);
+
+-- Attendance RLS
+CREATE POLICY "attendance_select" ON attendance FOR SELECT USING (true);
+CREATE POLICY "attendance_insert" ON attendance FOR INSERT WITH CHECK (true);
+CREATE POLICY "attendance_update" ON attendance FOR UPDATE USING (true);
+CREATE POLICY "attendance_delete" ON attendance FOR DELETE USING (true);
+
+-- Advances RLS
+CREATE POLICY "advances_select" ON advances FOR SELECT USING (true);
+CREATE POLICY "advances_insert" ON advances FOR INSERT WITH CHECK (true);
+CREATE POLICY "advances_update" ON advances FOR UPDATE USING (true);
+CREATE POLICY "advances_delete" ON advances FOR DELETE USING (true);
+
+-- Payroll RLS
+CREATE POLICY "payroll_select" ON payroll FOR SELECT USING (true);
+CREATE POLICY "payroll_insert" ON payroll FOR INSERT WITH CHECK (true);
+CREATE POLICY "payroll_update" ON payroll FOR UPDATE USING (true);
+CREATE POLICY "payroll_delete" ON payroll FOR DELETE USING (true);
+
+-- ============================================
+-- HRM Indexes for performance
+-- ============================================
+
+CREATE INDEX IF NOT EXISTS idx_employees_store_id ON employees(store_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_employee_id ON attendance(employee_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
+CREATE INDEX IF NOT EXISTS idx_advances_employee_id ON advances(employee_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_employee_id ON payroll(employee_id);
+
+-- ============================================
+-- END OF HRM LITE TABLES
+-- ============================================
+
+
+-- ============================================
+-- SECTION 7: INVENTORY RECIPES, STOCK OPNAME, & SOP (Added Jan 2026)
+-- ============================================
+
+-- 1. Inventory Recipes
+CREATE TABLE IF NOT EXISTS public.inventory_recipes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+    usage_per_kg NUMERIC NOT NULL DEFAULT 0,
+    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(inventory_item_id, store_id)
+);
+
+-- 2. Stock Opname
+CREATE TABLE IF NOT EXISTS public.stock_opname (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE SET NULL,
+    virtual_stock NUMERIC NOT NULL,
+    physical_stock NUMERIC NOT NULL,
+    discrepancy NUMERIC, -- Will be calculated in application or trigger
+    notes TEXT,
+    recorded_by TEXT,
+    recorded_at TIMESTAMPTZ DEFAULT NOW(),
+    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE
+);
+
+-- 3. Inventory Usage Log
+CREATE TABLE IF NOT EXISTS public.inventory_usage_log (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE SET NULL,
+    transaction_id UUID REFERENCES public.transactions(id) ON DELETE SET NULL,
+    quantity_used NUMERIC NOT NULL,
+    total_kg NUMERIC DEFAULT 0,
+    usage_per_kg NUMERIC DEFAULT 0,
+    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Standard Operating Procedures (SOP)
+CREATE TABLE IF NOT EXISTS public.standard_operating_procedures (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'Umum',
+    content TEXT NOT NULL,
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.inventory_recipes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stock_opname ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory_usage_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.standard_operating_procedures ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'inventory_recipes' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.inventory_recipes FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'stock_opname' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.stock_opname FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'inventory_usage_log' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.inventory_usage_log FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'standard_operating_procedures' AND policyname = 'Enable all for authenticated users') THEN
+        CREATE POLICY "Enable all for authenticated users" ON public.standard_operating_procedures FOR ALL USING (auth.role() = 'authenticated');
+    END IF;
+END $$;
+

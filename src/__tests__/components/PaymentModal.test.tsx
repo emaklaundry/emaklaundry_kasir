@@ -33,9 +33,21 @@ const defaultProps = {
   disabled: false,
 };
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+  },
+});
+
 describe('PaymentModal', () => {
   const renderWithProviders = (ui: React.ReactElement) =>
-    render(<ToastProvider>{ui}</ToastProvider>);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>{ui}</ToastProvider>
+      </QueryClientProvider>
+    );
 
   it('renders modal when open', () => {
     renderWithProviders(<PaymentModal {...defaultProps} />);

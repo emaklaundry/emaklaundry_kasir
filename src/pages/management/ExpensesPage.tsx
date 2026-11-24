@@ -76,9 +76,9 @@ const ExpensesPage: React.FC = () => {
         updateToast(toastId, 'Berhasil disimpan!', 'success');
       }
       handleCloseFormModal();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      updateToast(toastId, `Gagal: ${error.message || 'Error'}`, 'error');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      updateToast(toastId, `Gagal: ${msg}`, 'error');
     }
   };
 
@@ -90,9 +90,9 @@ const ExpensesPage: React.FC = () => {
       addAuditLog(`Hapus pengeluaran: "${expenseToDelete.description}"`, expenseToDelete.storeId);
       setExpenseToDelete(null);
       updateToast(toastId, 'Berhasil dihapus!', 'success');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      updateToast(toastId, `Gagal: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      updateToast(toastId, `Gagal: ${msg}`, 'error');
     }
   };
 

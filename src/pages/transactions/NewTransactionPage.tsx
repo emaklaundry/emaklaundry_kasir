@@ -1,14 +1,9 @@
-// --- TAMBAHAN: Interface lokal untuk menangani P & L ---
-interface ExtendedTransactionItem extends TransactionItem {
-  length?: number;
-  width?: number;
-}
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils';
 import { supabase } from '../../utils/supabaseClient';
-import { Trash2Icon, MessageSquareIcon, TagIcon, SpinnerIcon } from '../../components/icons';
+import { TagIcon, SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
@@ -19,14 +14,14 @@ import useAppContext from '../../contexts/useAppContext';
 import { formatRupiah, parseRupiah, roundPrice } from '../../utils/formatting';
 import CustomerSelector from '../../components/features/CustomerSelector';
 import ServiceSelector from '../../components/features/ServiceSelector';
+import TransactionItemsTable from '../../components/features/TransactionItemsTable';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
-
 import WhatsAppModal from '../../components/WhatsAppModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 import {
-  TransactionItem,
+  ExtendedTransactionItem,
   PaymentStatus,
   OrderStatus,
   Customer,
@@ -278,7 +273,7 @@ const NewTransactionPage: React.FC = () => {
       hasShownDiscountToast.current = false; // Reset when no discount
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount]);
+  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, subtotal, settings?.discountRate]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   // Show error toast if settings failed to load
@@ -727,180 +722,33 @@ const NewTransactionPage: React.FC = () => {
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pilih Layanan
               </h2>
-              <ServiceSelector services={services} onAddService={handleAddService} />
+              <ServiceSelector id="service-selector" services={services} onAddService={handleAddService} />
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Item Transaksi
               </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-lg text-left text-slate-500 dark:text-slate-400">
-                  <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-                    <tr>
-                      <th className="px-4 py-3">Layanan</th>
-                      <th className="px-4 py-3">Jumlah</th>
-                      <th className="px-4 py-3 text-center">Aksi</th>
-                      <th className="px-4 py-3 text-right">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.length > 0 ? (
-                      items.map((item, index) => {
-                        const service = services.find((s) => s.id === item.serviceId);
-                        const isSatuan = service?.category === ServiceCategory.Satuan;
-                        const isKiloan = service?.category === ServiceCategory.Kiloan;
-
-                        return (
-                          <tr key={index} className="border-b dark:border-slate-700">
-                            <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
-                              {item.serviceName}
-                            </td>
-                            <td className="px-4 py-2 w-48">
-                              {item.unit.toLowerCase() === 'm2' ||
-                              item.unit.toLowerCase() === 'meter' ? (
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-500 w-4">P:</span>
-                                    <input
-                                      type="number"
-                                      id={`item-length-${index}`}
-                                      name={`item-length-${index}`}
-                                      min="0"
-                                      step="0.1"
-                                      placeholder="P"
-                                      value={item.length}
-                                      onChange={(e) =>
-                                        handleItemChange(
-                                          index,
-                                          'length',
-                                          parseFloat(e.target.value) || 0,
-                                        )
-                                      }
-                                      className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                      autoComplete="off"
-                                    />
-                                    <span className="text-sm text-slate-500">m</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-500 w-4">L:</span>
-                                    <input
-                                      type="number"
-                                      id={`item-width-${index}`}
-                                      name={`item-width-${index}`}
-                                      min="0"
-                                      step="0.1"
-                                      placeholder="L"
-                                      value={item.width}
-                                      onChange={(e) =>
-                                        handleItemChange(
-                                          index,
-                                          'width',
-                                          parseFloat(e.target.value) || 0,
-                                        )
-                                      }
-                                      className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                    />
-                                    <span className="text-sm text-slate-500">m</span>
-                                  </div>
-                                  <div className="text-sm font-bold text-blue-600 mt-1">
-                                    = {item.quantity} {item.unit}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center">
-                                  <input
-                                    type="number"
-                                    id={`item-quantity-${index}`}
-                                    name={`item-quantity-${index}`}
-                                    min="0"
-                                    step={item.unit === 'kg' ? '0.01' : '1'}
-                                    value={item.quantity}
-                                    onChange={(e) =>
-                                      handleItemChange(
-                                        index,
-                                        'quantity',
-                                        parseFloat(e.target.value) || 0,
-                                      )
-                                    }
-                                    className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                    autoComplete="off"
-                                  />
-                                  <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
-                                    {item.unit}
-                                  </span>
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-4 py-2 text-center">
-                              <div className="flex items-center justify-center">
-                                {isSatuan && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenNotesModal(index)}
-                                    title="Catatan per Item"
-                                    className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
-                                  >
-                                    <MessageSquareIcon className="w-6 h-6" />
-                                    {item.itemDetails
-                                      ?.slice(0, item.quantity)
-                                      .some((d) => d.note) && (
-                                      <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
-                                    )}
-                                  </button>
-                                )}
-                                {isKiloan && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenKiloanTaggingModal(index)}
-                                    title="Tag Item Kiloan"
-                                    className="p-2 text-purple-600 hover:text-purple-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
-                                  >
-                                    <TagIcon className="w-6 h-6" />
-                                    {item.taggedItems && (
-                                      <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
-                                    )}
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveItem(index)}
-                                  title="Hapus Item"
-                                  className="p-2 text-red-600 hover:text-red-900 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
-                                >
-                                  <Trash2Icon className="w-6 h-6" />
-                                </button>
-                              </div>
-                            </td>
-                            <td className="px-4 py-2 text-right">
-                              Rp {item.subtotal.toLocaleString('id-ID')}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="text-center py-4 text-slate-500 dark:text-slate-400"
-                        >
-                          Belum ada layanan yang ditambahkan.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                <TransactionItemsTable
+                  id="transaction-items"
+                  items={items}
+                  services={services}
+                  handleItemChange={handleItemChange}
+                  handleOpenNotesModal={handleOpenNotesModal}
+                  handleOpenKiloanTaggingModal={handleOpenKiloanTaggingModal}
+                  handleRemoveItem={handleRemoveItem}
+                />
             </div>
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible">
+            <div id="payment-section" className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible">
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Detail & Total
               </h2>
               <div className="space-y-4">
                 <CustomerSelector
+                  id="customer-selector"
                   customers={customers}
                   selectedCustomer={selectedCustomer}
                   onSelectCustomer={setSelectedCustomer}
@@ -918,7 +766,7 @@ const NewTransactionPage: React.FC = () => {
                       tersedia untuk {selectedCustomer.name}.
                     </div>
                   )}
-                <div>
+                <div id="notes-section">
                   <label
                     htmlFor="notes"
                     className="block mb-2 text-base font-medium text-slate-900 dark:text-white"

@@ -5,9 +5,10 @@ import { Service } from '../../types';
 interface ServiceSelectorProps {
   services: Service[];
   onAddService: (service: Service) => void;
+  id?: string;
 }
 
-const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddService }) => {
+const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddService, id }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredServices = services.filter((s) =>
@@ -23,7 +24,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
   }, {});
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id={id}>
       <div className="relative">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
         <input

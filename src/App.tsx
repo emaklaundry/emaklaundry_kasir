@@ -30,7 +30,12 @@ const CustomerDetailPage = lazy(() => import('./pages/management/CustomerDetailP
 const ReceiptPage = lazy(() => import('./pages/transactions/ReceiptPage'));
 const TransactionDetailPage = lazy(() => import('./pages/transactions/TransactionDetailPage'));
 const StoresPage = lazy(() => import('./pages/management/StoresPage'));
+const EmployeesPage = lazy(() => import('./pages/management/EmployeesPage'));
+const AttendancePage = lazy(() => import('./pages/management/AttendancePage'));
+const SOPPage = lazy(() => import('./pages/management/SOPPage'));
 const DocumentationPage = lazy(() => import('./pages/DocumentationPage'));
+const BusinessGuidePage = lazy(() => import('./pages/BusinessGuidePage'));
+const BusinessCalculatorPage = lazy(() => import('./pages/business/BusinessCalculatorPage'));
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAppContext();
@@ -211,6 +216,32 @@ const AppRoutes: React.FC = () => {
                 </AdminRoute>
               }
             />
+            <Route
+              path="/management/employees"
+              element={
+                <AdminRoute>
+                  <EmployeesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/attendance"
+              element={
+                <AdminRoute>
+                  <AttendancePage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/management/sop"
+              element={
+                <AdminRoute>
+                  <SOPPage />
+                </AdminRoute>
+              }
+            />
+            <Route path="/business-guide" element={<BusinessGuidePage />} />
+            <Route path="/business/calculator" element={<BusinessCalculatorPage />} />
             <Route path="/docs" element={<DocumentationPage />} />
             {/* Tambahkan catch-all route di bawah ini */}
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -218,19 +249,7 @@ const AppRoutes: React.FC = () => {
         </Suspense>
         <CommandPalette />
         {/* Tampilkan versi aplikasi di pojok kanan bawah */}
-        <div
-          style={{
-            position: 'fixed',
-            right: 12,
-            bottom: 8,
-            zIndex: 50,
-            fontSize: 12,
-            color: '#64748b',
-            opacity: 0.7,
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        >
+        <div className="fixed right-3 bottom-2 z-50 text-xs text-slate-500 opacity-70 pointer-events-none select-none">
           {APP_VERSION}
         </div>
       </Layout>

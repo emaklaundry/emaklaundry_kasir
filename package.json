@@ -18,15 +18,19 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:all": "npm run format:check && npm run lint && npm run test"
+    "test:all": "npm run format:check && npm run lint && npm run test",
+    "type-check": "tsc"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",
     "@tanstack/react-query": "^5.90.7",
+    "@types/react-joyride": "^2.0.2",
     "exceljs": "^4.4.0",
     "lucide-react": "^0.555.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-joyride": "^2.9.3",
     "react-router-dom": "^6.30.2"
   },
   "devDependencies": {
