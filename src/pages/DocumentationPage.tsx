@@ -457,7 +457,9 @@ const DocumentationPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
                   <tr>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Sistem Tegangan</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      Sistem Tegangan
+                    </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                       1 Phase, 2 Wire + PE (220V / 50Hz)
                     </td>
@@ -466,7 +468,9 @@ const DocumentationPage: React.FC = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Kapasitas Panel</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      Kapasitas Panel
+                    </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                       Max 32 Ampere (~7000 Watt)
                     </td>
@@ -475,7 +479,9 @@ const DocumentationPage: React.FC = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Earthing System</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      Earthing System
+                    </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                       TN-S (Terra Neutral-Separate)
                     </td>
@@ -484,14 +490,18 @@ const DocumentationPage: React.FC = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Target Grounding</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      Target Grounding
+                    </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">&lt; 5 Ohm</td>
                     <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
                       Wajib untuk proteksi kebocoran arus air
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">Proteksi Manusia</td>
+                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                      Proteksi Manusia
+                    </td>
                     <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                       RCBO 30mA (High Sensitivity)
                     </td>
@@ -542,7 +552,9 @@ const DocumentationPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Box Panel 18 Modul</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Box Panel 18 Modul
+                    </td>
                     <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
                       Outbow/Inbow, Pintu Transparan
                     </td>
@@ -552,8 +564,12 @@ const DocumentationPage: React.FC = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Main MCB 2-Pole</td>
-                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">32A, 4.5kA, Kurva C</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Main MCB 2-Pole
+                    </td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      32A, 4.5kA, Kurva C
+                    </td>
                     <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
                       Rp 55.000
@@ -561,7 +577,9 @@ const DocumentationPage: React.FC = () => {
                   </tr>
                   <tr>
                     <td className="px-2 py-2 text-slate-600 dark:text-slate-300">RCBO Slim Type</td>
-                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">1P+N, 10A, 30mA</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      1P+N, 10A, 30mA
+                    </td>
                     <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">3</td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
                       Rp 255.000
@@ -569,7 +587,9 @@ const DocumentationPage: React.FC = () => {
                   </tr>
                   <tr>
                     <td className="px-2 py-2 text-slate-600 dark:text-slate-300">MCB Heavy Duty</td>
-                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">1-Pole, 16A, 4.5kA</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      1-Pole, 16A, 4.5kA
+                    </td>
                     <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
                       Rp 35.000
@@ -577,7 +597,9 @@ const DocumentationPage: React.FC = () => {
                   </tr>
                   <tr>
                     <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Busbar Sisir</td>
-                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">1 Fasa, Tembaga Murni</td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      1 Fasa, Tembaga Murni
+                    </td>
                     <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
                       Rp 35.000
@@ -631,15 +653,21 @@ const DocumentationPage: React.FC = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Kabel Distribusi</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Kabel Distribusi
+                    </td>
                     <td className="px-2 py-2 text-slate-500 dark:text-slate-400">NYM 3x2.5mm²</td>
-                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">30m</td>
+                    <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">
+                      30m
+                    </td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
                       Rp 540.000
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Kabel Wiring Panel</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Kabel Wiring Panel
+                    </td>
                     <td className="px-2 py-2 text-slate-500 dark:text-slate-400">NYAF 6mm²</td>
                     <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">3m</td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
@@ -657,8 +685,12 @@ const DocumentationPage: React.FC = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Steker Heavy Duty</td>
-                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">Arde, Broco/Panasonic</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Steker Heavy Duty
+                    </td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      Arde, Broco/Panasonic
+                    </td>
                     <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">2</td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
                       Rp 30.000
@@ -714,7 +746,9 @@ const DocumentationPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Power Meter Sensor</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Power Meter Sensor
+                    </td>
                     <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
                       PZEM-004T v3.0 (100A) + CT
                     </td>
@@ -724,15 +758,21 @@ const DocumentationPage: React.FC = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Microcontroller</td>
-                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">ESP32 DevKit V1</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Microcontroller
+                    </td>
+                    <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
+                      ESP32 DevKit V1
+                    </td>
                     <td className="px-2 py-2 text-center text-slate-600 dark:text-slate-300">1</td>
                     <td className="px-2 py-2 text-right text-slate-600 dark:text-slate-300">
                       Rp 65.000
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">Casing 3D Print</td>
+                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                      Casing 3D Print
+                    </td>
                     <td className="px-2 py-2 text-slate-500 dark:text-slate-400">
                       Custom Case DIN Rail Mount
                     </td>

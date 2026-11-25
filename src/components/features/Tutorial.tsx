@@ -49,16 +49,16 @@ const Tutorial: React.FC = () => {
           arrowColor: theme === 'dark' ? '#1e293b' : '#fff',
         },
         tooltip: {
-            borderRadius: '0.5rem',
+          borderRadius: '0.5rem',
         },
         buttonNext: {
-            backgroundColor: '#3b82f6',
-            borderRadius: '0.375rem',
-            padding: '0.5rem 1rem',
+          backgroundColor: '#3b82f6',
+          borderRadius: '0.375rem',
+          padding: '0.5rem 1rem',
         },
         buttonBack: {
-            color: theme === 'dark' ? '#94a3b8' : '#64748b',
-        }
+          color: theme === 'dark' ? '#94a3b8' : '#64748b',
+        },
       }}
       locale={{
         back: 'Kembali',

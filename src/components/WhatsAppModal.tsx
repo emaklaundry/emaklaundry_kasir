@@ -49,18 +49,24 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const defaultFooter = `🔍 Cek status cucian Anda:\nhttps://emaklaundry.my.id/\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9`;
     const footer = settings?.whatsappFooter || defaultFooter;
 
-    if (transaction.orderStatus === OrderStatus.Processing) {
-      // Calculate points earned from rounding (if change < 500)
-      const pointsEarned =
-        transaction.change > 0 && transaction.change < 500 ? transaction.change : 0;
-      const currentBalance = customer.defaultDiscount || 0;
+    // Info saldo diskon pelanggan
+    const balanceUsed = transaction.discountBalanceUsed ?? 0;
+    const roundingCredit = transaction.roundingCredit ?? 0;
+    const currentBalance = customer.defaultDiscount ?? 0;
+    const balanceLine =
+      currentBalance > 0 || balanceUsed > 0 || roundingCredit > 0
+        ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`
+        : '';
 
+    if (transaction.orderStatus === OrderStatus.Processing) {
       let balanceInfo = '';
-      if (pointsEarned > 0) {
-        balanceInfo = `\n💰 *Pembulatan*: +Rp${pointsEarned.toLocaleString('id-ID')}\n💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`;
-      } else if (currentBalance > 0) {
-        balanceInfo = `\n💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`;
+      if (balanceUsed > 0) {
+        balanceInfo += `🎁 Saldo diskon dipakai: -Rp${balanceUsed.toLocaleString('id-ID')}\n`;
       }
+      if (roundingCredit > 0) {
+        balanceInfo += `💰 Pembulatan tunai masuk saldo: +Rp${roundingCredit.toLocaleString('id-ID')}\n`;
+      }
+      balanceInfo += balanceLine;
 
       defaultMessage =
         `Halo ${customer.name},\n\n` +
@@ -86,12 +92,6 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `${footer}\n\n` +
         `Salam hangat,\nTim Emak Laundry`;
     } else if (transaction.orderStatus === OrderStatus.Ready) {
-      const currentBalance = customer.defaultDiscount || 0;
-      const balanceInfo =
-        currentBalance > 0
-          ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`
-          : '';
-
       defaultMessage =
         `Halo ${customer.name},\n\n` +
         `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
@@ -101,18 +101,12 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `─────────────────────────────\n` +
         `Total Tagihan: Rp${total.toLocaleString('id-ID')}\n` +
         `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
-        balanceInfo +
+        balanceLine +
         `─────────────────────────────\n` +
         `Silakan datang ke toko kami untuk pengambilan.\n\n` +
         `${footer}\n\n` +
         `Terima kasih,\nTim Emak Laundry`;
     } else {
-      const currentBalance = customer.defaultDiscount || 0;
-      const balanceInfo =
-        currentBalance > 0
-          ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`
-          : '';
-
       defaultMessage =
         `Halo ${customer.name},\n\n` +
         `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
@@ -122,10 +116,9 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `─────────────────────────────\n` +
         `Total: Rp${total.toLocaleString('id-ID')}\n` +
         `Status: LUNAS\n` +
-        balanceInfo +
+        balanceLine +
         `─────────────────────────────\n` +
         `Terima kasih telah menggunakan layanan kami.\n\n` +
-        `${footer}\n\n` +
         `Tim Emak Laundry`;
     }
     return defaultMessage;

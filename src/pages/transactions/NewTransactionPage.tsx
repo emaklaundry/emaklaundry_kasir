@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils';
@@ -7,11 +7,19 @@ import { TagIcon, SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
+import {
+  fetchCustomerBalance,
+  fetchCustomers,
+  invalidateCustomerBalance,
+  useCustomerBalance,
+  useCustomerMutations,
+} from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import useAppContext from '../../contexts/useAppContext';
-import { formatRupiah, parseRupiah, roundPrice } from '../../utils/formatting';
+import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { calculateCashRounding } from '../../utils/roundingUtils';
+import { calculateBalanceUsage, MAX_BALANCE_DISCOUNT_RATE } from '../../utils/discountBalance';
 import CustomerSelector from '../../components/features/CustomerSelector';
 import ServiceSelector from '../../components/features/ServiceSelector';
 import TransactionItemsTable from '../../components/features/TransactionItemsTable';
@@ -48,7 +56,7 @@ const NewTransactionPage: React.FC = () => {
   const customers: Customer[] = Array.isArray(customersData)
     ? customersData
     : (customersData?.data ?? []);
-  const { addCustomer, updateCustomer } = useCustomerMutations();
+  const { addCustomer } = useCustomerMutations();
   const { services } = useServices();
   const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
@@ -73,9 +81,17 @@ const NewTransactionPage: React.FC = () => {
   const [tenderedAmountStr, setTenderedAmountStr] = useState('');
   // State untuk idempotencyKey
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
+  // Saldo diskon pelanggan: dipakai otomatis, kasir bisa mematikannya per transaksi
+  const [useBalance, setUseBalance] = useState(true);
+  // Data pelanggan (dengan saldo terbaru) untuk pesan WhatsApp setelah simpan
+  const [whatsAppCustomer, setWhatsAppCustomer] = useState<Customer | null>(null);
 
-  // Ref to track if discount toast was shown (prevent spam)
-  const hasShownDiscountToast = useRef(false);
+  // Saldo selalu diambil langsung dari database, bukan dari cache daftar pelanggan,
+  // karena database menolak transaksi yang memakai saldo melebihi sisa saldo.
+  const { data: freshBalance, isFetching: isBalanceLoading } = useCustomerBalance(
+    selectedCustomer?.id,
+  );
+  const customerBalance = freshBalance ?? selectedCustomer?.defaultDiscount ?? 0;
 
   // Semua useMemo, useEffect, useCallback juga di sini
   const canEditDiscount = useMemo(() => {
@@ -88,15 +104,9 @@ const NewTransactionPage: React.FC = () => {
     if (currentUser.role === UserRole.SuperAdmin) return true;
     if (currentUser.role === UserRole.Admin || currentUser.role === UserRole.Cashier) {
       if (currentUser.canGiveDiscount) return true;
-      if (
-        selectedCustomer &&
-        selectedCustomer.defaultDiscount &&
-        selectedCustomer.defaultDiscount > 0
-      )
-        return true;
     }
     return false;
-  }, [currentUser, selectedCustomer]);
+  }, [currentUser]);
   // Semua hook turunannya juga harus dipanggil di level atas
   // (dipindahkan dari bawah) agar Rules of Hooks tidak dilanggar.
 
@@ -125,30 +135,33 @@ const NewTransactionPage: React.FC = () => {
     return Math.round(rawDiscount);
   }, [subtotal, discountValue, discountType, canApplyDiscount, settings?.discountRate]);
 
+  // Saldo diskon yang bisa dipakai: min(saldo, 10% subtotal, sisa tagihan)
+  const balanceUsable = useMemo(
+    () => calculateBalanceUsage(customerBalance, subtotal, discountAmount),
+    [customerBalance, subtotal, discountAmount],
+  );
+  const balanceDiscount = selectedCustomer && useBalance ? balanceUsable : 0;
+  const isBalanceCappedByRate =
+    balanceUsable > 0 &&
+    balanceUsable < customerBalance &&
+    balanceUsable === Math.floor(subtotal * MAX_BALANCE_DISCOUNT_RATE);
+
   const taxAmount = useMemo(() => {
-    const taxableAmount = subtotal - discountAmount;
+    const taxableAmount = subtotal - discountAmount - balanceDiscount;
     return Math.round(taxableAmount * ((settings?.taxRate ?? 0) / 100));
-  }, [subtotal, discountAmount, settings?.taxRate]);
+  }, [subtotal, discountAmount, balanceDiscount, settings?.taxRate]);
 
-  // --- REFACTOR: Universal Rounding Logic ---
-  const rawGrandTotal = useMemo(() => {
-    return subtotal - discountAmount + taxAmount;
-  }, [subtotal, discountAmount, taxAmount]);
+  // Total transaksi (pendapatan toko) selalu nilai pas, tanpa pembulatan.
+  const grandTotal = subtotal - discountAmount - balanceDiscount + taxAmount;
 
-  // User request: "pembulatan dilakukan ketika menampilkan total tagihan"
-  // Request update: "dibulatkan ke 500 rupiah"
-  const grandTotal = useMemo(() => {
-    return roundPrice(rawGrandTotal, 500);
-  }, [rawGrandTotal]);
-
-  const roundingDifference = useMemo(() => {
-    return rawGrandTotal - grandTotal;
-  }, [rawGrandTotal, grandTotal]);
-
-  // Compatibility aliasing
-
-  const amountToPay = grandTotal;
-  // ------------------------------------------
+  // Pembayaran tunai dibulatkan ke atas ke Rp500; kelebihannya masuk saldo pelanggan.
+  const { amountDue: amountToPay, roundingCredit } = useMemo(
+    () =>
+      calculateCashRounding(grandTotal, isPayingNow ? paymentMethod : undefined, {
+        hasCustomer: Boolean(selectedCustomer),
+      }),
+    [grandTotal, isPayingNow, paymentMethod, selectedCustomer],
+  );
 
   // Place handleAddService after all hooks, before conditional rendering
   const [showKiloanToast, setShowKiloanToast] = useState(false);
@@ -202,9 +215,9 @@ const NewTransactionPage: React.FC = () => {
     }
   }, [showKiloanToast, addToast]);
 
-  // (Deklarasi duplikat finalTotalToPay, roundingDifference, amountToPay dihapus. Sudah ada di atas.)
   const tenderedAmount = useMemo(() => parseRupiah(tenderedAmountStr), [tenderedAmountStr]);
 
+  // Kembalian dihitung dari jumlah yang dibulatkan (amountToPay), bukan grandTotal.
   const changeAmount = useMemo(() => {
     if (!isPayingNow || paymentMethod !== PaymentMethod.Cash || tenderedAmount < amountToPay) {
       return 0;
@@ -212,10 +225,9 @@ const NewTransactionPage: React.FC = () => {
     return tenderedAmount - amountToPay;
   }, [isPayingNow, paymentMethod, tenderedAmount, amountToPay]);
 
-  const actualAmountPaid = useMemo(() => {
-    if (!isPayingNow) return 0;
-    return amountToPay; // Menggunakan nilai yang sudah dibulatkan
-  }, [isPayingNow, amountToPay]);
+  // Yang tercatat sebagai pembayaran adalah total transaksi. Kelebihan pembulatan
+  // tunai dicatat terpisah sebagai roundingCredit (masuk saldo pelanggan).
+  const actualAmountPaid = isPayingNow ? grandTotal : 0;
 
   const paymentStatus = useMemo(() => {
     if (!isPayingNow) return PaymentStatus.Unpaid;
@@ -238,42 +250,18 @@ const NewTransactionPage: React.FC = () => {
       : currentUser?.storeId;
   }, [currentUser, selectedStoreId]);
 
-  // --- PERBAIKAN 1: Logika useEffect Diskon ---
-  // Auto-apply customer discount balance with max 10% of subtotal
+  // Diskon manual kembali ke diskon default saat izin atau pelanggan berganti.
+  // (Sengaja tidak bergantung pada subtotal, supaya diskon yang diketik kasir
+  // tidak terhapus setiap kali item ditambah.)
   useEffect(() => {
-    if (!canApplyDiscount) {
-      setDiscountType('percent');
-      setDiscountValue(settings?.discountRate ?? 0);
-      hasShownDiscountToast.current = false; // Reset when can't apply
-    } else if (
-      selectedCustomer &&
-      selectedCustomer.defaultDiscount &&
-      selectedCustomer.defaultDiscount > 0
-    ) {
-      // Calculate max allowed discount (10% of subtotal)
-      const maxDiscount = subtotal * 0.1;
-      // Apply the lesser of: customer's balance or 10% of subtotal
-      const discountToApply = Math.min(selectedCustomer.defaultDiscount, maxDiscount);
-      setDiscountType('fixed');
-      setDiscountValue(Math.round(discountToApply));
+    setDiscountType('percent');
+    setDiscountValue(settings?.discountRate ?? 0);
+  }, [canApplyDiscount, selectedCustomer?.id, settings?.discountRate]);
 
-      // Show toast only once per customer selection (not on every subtotal change)
-      if (!hasShownDiscountToast.current && discountToApply > 0) {
-        addToast(
-          `Saldo diskon Rp ${formatRupiah(Math.round(discountToApply))} diterapkan${
-            discountToApply < selectedCustomer.defaultDiscount ? ` (max 10% dari subtotal)` : ''
-          }`,
-          'info',
-        );
-        hasShownDiscountToast.current = true;
-      }
-    } else {
-      setDiscountType('percent');
-      setDiscountValue(settings?.discountRate ?? 0);
-      hasShownDiscountToast.current = false; // Reset when no discount
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canApplyDiscount, selectedCustomer?.id, selectedCustomer?.defaultDiscount, subtotal, settings?.discountRate]);
+  // Setiap ganti pelanggan, saldo kembali dipakai otomatis.
+  useEffect(() => {
+    setUseBalance(true);
+  }, [selectedCustomer?.id]);
 
   // --- LOGIKA KONDISIONAL DIMULAI DI SINI ---
   // Show error toast if settings failed to load
@@ -468,8 +456,8 @@ const NewTransactionPage: React.FC = () => {
         setIsSaving(false);
         return;
       }
-      if (paymentMethod === PaymentMethod.Cash && tenderedAmount < grandTotal) {
-        addToast('Jumlah uang diterima tidak boleh kurang dari total tagihan.', 'error');
+      if (paymentMethod === PaymentMethod.Cash && tenderedAmount < amountToPay) {
+        addToast(`Uang diterima kurang. Tagihan tunai Rp ${formatRupiah(amountToPay)}.`, 'error');
         setIsSaving(false);
         return;
       }
@@ -503,8 +491,10 @@ const NewTransactionPage: React.FC = () => {
           ? item.itemDetails.slice(0, item.quantity).map((detail) => ({ note: detail.note || '' }))
           : [],
       }));
-      // Hitung total diskon akhir (diskon manual + diskon pembulatan)
-      const finalDiscount = discountAmount + roundingDifference;
+      // Total diskon = diskon manual + saldo diskon pelanggan yang dipakai.
+      const finalDiscount = discountAmount + balanceDiscount;
+      const txRoundingCredit =
+        isPayingNow && paymentMethod === PaymentMethod.Cash ? roundingCredit : 0;
 
       const newTransaction: Omit<Transaction, 'id'> = {
         customerId: selectedCustomer.id,
@@ -512,7 +502,10 @@ const NewTransactionPage: React.FC = () => {
         subtotal,
         discount: finalDiscount,
         tax: taxAmount,
-        total: subtotal - finalDiscount + taxAmount, // FIXED: Calculate total consistently with displayed grandTotal
+        total: grandTotal,
+        // Database memotong/menambah saldo pelanggan secara atomik dari dua kolom ini.
+        discountBalanceUsed: balanceDiscount,
+        roundingCredit: txRoundingCredit,
         paymentStatus,
         orderStatus: OrderStatus.Processing,
         // --- UPDATE: Gunakan variabel waktu yang baru dihitung ---
@@ -563,38 +556,30 @@ const NewTransactionPage: React.FC = () => {
           currentStoreId,
         );
 
-        // Deduct used discount from customer's balance
-        let currentCustomerBalance = selectedCustomer.defaultDiscount || 0;
-
-        if (discountType === 'fixed' && discountValue && selectedCustomer.defaultDiscount) {
-          const usedDiscount = typeof discountValue === 'number' ? discountValue : 0;
-          if (usedDiscount > 0) {
-            const newBalance = Math.max(0, currentCustomerBalance - usedDiscount);
-            await updateCustomer(selectedCustomer.id, { defaultDiscount: newBalance });
-            addAuditLog(
-              `Diskon Rp ${usedDiscount} digunakan. Saldo diskon ${selectedCustomer.name}: ${currentCustomerBalance} → ${newBalance}`,
-              currentStoreId,
-            );
-            // Update tracked balance for next calculation
-            currentCustomerBalance = newBalance;
-          }
-        }
-
-        // Add rounding discount to customer's balance (for cash payments)
-        if (
-          isPayingNow &&
-          paymentMethod === PaymentMethod.Cash &&
-          roundingDifference > 0 &&
-          selectedCustomer
-        ) {
-          // Use tracked balance (which may have been updated above)
-          const newBalance = currentCustomerBalance + roundingDifference;
-          await updateCustomer(selectedCustomer.id, { defaultDiscount: newBalance });
+        // Saldo sudah dipotong/ditambah oleh database bersama transaksi ini.
+        const invoiceLabel = tx.invoiceCode ?? tx.id;
+        if (balanceDiscount > 0) {
           addAuditLog(
-            `Pembulatan: Rp ${roundingDifference.toLocaleString('id-ID')} ditambahkan ke saldo diskon ${selectedCustomer.name}. Saldo: ${currentCustomerBalance} → ${newBalance}`,
+            `Saldo diskon Rp ${formatRupiah(balanceDiscount)} dipakai ${selectedCustomer.name} pada transaksi ${invoiceLabel}.`,
             currentStoreId,
           );
         }
+        if (txRoundingCredit > 0) {
+          addAuditLog(
+            `Pembulatan tunai Rp ${formatRupiah(txRoundingCredit)} masuk saldo diskon ${selectedCustomer.name} (transaksi ${invoiceLabel}).`,
+            currentStoreId,
+          );
+        }
+
+        // Saldo terbaru untuk pesan WhatsApp; kalau gagal, pakai perkiraan.
+        let latestBalance = customerBalance - balanceDiscount + txRoundingCredit;
+        try {
+          latestBalance = await fetchCustomerBalance(selectedCustomer.id);
+        } catch (balanceError) {
+          console.warn('Gagal memuat saldo terbaru:', balanceError);
+        }
+        setWhatsAppCustomer({ ...selectedCustomer, defaultDiscount: latestBalance });
+        invalidateCustomerBalance(queryClient, selectedCustomer.id);
 
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
@@ -646,6 +631,8 @@ const NewTransactionPage: React.FC = () => {
               ? (existingTx.paymentMethod as PaymentMethod)
               : undefined,
           };
+          setWhatsAppCustomer(selectedCustomer);
+          invalidateCustomerBalance(queryClient, selectedCustomer.id);
           setNewlyCreatedTransaction(tx);
           setIsWhatsAppModalOpen(true);
         }
@@ -661,6 +648,8 @@ const NewTransactionPage: React.FC = () => {
         ) {
           msg = (error as { message: string }).message;
         }
+        // Saldo mungkin sudah berubah (dipakai di kasir lain): muat ulang angka terbaru.
+        invalidateCustomerBalance(queryClient, selectedCustomer.id);
         updateToast(toastId, `Gagal menyimpan transaksi: ${msg}`, 'error');
       }
     } finally {
@@ -692,6 +681,8 @@ const NewTransactionPage: React.FC = () => {
     setIsPayingNow(false);
     setPaymentMethod(undefined);
     setTenderedAmountStr('');
+    setUseBalance(true);
+    setWhatsAppCustomer(null);
     setIdempotencyKey(generateUUID()); // Generate kunci baru untuk transaksi berikutnya
   };
 
@@ -722,27 +713,34 @@ const NewTransactionPage: React.FC = () => {
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pilih Layanan
               </h2>
-              <ServiceSelector id="service-selector" services={services} onAddService={handleAddService} />
+              <ServiceSelector
+                id="service-selector"
+                services={services}
+                onAddService={handleAddService}
+              />
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Item Transaksi
               </h2>
-                <TransactionItemsTable
-                  id="transaction-items"
-                  items={items}
-                  services={services}
-                  handleItemChange={handleItemChange}
-                  handleOpenNotesModal={handleOpenNotesModal}
-                  handleOpenKiloanTaggingModal={handleOpenKiloanTaggingModal}
-                  handleRemoveItem={handleRemoveItem}
-                />
+              <TransactionItemsTable
+                id="transaction-items"
+                items={items}
+                services={services}
+                handleItemChange={handleItemChange}
+                handleOpenNotesModal={handleOpenNotesModal}
+                handleOpenKiloanTaggingModal={handleOpenKiloanTaggingModal}
+                handleRemoveItem={handleRemoveItem}
+              />
             </div>
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <div id="payment-section" className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible">
+            <div
+              id="payment-section"
+              className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible"
+            >
               <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Detail & Total
               </h2>
@@ -754,18 +752,37 @@ const NewTransactionPage: React.FC = () => {
                   onSelectCustomer={setSelectedCustomer}
                   onAddNewCustomer={() => setIsCustomerModalOpen(true)}
                 />
-                {/* Banner info diskon otomatis */}
-                {selectedCustomer &&
-                  selectedCustomer.defaultDiscount &&
-                  selectedCustomer.defaultDiscount > 0 && (
-                    <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-base font-medium flex items-center">
-                      <TagIcon className="w-5 h-5 mr-2 text-blue-400" />
-                      Saldo diskon Rp {selectedCustomer.defaultDiscount.toLocaleString(
-                        'id-ID',
-                      )}{' '}
-                      tersedia untuk {selectedCustomer.name}.
-                    </div>
-                  )}
+                {selectedCustomer && customerBalance > 0 && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-900/30">
+                    <label
+                      htmlFor="use-balance"
+                      className="flex items-start gap-3 cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        id="use-balance"
+                        checked={useBalance}
+                        onChange={(e) => setUseBalance(e.target.checked)}
+                        className="mt-1 h-5 w-5 shrink-0 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-1.5 font-medium text-emerald-900 dark:text-emerald-100">
+                          <TagIcon className="w-4 h-4 shrink-0" />
+                          Pakai saldo diskon
+                        </span>
+                        <span className="block text-sm text-emerald-800 dark:text-emerald-200 tabular-nums">
+                          Saldo Rp {formatRupiah(customerBalance)}
+                          {isBalanceLoading ? ' (memperbarui…)' : ''}.{' '}
+                          {subtotal <= 0
+                            ? 'Tambahkan layanan untuk memakai saldo.'
+                            : useBalance
+                              ? `Dipakai Rp ${formatRupiah(balanceUsable)}${isBalanceCappedByRate ? ' (maks. 10% subtotal)' : ''}.`
+                              : `Bisa dipakai Rp ${formatRupiah(balanceUsable)}.`}
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                )}
                 <div id="notes-section">
                   <label
                     htmlFor="notes"
@@ -841,6 +858,14 @@ const NewTransactionPage: React.FC = () => {
                       - Rp {discountAmount.toLocaleString('id-ID')}
                     </span>
                   </div>
+                  {balanceDiscount > 0 && (
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="text-slate-600 dark:text-slate-300">Saldo diskon:</span>
+                      <span className="font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
+                        - Rp {formatRupiah(balanceDiscount)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-lg">
                     <span className="text-slate-600 dark:text-slate-300">
                       Pajak ({settings.taxRate}%):
@@ -849,19 +874,9 @@ const NewTransactionPage: React.FC = () => {
                       + Rp {taxAmount.toLocaleString('id-ID')}
                     </span>
                   </div>
-                  {/* Tambahkan blok ini di atas Grand Total */}
-                  {isPayingNow &&
-                    paymentMethod === PaymentMethod.Cash &&
-                    roundingDifference > 0 && (
-                      <div className="flex justify-between items-center text-lg text-slate-500 dark:text-slate-400 italic">
-                        <span>Pembulatan:</span>
-                        <span>- Rp {formatRupiah(roundingDifference)}</span>
-                      </div>
-                    )}
-
                   <div className="flex justify-between items-center text-2xl font-semibold text-slate-900 dark:text-white pt-3 border-t dark:border-slate-600">
                     <span>Grand Total:</span>
-                    <span>Rp {formatRupiah(amountToPay)}</span>
+                    <span className="tabular-nums">Rp {formatRupiah(grandTotal)}</span>
                   </div>
                 </div>
 
@@ -915,6 +930,21 @@ const NewTransactionPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
+                    {paymentMethod === PaymentMethod.Cash && roundingCredit > 0 && (
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-700/50 p-3 space-y-1">
+                        <div className="flex justify-between items-center text-lg font-semibold text-slate-900 dark:text-white">
+                          <span>Tagihan tunai:</span>
+                          <span className="tabular-nums">Rp {formatRupiah(amountToPay)}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                          Dibulatkan ke atas ke Rp500. Kelebihan{' '}
+                          <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                            Rp {formatRupiah(roundingCredit)}
+                          </span>{' '}
+                          masuk saldo diskon {selectedCustomer?.name ?? 'pelanggan'}.
+                        </p>
+                      </div>
+                    )}
                     {paymentMethod === PaymentMethod.Cash && (
                       <div>
                         <label
@@ -1018,7 +1048,7 @@ const NewTransactionPage: React.FC = () => {
         isOpen={isWhatsAppModalOpen}
         onClose={handleCloseWhatsAppModal}
         transaction={newlyCreatedTransaction}
-        customer={selectedCustomer}
+        customer={whatsAppCustomer ?? selectedCustomer}
       />
     </>
   );

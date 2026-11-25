@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { WashType } from '@/types';
-import {
-  washingMachines,
-  getMachineById,
-} from '@/data/washingMachineData';
+import { washingMachines, getMachineById } from '@/data/washingMachineData';
 import WashSettingsRecommendation from './features/WashSettingsRecommendation';
 
 interface WashSettingsModalProps {

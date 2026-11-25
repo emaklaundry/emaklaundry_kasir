@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Step } from 'react-joyride';
-import { dashboardSteps, newTransactionSteps, transactionListSteps, employeesSteps } from '../config/tutorialSteps';
+import {
+  dashboardSteps,
+  newTransactionSteps,
+  transactionListSteps,
+  employeesSteps,
+} from '../config/tutorialSteps';
 import { TutorialContext, TourKey } from './TutorialContextContext';
 
 export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

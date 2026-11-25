@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import React from 'react';
 import { ToastProvider } from '@/contexts/ToastContext';
 import useToasts from '@/contexts/useToasts';
 import { render } from '@testing-library/react';

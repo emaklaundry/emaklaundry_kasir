@@ -8,7 +8,7 @@ interface EmployeeContextType {
   isLoading: boolean;
   error: string | null;
   fetchEmployees: (storeId?: string) => Promise<void>;
-  addEmployee: (employee: EmployeeFormData) => Promise<Employee | null>;
+  addEmployee: (employee: EmployeeFormData) => Promise<Employee>;
   updateEmployee: (id: string, employee: Partial<EmployeeFormData>) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
   clockIn: (employeeId: string) => Promise<void>;

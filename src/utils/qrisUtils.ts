@@ -1,7 +1,7 @@
 /**
  * QRIS Utility Functions
  * Implements EMVCo QR Code specification for Indonesian QRIS
- * 
+ *
  * Format: TLV (Tag-Length-Value)
  * - Tag 00: Payload Format Indicator (fixed "01")
  * - Tag 01: Point of Initiation ("11" = Static, "12" = Dynamic)
@@ -38,7 +38,8 @@ export function parseQRIS(qrisString: string): QRISData | null {
     const rawTags = new Map<string, string>();
     let position = 0;
 
-    while (position < qrisString.length - 4) { // -4 for CRC at end
+    while (position < qrisString.length - 4) {
+      // -4 for CRC at end
       // Get tag (2 characters)
       const tag = qrisString.substring(position, position + 2);
       position += 2;
@@ -91,18 +92,18 @@ function createTLV(tag: string, value: string): string {
  * Initial value: 0xFFFF
  */
 export function calculateCRC16(data: string): string {
-  let crc = 0xFFFF;
+  let crc = 0xffff;
   const polynomial = 0x1021;
 
   for (let i = 0; i < data.length; i++) {
     const char = data.charCodeAt(i);
-    crc ^= (char << 8);
+    crc ^= char << 8;
 
     for (let j = 0; j < 8; j++) {
       if (crc & 0x8000) {
-        crc = ((crc << 1) ^ polynomial) & 0xFFFF;
+        crc = ((crc << 1) ^ polynomial) & 0xffff;
       } else {
-        crc = (crc << 1) & 0xFFFF;
+        crc = (crc << 1) & 0xffff;
       }
     }
   }
@@ -129,8 +130,27 @@ export function generateDynamicQRIS(staticQRIS: string, amount: number): string 
   qrisString += createTLV('01', '12');
 
   // Rebuild remaining tags from raw data, excluding 00, 01, 63 (CRC)
-  const orderedTags = ['26', '27', '28', '29', '30', '31', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62'];
-  
+  const orderedTags = [
+    '26',
+    '27',
+    '28',
+    '29',
+    '30',
+    '31',
+    '51',
+    '52',
+    '53',
+    '54',
+    '55',
+    '56',
+    '57',
+    '58',
+    '59',
+    '60',
+    '61',
+    '62',
+  ];
+
   for (const tag of orderedTags) {
     if (tag === '54') {
       // Insert transaction amount (no decimal, in smallest unit = Rupiah)

@@ -17,6 +17,7 @@ import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
+import { savePaymentWithRoundingCredit } from '../utils/paymentUpdate';
 import PaymentModal from '../components/PaymentModal';
 import WashSettingsModal from '../components/WashSettingsModal';
 import {
@@ -480,22 +481,35 @@ const Dashboard: React.FC = () => {
 
   const handleSavePayment = useCallback(
     async (updatedTransaction: Transaction) => {
-      // send only fields that exist in the DB to avoid PGRST204 errors
-      const payload: Partial<Transaction> = {
-        amountPaid: updatedTransaction.amountPaid,
-        paymentStatus: updatedTransaction.paymentStatus,
-        paymentMethod: updatedTransaction.paymentMethod,
-        change: updatedTransaction.change,
-      };
-
-      await updateTransaction(updatedTransaction.id, payload);
+      const { creditSaved, creditError } = await savePaymentWithRoundingCredit(
+        updateTransaction,
+        updatedTransaction,
+      );
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,
       );
+      if (creditSaved > 0) {
+        addAuditLog(
+          `Pembulatan tunai Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan (transaksi ${updatedTransaction.invoiceCode ?? updatedTransaction.id}).`,
+          updatedTransaction.storeId,
+        );
+      }
       setIsPaymentModalOpen(false);
       setTransactionForPayment(null);
-      addToast('Pembayaran berhasil disimpan.', 'success');
+      if (creditError) {
+        addToast(
+          `Pembayaran tersimpan, tetapi saldo pembulatan gagal dicatat: ${creditError}`,
+          'warning',
+        );
+      } else if (creditSaved > 0) {
+        addToast(
+          `Pembayaran berhasil! Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan.`,
+          'success',
+        );
+      } else {
+        addToast('Pembayaran berhasil disimpan.', 'success');
+      }
     },
     [updateTransaction, addAuditLog, addToast],
   );
@@ -714,7 +728,10 @@ const Dashboard: React.FC = () => {
           {/* Pendapatan 7 Hari Terakhir Stats - Hidden for Cashier */}
           {!isCashier && (
             <>
-              <div id="dashboard-chart" className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div
+                id="dashboard-chart"
+                className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800"
+              >
                 <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
                   Total Pendapatan (7 hari)
                 </p>
@@ -844,7 +861,10 @@ const Dashboard: React.FC = () => {
           )}
         </div>
 
-        <div id="dashboard-recent" className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md">
+        <div
+          id="dashboard-recent"
+          className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md"
+        >
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
               Progres Pesanan Aktif

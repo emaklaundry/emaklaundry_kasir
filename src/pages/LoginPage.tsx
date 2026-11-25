@@ -1,135 +1,305 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import pkg from '../../package.json';
+import {
+  EmployeeLoginProfile,
+  isEmployeeLoginProfilesResponse,
+  isEmployeeLoginResponse,
+  isValidEmployeePin,
+} from '../utils/employeeAuth';
 
 const APP_VERSION = `v${pkg.version}`;
 
 const LoginPage: React.FC = () => {
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [profiles, setProfiles] = useState<EmployeeLoginProfile[]>([]);
+  const [profilesLoading, setProfilesLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState('');
+  const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { addAuditLog } = useAuditLogs();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    document.title = 'Masuk | Laundry POS';
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProfiles = async () => {
+      try {
+        const { data, error: invokeError } = await supabase.functions.invoke('employee-login', {
+          body: { action: 'list' },
+        });
+        if (invokeError || !isEmployeeLoginProfilesResponse(data)) {
+          throw invokeError ?? new Error('Invalid employee profile response');
+        }
+        if (active) setProfiles(data.profiles);
+      } catch {
+        if (active) setProfileError('Profil karyawan gagal dimuat. Silakan coba lagi.');
+      } finally {
+        if (active) setProfilesLoading(false);
+      }
+    };
+
+    loadProfiles();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-      addAuditLog(`Percobaan login gagal untuk email: ${email}.`);
-    } else if (data.user) {
-      addAuditLog(`Login berhasil: ${data.user.email || email}.`);
+    try {
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (loginError) {
+        setError(loginError.message);
+        addAuditLog(`Percobaan login gagal untuk email: ${email}.`);
+      } else if (data.user) {
+        addAuditLog(`Login berhasil: ${data.user.email || email}.`);
+      }
+    } catch {
+      setError('Login gagal. Periksa koneksi internet dan coba lagi.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleEmployeeLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!selectedProfileId || !isValidEmployeePin(pin)) {
+      setError('Pilih profil dan masukkan PIN 6 digit.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('employee-login', {
+        body: { action: 'login', employeeId: selectedProfileId, pin },
+      });
+      if (invokeError || !isEmployeeLoginResponse(data)) {
+        throw invokeError ?? new Error('Invalid employee login response');
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession(data.session);
+      if (sessionError) throw sessionError;
+      const employee = profiles.find((profile) => profile.id === selectedProfileId);
+      addAuditLog(`Login karyawan berhasil${employee ? `: ${employee.name}` : ''}.`);
+    } catch {
+      setError('Profil atau PIN tidak valid. Periksa kembali dan coba lagi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4">
-      {/* Login Card */}
+    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 px-4">
       <div className="w-full max-w-md">
-        {/* Login Form */}
-        <form
-          onSubmit={handleLogin}
-          className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700"
-        >
-          <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white">
+        <section className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
+          <h1
+            id="login-heading"
+            className="text-xl sm:text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white"
+          >
             Masuk ke Akun Anda
-          </h2>
+          </h1>
 
-          {/* Email Input */}
-          <div className="mb-5">
-            <label
-              htmlFor="login-email"
-              className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+          {isAdminLogin ? (
+            <form
+              aria-labelledby="login-heading"
+              onSubmit={handleAdminLogin}
+              className="space-y-5"
+              method="post"
             >
-              Email
-            </label>
-            <input
-              id="login-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="nama@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/20 transition-all outline-none"
-              required
-            />
-          </div>
-
-          {/* Password Input */}
-          <div className="mb-6">
-            <label
-              htmlFor="login-password"
-              className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+              <div>
+                <label
+                  htmlFor="login-email"
+                  className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  Email
+                </label>
+                <input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="nama@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/20 transition-all outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="login-password"
+                  className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  Password
+                </label>
+                <input
+                  id="login-password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/20 transition-all outline-none"
+                  required
+                />
+              </div>
+              {error && (
+                <div
+                  role="alert"
+                  className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg"
+                >
+                  <p className="text-sm text-red-700 dark:text-red-400 font-medium">{error}</p>
+                </div>
+              )}
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 text-white font-semibold py-3.5 rounded-lg shadow-md hover:shadow-lg disabled:from-blue-400 disabled:to-blue-500 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200"
+                disabled={loading}
+              >
+                {loading ? 'Memproses...' : 'Masuk'}
+              </button>
+            </form>
+          ) : (
+            <form
+              aria-label="Login karyawan"
+              onSubmit={handleEmployeeLogin}
+              className="space-y-5"
+              method="post"
             >
-              Password
-            </label>
-            <input
-              id="login-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/20 transition-all outline-none"
-              required
-            />
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-5 p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg">
-              <p className="text-sm text-red-700 dark:text-red-400 font-medium">{error}</p>
-            </div>
+              <fieldset>
+                <legend className="block mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Pilih profil karyawan
+                </legend>
+                {profilesLoading ? (
+                  <p role="status" aria-busy="true" className="text-sm text-slate-500">
+                    Memuat profil...
+                  </p>
+                ) : profiles.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                    {profiles.map((profile) => (
+                      <label
+                        key={profile.id}
+                        className={`flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                          selectedProfileId === profile.id
+                            ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
+                            : 'border-slate-200 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-400'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="employee-profile"
+                          value={profile.id}
+                          checked={selectedProfileId === profile.id}
+                          onChange={() => {
+                            setSelectedProfileId(profile.id);
+                            setError(null);
+                          }}
+                          className="h-4 w-4 shrink-0 accent-orange-500"
+                        />
+                        <span
+                          aria-hidden="true"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                        >
+                          {profile.name.trim().charAt(0).toUpperCase()}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-slate-900 dark:text-white">
+                            {profile.name}
+                          </span>
+                          {profile.storeName && (
+                            <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                              {profile.storeName}
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Belum ada profil karyawan yang dapat login.
+                  </p>
+                )}
+              </fieldset>
+              {profileError && (
+                <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+                  {profileError}
+                </p>
+              )}
+              <div>
+                <label
+                  htmlFor="employee-pin"
+                  className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  PIN (6 digit)
+                </label>
+                <input
+                  id="employee-pin"
+                  name="pin"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="current-password"
+                  pattern="[0-9]{6}"
+                  minLength={6}
+                  maxLength={6}
+                  value={pin}
+                  onChange={(e) => {
+                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    setError(null);
+                  }}
+                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all outline-none"
+                  required
+                />
+              </div>
+              {error && (
+                <div
+                  role="alert"
+                  className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg"
+                >
+                  <p className="text-sm text-red-700 dark:text-red-400 font-medium">{error}</p>
+                </div>
+              )}
+              <button
+                type="submit"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3.5 rounded-lg shadow-md disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+                disabled={loading || profilesLoading || profiles.length === 0}
+              >
+                {loading ? 'Memproses...' : 'Masuk'}
+              </button>
+            </form>
           )}
 
-          {/* Login Button */}
           <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 text-white font-semibold py-3.5 rounded-lg shadow-md hover:shadow-lg disabled:from-blue-400 disabled:to-blue-500 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
-            disabled={loading}
+            type="button"
+            onClick={() => {
+              setIsAdminLogin((current) => !current);
+              setError(null);
+            }}
+            className="mt-4 w-full text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
           >
-            {loading ? (
-              <>
-                <svg
-                  className="animate-spin h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                <span>Memproses...</span>
-              </>
-            ) : (
-              <span>Masuk</span>
-            )}
+            {isAdminLogin ? 'Kembali ke login karyawan' : 'Masuk sebagai admin'}
           </button>
-
-          {/* Additional Info */}
-          <p className="mt-6 text-xs text-center text-slate-500 dark:text-slate-400">
+          <p className="mt-4 text-xs text-center text-slate-500 dark:text-slate-400">
             Sistem login aman dengan enkripsi end-to-end
           </p>
-        </form>
+        </section>
 
-        {/* Footer Info */}
         <div className="mt-6 text-center">
           <p className="text-xs text-slate-500 dark:text-slate-400">
             &copy; 2025 Laundry Management System. Developed by{' '}
@@ -145,11 +315,10 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Version Info - Consistent with website style */}
       <div className="fixed right-3 bottom-2 z-50 text-xs text-slate-500 opacity-70 pointer-events-none select-none">
         {APP_VERSION}
       </div>
-    </div>
+    </main>
   );
 };
 

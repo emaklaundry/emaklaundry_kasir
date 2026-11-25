@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useLayoutEffect } from 'react';
 
 export type Theme = 'light' | 'dark';
 const THEME_KEY = 'laundry_theme';
 
 const getInitialTheme = (): Theme => {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
 
   try {
     const storedTheme = window.localStorage.getItem(THEME_KEY);
@@ -15,18 +15,13 @@ const getInitialTheme = (): Theme => {
     console.warn('Theme preference could not be read from localStorage:', error);
   }
 
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches
-  )
-    ? 'dark'
-    : 'light';
+  return 'dark';
 };
 
 const useTheme = () => {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = window.document.documentElement;
 
     root.classList.remove('light', 'dark');

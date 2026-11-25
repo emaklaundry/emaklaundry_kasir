@@ -13,6 +13,7 @@ export interface Employee {
   baseSalary: number;
   commissionRate: number; // percentage
   isActive: boolean;
+  loginEnabled?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

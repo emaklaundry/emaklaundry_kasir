@@ -31,13 +31,18 @@ import {
   downloadCustomerTemplate,
 } from '../../utils/excelUtils';
 import { supabase } from '../../utils/supabaseClient';
-import { recalculateAllCustomerDiscounts } from '../../utils/discountUtils';
+import { formatRupiah } from '../../utils/formatting';
 import GoogleContactsImportModal from '../../components/GoogleContactsImportModal';
 import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts';
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const { createContact, signIn, isAuthenticated, isLoading: isGoogleLoading } = useGoogleContacts();
+  const {
+    createContact,
+    signIn,
+    isAuthenticated,
+    isLoading: isGoogleLoading,
+  } = useGoogleContacts();
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,7 +61,8 @@ const CustomersPage: React.FC = () => {
   const totalCount = result.count;
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  const { addCustomer, updateCustomer, deleteCustomer } = useCustomerMutations();
+  const { addCustomer, updateCustomer, deleteCustomer, setDiscountBalance } =
+    useCustomerMutations();
   const { transactions } = useTransactions();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
@@ -187,6 +193,34 @@ const CustomersPage: React.FC = () => {
           storeId,
         });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
+
+        const oldBalance = currentCustomer.defaultDiscount ?? 0;
+        const newBalance = customerData.defaultDiscount ?? oldBalance;
+        if (newBalance !== oldBalance) {
+          try {
+            await setDiscountBalance({
+              customerId: currentCustomer.id,
+              expectedBalance: oldBalance,
+              newBalance,
+            });
+            addAuditLog(
+              `Mengubah saldo diskon "${customerData.name}": Rp ${formatRupiah(oldBalance)} → Rp ${formatRupiah(newBalance)}.`,
+              storeId,
+            );
+          } catch (balanceError) {
+            const msg =
+              balanceError && typeof balanceError === 'object' && 'message' in balanceError
+                ? String((balanceError as { message: unknown }).message)
+                : 'Unknown error';
+            updateToast(
+              toastId,
+              `Data pelanggan tersimpan, tetapi saldo diskon gagal diubah: ${msg}`,
+              'warning',
+            );
+            handleCloseFormModal();
+            return;
+          }
+        }
         updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
       } else {
         await addCustomer({
@@ -288,7 +322,6 @@ const CustomersPage: React.FC = () => {
         address: c.address ?? undefined,
         notes: c.notes ?? undefined,
         phone: c.phone ?? undefined,
-        defaultDiscount: c.defaultDiscount ?? undefined,
         storeId: c.storeId ?? undefined,
       })) as unknown as Customer[];
 
@@ -329,7 +362,6 @@ const CustomersPage: React.FC = () => {
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
-              defaultDiscount: customer.defaultDiscount || 0,
             };
 
             if (selectedStoreId !== 'all') {
@@ -363,7 +395,9 @@ const CustomersPage: React.FC = () => {
               continue;
             }
 
-            // Add new customer
+            // Add new customer. Kolom "Saldo Diskon" di Excel dipakai sebagai saldo awal
+            // pelanggan baru (tercatat di riwayat saldo). Untuk pelanggan yang sudah ada,
+            // saldo tidak ditimpa dari Excel agar pemakaian saldo terbaru tidak hilang.
             await addCustomer({
               name: customer.name!,
               phone: customer.phone || '',
@@ -423,68 +457,6 @@ const CustomersPage: React.FC = () => {
     }
   };
 
-  // Recalculate Discount Balances
-  const handleRecalculateDiscounts = async () => {
-    const toastId = addToast('Menghitung ulang saldo diskon...', 'info');
-    setIsSaving(true);
-    try {
-      // Fetch ALL customers to recalculate (not just current page)
-      const { data: allCustomers, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      if (!allCustomers || allCustomers.length === 0) {
-        updateToast(toastId, 'Tidak ada pelanggan untuk diproses.', 'warning');
-        setIsSaving(false);
-        return;
-      }
-
-      // Convert to Customer type
-      const customersToProcess = allCustomers.map((c) => ({
-        ...c,
-        address: c.address ?? undefined,
-        notes: c.notes ?? undefined,
-        phone: c.phone ?? undefined,
-        defaultDiscount: c.defaultDiscount ?? undefined,
-        storeId: c.storeId ?? undefined,
-      })) as unknown as Customer[];
-
-      updateToast(toastId, `Memproses ${customersToProcess.length} pelanggan...`, 'info');
-
-      const results = await recalculateAllCustomerDiscounts(
-        customersToProcess,
-        transactions,
-        updateCustomer,
-      );
-
-      if (results.updated === 0) {
-        updateToast(
-          toastId,
-          'Tidak ada saldo diskon yang perlu ditambahkan. Semua pelanggan sudah up-to-date.',
-          'info',
-        );
-      } else {
-        updateToast(
-          toastId,
-          `Berhasil! ${results.updated} pelanggan diupdate dengan total diskon Rp ${results.totalDiscountAdded.toLocaleString('id-ID')}`,
-          'success',
-        );
-
-        addAuditLog(
-          `Recalculate saldo diskon: ${results.updated} pelanggan, total Rp ${results.totalDiscountAdded.toLocaleString('id-ID')}`,
-          selectedStoreId !== 'all' ? selectedStoreId : undefined,
-        );
-      }
-    } catch (error) {
-      console.error('Recalculate error:', error);
-      updateToast(toastId, 'Gagal menghitung ulang saldo diskon', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // Google Contacts Import
   const handleGoogleContactsImport = async (contacts: GoogleContact[]) => {
     const storeId =
@@ -512,9 +484,7 @@ const CustomersPage: React.FC = () => {
         }
 
         // Check for duplicate
-        const existingCustomer = customers.find(
-          (c) => c.phone?.replace(/\D/g, '') === phone,
-        );
+        const existingCustomer = customers.find((c) => c.phone?.replace(/\D/g, '') === phone);
         if (existingCustomer) {
           skipCount++;
           continue;
@@ -525,7 +495,6 @@ const CustomersPage: React.FC = () => {
           phone: phone,
           address: contact.address || undefined,
           notes: `Imported from Google Contacts`,
-          defaultDiscount: 0,
           storeId: storeId,
           createdAt: new Date(),
         });
@@ -599,7 +568,10 @@ const CustomersPage: React.FC = () => {
       updateToast(toastId, `Berhasil sinkronisasi ${successCount} kontak ke Google!`, 'success');
     }
 
-    addAuditLog(`Sync ${successCount} pelanggan ke Google Contacts.`, selectedStoreId !== 'all' ? selectedStoreId : undefined);
+    addAuditLog(
+      `Sync ${successCount} pelanggan ke Google Contacts.`,
+      selectedStoreId !== 'all' ? selectedStoreId : undefined,
+    );
   };
 
   // Get existing phone numbers for deduplication
@@ -633,17 +605,6 @@ const CustomersPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
         <div className="flex gap-2 flex-wrap">
-          {/* Recalculate Discount Balance Button */}
-          <button
-            onClick={handleRecalculateDiscounts}
-            disabled={isSaving || customers.length === 0}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed"
-            title="Hitung Ulang Saldo Diskon dari History Transaksi"
-          >
-            <RefreshCwIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Hitung Ulang Diskon</span>
-          </button>
-
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
@@ -697,9 +658,9 @@ const CustomersPage: React.FC = () => {
             {isSyncing ? (
               <RefreshCwIcon className="w-4 h-4 animate-spin" />
             ) : (
-               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
-               </svg>
+              </svg>
             )}
             <span className="hidden sm:inline text-sm">Sync to Google</span>
           </button>
@@ -801,7 +762,7 @@ const CustomersPage: React.FC = () => {
                   onClick={() => requestSort('defaultDiscount')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
                 >
-                  💰 Saldo Diskon {getSortIcon('defaultDiscount')}
+                  Saldo Diskon {getSortIcon('defaultDiscount')}
                 </button>
               </th>
               <th className="px-6 py-3">Aksi</th>
@@ -833,10 +794,10 @@ const CustomersPage: React.FC = () => {
                   <td className="px-6 py-4 text-right">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    {customer.defaultDiscount != null ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        Rp {customer.defaultDiscount.toLocaleString('id-ID')}
+                  <td className="px-6 py-4 text-right tabular-nums">
+                    {customer.defaultDiscount ? (
+                      <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                        Rp {formatRupiah(customer.defaultDiscount)}
                       </span>
                     ) : (
                       <span className="text-slate-400 dark:text-slate-500">-</span>
@@ -864,7 +825,7 @@ const CustomersPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 6 : 5
+                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 8 : 7
                   }
                 >
                   <NoCustomersFound />
@@ -926,14 +887,10 @@ const CustomersPage: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">💰 Saldo Diskon</p>
-                  {customer.defaultDiscount != null ? (
-                    <p className="font-semibold text-base text-green-600 dark:text-green-400">
-                      Rp {customer.defaultDiscount.toLocaleString('id-ID')}
-                    </p>
-                  ) : (
-                    <p className="text-slate-400 dark:text-slate-500">-</p>
-                  )}
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Saldo Diskon</p>
+                  <p className="font-semibold text-base text-emerald-700 dark:text-emerald-400">
+                    Rp {formatRupiah(customer.defaultDiscount ?? 0)}
+                  </p>
                 </div>
               </div>
             </div>

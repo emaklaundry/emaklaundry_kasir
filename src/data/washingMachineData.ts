@@ -234,10 +234,7 @@ export const washRecommendations: WashRecommendation[] = [
     maxLoad: 2,
     detergentAmount: '40-50ml',
     notes: 'Untuk selimut ukuran single/kecil',
-    tips: [
-      'Maksimal 2 selimut single per load',
-      'Jangan isi terlalu penuh',
-    ],
+    tips: ['Maksimal 2 selimut single per load', 'Jangan isi terlalu penuh'],
   },
 
   // Boneka

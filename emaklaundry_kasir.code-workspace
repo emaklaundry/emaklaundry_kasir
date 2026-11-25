@@ -1,10 +1,61 @@
 {
-  "folders": [
-    {
-      "path": ".",
-    },
-  ],
-  "settings": {
-    "files.autoSave": "onWindowChange",
-  },
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": ".agents"
+		},
+		{
+			"path": ".aider-desk"
+		},
+		{
+			"path": ".claude"
+		},
+		{
+			"path": ".codex"
+		},
+		{
+			"path": ".github"
+		},
+		{
+			"path": ".impeccable"
+		},
+		{
+			"path": ".vscode"
+		},
+		{
+			"path": "brief"
+		},
+		{
+			"path": "database"
+		},
+		{
+			"path": "dist"
+		},
+		{
+			"path": "dist/assets"
+		},
+		{
+			"path": "dist/favicon"
+		},
+		{
+			"path": "docs"
+		},
+		{
+			"path": "manual-book"
+		},
+		{
+			"path": "node_modules"
+		},
+		{
+			"path": "public"
+		},
+		{
+			"path": "src"
+		},
+		{
+			"path": "supabase"
+		}
+	]
 }

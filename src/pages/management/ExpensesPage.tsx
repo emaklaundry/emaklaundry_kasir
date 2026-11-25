@@ -15,6 +15,7 @@ import useAppContext from '../../contexts/useAppContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import Pagination from '../../components/Pagination';
+import MonthlyExpensesManager from '../../components/MonthlyExpensesManager';
 import { Expense, UserRole } from '@/types';
 
 type CombinedExpenseItem = {
@@ -156,6 +157,8 @@ const ExpensesPage: React.FC = () => {
     currentPage * itemsPerPage,
   );
   const totalExpense = filteredItems.reduce((sum, item) => sum + item.amount, 0);
+  const monthlyExpenseStoreId =
+    currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : (currentUser?.storeId ?? '');
 
   // Excel Export
   const handleExportToExcel = async () => {
@@ -411,6 +414,9 @@ const ExpensesPage: React.FC = () => {
           >
             Tambah Pengeluaran
           </button>
+          {monthlyExpenseStoreId && monthlyExpenseStoreId !== 'all' && (
+            <MonthlyExpensesManager storeId={monthlyExpenseStoreId} />
+          )}
         </div>
       </div>
 

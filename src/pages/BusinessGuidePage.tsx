@@ -12,8 +12,8 @@ const BusinessGuidePage: React.FC = () => {
           </h1>
         </div>
         <p className="text-slate-600 dark:text-slate-300 mb-6">
-          Kumpulan alat perhitungan, metrik bisnis, dan strategi untuk memaksimalkan
-          keuntungan usaha laundry Anda.
+          Kumpulan alat perhitungan, metrik bisnis, dan strategi untuk memaksimalkan keuntungan
+          usaha laundry Anda.
         </p>
 
         <div className="space-y-6">
@@ -208,9 +208,15 @@ const BusinessGuidePage: React.FC = () => {
                   💎 Pricing Strategy
                 </h4>
                 <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                  <li>• <strong>Premium:</strong> Harga tinggi, layanan express, parfum pilihan</li>
-                  <li>• <strong>Volume:</strong> Harga kompetitif, target quantity tinggi</li>
-                  <li>• <strong>Hybrid:</strong> Reguler + Express dengan harga berbeda</li>
+                  <li>
+                    • <strong>Premium:</strong> Harga tinggi, layanan express, parfum pilihan
+                  </li>
+                  <li>
+                    • <strong>Volume:</strong> Harga kompetitif, target quantity tinggi
+                  </li>
+                  <li>
+                    • <strong>Hybrid:</strong> Reguler + Express dengan harga berbeda
+                  </li>
                 </ul>
               </div>
 
@@ -230,9 +236,15 @@ const BusinessGuidePage: React.FC = () => {
                   📅 Seasonal Planning
                 </h4>
                 <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
-                  <li>• <strong>Lebaran/Natal:</strong> Promo cuci karpet, gorden</li>
-                  <li>• <strong>Musim Hujan:</strong> Layanan express lebih mahal</li>
-                  <li>• <strong>Back to School:</strong> Promo seragam, tas</li>
+                  <li>
+                    • <strong>Lebaran/Natal:</strong> Promo cuci karpet, gorden
+                  </li>
+                  <li>
+                    • <strong>Musim Hujan:</strong> Layanan express lebih mahal
+                  </li>
+                  <li>
+                    • <strong>Back to School:</strong> Promo seragam, tas
+                  </li>
                 </ul>
               </div>
 

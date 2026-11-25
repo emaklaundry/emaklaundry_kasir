@@ -2,152 +2,206 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const getCorsHeaders = (req: Request) => {
-  const origin = req.headers.get('Origin') ?? '';
   const allowedOrigins = [
-    Deno.env.get('ALLOWED_ORIGIN'),
+    ...(Deno.env.get('ALLOWED_ORIGIN') ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-  ].filter(Boolean);
-
-  const isAllowed = allowedOrigins.includes(origin) || allowedOrigins.includes('*');
-  const allowedOrigin = isAllowed ? origin : (allowedOrigins[0] || '*');
+  ];
+  const origin = req.headers.get('Origin');
 
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    ...(origin && allowedOrigins.includes(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Cache-Control': 'no-store',
+    Vary: 'Origin',
   };
 };
 
+const jsonResponse = (
+  body: Record<string, unknown>,
+  status: number,
+  headers: Record<string, string>,
+) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...headers, 'Content-Type': 'application/json' },
+  });
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isUuid = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
+const VALID_ROLES = ['Kasir', 'Admin', 'Super Admin'] as const;
+type Role = (typeof VALID_ROLES)[number];
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405, corsHeaders);
 
-  // Handle CORS preflight request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+    return jsonResponse({ error: 'Layanan belum dikonfigurasi' }, 500, corsHeaders);
   }
 
+  // 1. Siapa pemanggilnya?
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return jsonResponse({ error: 'Unauthorized' }, 401, corsHeaders);
+  const callerClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const {
+    data: { user: caller },
+  } = await callerClient.auth.getUser();
+  if (!caller) return jsonResponse({ error: 'Unauthorized' }, 401, corsHeaders);
+
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // 2. Hanya Admin / Super Admin yang aktif
+  const { data: callerProfile, error: profileError } = await admin
+    .from('profiles')
+    .select('role, store_id, isActive')
+    .eq('id', caller.id)
+    .maybeSingle();
+  if (
+    profileError ||
+    !callerProfile ||
+    callerProfile.isActive === false ||
+    (callerProfile.role !== 'Super Admin' && callerProfile.role !== 'Admin')
+  ) {
+    return jsonResponse({ error: 'Hanya Admin yang dapat menambah pengguna' }, 403, corsHeaders);
+  }
+
+  // 3. Validasi input
+  let body: unknown;
   try {
-    // 1. Buat client untuk User context (bukan Admin)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: 'Permintaan tidak valid' }, 400, corsHeaders);
+  }
+  if (!isRecord(body)) return jsonResponse({ error: 'Permintaan tidak valid' }, 400, corsHeaders);
+
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const role = (typeof body.role === 'string' ? body.role : 'Kasir') as Role;
+  const canGiveDiscount = body.canGiveDiscount === true;
+
+  if (!email || !password || !name) {
+    return jsonResponse({ error: 'Email, password, dan nama wajib diisi' }, 400, corsHeaders);
+  }
+  if (name.length > 80) {
+    return jsonResponse({ error: 'Nama maksimal 80 karakter' }, 400, corsHeaders);
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return jsonResponse({ error: 'Format email tidak valid' }, 400, corsHeaders);
+  }
+  if (password.length < 8 || password.length > 72) {
+    return jsonResponse({ error: 'Password harus 8 sampai 72 karakter' }, 400, corsHeaders);
+  }
+  if (!VALID_ROLES.includes(role)) {
+    return jsonResponse(
+      { error: `Peran tidak valid. Pilihan: ${VALID_ROLES.join(', ')}` },
+      400,
+      corsHeaders,
     );
+  }
 
-    // 2. Cek siapa yang memanggil fungsi ini
-    const {
-      data: { user: caller },
-    } = await supabaseClient.auth.getUser();
-    if (!caller) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+  // 4. Cabang: Super Admin tanpa cabang; Admin hanya untuk cabangnya sendiri
+  let storeId: string | null = null;
+  if (role !== 'Super Admin') {
+    storeId = isUuid(body.storeId) ? body.storeId : null;
+    if (callerProfile.role === 'Admin') storeId = storeId ?? callerProfile.store_id;
+    if (!storeId) return jsonResponse({ error: 'Cabang wajib dipilih' }, 400, corsHeaders);
+  }
+  if (callerProfile.role === 'Admin') {
+    if (role === 'Super Admin') {
+      return jsonResponse({ error: 'Admin tidak dapat membuat Super Admin' }, 403, corsHeaders);
     }
-
-    // 3. Buat Supabase Client dengan Service Role Key (Admin privileges)
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
-
-    // 4. Cek Role pemanggil (Query ke tabel profiles)
-    const { data: callerProfile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('role, store_id')
-      .eq('id', caller.id)
-      .single();
-    if (
-      profileError ||
-      !callerProfile ||
-      (callerProfile.role !== 'Super Admin' && callerProfile.role !== 'Admin')
-    ) {
-      return new Response(JSON.stringify({ error: 'Forbidden: Insufficient privileges' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 5. Ambil data dari body request
-    const body = await req.json();
-    const { email, password, name, role, storeId } = body;
-
-    // Validasi input
-    if (!email || !password || !name) {
-      return new Response(JSON.stringify({ error: 'Email, Password, dan Nama wajib diisi' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return new Response(JSON.stringify({ error: 'Format email tidak valid' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    if (typeof password !== 'string' || password.length < 8) {
-      return new Response(JSON.stringify({ error: 'Password minimal 8 karakter' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    const validRoles = ['Kasir', 'Admin', 'Super Admin'];
-    if (role && !validRoles.includes(role)) {
-      return new Response(
-        JSON.stringify({ error: `Role tidak valid. Pilihan: ${validRoles.join(', ')}` }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        },
+    if (storeId !== callerProfile.store_id) {
+      return jsonResponse(
+        { error: 'Admin hanya dapat menambah pengguna di cabangnya sendiri' },
+        403,
+        corsHeaders,
       );
     }
-
-    // 6. Jika Admin Toko, pastikan tidak membuat Super Admin atau user di cabang lain
-    if (callerProfile.role === 'Admin') {
-      if (role === 'Super Admin') {
-        return new Response(JSON.stringify({ error: 'Admin cannot create Super Admin' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (storeId && storeId !== callerProfile.store_id) {
-        return new Response(
-          JSON.stringify({ error: 'Admin can only create users for their own store' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
-      }
-    }
-
-    // 7. Buat User baru menggunakan Admin API
-    const { data: user, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: name,
-        role: role || 'Kasir',
-        store_id: storeId || callerProfile.store_id || null,
-      },
-    });
-
-    if (createError) {
-      throw createError;
-    }
-
-    return new Response(JSON.stringify({ user }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    });
   }
+  if (storeId) {
+    const { data: store, error: storeError } = await admin
+      .from('stores')
+      .select('id')
+      .eq('id', storeId)
+      .maybeSingle();
+    if (storeError || !store) {
+      return jsonResponse({ error: 'Cabang tidak ditemukan' }, 400, corsHeaders);
+    }
+  }
+
+  // 5. Buat akun. Trigger database membuat profil sebagai Kasir (pengaman
+  //    pendaftaran mandiri), jadi peran yang benar disetel di langkah 6.
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: name, role: 'Kasir', store_id: storeId },
+  });
+  if (createError || !created.user) {
+    const message = createError?.message ?? '';
+    const duplicate = /already (been )?registered|already exists/i.test(message);
+    return jsonResponse(
+      { error: duplicate ? 'Email sudah terdaftar' : 'Gagal membuat akun' },
+      duplicate ? 409 : 400,
+      corsHeaders,
+    );
+  }
+  const newUserId = created.user.id;
+
+  // 6. Setel profil dengan peran & izin yang diminta. Kalau gagal, batalkan akunnya
+  //    supaya tidak ada akun setengah jadi yang bisa login sebagai Kasir.
+  const finalCanGiveDiscount = role === 'Super Admin' ? true : canGiveDiscount;
+  const { error: upsertError } = await admin.from('profiles').upsert(
+    {
+      id: newUserId,
+      name,
+      role,
+      store_id: storeId,
+      isActive: true,
+      canGiveDiscount: finalCanGiveDiscount,
+    },
+    { onConflict: 'id' },
+  );
+  if (upsertError) {
+    await admin.auth.admin.deleteUser(newUserId);
+    return jsonResponse({ error: 'Gagal menyimpan profil pengguna' }, 500, corsHeaders);
+  }
+
+  return jsonResponse(
+    {
+      user: {
+        id: newUserId,
+        email,
+        name,
+        role,
+        storeId,
+        isActive: true,
+        canGiveDiscount: finalCanGiveDiscount,
+      },
+    },
+    200,
+    corsHeaders,
+  );
 });

@@ -1,28 +1,42 @@
 import { PaymentMethod } from '../types';
 
-export interface RoundingResult {
-  roundedTotal: number;
-  roundingDiscount: number;
+/** Pembayaran tunai dibulatkan ke atas ke kelipatan nilai ini (Rupiah). */
+export const CASH_ROUNDING_STEP = 500;
+
+export interface CashRoundingResult {
+  /** Jumlah yang harus diterima kasir (sudah dibulatkan untuk tunai). */
+  amountDue: number;
+  /** Kelebihan pembulatan yang masuk ke saldo diskon pelanggan. */
+  roundingCredit: number;
   shouldRound: boolean;
 }
 
 /**
- * Calculate rounding for a transaction total.
- * Only rounds down for Cash payments when the total has a remainder < precision.
- * @param rawTotal - The raw total before rounding
- * @param paymentMethod - The payment method (only Cash triggers rounding)
- * @param precision - Rounding precision (default 500 for Rp 500)
+ * Pembulatan pembayaran tunai.
+ *
+ * Aturan Emak Laundry: tagihan TUNAI dibulatkan KE ATAS ke kelipatan Rp500.
+ * Kelebihannya (maks Rp499) tidak hilang, tetapi masuk ke saldo diskon
+ * pelanggan dan bisa dipakai di transaksi berikutnya. Total transaksi
+ * (pendapatan toko) tetap nilai aslinya.
+ *
+ * Pembayaran non-tunai (QRIS, transfer) dibayar pas tanpa pembulatan.
+ * Tanpa pelanggan terdaftar, kelebihan tidak bisa disimpan, jadi tidak
+ * dibulatkan.
  */
-export function calculateRounding(
-  rawTotal: number,
+export function calculateCashRounding(
+  amount: number,
   paymentMethod: PaymentMethod | undefined,
-  precision: number = 500,
-): RoundingResult {
-  const remainder = rawTotal % precision;
-  const shouldRound = paymentMethod === PaymentMethod.Cash && remainder > 0 && remainder < precision;
+  options: { hasCustomer?: boolean; step?: number } = {},
+): CashRoundingResult {
+  const { hasCustomer = true, step = CASH_ROUNDING_STEP } = options;
+  const safeAmount = Math.max(0, Math.round(amount));
+  const remainder = safeAmount % step;
+  const shouldRound =
+    paymentMethod === PaymentMethod.Cash && hasCustomer && safeAmount > 0 && remainder > 0;
+  const roundingCredit = shouldRound ? step - remainder : 0;
   return {
-    roundedTotal: shouldRound ? rawTotal - remainder : rawTotal,
-    roundingDiscount: shouldRound ? remainder : 0,
+    amountDue: safeAmount + roundingCredit,
+    roundingCredit,
     shouldRound,
   };
 }

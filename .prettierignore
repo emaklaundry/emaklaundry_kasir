@@ -1,0 +1,8 @@
+.agents/
+.aider-desk/
+.github/agents/
+.github/skills/
+supabase/setup/
+supabase/seeds/
+supabase/backup/
+.playwright-mcp/

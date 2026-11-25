@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import CustomerSelector from '@/components/features/CustomerSelector';
-import React from 'react';
 import { vi } from 'vitest';
 
 describe('CustomerSelector', () => {

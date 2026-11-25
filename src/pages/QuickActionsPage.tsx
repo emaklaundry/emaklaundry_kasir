@@ -146,4 +146,3 @@ const QuickActionsPage: React.FC = () => {
 };
 
 export default QuickActionsPage;
-

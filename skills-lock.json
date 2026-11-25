@@ -15,6 +15,13 @@
       "skillPath": "skills/modern-web-guidance/SKILL.md",
       "computedHash": "1a97aea5d1c5abbf1b7b022ae7a2833a014627f741ba3cbd8cb6249a3ab359db"
     },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "commit": "c9be0e931b7930f7d02126d04774d904c381e7d7",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "3eb972c2d7c818e544e35cc33ea8d7147d4d78ae08142ef40037b0fbac7a2505"
+    },
     "vercel-cli-with-tokens": {
       "source": "vercel-labs/agent-skills",
       "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",

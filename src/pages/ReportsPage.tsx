@@ -574,7 +574,10 @@ const ReportsPage: React.FC = () => {
   }, [startDate, endDate, allStoreTransactions, allStoreExpenses]);
 
   // Realized revenue (amount paid)
-  const totalRevenue = filteredData.transactions.reduce((acc: number, t) => acc + (t.amountPaid || 0), 0);
+  const totalRevenue = filteredData.transactions.reduce(
+    (acc: number, t) => acc + (t.amountPaid || 0),
+    0,
+  );
   const totalExpenses = filteredData.expenses.reduce((acc: number, e) => acc + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
 

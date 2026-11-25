@@ -83,7 +83,6 @@ const BackupRestorePage: React.FC = () => {
         address: c.address ?? undefined,
         notes: c.notes ?? undefined,
         phone: c.phone ?? undefined,
-        defaultDiscount: c.defaultDiscount ?? undefined,
         storeId: c.storeId ?? undefined,
       }));
     },
@@ -222,6 +221,8 @@ const BackupRestorePage: React.FC = () => {
               ...e,
               date: new Date(typeof e.date === 'string' ? e.date : e.date),
               storeId: e.storeId ?? '',
+              recurringTemplateId: e.recurringTemplateId ?? undefined,
+              recurringPeriod: e.recurringPeriod ?? undefined,
             })),
           ];
           if (data.length < pageSize) {

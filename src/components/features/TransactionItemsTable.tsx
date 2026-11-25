@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2Icon, MessageSquareIcon, TagIcon } from '../icons';
 import { Service, ServiceCategory, ExtendedTransactionItem } from '@/types';
@@ -9,7 +8,7 @@ interface TransactionItemsTableProps {
   handleItemChange: (
     index: number,
     field: 'quantity' | 'taggedItems' | 'itemDetails' | 'length' | 'width',
-    value: number | string | Array<{ note: string }>
+    value: number | string | Array<{ note: string }>,
   ) => void;
   handleOpenNotesModal: (index: number) => void;
   handleOpenKiloanTaggingModal: (index: number) => void;
@@ -50,8 +49,7 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                     {item.serviceName}
                   </td>
                   <td className="px-4 py-2 w-48">
-                    {item.unit.toLowerCase() === 'm2' ||
-                    item.unit.toLowerCase() === 'meter' ? (
+                    {item.unit.toLowerCase() === 'm2' || item.unit.toLowerCase() === 'meter' ? (
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-slate-500 w-4">P:</span>
@@ -64,11 +62,7 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                             placeholder="P"
                             value={item.length}
                             onChange={(e) =>
-                              handleItemChange(
-                                index,
-                                'length',
-                                parseFloat(e.target.value) || 0,
-                              )
+                              handleItemChange(index, 'length', parseFloat(e.target.value) || 0)
                             }
                             className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                             autoComplete="off"
@@ -86,11 +80,7 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                             placeholder="L"
                             value={item.width}
                             onChange={(e) =>
-                              handleItemChange(
-                                index,
-                                'width',
-                                parseFloat(e.target.value) || 0,
-                              )
+                              handleItemChange(index, 'width', parseFloat(e.target.value) || 0)
                             }
                             className="w-20 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                             autoComplete="off"
@@ -110,11 +100,7 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                           step={item.unit === 'kg' ? '0.01' : '1'}
                           value={item.quantity}
                           onChange={(e) =>
-                            handleItemChange(
-                              index,
-                              'quantity',
-                              parseFloat(e.target.value) || 0,
-                            )
+                            handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
                           }
                           className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                           autoComplete="off"
@@ -135,9 +121,7 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                           className="p-2 text-blue-600 hover:text-blue-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
                           <MessageSquareIcon className="w-6 h-6" />
-                          {item.itemDetails
-                            ?.slice(0, item.quantity)
-                            .some((d) => d.note) && (
+                          {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
                             <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-800"></span>
                           )}
                         </button>
@@ -173,10 +157,7 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
             })
           ) : (
             <tr>
-              <td
-                colSpan={4}
-                className="text-center py-4 text-slate-500 dark:text-slate-400"
-              >
+              <td colSpan={4} className="text-center py-4 text-slate-500 dark:text-slate-400">
                 Belum ada layanan yang ditambahkan.
               </td>
             </tr>

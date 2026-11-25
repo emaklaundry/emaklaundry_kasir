@@ -6,12 +6,14 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 
 import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
 import { supabase } from '../../utils/supabaseClient';
+import { formatRupiah } from '../../utils/formatting';
+import { savePaymentWithRoundingCredit } from '../../utils/paymentUpdate';
 
 import {
   PlusCircleIcon,
@@ -87,7 +89,6 @@ const TransactionPage: React.FC = () => {
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const { services } = useServices();
-  const { updateCustomer } = useCustomerMutations();
 
   // State untuk server-side pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -203,45 +204,39 @@ const TransactionPage: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handleSavePayment = async (updatedTransaction: Transaction, pointsEarned?: number) => {
+  const handleSavePayment = async (updatedTransaction: Transaction) => {
     const shouldShowModal =
       updatedTransaction.paymentStatus === PaymentStatus.Paid &&
       updatedTransaction.orderStatus === OrderStatus.Completed;
     setIsSavingPayment(true);
     const toastId = addToast('Menyimpan pembayaran...', 'info');
     try {
-      // Send only DB columns (partial) to avoid sending client-only fields like customerName
-      const payload: Partial<Transaction> = {
-        amountPaid: updatedTransaction.amountPaid,
-        paymentStatus: updatedTransaction.paymentStatus,
-        paymentMethod: updatedTransaction.paymentMethod,
-        change: updatedTransaction.change,
-      };
-
-      await updateTransaction(updatedTransaction.id, payload);
-
-      // If points earned from rounding, add to customer's discount balance
-      if (pointsEarned && pointsEarned > 0 && updatedTransaction.customerId) {
-        const customer = customers.find((c: Customer) => c.id === updatedTransaction.customerId);
-        if (customer) {
-          const newDiscountBalance = (customer.defaultDiscount || 0) + pointsEarned;
-          await updateCustomer(customer.id, { defaultDiscount: newDiscountBalance });
-          addAuditLog(
-            `Pembulatan: Rp ${pointsEarned} ditambahkan ke saldo diskon ${customer.name}. Saldo baru: Rp ${newDiscountBalance}`,
-            updatedTransaction.storeId,
-          );
-        }
-      }
+      const { creditSaved, creditError } = await savePaymentWithRoundingCredit(
+        updateTransaction,
+        updatedTransaction,
+      );
 
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,
       );
+      if (creditSaved > 0) {
+        addAuditLog(
+          `Pembulatan tunai Rp ${formatRupiah(creditSaved)} masuk saldo diskon pelanggan (transaksi ${updatedTransaction.invoiceCode ?? updatedTransaction.id}).`,
+          updatedTransaction.storeId,
+        );
+      }
 
-      if (pointsEarned && pointsEarned > 0) {
+      if (creditError) {
         updateToast(
           toastId,
-          `Pem bayaran berhasil! Rp ${pointsEarned} ditambahkan ke saldo diskon pelanggan.`,
+          `Pembayaran tersimpan, tetapi saldo pembulatan gagal dicatat: ${creditError}`,
+          'warning',
+        );
+      } else if (creditSaved > 0) {
+        updateToast(
+          toastId,
+          `Pembayaran berhasil! Rp ${formatRupiah(creditSaved)} masuk saldo diskon pelanggan.`,
           'success',
         );
       } else {
@@ -569,7 +564,10 @@ const TransactionPage: React.FC = () => {
             </div>
           </div>
         )}
-        <div id="transaction-actions" className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div
+          id="transaction-actions"
+          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+        >
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Daftar Transaksi</h1>
           <div className="flex items-center gap-2 flex-wrap">
             {currentUser?.role !== UserRole.Cashier && (
@@ -622,7 +620,10 @@ const TransactionPage: React.FC = () => {
           </div>
         </div>
 
-        <div id="transaction-filters" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <div
+          id="transaction-filters"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700"
+        >
           <div className="relative">
             <label htmlFor="searchTerm" className="sr-only">
               Cari Transaksi
@@ -742,7 +743,10 @@ const TransactionPage: React.FC = () => {
         )}
 
         {/* Transactions Table */}
-        <div id="transaction-table" className="hidden md:block bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
+        <div
+          id="transaction-table"
+          className="hidden md:block bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-sm sm:text-base text-left text-slate-500 dark:text-slate-400">
               <thead className="text-xs sm:text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">

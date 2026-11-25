@@ -142,42 +142,37 @@ export function useGoogleContacts() {
     }
   }, [accessToken]);
 
-  const createContact = useCallback(async (contact: {
-    name: string;
-    phone: string;
-    address?: string;
-    email?: string;
-  }) => {
-    if (!accessToken) {
-      throw new Error('Belum terautentikasi');
-    }
+  const createContact = useCallback(
+    async (contact: { name: string; phone: string; address?: string; email?: string }) => {
+      if (!accessToken) {
+        throw new Error('Belum terautentikasi');
+      }
 
-    const body = {
-      names: [{ givenName: contact.name }],
-      phoneNumbers: [{ value: contact.phone }],
-      addresses: contact.address ? [{ streetAddress: contact.address }] : [],
-      emailAddresses: contact.email ? [{ value: contact.email }] : [],
-    };
+      const body = {
+        names: [{ givenName: contact.name }],
+        phoneNumbers: [{ value: contact.phone }],
+        addresses: contact.address ? [{ streetAddress: contact.address }] : [],
+        emailAddresses: contact.email ? [{ value: contact.email }] : [],
+      };
 
-    const response = await fetch(
-      'https://people.googleapis.com/v1/people:createContact',
-      {
+      const response = await fetch('https://people.googleapis.com/v1/people:createContact', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Gagal membuat kontak');
       }
-    );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Gagal membuat kontak');
-    }
-
-    return await response.json();
-  }, [accessToken]);
+      return await response.json();
+    },
+    [accessToken],
+  );
 
   const signOut = useCallback(() => {
     setAccessToken(null);

@@ -16,6 +16,7 @@ import {
 import EmptyState from '../../components/EmptyState';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
+import { savePaymentWithRoundingCredit } from '../../utils/paymentUpdate';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
@@ -420,18 +421,36 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       (updatedTransaction.orderStatus === OrderStatus.Completed ||
         updatedTransaction.orderStatus === OrderStatus.Ready);
     try {
-      await updateTransaction(transaction.id, {
-        amountPaid: updatedTransaction.amountPaid,
-        change: updatedTransaction.change,
-        paymentMethod: updatedTransaction.paymentMethod ?? undefined,
-        paymentStatus: updatedTransaction.paymentStatus,
+      const { creditSaved, creditError } = await savePaymentWithRoundingCredit(updateTransaction, {
+        ...updatedTransaction,
+        id: transaction.id,
       });
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${transaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         transaction.storeId,
       );
+      if (creditSaved > 0) {
+        addAuditLog(
+          `Pembulatan tunai Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan (transaksi ${transaction.invoiceCode ?? transaction.id}).`,
+          transaction.storeId,
+        );
+      }
       await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
-      updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
+      if (creditError) {
+        updateToast(
+          toastId,
+          `Pembayaran tersimpan, tetapi saldo pembulatan gagal dicatat: ${creditError}`,
+          'warning',
+        );
+      } else if (creditSaved > 0) {
+        updateToast(
+          toastId,
+          `Pembayaran berhasil! Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan.`,
+          'success',
+        );
+      } else {
+        updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
+      }
       if (shouldShowWhatsAppModal) {
         setIsWhatsAppOpen(true);
       }

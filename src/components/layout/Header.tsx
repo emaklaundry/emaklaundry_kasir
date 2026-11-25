@@ -50,7 +50,7 @@ const ThemeToggleButton: React.FC = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue-500 dark:focus:ring-offset-slate-800 touch-target"
+      className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue-600 dark:focus:ring-offset-slate-800 touch-target"
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       title={`Mode ${theme === 'dark' ? 'Terang' : 'Gelap'}`}
     >
@@ -59,10 +59,11 @@ const ThemeToggleButton: React.FC = () => {
   );
 };
 
-const Header: React.FC<{ pageTitle: string; onToggleSidebar?: () => void }> = ({
-  pageTitle,
-  onToggleSidebar,
-}) => {
+const Header: React.FC<{
+  pageTitle: string;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
+}> = ({ pageTitle, isSidebarOpen = false, onToggleSidebar }) => {
   const { currentUser, signOut, stores, selectedStoreId, setSelectedStoreId } = useAppContext();
   const { open } = useCommandPalette();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = React.useState(false);
@@ -80,10 +81,13 @@ const Header: React.FC<{ pageTitle: string; onToggleSidebar?: () => void }> = ({
           {/* Menu button untuk toggle sidebar - di paling kiri */}
           {onToggleSidebar && (
             <button
+              id="sidebar-toggle"
               onClick={onToggleSidebar}
               className="p-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0 touch-target"
-              aria-label="Toggle Sidebar"
-              title="Toggle Sidebar"
+              aria-label={isSidebarOpen ? 'Tutup navigasi samping' : 'Buka navigasi samping'}
+              aria-controls="logo-sidebar"
+              aria-expanded={isSidebarOpen}
+              title={isSidebarOpen ? 'Tutup navigasi samping' : 'Buka navigasi samping'}
             >
               <MenuIcon className="w-5 h-5" />
             </button>

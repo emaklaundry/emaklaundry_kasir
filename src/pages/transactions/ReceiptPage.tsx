@@ -62,6 +62,9 @@ const ReceiptPage: React.FC = () => {
   }
 
   const remainingBalance = tx.total - tx.amountPaid;
+  const balanceUsed = Number(tx.discountBalanceUsed ?? 0);
+  const roundingCredit = Number(tx.roundingCredit ?? 0);
+  const manualDiscount = tx.discount - balanceUsed;
 
   return (
     <div className="max-w-md mx-auto bg-slate-50 dark:bg-slate-800 p-8 rounded-lg shadow-lg receipt-print">
@@ -111,7 +114,9 @@ const ReceiptPage: React.FC = () => {
                 Rp {item.subtotal.toLocaleString('id-ID')}
               </p>
             </div>
-            {item.itemDetails?.slice(0, item.quantity).some((d: TransactionItemDetail) => d.note) && (
+            {item.itemDetails
+              ?.slice(0, item.quantity)
+              .some((d: TransactionItemDetail) => d.note) && (
               <div className="pl-4 mt-1 space-y-0.5">
                 {item.itemDetails?.slice(0, item.quantity).map(
                   (detail: TransactionItemDetail, detailIndex: number) =>
@@ -139,10 +144,16 @@ const ReceiptPage: React.FC = () => {
           <span>Subtotal</span>
           <span>Rp {tx.subtotal.toLocaleString('id-ID')}</span>
         </div>
-        {tx.discount > 0 && (
+        {manualDiscount > 0 && (
           <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
             <span>Diskon</span>
-            <span>- Rp {tx.discount.toLocaleString('id-ID')}</span>
+            <span>- Rp {manualDiscount.toLocaleString('id-ID')}</span>
+          </div>
+        )}
+        {balanceUsed > 0 && (
+          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+            <span>Saldo Diskon</span>
+            <span>- Rp {balanceUsed.toLocaleString('id-ID')}</span>
           </div>
         )}
         {tx.tax > 0 && (
@@ -166,10 +177,22 @@ const ReceiptPage: React.FC = () => {
           <span>Dibayar</span>
           <span>Rp {tx.amountPaid.toLocaleString('id-ID')}</span>
         </div>
+        {roundingCredit > 0 && (
+          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+            <span>Pembulatan ke saldo</span>
+            <span>Rp {roundingCredit.toLocaleString('id-ID')}</span>
+          </div>
+        )}
         {tx.change > 0 && (
           <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
             <span>Kembalian</span>
             <span>Rp {tx.change.toLocaleString('id-ID')}</span>
+          </div>
+        )}
+        {(customer.defaultDiscount ?? 0) > 0 && (
+          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+            <span>Saldo diskon Anda</span>
+            <span>Rp {(customer.defaultDiscount ?? 0).toLocaleString('id-ID')}</span>
           </div>
         )}
         <div className="flex justify-between font-semibold text-lg text-slate-900 dark:text-white">

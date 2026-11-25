@@ -91,6 +91,7 @@ export type Database = {
           base_salary: number;
           commission_rate: number;
           is_active: boolean;
+          login_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -103,6 +104,7 @@ export type Database = {
           base_salary?: number;
           commission_rate?: number;
           is_active?: boolean;
+          login_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -115,17 +117,18 @@ export type Database = {
           base_salary?: number;
           commission_rate?: number;
           is_active?: boolean;
+          login_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "employees_store_id_fkey";
-            columns: ["store_id"];
+            foreignKeyName: 'employees_store_id_fkey';
+            columns: ['store_id'];
             isOneToOne: false;
-            referencedRelation: "stores";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
         ];
       };
       attendance: {
@@ -158,12 +161,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "attendance_employee_id_fkey";
-            columns: ["employee_id"];
+            foreignKeyName: 'attendance_employee_id_fkey';
+            columns: ['employee_id'];
             isOneToOne: false;
-            referencedRelation: "employees";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
         ];
       };
       advances: {
@@ -196,12 +199,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "advances_employee_id_fkey";
-            columns: ["employee_id"];
+            foreignKeyName: 'advances_employee_id_fkey';
+            columns: ['employee_id'];
             isOneToOne: false;
-            referencedRelation: "employees";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
         ];
       };
       payroll: {
@@ -246,19 +249,73 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "payroll_employee_id_fkey";
-            columns: ["employee_id"];
+            foreignKeyName: 'payroll_employee_id_fkey';
+            columns: ['employee_id'];
             isOneToOne: false;
-            referencedRelation: "employees";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      customer_discount_ledger: {
+        Row: {
+          amount: number;
+          balance_after: number;
+          created_at: string;
+          created_by: string | null;
+          customer_id: string;
+          id: string;
+          kind: string;
+          note: string | null;
+          store_id: string | null;
+          transaction_id: string | null;
+        };
+        Insert: {
+          amount: number;
+          balance_after: number;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id: string;
+          id?: string;
+          kind: string;
+          note?: string | null;
+          store_id?: string | null;
+          transaction_id?: string | null;
+        };
+        Update: {
+          amount?: number;
+          balance_after?: number;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id?: string;
+          id?: string;
+          kind?: string;
+          note?: string | null;
+          store_id?: string | null;
+          transaction_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_discount_ledger_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'customer_discount_ledger_transaction_id_fkey';
+            columns: ['transaction_id'];
+            isOneToOne: false;
+            referencedRelation: 'transactions';
+            referencedColumns: ['id'];
+          },
         ];
       };
       customers: {
         Row: {
           address: string | null;
           createdAt: string | null;
-          defaultDiscount: number | null;
+          defaultDiscount: number;
           id: string;
           name: string;
           notes: string | null;
@@ -268,7 +325,7 @@ export type Database = {
         Insert: {
           address?: string | null;
           createdAt?: string | null;
-          defaultDiscount?: number | null;
+          defaultDiscount?: number;
           id?: string;
           name: string;
           notes?: string | null;
@@ -278,7 +335,7 @@ export type Database = {
         Update: {
           address?: string | null;
           createdAt?: string | null;
-          defaultDiscount?: number | null;
+          defaultDiscount?: number;
           id?: string;
           name?: string;
           notes?: string | null;
@@ -302,6 +359,8 @@ export type Database = {
           date: string;
           description: string;
           id: string;
+          recurringPeriod: string | null;
+          recurringTemplateId: string | null;
           storeId: string | null;
         };
         Insert: {
@@ -310,6 +369,8 @@ export type Database = {
           date: string;
           description: string;
           id?: string;
+          recurringPeriod?: string | null;
+          recurringTemplateId?: string | null;
           storeId?: string | null;
         };
         Update: {
@@ -318,12 +379,59 @@ export type Database = {
           date?: string;
           description?: string;
           id?: string;
+          recurringPeriod?: string | null;
+          recurringTemplateId?: string | null;
           storeId?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: 'expenses_storeId_fkey';
             columns: ['storeId'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'expenses_recurring_template_store_fkey';
+            columns: ['recurringTemplateId', 'storeId'];
+            isOneToOne: false;
+            referencedRelation: 'monthly_expense_templates';
+            referencedColumns: ['id', 'store_id'];
+          },
+        ];
+      };
+      monthly_expense_templates: {
+        Row: {
+          category: string;
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          sort_order: number;
+          store_id: string;
+        };
+        Insert: {
+          category: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          sort_order?: number;
+          store_id: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          sort_order?: number;
+          store_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'monthly_expense_templates_store_id_fkey';
+            columns: ['store_id'];
             isOneToOne: false;
             referencedRelation: 'stores';
             referencedColumns: ['id'];
@@ -466,6 +574,7 @@ export type Database = {
         Row: {
           canGiveDiscount: boolean | null;
           created_at: string | null;
+          employee_id: string | null;
           id: string;
           isActive: boolean | null;
           name: string;
@@ -475,6 +584,7 @@ export type Database = {
         Insert: {
           canGiveDiscount?: boolean | null;
           created_at?: string | null;
+          employee_id?: string | null;
           id: string;
           isActive?: boolean | null;
           name: string;
@@ -484,6 +594,7 @@ export type Database = {
         Update: {
           canGiveDiscount?: boolean | null;
           created_at?: string | null;
+          employee_id?: string | null;
           id?: string;
           isActive?: boolean | null;
           name?: string;
@@ -491,6 +602,13 @@ export type Database = {
           store_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'profiles_employee_id_fkey';
+            columns: ['employee_id'];
+            isOneToOne: true;
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'profiles_store_id_fkey';
             columns: ['store_id'];
@@ -604,86 +722,86 @@ export type Database = {
         Relationships: [];
       };
       standard_operating_procedures: {
-          Row: {
-            category: string;
-            content: string;
-            created_at: string | null;
-            display_order: number;
-            id: string;
-            title: string;
-            updated_at: string | null;
-          };
-          Insert: {
-            category: string;
-            content: string;
-            created_at?: string | null;
-            display_order?: number;
-            id?: string;
-            title: string;
-            updated_at?: string | null;
-          };
-          Update: {
-            category?: string;
-            content?: string;
-            created_at?: string | null;
-            display_order?: number;
-            id?: string;
-            title?: string;
-            updated_at?: string | null;
-          };
-          Relationships: [];
+        Row: {
+          category: string;
+          content: string;
+          created_at: string | null;
+          display_order: number;
+          id: string;
+          title: string;
+          updated_at: string | null;
         };
-        stock_opname: {
-          Row: {
-            discrepancy: number | null;
-            id: string;
-            inventory_item_id: string | null;
-            notes: string | null;
-            physical_stock: number;
-            recorded_at: string | null;
-            recorded_by: string | null;
-            store_id: string | null;
-            virtual_stock: number;
-          };
-          Insert: {
-            discrepancy?: number | null;
-            id?: string;
-            inventory_item_id?: string | null;
-            notes?: string | null;
-            physical_stock: number;
-            recorded_at?: string | null;
-            recorded_by?: string | null;
-            store_id?: string | null;
-            virtual_stock: number;
-          };
-          Update: {
-            discrepancy?: number | null;
-            id?: string;
-            inventory_item_id?: string | null;
-            notes?: string | null;
-            physical_stock?: number;
-            recorded_at?: string | null;
-            recorded_by?: string | null;
-            store_id?: string | null;
-            virtual_stock?: number;
-          };
-          Relationships: [
-            {
-              foreignKeyName: 'stock_opname_inventory_item_id_fkey';
-              columns: ['inventory_item_id'];
-              isOneToOne: false;
-              referencedRelation: 'inventory_items';
-              referencedColumns: ['id'];
-            },
-            {
-              foreignKeyName: 'stock_opname_store_id_fkey';
-              columns: ['store_id'];
-              isOneToOne: false;
-              referencedRelation: 'stores';
-              referencedColumns: ['id'];
-            },
-          ];
+        Insert: {
+          category: string;
+          content: string;
+          created_at?: string | null;
+          display_order?: number;
+          id?: string;
+          title: string;
+          updated_at?: string | null;
         };
+        Update: {
+          category?: string;
+          content?: string;
+          created_at?: string | null;
+          display_order?: number;
+          id?: string;
+          title?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      stock_opname: {
+        Row: {
+          discrepancy: number | null;
+          id: string;
+          inventory_item_id: string | null;
+          notes: string | null;
+          physical_stock: number;
+          recorded_at: string | null;
+          recorded_by: string | null;
+          store_id: string | null;
+          virtual_stock: number;
+        };
+        Insert: {
+          discrepancy?: number | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          notes?: string | null;
+          physical_stock: number;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+          store_id?: string | null;
+          virtual_stock: number;
+        };
+        Update: {
+          discrepancy?: number | null;
+          id?: string;
+          inventory_item_id?: string | null;
+          notes?: string | null;
+          physical_stock?: number;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+          store_id?: string | null;
+          virtual_stock?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'stock_opname_inventory_item_id_fkey';
+            columns: ['inventory_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'inventory_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stock_opname_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       stores: {
         Row: {
           address: string | null;
@@ -716,6 +834,7 @@ export type Database = {
           createdByUserId: string | null;
           customerId: string | null;
           discount: number;
+          discountBalanceUsed: number;
           estimatedCompletionDate: string | null;
           id: string;
           idempotencyKey: string | null;
@@ -725,6 +844,7 @@ export type Database = {
           orderStatus: string;
           paymentMethod: string | null;
           paymentStatus: string;
+          roundingCredit: number;
           storeId: string | null;
           subtotal: number;
           tax: number;
@@ -737,6 +857,7 @@ export type Database = {
           createdByUserId?: string | null;
           customerId?: string | null;
           discount: number;
+          discountBalanceUsed?: number;
           estimatedCompletionDate?: string | null;
           id?: string;
           idempotencyKey?: string | null;
@@ -746,6 +867,7 @@ export type Database = {
           orderStatus: string;
           paymentMethod?: string | null;
           paymentStatus: string;
+          roundingCredit?: number;
           storeId?: string | null;
           subtotal: number;
           tax: number;
@@ -758,6 +880,7 @@ export type Database = {
           createdByUserId?: string | null;
           customerId?: string | null;
           discount?: number;
+          discountBalanceUsed?: number;
           estimatedCompletionDate?: string | null;
           id?: string;
           idempotencyKey?: string | null;
@@ -767,6 +890,7 @@ export type Database = {
           orderStatus?: string;
           paymentMethod?: string | null;
           paymentStatus?: string;
+          roundingCredit?: number;
           storeId?: string | null;
           subtotal?: number;
           tax?: number;
@@ -858,6 +982,15 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_customer_discount_balance: {
+        Args: {
+          p_customer_id: string;
+          p_expected_balance: number;
+          p_new_balance: number;
+          p_note?: string;
+        };
+        Returns: number;
+      };
       update_transaction_progress: {
         Args: {
           p_amount_paid?: number;
@@ -874,6 +1007,7 @@ export type Database = {
           createdByUserId: string | null;
           customerId: string | null;
           discount: number;
+          discountBalanceUsed: number;
           estimatedCompletionDate: string | null;
           id: string;
           idempotencyKey: string | null;
@@ -883,6 +1017,7 @@ export type Database = {
           orderStatus: string;
           paymentMethod: string | null;
           paymentStatus: string;
+          roundingCredit: number;
           storeId: string | null;
           subtotal: number;
           tax: number;

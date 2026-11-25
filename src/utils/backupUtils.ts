@@ -41,7 +41,9 @@ export async function exportBackup(): Promise<BackupData> {
 
   for (const table of tables) {
     // Explicitly cast table string to a valid table name key
-    const { data: tableData, error } = await supabase.from(table as keyof import('@/types/supabase').Database['public']['Tables']).select('*');
+    const { data: tableData, error } = await supabase
+      .from(table as keyof import('@/types/supabase').Database['public']['Tables'])
+      .select('*');
 
     if (error) {
       console.error(`Error fetching ${table}:`, error);

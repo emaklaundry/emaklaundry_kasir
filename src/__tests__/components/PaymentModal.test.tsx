@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ToastProvider } from '@/contexts/ToastContext';
 import PaymentModal from '@/components/PaymentModal';
@@ -46,7 +46,7 @@ describe('PaymentModal', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <ToastProvider>{ui}</ToastProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
   it('renders modal when open', () => {
@@ -58,8 +58,48 @@ describe('PaymentModal', () => {
 
   it('calls onClose when close button is clicked', () => {
     renderWithProviders(<PaymentModal {...defaultProps} />);
-    const closeButton = screen.getByRole('button', { name: /close modal/i });
+    const closeButton = screen.getByRole('button', { name: 'Tutup dialog' });
     fireEvent.click(closeButton);
     expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it('tunai: dibulatkan ke atas, total tetap, kelebihan jadi roundingCredit', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const tx = { ...mockTransaction, subtotal: 10300, total: 10300 };
+    renderWithProviders(<PaymentModal {...defaultProps} transaction={tx} onSave={onSave} />);
+
+    expect(screen.getByLabelText(/tagihan tunai/i)).toHaveValue('10.500');
+    fireEvent.change(screen.getByLabelText(/uang diterima/i), { target: { value: '20000' } });
+    fireEvent.click(screen.getByRole('button', { name: /simpan pembayaran/i }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = onSave.mock.calls[0][0];
+    expect(saved.total).toBe(10300);
+    expect(saved.discount).toBe(0);
+    expect(saved.amountPaid).toBe(10300);
+    expect(saved.paymentStatus).toBe(PaymentStatus.Paid);
+    expect(saved.roundingCredit).toBe(200);
+    expect(saved.change).toBe(9500);
+  });
+
+  it('non-tunai: dibayar pas tanpa roundingCredit', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const tx = { ...mockTransaction, subtotal: 10300, total: 10300 };
+    renderWithProviders(<PaymentModal {...defaultProps} transaction={tx} onSave={onSave} />);
+
+    fireEvent.click(screen.getByRole('button', { name: PaymentMethod.Transfer }));
+    expect(screen.getByLabelText(/jumlah bayar/i)).toHaveValue('10.300');
+    fireEvent.click(screen.getByRole('button', { name: /simpan pembayaran/i }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = onSave.mock.calls[0][0];
+    expect(saved.amountPaid).toBe(10300);
+    expect(saved.roundingCredit).toBe(0);
+  });
+
+  it('tanpa pelanggan terdaftar: tunai tidak dibulatkan', () => {
+    const tx = { ...mockTransaction, customerId: '', subtotal: 10300, total: 10300 };
+    renderWithProviders(<PaymentModal {...defaultProps} transaction={tx} />);
+    expect(screen.getByLabelText(/jumlah bayar/i)).toHaveValue('10.300');
   });
 });

@@ -40,6 +40,8 @@ export interface RawDBTransaction {
   items?: TransactionItem[] | unknown[];
   notes?: string;
   idempotencyKey?: string;
+  discountBalanceUsed?: number | null;
+  roundingCredit?: number | null;
 }
 
 /**
@@ -87,5 +89,7 @@ export function mapDBtoTransaction(raw: RawDBTransaction): Transaction {
     storeId: (raw.store_id ?? raw.storeId ?? '') as string,
     notes: raw.notes ?? undefined,
     idempotencyKey: raw.idempotencyKey ?? undefined,
+    discountBalanceUsed: Number(raw.discountBalanceUsed ?? 0),
+    roundingCredit: Number(raw.roundingCredit ?? 0),
   };
 }

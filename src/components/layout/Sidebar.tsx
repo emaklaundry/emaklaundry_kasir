@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import useAppContext from '../../contexts/useAppContext';
 import {
@@ -74,6 +74,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { startTour } = useTutorial();
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>(['/management']);
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    if (sidebarRef.current) sidebarRef.current.inert = !isOpen;
+  }, [isOpen]);
 
   const toggleMenu = (path: string) => {
     setOpenMenus((prev) =>
@@ -104,10 +109,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         if (item.children) {
           const isParentActive = location.pathname.startsWith(item.path);
           const isOpen = openMenus.includes(item.path);
+          const submenuId = `sidebar-submenu-${item.path.replace(/\W/g, '-')}`;
           return (
             <li key={item.path}>
               <button
                 onClick={() => toggleMenu(item.path)}
+                aria-expanded={isOpen}
+                aria-controls={submenuId}
                 className={`w-full flex items-center p-3 text-base rounded-lg transition-all duration-200 group ${
                   isParentActive
                     ? 'bg-brand-blue-50 dark:bg-slate-700 text-brand-blue-700 dark:text-brand-blue-300'
@@ -131,7 +139,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
                 )}
               </button>
               {isOpen && (
-                <ul className="mt-2 space-y-1 pl-3 border-l-2 border-slate-200 dark:border-slate-700">
+                <ul
+                  id={submenuId}
+                  className="mt-2 space-y-1 pl-3 border-l-2 border-slate-200 dark:border-slate-700"
+                >
                   {renderNavLinks(item.children)}
                 </ul>
               )}
@@ -173,11 +184,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       )}
 
       <aside
+        ref={sidebarRef}
         id="logo-sidebar"
         className={`print-hide fixed top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Sidebar"
+        aria-hidden={!isOpen}
       >
         <div className="h-full px-3 py-4 overflow-y-auto bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
           {/* Header dengan toggle button */}
@@ -188,16 +201,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               </span>
             </NavLink>
             <button
+              id="sidebar-close"
               onClick={onToggle}
               className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors touch-target"
-              aria-label="Toggle Sidebar"
-              title="Sembunyikan Sidebar"
+              aria-label="Tutup navigasi"
+              title="Tutup navigasi"
             >
               <ChevronLeftIcon className="w-5 h-5" />
             </button>
           </div>
 
-          <ul className="space-y-2 font-medium flex-1">{renderNavLinks(navItems)}</ul>
+          <nav aria-label="Navigasi samping" className="flex-1">
+            <ul className="space-y-2 font-medium">{renderNavLinks(navItems)}</ul>
+          </nav>
 
           {/* Tutorial Button */}
           <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">

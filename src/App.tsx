@@ -11,6 +11,7 @@ import useTheme from './hooks/useTheme';
 import { AppProviders } from './contexts/AppProviders';
 import CommandPalette from './components/CommandPalette';
 import QuickActionsPage from './pages/QuickActionsPage';
+import MonthlyExpenseReminder from './components/MonthlyExpenseReminder';
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -108,6 +109,7 @@ const AppRoutes: React.FC = () => {
 
   return (
     <>
+      <MonthlyExpenseReminder />
       <Layout>
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -262,7 +264,7 @@ const App: React.FC = () => {
   useTheme(); // Initialize and apply theme
   return (
     <AppProviders>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Router>
         <AppRoutes />
       </Router>
     </AppProviders>

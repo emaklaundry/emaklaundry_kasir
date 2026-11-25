@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import React from 'react';
 import { vi } from 'vitest';
 
 describe('ConfirmationModal', () => {
@@ -14,6 +13,7 @@ describe('ConfirmationModal', () => {
         message="Test Message"
       />,
     );
+    expect(screen.getByRole('button', { name: 'Batal' })).toHaveClass('focus-visible:ring-2');
     expect(screen.getByText('Test Title')).toBeInTheDocument();
     expect(screen.getByText('Test Message')).toBeInTheDocument();
     expect(screen.getByText('Batal')).toBeInTheDocument();

@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import ExpenseFormModal from '@/components/ExpenseFormModal';
-import React from 'react';
 import { vi } from 'vitest';
 
 describe('ExpenseFormModal', () => {

@@ -12,6 +12,24 @@ describe('hooks/useTheme', () => {
     expect(typeof useTheme).toBe('function');
   });
 
+  it('uses the dark reference theme when no preference has been saved', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.theme).toBe('dark');
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+  });
+
+  it('respects a saved light preference', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('light');
+
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.theme).toBe('light');
+    expect(document.documentElement.classList.contains('light')).toBe(true);
+  });
+
   it('keeps the UI usable when browser storage is unavailable', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new DOMException('Storage is unavailable', 'SecurityError');
@@ -23,8 +41,8 @@ describe('hooks/useTheme', () => {
 
     const { result } = renderHook(() => useTheme());
 
-    expect(result.current.theme).toBe('light');
-    expect(document.documentElement.classList.contains('light')).toBe(true);
+    expect(result.current.theme).toBe('dark');
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(console.warn).toHaveBeenCalledTimes(2);
   });
 });

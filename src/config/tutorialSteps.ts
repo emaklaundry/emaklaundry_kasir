@@ -3,7 +3,8 @@ import { Step } from 'react-joyride';
 export const dashboardSteps: Step[] = [
   {
     target: 'body',
-    content: 'Selamat datang di Emak Laundry POS! Ini adalah tur singkat untuk membantu Anda memulai.',
+    content:
+      'Selamat datang di Emak Laundry POS! Ini adalah tur singkat untuk membantu Anda memulai.',
     placement: 'center',
   },
   {
@@ -31,7 +32,8 @@ export const newTransactionSteps: Step[] = [
   },
   {
     target: '#transaction-items',
-    content: 'Item yang dipilih akan muncul di tabel ini. Anda bisa mengubah jumlah atau menambahkan detail.',
+    content:
+      'Item yang dipilih akan muncul di tabel ini. Anda bisa mengubah jumlah atau menambahkan detail.',
   },
   {
     target: '#notes-section',
@@ -66,7 +68,8 @@ export const employeesSteps: Step[] = [
   },
   {
     target: '#employees-import-btn',
-    content: 'Fitur Baru! Anda bisa mengimport data dari pengguna (User) yang sudah ada agar tidak perlu mengetik ulang.',
+    content:
+      'Fitur Baru! Anda bisa mengimport data dari pengguna (User) yang sudah ada agar tidak perlu mengetik ulang.',
   },
   {
     target: '#employees-add-btn',

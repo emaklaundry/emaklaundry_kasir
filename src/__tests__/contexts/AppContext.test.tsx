@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { act } from 'react-dom/test-utils';
 import { AppProvider } from '@/contexts/AppContext';
@@ -58,11 +57,12 @@ describe('AppContext', () => {
   });
 
   it('throws error if used outside provider', () => {
-    // Must call inside a component or hook, so use a wrapper
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     function Wrapper() {
       useAppContext();
       return null;
     }
     expect(() => render(<Wrapper />)).toThrow();
+    consoleSpy.mockRestore();
   });
 });
