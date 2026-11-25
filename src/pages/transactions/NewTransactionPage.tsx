@@ -244,10 +244,6 @@ const NewTransactionPage: React.FC = () => {
       setDiscountValue(settings?.discountRate ?? 0);
       hasShownDiscountToast.current = false; // Reset when no discount
     }
-      setDiscountType('percent');
-      setDiscountValue(settings?.discountRate ?? 0);
-      hasShownDiscountToast.current = false; // Reset when no discount
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     canApplyDiscount,

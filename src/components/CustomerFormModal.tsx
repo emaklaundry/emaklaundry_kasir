@@ -22,6 +22,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     phone: customer?.phone || '',
     address: customer?.address || '',
     notes: customer?.notes || '',
+    defaultDiscount: customer?.defaultDiscount ?? 0,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -134,6 +135,25 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             id="customer-address"
             autoComplete="street-address"
             value={formData.address}
+            onChange={handleChange}
+            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="customer-discount"
+            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
+          >
+            Saldo Diskon (Rp)
+          </label>
+          <input
+            type="number"
+            name="defaultDiscount"
+            id="customer-discount"
+            min={0}
+            step={1}
+            inputMode="numeric"
+            value={formData.defaultDiscount}
             onChange={handleChange}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           />
