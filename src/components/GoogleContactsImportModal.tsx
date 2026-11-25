@@ -140,7 +140,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
               <button
                 onClick={signIn}
                 disabled={isLoading}
-                className="flex items-center gap-3 px-6 py-3 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
+                className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
               >
                 {isLoading ? (
                   <RefreshCwIcon className="w-5 h-5 animate-spin text-slate-600" />
@@ -164,7 +164,9 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                     />
                   </svg>
                 )}
-                <span className="text-slate-700 font-medium">Masuk dengan Google</span>
+                <span className="text-slate-700 dark:text-slate-700 font-medium">
+                  Masuk dengan Google
+                </span>
               </button>
               {error && (
                 <p role="alert" className="mt-4 text-sm text-red-500">

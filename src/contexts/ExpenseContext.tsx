@@ -9,6 +9,8 @@ const fetchExpenses = async (): Promise<Expense[]> => {
     ...e,
     date: new Date(e.date),
     storeId: e.storeId ?? undefined,
+    recurringTemplateId: e.recurringTemplateId ?? undefined,
+    recurringPeriod: e.recurringPeriod ?? undefined,
   })) as Expense[];
 };
 

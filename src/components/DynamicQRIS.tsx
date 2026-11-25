@@ -60,7 +60,7 @@ const DynamicQRIS: React.FC<DynamicQRISProps> = ({
       <div
         role="img"
         aria-label={`QRIS untuk membayar ${formatQRISAmount(amount)}${merchantName ? ` ke ${merchantName}` : ''}`}
-        className="bg-white p-3 rounded-lg shadow-md"
+        className="bg-white dark:bg-white p-3 rounded-lg shadow-md"
       >
         <QRCodeSVG
           value={dynamicQRIS}

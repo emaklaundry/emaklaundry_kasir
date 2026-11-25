@@ -184,6 +184,8 @@ export interface Expense {
   category: string;
   amount: number;
   storeId: string;
+  recurringTemplateId?: string;
+  recurringPeriod?: string;
 }
 
 export interface User {

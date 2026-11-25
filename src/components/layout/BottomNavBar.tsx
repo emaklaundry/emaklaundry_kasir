@@ -17,7 +17,7 @@ const NavItem: React.FC<{
       `flex flex-col items-center justify-center w-full h-full text-center transition-colors duration-200 ${
         isActive
           ? 'text-brand-blue-600 dark:text-brand-blue-300'
-          : 'text-slate-500 dark:text-slate-400 hover:text-brand-blue-500 dark:hover:text-brand-blue-400'
+          : 'text-slate-500 dark:text-slate-400 hover:text-brand-blue-600 dark:hover:text-brand-blue-400'
       } ${disabled ? 'opacity-50 pointer-events-none' : ''}`
     }
     tabIndex={disabled ? -1 : 0}

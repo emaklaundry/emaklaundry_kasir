@@ -91,6 +91,9 @@ export type Database = {
           base_salary: number;
           commission_rate: number;
           is_active: boolean;
+          photo_url: string | null;
+          photo_path: string | null;
+          login_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -103,6 +106,9 @@ export type Database = {
           base_salary?: number;
           commission_rate?: number;
           is_active?: boolean;
+          photo_url?: string | null;
+          photo_path?: string | null;
+          login_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -115,6 +121,9 @@ export type Database = {
           base_salary?: number;
           commission_rate?: number;
           is_active?: boolean;
+          photo_url?: string | null;
+          photo_path?: string | null;
+          login_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -302,6 +311,8 @@ export type Database = {
           date: string;
           description: string;
           id: string;
+          recurringPeriod: string | null;
+          recurringTemplateId: string | null;
           storeId: string | null;
         };
         Insert: {
@@ -310,6 +321,8 @@ export type Database = {
           date: string;
           description: string;
           id?: string;
+          recurringPeriod?: string | null;
+          recurringTemplateId?: string | null;
           storeId?: string | null;
         };
         Update: {
@@ -318,12 +331,59 @@ export type Database = {
           date?: string;
           description?: string;
           id?: string;
+          recurringPeriod?: string | null;
+          recurringTemplateId?: string | null;
           storeId?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: 'expenses_storeId_fkey';
             columns: ['storeId'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'expenses_recurring_template_store_fkey';
+            columns: ['recurringTemplateId', 'storeId'];
+            isOneToOne: false;
+            referencedRelation: 'monthly_expense_templates';
+            referencedColumns: ['id', 'store_id'];
+          },
+        ];
+      };
+      monthly_expense_templates: {
+        Row: {
+          category: string;
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          sort_order: number;
+          store_id: string;
+        };
+        Insert: {
+          category: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          sort_order?: number;
+          store_id: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          sort_order?: number;
+          store_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'monthly_expense_templates_store_id_fkey';
+            columns: ['store_id'];
             isOneToOne: false;
             referencedRelation: 'stores';
             referencedColumns: ['id'];
@@ -466,6 +526,7 @@ export type Database = {
         Row: {
           canGiveDiscount: boolean | null;
           created_at: string | null;
+          employee_id: string | null;
           id: string;
           isActive: boolean | null;
           name: string;
@@ -475,6 +536,7 @@ export type Database = {
         Insert: {
           canGiveDiscount?: boolean | null;
           created_at?: string | null;
+          employee_id?: string | null;
           id: string;
           isActive?: boolean | null;
           name: string;
@@ -484,6 +546,7 @@ export type Database = {
         Update: {
           canGiveDiscount?: boolean | null;
           created_at?: string | null;
+          employee_id?: string | null;
           id?: string;
           isActive?: boolean | null;
           name?: string;
@@ -491,6 +554,13 @@ export type Database = {
           store_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'profiles_employee_id_fkey';
+            columns: ['employee_id'];
+            isOneToOne: true;
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'profiles_store_id_fkey';
             columns: ['store_id'];

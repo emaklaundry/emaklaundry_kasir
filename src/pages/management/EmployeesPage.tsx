@@ -6,6 +6,7 @@ import useToasts from '../../contexts/useToasts';
 import Modal from '../../components/Modal';
 import { Employee, EmployeeFormData, EmployeeRole } from '../../types/hrm';
 import { User, UserRole } from '../../types';
+import { supabase } from '../../utils/supabaseClient';
 import {
   PlusCircleIcon,
   EditIcon,
@@ -37,6 +38,9 @@ const EmployeesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [loginPin, setLoginPin] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<EmployeeFormData>({
     storeId: selectedStoreId || '',
     name: '',
@@ -70,6 +74,8 @@ const EmployeesPage: React.FC = () => {
   }, [selectedStoreId, fetchEmployees]);
 
   const handleOpenModal = (employee?: Employee) => {
+    setPhotoFile(null);
+    setLoginPin('');
     if (employee) {
       setEditingEmployee(employee);
       setFormData({
@@ -99,6 +105,8 @@ const EmployeesPage: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingEmployee(null);
+    setPhotoFile(null);
+    setLoginPin('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,24 +117,98 @@ const EmployeesPage: React.FC = () => {
       return;
     }
 
+    if (
+      photoFile &&
+      (!['image/jpeg', 'image/png', 'image/webp'].includes(photoFile.type) ||
+        photoFile.size === 0 ||
+        photoFile.size > 3 * 1024 * 1024)
+    ) {
+      addToast('Foto harus berupa JPG, PNG, atau WebP dengan ukuran maksimal 3 MB.', 'error');
+      return;
+    }
+
+    if (loginPin && !/^\d{6}$/.test(loginPin)) {
+      addToast('PIN harus terdiri dari 6 angka.', 'error');
+      return;
+    }
+
+    setIsSaving(true);
     try {
+      let employee: Employee;
       if (editingEmployee) {
-        await updateEmployee(editingEmployee.id, formData);
-        addToast('Data karyawan berhasil diupdate', 'success');
+        employee = editingEmployee;
+        await updateEmployee(employee.id, formData);
       } else {
-        await addEmployee(formData);
-        addToast('Karyawan baru berhasil ditambahkan', 'success');
+        employee = await addEmployee(formData);
+        setEditingEmployee(employee);
       }
+
+      if (photoFile) {
+        const path = `${formData.storeId}/${employee.id}/profile`;
+        const { error: uploadError } = await supabase.storage
+          .from('employee-photos')
+          .upload(path, photoFile, {
+            upsert: true,
+            contentType: photoFile.type,
+            cacheControl: '3600',
+          });
+        if (uploadError) throw uploadError;
+
+        const { data: photo } = supabase.storage.from('employee-photos').getPublicUrl(path);
+        await updateEmployee(employee.id, { photoUrl: photo.publicUrl, photoPath: path });
+        employee = { ...employee, photoUrl: photo.publicUrl, photoPath: path };
+        setEditingEmployee(employee);
+      }
+
+      if (loginPin) {
+        const { data, error } = await supabase.functions.invoke('manage-employee-login', {
+          body: { action: 'set-pin', employeeId: employee.id, pin: loginPin },
+        });
+        if (error || data?.error) {
+          throw new Error(data?.error || error?.message || 'Gagal mengatur PIN karyawan.');
+        }
+      } else if (editingEmployee) {
+        const { data, error } = await supabase.functions.invoke('manage-employee-login', {
+          body: { action: 'sync', employeeId: employee.id },
+        });
+        if (error || data?.error) {
+          throw new Error(data?.error || error?.message || 'Gagal menyinkronkan profil login.');
+        }
+      }
+
+      await fetchEmployees(selectedStoreId);
       handleCloseModal();
+      addToast(
+        editingEmployee ? 'Data karyawan berhasil diupdate' : 'Karyawan baru berhasil ditambahkan',
+        'success',
+      );
     } catch {
-      addToast('Gagal menyimpan data karyawan', 'error');
+      addToast('Gagal menyimpan data karyawan atau profil login.', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Yakin ingin menghapus karyawan "${name}"?`)) {
-      await deleteEmployee(id);
-      addToast('Karyawan berhasil dihapus', 'success');
+  const handleDelete = async (employee: Employee) => {
+    if (window.confirm(`Yakin ingin menghapus karyawan "${employee.name}"?`)) {
+      try {
+        const { data, error } = await supabase.functions.invoke('manage-employee-login', {
+          body: { action: 'delete', employeeId: employee.id },
+        });
+        if (error || data?.error) {
+          throw new Error(data?.error || error?.message || 'Gagal menghapus akun login.');
+        }
+        if (employee.photoPath) {
+          const { error: photoError } = await supabase.storage
+            .from('employee-photos')
+            .remove([employee.photoPath]);
+          if (photoError) throw photoError;
+        }
+        await deleteEmployee(employee.id);
+        addToast('Karyawan berhasil dihapus', 'success');
+      } catch {
+        addToast('Gagal menghapus karyawan atau akun loginnya.', 'error');
+      }
     }
   };
 
@@ -201,7 +283,15 @@ const EmployeesPage: React.FC = () => {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                    <UserIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
+                    {employee.photoUrl ? (
+                      <img
+                        src={employee.photoUrl}
+                        alt={`Foto profil ${employee.name}`}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <UserIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 dark:text-white">
@@ -236,6 +326,12 @@ const EmployeesPage: React.FC = () => {
                     {employee.isActive ? 'Aktif' : 'Nonaktif'}
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Login profil</span>
+                  <span className="font-medium text-slate-900 dark:text-white">
+                    {employee.loginEnabled ? 'Aktif' : 'Belum diatur'}
+                  </span>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
@@ -247,7 +343,7 @@ const EmployeesPage: React.FC = () => {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(employee.id, employee.name)}
+                  onClick={() => handleDelete(employee)}
                   className="flex items-center justify-center gap-1 px-3 py-2 text-sm bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg text-red-600 dark:text-red-400"
                 >
                   <TrashIcon className="w-4 h-4" />
@@ -266,26 +362,41 @@ const EmployeesPage: React.FC = () => {
         footer={
           <>
             <button
+              type="button"
+              disabled={isSaving}
               onClick={handleCloseModal}
               className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium dark:bg-slate-700 dark:text-slate-300"
             >
               Batal
             </button>
             <button
-              onClick={handleSubmit}
+              type="submit"
+              form="employee-form"
+              disabled={isSaving}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
             >
-              {editingEmployee ? 'Update' : 'Simpan'}
+              {isSaving ? 'Menyimpan...' : editingEmployee ? 'Update' : 'Simpan'}
             </button>
           </>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          id="employee-form"
+          aria-label="Form karyawan"
+          method="post"
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="employee-name"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Nama Karyawan *
             </label>
             <input
+              id="employee-name"
+              name="name"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -296,10 +407,15 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="employee-phone"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Nomor HP
             </label>
             <input
+              id="employee-phone"
+              name="phone"
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -309,10 +425,15 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="employee-role"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Posisi
             </label>
             <select
+              id="employee-role"
+              name="role"
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value as EmployeeRole })}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -325,10 +446,15 @@ const EmployeesPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="employee-salary"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 Gaji Pokok (Rp)
               </label>
               <input
+                id="employee-salary"
+                name="baseSalary"
                 type="number"
                 value={formData.baseSalary}
                 onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
@@ -337,10 +463,15 @@ const EmployeesPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="employee-commission"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 Komisi (%)
               </label>
               <input
+                id="employee-commission"
+                name="commissionRate"
                 type="number"
                 value={formData.commissionRate}
                 onChange={(e) =>
@@ -354,10 +485,70 @@ const EmployeesPage: React.FC = () => {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <label
+              htmlFor="employee-photo"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Foto profil login
+            </label>
+            <input
+              id="employee-photo"
+              name="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 dark:file:bg-slate-700"
+              aria-describedby="employee-photo-help"
+            />
+            <p id="employee-photo-help" className="text-xs text-slate-500 dark:text-slate-400">
+              JPG, PNG, atau WebP; maksimal 3 MB.
+            </p>
+            {editingEmployee?.photoUrl && (
+              <img
+                src={editingEmployee.photoUrl}
+                alt={`Foto profil ${editingEmployee.name}`}
+                className="h-16 w-16 rounded-full object-cover"
+              />
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="employee-login-pin"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
+              PIN login (6 digit)
+            </label>
+            <input
+              id="employee-login-pin"
+              name="loginPin"
+              type="password"
+              inputMode="numeric"
+              autoComplete="new-password"
+              pattern="[0-9]{6}"
+              minLength={6}
+              maxLength={6}
+              value={loginPin}
+              onChange={(e) => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              aria-describedby="employee-login-pin-help"
+            />
+            <p
+              id="employee-login-pin-help"
+              className="mt-1 text-xs text-slate-500 dark:text-slate-400"
+            >
+              {editingEmployee?.loginEnabled
+                ? 'Kosongkan jika PIN tidak ingin diubah.'
+                : 'Foto dan PIN diperlukan untuk mengaktifkan login profil.'}
+            </p>
+          </div>
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
               id="isActive"
+              name="isActive"
               checked={formData.isActive}
               onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
               className="w-4 h-4 text-blue-600 rounded"

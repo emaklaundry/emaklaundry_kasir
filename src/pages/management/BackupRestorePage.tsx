@@ -222,6 +222,8 @@ const BackupRestorePage: React.FC = () => {
               ...e,
               date: new Date(typeof e.date === 'string' ? e.date : e.date),
               storeId: e.storeId ?? '',
+              recurringTemplateId: e.recurringTemplateId ?? undefined,
+              recurringPeriod: e.recurringPeriod ?? undefined,
             })),
           ];
           if (data.length < pageSize) {

@@ -174,7 +174,7 @@ const SOPPage = () => {
                     type="text"
                     value={editForm.title || ''}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-600"
                     placeholder="Contoh: Penerimaan Laundry Kiloan"
                   />
                 </div>
@@ -185,7 +185,7 @@ const SOPPage = () => {
                     list="categories"
                     value={editForm.category || ''}
                     onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-600"
                     placeholder="Contoh: Kasir, Produksi, Umum"
                   />
                   <datalist id="categories">
@@ -214,7 +214,7 @@ const SOPPage = () => {
                     rows={12}
                     value={editForm.content || ''}
                     onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-600"
                     placeholder="Tulis langkah-langkah SOP di sini..."
                   ></textarea>
                   <p className="text-xs text-slate-500 mt-1">Tekan Enter untuk baris baru.</p>

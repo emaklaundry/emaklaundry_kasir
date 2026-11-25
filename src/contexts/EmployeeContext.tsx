@@ -49,7 +49,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const addEmployee = useCallback(async (employee: EmployeeFormData): Promise<Employee | null> => {
+  const addEmployee = useCallback(async (employee: EmployeeFormData): Promise<Employee> => {
     try {
       const { data, error: err } = await supabase
         .from('employees')
@@ -66,7 +66,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return newEmployee;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add employee');
-      return null;
+      throw err;
     }
   }, []);
 
@@ -80,6 +80,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...employee } : e)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update employee');
+      throw err;
     }
   }, []);
 
@@ -90,6 +91,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setEmployees((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete employee');
+      throw err;
     }
   }, []);
 

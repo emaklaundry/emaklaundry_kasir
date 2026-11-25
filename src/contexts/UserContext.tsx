@@ -14,7 +14,7 @@ import type { Database } from '../types/supabase';
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 const fetchUsers = async (): Promise<User[]> => {
-  const { data, error } = await supabase.from('profiles').select('*');
+  const { data, error } = await supabase.from('profiles').select('*').is('employee_id', null);
   if (error) throw error;
   return ((data as ProfileRow[]) || []).map((p) => ({
     id: p.id,
