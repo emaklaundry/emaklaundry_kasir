@@ -21,7 +21,7 @@ describe('CustomerFormModal', () => {
     expect(screen.getByRole('textbox', { name: /nama pelanggan/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /nomor telepon/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /alamat/i })).toBeInTheDocument();
-    expect(screen.getByRole('spinbutton', { name: /diskon standar/i })).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: /saldo diskon/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /catatan/i })).toBeInTheDocument();
     expect(screen.getByText('Batal')).toBeInTheDocument();
     expect(screen.getByText('Simpan')).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe('CustomerFormModal', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /alamat/i }), {
       target: { value: 'Jl. Mawar' },
     });
-    fireEvent.change(screen.getByRole('spinbutton', { name: /diskon standar/i }), {
+    fireEvent.change(screen.getByRole('spinbutton', { name: /saldo diskon/i }), {
       target: { value: '10' },
     });
     fireEvent.change(screen.getByRole('textbox', { name: /catatan/i }), {
