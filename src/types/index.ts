@@ -116,6 +116,8 @@ export interface Transaction {
   discountBalanceUsed?: number;
   /** Kelebihan pembulatan tunai ke atas yang masuk ke saldo pelanggan (Rp). */
   roundingCredit?: number;
+  /** Izin PIN supervisor sekali pakai untuk aksi sensitif Kasir (diskon manual, dll). */
+  supervisorApprovalId?: string | null;
 }
 
 export type DiscountLedgerKind = 'use' | 'rounding' | 'manual' | 'reversal';

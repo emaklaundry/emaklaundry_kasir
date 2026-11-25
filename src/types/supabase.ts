@@ -846,6 +846,7 @@ export type Database = {
           paymentStatus: string;
           roundingCredit: number;
           storeId: string | null;
+          supervisorApprovalId: string | null;
           subtotal: number;
           tax: number;
           total: number;
@@ -869,6 +870,7 @@ export type Database = {
           paymentStatus: string;
           roundingCredit?: number;
           storeId?: string | null;
+          supervisorApprovalId?: string | null;
           subtotal: number;
           tax: number;
           total: number;
@@ -892,6 +894,7 @@ export type Database = {
           paymentStatus?: string;
           roundingCredit?: number;
           storeId?: string | null;
+          supervisorApprovalId?: string | null;
           subtotal?: number;
           tax?: number;
           total?: number;
@@ -982,6 +985,17 @@ export type Database = {
         };
         Returns: undefined;
       };
+      has_my_supervisor_pin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      request_supervisor_approval: {
+        Args: {
+          p_action: string;
+          p_pin: string;
+          p_max_amount?: number;
+          p_transaction_id?: string;
+        };
+        Returns: Json;
+      };
+      set_my_supervisor_pin: { Args: { p_pin: string }; Returns: undefined };
       set_customer_discount_balance: {
         Args: {
           p_customer_id: string;
@@ -1019,6 +1033,7 @@ export type Database = {
           paymentStatus: string;
           roundingCredit: number;
           storeId: string | null;
+          supervisorApprovalId: string | null;
           subtotal: number;
           tax: number;
           total: number;

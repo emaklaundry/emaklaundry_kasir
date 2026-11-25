@@ -28,6 +28,8 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
+import SupervisorPinModal from '../../components/SupervisorPinModal';
+import { needsManualDiscountApproval } from '../../utils/supervisorApproval';
 import {
   ExtendedTransactionItem,
   PaymentStatus,
@@ -83,6 +85,8 @@ const NewTransactionPage: React.FC = () => {
   const [idempotencyKey, setIdempotencyKey] = useState<string>(generateUUID());
   // Saldo diskon pelanggan: dipakai otomatis, kasir bisa mematikannya per transaksi
   const [useBalance, setUseBalance] = useState(true);
+  // Diskon manual oleh Kasir wajib disetujui PIN supervisor saat disimpan
+  const [isSupervisorPinOpen, setIsSupervisorPinOpen] = useState(false);
   // Data pelanggan (dengan saldo terbaru) untuk pesan WhatsApp setelah simpan
   const [whatsAppCustomer, setWhatsAppCustomer] = useState<Customer | null>(null);
 
@@ -94,19 +98,17 @@ const NewTransactionPage: React.FC = () => {
   const customerBalance = freshBalance ?? selectedCustomer?.defaultDiscount ?? 0;
 
   // Semua useMemo, useEffect, useCallback juga di sini
-  const canEditDiscount = useMemo(() => {
-    if (!currentUser) return false;
-    if (currentUser.role === UserRole.SuperAdmin) return true;
-    return currentUser.canGiveDiscount === true;
-  }, [currentUser]);
+  const isCashier = currentUser?.role === UserRole.Cashier;
+  // Kasir selalu boleh mengetik diskon, tetapi diskon di atas diskon otomatis
+  // wajib disetujui PIN supervisor (dicek ulang oleh database).
+  // Admin tetap memakai izin "Boleh beri diskon"; Super Admin selalu boleh.
   const canApplyDiscount = useMemo(() => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.SuperAdmin) return true;
-    if (currentUser.role === UserRole.Admin || currentUser.role === UserRole.Cashier) {
-      if (currentUser.canGiveDiscount) return true;
-    }
-    return false;
+    if (currentUser.role === UserRole.Cashier) return true;
+    return currentUser.role === UserRole.Admin && currentUser.canGiveDiscount === true;
   }, [currentUser]);
+  const canEditDiscount = canApplyDiscount;
   // Semua hook turunannya juga harus dipanggil di level atas
   // (dipindahkan dari bawah) agar Rules of Hooks tidak dilanggar.
 
@@ -134,6 +136,9 @@ const NewTransactionPage: React.FC = () => {
     }
     return Math.round(rawDiscount);
   }, [subtotal, discountValue, discountType, canApplyDiscount, settings?.discountRate]);
+
+  const needsSupervisorPin =
+    isCashier && needsManualDiscountApproval(discountAmount, subtotal, settings?.discountRate);
 
   // Saldo diskon yang bisa dipakai: min(saldo, 10% subtotal, sisa tagihan)
   const balanceUsable = useMemo(
@@ -423,8 +428,8 @@ const NewTransactionPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, supervisorApprovalId?: string) => {
+    e?.preventDefault();
     if (isSaving) {
       addToast('Transaksi sedang disimpan, mohon tunggu...', 'warning');
       return;
@@ -444,6 +449,11 @@ const NewTransactionPage: React.FC = () => {
     }
     if (items.length === 0) {
       addToast('Minimal satu layanan harus ditambahkan.', 'warning');
+      return;
+    }
+
+    if (needsSupervisorPin && !supervisorApprovalId) {
+      setIsSupervisorPinOpen(true);
       return;
     }
 
@@ -519,6 +529,7 @@ const NewTransactionPage: React.FC = () => {
         createdByUserId: currentUser?.id ?? '',
         storeId: currentStoreId,
         idempotencyKey: idempotencyKey,
+        supervisorApprovalId,
       };
       const savedTransaction = await addTransaction(newTransaction);
 
@@ -858,6 +869,11 @@ const NewTransactionPage: React.FC = () => {
                       - Rp {discountAmount.toLocaleString('id-ID')}
                     </span>
                   </div>
+                  {needsSupervisorPin && (
+                    <p className="text-sm text-amber-700 dark:text-amber-300 text-right">
+                      Diskon di atas {settings?.discountRate ?? 0}% perlu PIN Admin saat disimpan.
+                    </p>
+                  )}
                   {balanceDiscount > 0 && (
                     <div className="flex justify-between items-center text-lg">
                       <span className="text-slate-600 dark:text-slate-300">Saldo diskon:</span>
@@ -1043,6 +1059,18 @@ const NewTransactionPage: React.FC = () => {
         onClose={() => setIsKiloanTaggingModalOpen(false)}
         item={editingItemIndex !== null ? items[editingItemIndex] : null!}
         onSave={handleSaveKiloanTags}
+      />
+      <SupervisorPinModal
+        isOpen={isSupervisorPinOpen}
+        action="manual_discount"
+        description={`Diskon Rp ${formatRupiah(discountAmount)} dari subtotal Rp ${formatRupiah(subtotal)}${selectedCustomer ? ` untuk ${selectedCustomer.name}` : ''}.`}
+        maxAmount={discountAmount}
+        onClose={() => setIsSupervisorPinOpen(false)}
+        onApproved={(approvalId, approverName) => {
+          setIsSupervisorPinOpen(false);
+          addToast(`Diskon disetujui oleh ${approverName}.`, 'success');
+          void handleSubmit(undefined, approvalId);
+        }}
       />
       <WhatsAppModal
         isOpen={isWhatsAppModalOpen}

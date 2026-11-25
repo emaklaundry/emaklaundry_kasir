@@ -483,7 +483,7 @@ const InventoryPage: React.FC = () => {
         </p>
       )}
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden hidden md:block">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-x-auto hidden md:block">
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>

@@ -4,6 +4,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useStores } from '../../contexts/StoreContext';
 import useToasts from '../../contexts/useToasts';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
+import SupervisorPinSettings from '../../components/SupervisorPinSettings';
 import { KeyIcon, MapIcon } from '../../components/icons';
 import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
@@ -491,6 +492,8 @@ const SettingsPage: React.FC = () => {
           <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
         </button>
       </form>
+
+      <SupervisorPinSettings />
 
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}

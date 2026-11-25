@@ -405,12 +405,12 @@ const ServicesPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-x-auto">
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-6 py-3">No</th>
-              <th className="px-6 py-3">
+              <th className="hidden sm:table-cell px-3 sm:px-6 py-3">No</th>
+              <th className="px-3 sm:px-6 py-3">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -418,7 +418,7 @@ const ServicesPage: React.FC = () => {
                   Nama Layanan {getSortIcon('name')}
                 </button>
               </th>
-              <th className="px-6 py-3">
+              <th className="px-3 sm:px-6 py-3">
                 <button
                   onClick={() => requestSort('category')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -426,7 +426,7 @@ const ServicesPage: React.FC = () => {
                   Kategori {getSortIcon('category')}
                 </button>
               </th>
-              <th className="px-6 py-3">
+              <th className="hidden md:table-cell px-3 sm:px-6 py-3">
                 <button
                   onClick={() => requestSort('washType')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -434,7 +434,7 @@ const ServicesPage: React.FC = () => {
                   Jenis Cucian {getSortIcon('washType')}
                 </button>
               </th>
-              <th className="px-6 py-3">
+              <th className="px-3 sm:px-6 py-3">
                 <button
                   onClick={() => requestSort('price')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -442,7 +442,7 @@ const ServicesPage: React.FC = () => {
                   Harga {getSortIcon('price')}
                 </button>
               </th>
-              <th className="px-6 py-3">
+              <th className="hidden md:table-cell px-3 sm:px-6 py-3">
                 <button
                   onClick={() => requestSort('durationDays')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -450,7 +450,7 @@ const ServicesPage: React.FC = () => {
                   Durasi {getSortIcon('durationDays')}
                 </button>
               </th>
-              <th className="px-6 py-3">Aksi</th>
+              <th className="px-3 sm:px-6 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -460,26 +460,36 @@ const ServicesPage: React.FC = () => {
                   key={service.id}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{index + 1}</td>
-                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                  <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 text-slate-500 dark:text-slate-400">
+                    {index + 1}
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-slate-900 dark:text-white">
                     {service.name}
                   </td>
-                  <td className="px-6 py-4">{service.category}</td>
-                  <td className="px-6 py-4">{service.washType}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">{service.category}</td>
+                  <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4">
+                    {service.washType}
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap tabular-nums">
                     Rp {service.price.toLocaleString('id-ID')}/{service.unit}
                   </td>
-                  <td className="px-6 py-4">{service.durationDays} hari</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    {service.durationDays} hari
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenFormModal(service)}
+                        aria-label={`Ubah ${service.name}`}
+                        title="Ubah"
                         className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                       >
                         <EditIcon className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDelete(service)}
+                        aria-label={`Hapus ${service.name}`}
+                        title="Hapus"
                         className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                       >
                         <Trash2Icon className="w-5 h-5" />
@@ -490,7 +500,7 @@ const ServicesPage: React.FC = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={7}>
                   <EmptyState
                     icon={<PackageIcon className="mx-auto w-12 h-12 text-slate-400" />}
                     title={searchTerm ? 'Layanan Tidak Ditemukan' : 'Belum Ada Layanan'}
@@ -502,7 +512,7 @@ const ServicesPage: React.FC = () => {
                   >
                     <button
                       onClick={() => handleOpenFormModal()}
-                      className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto"
+                      className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-3 sm:px-6 py-3 mx-auto"
                     >
                       <PlusCircleIcon className="h-5 w-5 mr-2" />
                       Tambah Layanan

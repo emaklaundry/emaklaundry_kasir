@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
 
@@ -24,18 +24,39 @@ describe('Sidebar', () => {
     expect(sidebar).toHaveProperty('inert', true);
   });
 
-  it('exposes and updates the expanded state of the management menu', () => {
+  it('groups admin pages under labelled sections in a fixed order', () => {
     render(
       <MemoryRouter>
         <Sidebar isOpen onToggle={vi.fn()} />
       </MemoryRouter>,
     );
 
-    const managementButton = screen.getByRole('button', { name: 'Manajemen' });
-    expect(managementButton).toHaveAttribute('aria-expanded', 'true');
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(headings).toEqual([
+      'Data Master',
+      'Operasional',
+      'SDM',
+      'Analisis',
+      'Sistem',
+      'Panduan',
+    ]);
 
-    fireEvent.click(managementButton);
+    const sdm = screen.getByRole('list', { name: 'SDM' });
+    expect(
+      within(sdm)
+        .getAllByRole('link')
+        .map((l) => l.textContent),
+    ).toEqual(['Karyawan', 'Absensi']);
+  });
 
-    expect(managementButton).toHaveAttribute('aria-expanded', 'false');
+  it('hides super-admin-only pages from Admin', () => {
+    render(
+      <MemoryRouter>
+        <Sidebar isOpen onToggle={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('link', { name: 'Cabang' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Pengaturan' })).toBeInTheDocument();
   });
 });
