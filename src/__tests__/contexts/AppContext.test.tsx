@@ -57,11 +57,12 @@ describe('AppContext', () => {
   });
 
   it('throws error if used outside provider', () => {
-    // Must call inside a component or hook, so use a wrapper
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     function Wrapper() {
       useAppContext();
       return null;
     }
     expect(() => render(<Wrapper />)).toThrow();
+    consoleSpy.mockRestore();
   });
 });

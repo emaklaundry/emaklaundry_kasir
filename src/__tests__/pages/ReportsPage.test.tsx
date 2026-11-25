@@ -8,8 +8,6 @@ import { OrderStatus, PaymentStatus, UserRole } from '@/types';
 import { vi } from 'vitest';
 import { ToastProvider } from '@/contexts/ToastContext';
 
-const queryClient = new QueryClient();
-
 const mockUser = {
   id: 'test-user',
   name: 'Test User',

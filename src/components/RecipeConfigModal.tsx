@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { XIcon, CheckCircleIcon } from './icons';
 import { InventoryItem, InventoryRecipe } from '../types';
 import { useRecipes, useRecipeMutations } from '../contexts/InventoryRecipeContext';
@@ -18,25 +18,20 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
 }) => {
   const { data: recipes = [], isLoading: loadingRecipes } = useRecipes(storeId);
   const { upsertRecipe, isLoading: saving } = useRecipeMutations();
+  const [prevRecipes, setPrevRecipes] = useState(recipes);
   const [recipeValues, setRecipeValues] = useState<Record<string, string>>({});
 
-  // Initialize recipe values from existing recipes
-  useEffect(() => {
+  // Sync recipe values when recipes data loads
+  if (recipes !== prevRecipes) {
+    setPrevRecipes(recipes);
     if (recipes.length > 0) {
-      // eslint-disable-next-line
-      setRecipeValues((prev) => {
-        // Only update if empty to avoid overwriting user edits or causing loops
-        if (Object.keys(prev).length === 0) {
-          const values: Record<string, string> = {};
-          recipes.forEach((r: InventoryRecipe) => {
-            values[r.inventoryItemId] = r.usagePerKg.toString();
-          });
-          return values;
-        }
-        return prev;
+      const values: Record<string, string> = {};
+      recipes.forEach((r: InventoryRecipe) => {
+        values[r.inventoryItemId] = r.usagePerKg.toString();
       });
+      setRecipeValues(values);
     }
-  }, [recipes]);
+  }
 
   if (!isOpen) return null;
 
