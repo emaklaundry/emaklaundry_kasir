@@ -1,7 +1,6 @@
 export interface EmployeeLoginProfile {
   id: string;
   name: string;
-  photoUrl: string | null;
   storeName: string | null;
 }
 
@@ -36,7 +35,6 @@ export function isEmployeeLoginProfilesResponse(
       isRecord(profile) &&
       typeof profile.id === 'string' &&
       typeof profile.name === 'string' &&
-      (typeof profile.photoUrl === 'string' || profile.photoUrl === null) &&
       (typeof profile.storeName === 'string' || profile.storeName === null),
   );
 }

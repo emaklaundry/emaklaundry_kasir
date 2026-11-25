@@ -91,8 +91,6 @@ export type Database = {
           base_salary: number;
           commission_rate: number;
           is_active: boolean;
-          photo_url: string | null;
-          photo_path: string | null;
           login_enabled: boolean;
           created_at: string;
           updated_at: string;
@@ -106,8 +104,6 @@ export type Database = {
           base_salary?: number;
           commission_rate?: number;
           is_active?: boolean;
-          photo_url?: string | null;
-          photo_path?: string | null;
           login_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -121,8 +117,6 @@ export type Database = {
           base_salary?: number;
           commission_rate?: number;
           is_active?: boolean;
-          photo_url?: string | null;
-          photo_path?: string | null;
           login_enabled?: boolean;
           created_at?: string;
           updated_at?: string;

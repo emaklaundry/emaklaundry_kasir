@@ -63,10 +63,9 @@ serve(async (req) => {
     if (body.action === 'list') {
       const { data, error } = await admin
         .from('employees')
-        .select('id, name, photo_url')
+        .select('id, name')
         .eq('is_active', true)
         .eq('login_enabled', true)
-        .not('photo_url', 'is', null)
         .order('name');
 
       if (error) throw error;
@@ -75,7 +74,6 @@ serve(async (req) => {
           profiles: (data ?? []).map((employee) => ({
             id: employee.id,
             name: employee.name,
-            photoUrl: employee.photo_url,
             storeName: null,
           })),
         },
@@ -93,12 +91,12 @@ serve(async (req) => {
 
     const { data: employee, error: employeeError } = await admin
       .from('employees')
-      .select('id, is_active, login_enabled, photo_url')
+      .select('id, is_active, login_enabled')
       .eq('id', body.employeeId)
       .maybeSingle();
 
     if (employeeError) throw employeeError;
-    if (!employee?.is_active || !employee.login_enabled || !employee.photo_url) {
+    if (!employee?.is_active || !employee.login_enabled) {
       return jsonResponse({ error: 'Invalid profile or PIN' }, 401, corsHeaders);
     }
 

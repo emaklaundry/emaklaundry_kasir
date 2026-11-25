@@ -73,7 +73,6 @@ describe('LoginPage', () => {
             {
               id: 'employee-1',
               name: 'Sari Laundry',
-              photoUrl: null,
               storeName: 'Cabang Utama',
             },
           ],

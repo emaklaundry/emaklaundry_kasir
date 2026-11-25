@@ -212,22 +212,12 @@ const LoginPage: React.FC = () => {
                           }}
                           className="h-4 w-4 shrink-0 accent-orange-500"
                         />
-                        {profile.photoUrl ? (
-                          <img
-                            src={profile.photoUrl}
-                            alt={`Foto profil ${profile.name}`}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-10 w-10 shrink-0 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span
-                            aria-hidden="true"
-                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
-                          >
-                            {profile.name.trim().charAt(0).toUpperCase()}
-                          </span>
-                        )}
+                        <span
+                          aria-hidden="true"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                        >
+                          {profile.name.trim().charAt(0).toUpperCase()}
+                        </span>
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-medium text-slate-900 dark:text-white">
                             {profile.name}

@@ -38,7 +38,6 @@ const EmployeesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [loginPin, setLoginPin] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<EmployeeFormData>({
@@ -74,7 +73,6 @@ const EmployeesPage: React.FC = () => {
   }, [selectedStoreId, fetchEmployees]);
 
   const handleOpenModal = (employee?: Employee) => {
-    setPhotoFile(null);
     setLoginPin('');
     if (employee) {
       setEditingEmployee(employee);
@@ -105,7 +103,6 @@ const EmployeesPage: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingEmployee(null);
-    setPhotoFile(null);
     setLoginPin('');
   };
 
@@ -114,16 +111,6 @@ const EmployeesPage: React.FC = () => {
 
     if (!formData.name.trim()) {
       addToast('Nama karyawan wajib diisi', 'error');
-      return;
-    }
-
-    if (
-      photoFile &&
-      (!['image/jpeg', 'image/png', 'image/webp'].includes(photoFile.type) ||
-        photoFile.size === 0 ||
-        photoFile.size > 3 * 1024 * 1024)
-    ) {
-      addToast('Foto harus berupa JPG, PNG, atau WebP dengan ukuran maksimal 3 MB.', 'error');
       return;
     }
 
@@ -140,23 +127,6 @@ const EmployeesPage: React.FC = () => {
         await updateEmployee(employee.id, formData);
       } else {
         employee = await addEmployee(formData);
-        setEditingEmployee(employee);
-      }
-
-      if (photoFile) {
-        const path = `${formData.storeId}/${employee.id}/profile`;
-        const { error: uploadError } = await supabase.storage
-          .from('employee-photos')
-          .upload(path, photoFile, {
-            upsert: true,
-            contentType: photoFile.type,
-            cacheControl: '3600',
-          });
-        if (uploadError) throw uploadError;
-
-        const { data: photo } = supabase.storage.from('employee-photos').getPublicUrl(path);
-        await updateEmployee(employee.id, { photoUrl: photo.publicUrl, photoPath: path });
-        employee = { ...employee, photoUrl: photo.publicUrl, photoPath: path };
         setEditingEmployee(employee);
       }
 
@@ -197,12 +167,6 @@ const EmployeesPage: React.FC = () => {
         });
         if (error || data?.error) {
           throw new Error(data?.error || error?.message || 'Gagal menghapus akun login.');
-        }
-        if (employee.photoPath) {
-          const { error: photoError } = await supabase.storage
-            .from('employee-photos')
-            .remove([employee.photoPath]);
-          if (photoError) throw photoError;
         }
         await deleteEmployee(employee.id);
         addToast('Karyawan berhasil dihapus', 'success');
@@ -283,15 +247,7 @@ const EmployeesPage: React.FC = () => {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                    {employee.photoUrl ? (
-                      <img
-                        src={employee.photoUrl}
-                        alt={`Foto profil ${employee.name}`}
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <UserIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
-                    )}
+                    <UserIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 dark:text-white">
@@ -486,34 +442,9 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="employee-photo"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-            >
-              Foto profil login
             </label>
-            <input
-              id="employee-photo"
-              name="photo"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-slate-700 dark:text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 dark:file:bg-slate-700"
-              aria-describedby="employee-photo-help"
-            />
-            <p id="employee-photo-help" className="text-xs text-slate-500 dark:text-slate-400">
-              JPG, PNG, atau WebP; maksimal 3 MB.
-            </p>
-            {editingEmployee?.photoUrl && (
-              <img
-                src={editingEmployee.photoUrl}
-                alt={`Foto profil ${editingEmployee.name}`}
-                className="h-16 w-16 rounded-full object-cover"
-              />
-            )}
-          </div>
 
-          <div>
+            <div>
             <label
               htmlFor="employee-login-pin"
               className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"

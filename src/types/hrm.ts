@@ -13,8 +13,6 @@ export interface Employee {
   baseSalary: number;
   commissionRate: number; // percentage
   isActive: boolean;
-  photoUrl?: string | null;
-  photoPath?: string | null;
   loginEnabled?: boolean;
   createdAt: Date;
   updatedAt: Date;

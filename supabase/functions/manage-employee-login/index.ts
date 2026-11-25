@@ -84,7 +84,7 @@ serve(async (req) => {
 
     const { data: employee, error: employeeError } = await admin
       .from('employees')
-      .select('id, name, store_id, is_active, photo_url, photo_path')
+      .select('id, name, store_id, is_active')
       .eq('id', body.employeeId)
       .maybeSingle();
 
@@ -160,9 +160,9 @@ serve(async (req) => {
     if (body.action !== 'set-pin' || typeof body.pin !== 'string' || !/^\d{6}$/.test(body.pin)) {
       return jsonResponse({ error: 'PIN must contain exactly six digits' }, 400, corsHeaders);
     }
-    if (!employee.is_active || !employee.store_id || !employee.photo_url || !employee.photo_path) {
+    if (!employee.is_active || !employee.store_id) {
       return jsonResponse(
-        { error: 'Employee must be active and have a profile photo before login is enabled' },
+        { error: 'Employee must be active and have a profile' },
         400,
         corsHeaders,
       );

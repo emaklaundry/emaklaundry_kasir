@@ -19,7 +19,7 @@ describe('employee login response validation', () => {
   it('accepts a safe list of profile cards', () => {
     expect(
       isEmployeeLoginProfilesResponse({
-        profiles: [{ id: 'employee-1', name: 'Sari', photoUrl: null, storeName: null }],
+        profiles: [{ id: 'employee-1', name: 'Sari', storeName: null }],
       }),
     ).toBe(true);
   });
