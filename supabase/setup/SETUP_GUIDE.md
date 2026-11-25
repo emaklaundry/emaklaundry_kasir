@@ -5,15 +5,15 @@
 ### 3 Tahap Setup dengan File Terkonsolidasi
 
 1.  **Data Structure & Logic (WAJIB)**
-    - Copy & Run: `database/setup/0.complete_setup.sql`
+    - Copy & Run: `supabase/setup/0.complete_setup.sql`
     - ✅ Membuat Tables, RPC Functions, Triggers, RLS Policies.
 
 2.  **Basic Data (WAJIB untuk Login)**
-    - Copy & Run: `database/setup/1.seed_data_awal.sql`
+    - Copy & Run: `supabase/setup/1.seed_data_awal.sql`
     - ✅ Insert Store default, User (Super Admin, Kasir), & Settings.
 
 3.  **Content Data (Opsional)**
-    - Copy & Run: `database/seeds/00_full_seed_bundle.sql`
+    - Copy & Run: `supabase/seeds/00_full_seed_bundle.sql`
     - ✅ Insert 66 Layanan, Inventaris, Aset, & Jadwal.
 
 ---

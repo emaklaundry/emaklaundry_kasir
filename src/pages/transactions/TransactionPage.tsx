@@ -6,12 +6,14 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { useDebounce } from '../../hooks/useDebounce';
 
 import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
+import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
 import { supabase } from '../../utils/supabaseClient';
+import { formatRupiah } from '../../utils/formatting';
+import { savePaymentWithRoundingCredit } from '../../utils/paymentUpdate';
 
 import {
   PlusCircleIcon,
@@ -87,7 +89,6 @@ const TransactionPage: React.FC = () => {
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const { services } = useServices();
-  const { updateCustomer } = useCustomerMutations();
 
   // State untuk server-side pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -203,32 +204,39 @@ const TransactionPage: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handleSavePayment = async (updatedTransaction: Transaction, pointsEarned?: number) => {
+  const handleSavePayment = async (updatedTransaction: Transaction) => {
     const shouldShowModal =
       updatedTransaction.paymentStatus === PaymentStatus.Paid &&
       updatedTransaction.orderStatus === OrderStatus.Completed;
     setIsSavingPayment(true);
     const toastId = addToast('Menyimpan pembayaran...', 'info');
     try {
-      // Send only DB columns (partial) to avoid sending client-only fields like customerName
-      const payload: Partial<Transaction> = {
-        amountPaid: updatedTransaction.amountPaid,
-        paymentStatus: updatedTransaction.paymentStatus,
-        paymentMethod: updatedTransaction.paymentMethod,
-        change: updatedTransaction.change,
-      };
-
-      await updateTransaction(updatedTransaction.id, payload);
+      const { creditSaved, creditError } = await savePaymentWithRoundingCredit(
+        updateTransaction,
+        updatedTransaction,
+      );
 
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,
       );
+      if (creditSaved > 0) {
+        addAuditLog(
+          `Pembulatan tunai Rp ${formatRupiah(creditSaved)} masuk saldo diskon pelanggan (transaksi ${updatedTransaction.invoiceCode ?? updatedTransaction.id}).`,
+          updatedTransaction.storeId,
+        );
+      }
 
-      if (pointsEarned && pointsEarned > 0) {
+      if (creditError) {
         updateToast(
           toastId,
-          `Pem bayaran berhasil! Rp ${pointsEarned} ditambahkan ke saldo diskon pelanggan.`,
+          `Pembayaran tersimpan, tetapi saldo pembulatan gagal dicatat: ${creditError}`,
+          'warning',
+        );
+      } else if (creditSaved > 0) {
+        updateToast(
+          toastId,
+          `Pembayaran berhasil! Rp ${formatRupiah(creditSaved)} masuk saldo diskon pelanggan.`,
           'success',
         );
       } else {

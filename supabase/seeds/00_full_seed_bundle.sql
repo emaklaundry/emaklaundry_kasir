@@ -6,7 +6,7 @@
 -- ============================================
 
 -- INSTRUCTIONS:
--- 1. Ensure database/setup/1.seed_data_awal.sql has been run first (to create Stores).
+-- 1. Ensure supabase/setup/1.seed_data_awal.sql has been run first (to create Stores).
 -- 2. Run this entire script in Supabase SQL Editor.
 -- ============================================
 -- SEED DATA: SERVICES (Daftar Layanan)

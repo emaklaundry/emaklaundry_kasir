@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useUsers } from '@/contexts/UserContext';
+import { getFunctionErrorMessage, useUsers } from '@/contexts/UserContext';
 
 const { profileFilterMock, useQueryMock } = vi.hoisted(() => ({
   profileFilterMock: vi.fn(),
@@ -58,5 +58,27 @@ describe('useUsers', () => {
     await queryOptions.queryFn();
 
     expect(profileFilterMock).toHaveBeenCalledWith('employee_id', null);
+  });
+});
+
+describe('getFunctionErrorMessage', () => {
+  it('mengambil pesan asli dari body respons Edge Function', async () => {
+    const error = Object.assign(new Error('Edge Function returned a non-2xx status code'), {
+      context: new Response(JSON.stringify({ error: 'Email sudah terdaftar' }), { status: 409 }),
+    });
+    await expect(getFunctionErrorMessage(error)).resolves.toBe('Email sudah terdaftar');
+  });
+
+  it('memakai pesan umum kalau body bukan JSON', async () => {
+    const error = Object.assign(new Error('Edge Function returned a non-2xx status code'), {
+      context: new Response('Not Found', { status: 404 }),
+    });
+    await expect(getFunctionErrorMessage(error)).resolves.toBe(
+      'Edge Function returned a non-2xx status code',
+    );
+  });
+
+  it('galat biasa', async () => {
+    await expect(getFunctionErrorMessage(new Error('network'))).resolves.toBe('network');
   });
 });

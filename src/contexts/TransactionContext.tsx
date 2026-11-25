@@ -6,6 +6,20 @@ import { autoDeductInventory } from './InventoryRecipeContext';
 import { mapDBtoTransaction, RawDBTransaction } from '../utils/mappers';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
+/** Saldo diskon pelanggan berubah lewat trigger transaksi: segarkan tampilannya. */
+function invalidateBalanceQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  customerId: string | undefined,
+) {
+  queryClient.invalidateQueries({ queryKey: ['customers'] });
+  queryClient.invalidateQueries({
+    queryKey: customerId ? ['customer-balance', customerId] : ['customer-balance'],
+  });
+  queryClient.invalidateQueries({
+    queryKey: customerId ? ['customer-discount-ledger', customerId] : ['customer-discount-ledger'],
+  });
+}
+
 // Pagination-aware fetchTransactions
 
 export interface TransactionFilter {
@@ -167,6 +181,9 @@ export function useTransactions(filter: TransactionFilter = {}) {
       // Invalidate untuk force refresh dari server
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      if ((variables.discountBalanceUsed ?? 0) > 0 || (variables.roundingCredit ?? 0) > 0) {
+        invalidateBalanceQueries(queryClient, variables.customerId);
+      }
     },
   });
 
@@ -258,6 +275,9 @@ export function useTransactions(filter: TransactionFilter = {}) {
       await queryClient.invalidateQueries({ queryKey: ['transactions'] });
       if (variables && variables.id) {
         await queryClient.invalidateQueries({ queryKey: ['transaction', variables.id] });
+      }
+      if ('roundingCredit' in variables.data) {
+        invalidateBalanceQueries(queryClient, result?.customerId);
       }
     },
     onError: (error) => {

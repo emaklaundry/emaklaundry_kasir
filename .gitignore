@@ -14,6 +14,8 @@ temp/
 *-lint.txt
 *-output.txt
 lint-report.json
+lint_output*.txt
+tsc_errors*.txt
 
 # Dependencies
 node_modules
@@ -56,10 +58,10 @@ Thumbs.db
 # Supabase
 .supabase
 
-# Database backups (keep only in backup folder)
+# SQL: hanya file di supabase/ (setup, seeds, migrations) yang disimpan di git
 *.sql
-!database/**/*.sql
+!supabase/**/*.sql
 
-# Database backups (keep only full_backup.sql)
-database/backup/*.sql
-!database/backup/full_backup.sql
+# Cadangan database .sql tidak disimpan di git (kecuali full_backup.sql)
+supabase/backup/**/*.sql
+!supabase/backup/full_backup.sql

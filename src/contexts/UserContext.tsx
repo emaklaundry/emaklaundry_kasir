@@ -3,13 +3,31 @@ import { supabase } from '../utils/supabaseClient';
 
 import { User } from '@/types';
 
-type UserCreateInput = {
+export type UserCreateInput = {
   email: string;
   password: string;
   name: string;
   role?: string;
   storeId?: string;
+  canGiveDiscount?: boolean;
 };
+
+/**
+ * Ambil pesan galat dari Edge Function. Untuk respons non-2xx, supabase-js
+ * hanya memberi pesan umum; pesan aslinya ada di body respons (`error.context`).
+ */
+export async function getFunctionErrorMessage(error: unknown): Promise<string> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context instanceof Response) {
+    try {
+      const body = await context.clone().json();
+      if (body && typeof body.error === 'string') return body.error;
+    } catch {
+      // body bukan JSON: pakai pesan umum di bawah
+    }
+  }
+  return error instanceof Error ? error.message : String(error);
+}
 import type { Database } from '../types/supabase';
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
@@ -49,13 +67,11 @@ export function useUsers() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   });
 
-  // Admin create user: gunakan Supabase Auth Admin API
-  // Anda butuh service_role key, sebaiknya lakukan di backend/Edge Function
-  // createUser: pastikan metadata dikirim lengkap (full_name, role, store_id)
+  // Membuat akun login baru lewat Edge Function create-user (memakai service role
+  // di server; peran, cabang, dan izin pemanggil diperiksa di sana).
   const createUser = useMutation({
     mutationFn: async (newUser: UserCreateInput) => {
-      // Kirim metadata sesuai kebutuhan backend
-      const { email, password, name, role, storeId } = newUser;
+      const { email, password, name, role, storeId, canGiveDiscount } = newUser;
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
           email,
@@ -63,13 +79,11 @@ export function useUsers() {
           name,
           role: role || 'Kasir',
           storeId,
+          canGiveDiscount: canGiveDiscount === true,
         },
       });
-      if (error) throw error;
-      // Tangkap error dari Edge Function (misal: validasi SQL)
-      if (data && data.error) {
-        throw new Error(data.error);
-      }
+      if (error) throw new Error(await getFunctionErrorMessage(error));
+      if (data && data.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),

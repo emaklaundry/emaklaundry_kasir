@@ -16,7 +16,7 @@ Dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
 
 - **[FINAL_AUDIT_REPORT.md](./docs/FINAL_AUDIT_REPORT.md)** - Laporan audit terakhir (v2.7.0)
 - **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Panduan deployment production
-- **[Database Setup](./database/README.md)** - Script setup database & seed data
+- **[Database Setup](./supabase/setup/README.md)** - Script setup database & seed data
 - **[MAINTENANCE_MODE.md](./docs/MAINTENANCE_MODE.md)** - Panduan mode maintenance
 
 ---
@@ -77,12 +77,16 @@ Dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
 
 ```
 emaklaundry_kasir/
-├── database/              # 💾 Database Scripts
-│   ├── setup/            # SQL Setup (Schema + Trigges)
+├── supabase/             # 💾 Semua backend (lihat supabase/setup/README.md)
+│   ├── config.toml       # Pengaturan Supabase CLI
+│   ├── migrations/       # Perubahan database bertahap (supabase db push)
+│   ├── functions/        # Edge Functions (login karyawan, buat pengguna, dll.)
+│   ├── setup/            # SQL Setup (Schema + Triggers)
 │   │   ├── 0.complete_setup.sql    # MAIN SCRIPT (Run this first)
 │   │   └── 1.seed_data_awal.sql    # Basic Seed (Stores, Users)
-│   └── seeds/            # Data Seeds (Services, Inventory)
-│       └── 00_full_seed_bundle.sql # ALL SEEDS MERGED (Run this second)
+│   ├── seeds/            # Data Seeds (Services, Inventory)
+│   │   └── 00_full_seed_bundle.sql # ALL SEEDS MERGED (Run this second)
+│   └── backup/           # Cadangan data (xlsx/csv/pdf)
 ├── src/                  # 💻 Source Code
 │   ├── components/      # UI Components (Modals, Widgets)
 │   ├── pages/           # Application Pages
@@ -100,19 +104,19 @@ emaklaundry_kasir/
 Copy & Run isi file ini di Supabase SQL Editor:
 
 ```bash
-database/setup/0.complete_setup.sql
+supabase/setup/0.complete_setup.sql
 ```
 
 **2. Isi Data Awal (Wajib):**
 
 ```bash
-database/setup/1.seed_data_awal.sql
+supabase/setup/1.seed_data_awal.sql
 ```
 
 **3. Isi Data Pelengkap (Services, dll):**
 
 ```bash
-database/seeds/00_full_seed_bundle.sql
+supabase/seeds/00_full_seed_bundle.sql
 ```
 
 ---

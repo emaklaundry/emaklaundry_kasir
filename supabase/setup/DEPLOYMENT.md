@@ -22,7 +22,7 @@ This guide explains how to deploy the database schema using `complete_setup.sql`
 
 ### Step 2: Run Setup Script
 
-1. Open `database/setup/complete_setup.sql` in your local editor
+1. Open `supabase/setup/complete_setup.sql` in your local editor
 2. Copy the entire file contents (Ctrl+A, Ctrl+C)
 3. Paste into the Supabase SQL Editor
 4. Click **RUN** button (or press Ctrl+Enter)
@@ -50,7 +50,7 @@ ORDER BY routine_name;
 
 If you want sample data for testing:
 
-1. Open `database/setup/seed_data.sql`
+1. Open `supabase/setup/seed_data.sql`
 2. Copy and paste into SQL Editor
 3. Run to add sample stores, users, and services
 
@@ -70,14 +70,14 @@ If you want sample data for testing:
 # Format: postgresql://<USER>:<PASSWORD>@<HOST>:5432/postgres
 
 psql "postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/postgres" \
-  -f database/setup/complete_setup.sql
+  -f supabase/setup/complete_setup.sql
 ```
 
 ### Add Sample Data (Optional)
 
 ```bash
 psql "postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/postgres" \
-  -f database/setup/seed_data.sql
+  -f supabase/setup/seed_data.sql
 ```
 
 ---

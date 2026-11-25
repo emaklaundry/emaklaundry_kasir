@@ -13,7 +13,7 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
-import UserFormModal from '../../components/UserFormModal';
+import UserFormModal, { NewUserCredentials } from '../../components/UserFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { User, UserRole } from '@/types';
@@ -24,7 +24,8 @@ const UsersPage: React.FC = () => {
   // Ambil data users dari Supabase (props/context/hook) sesuai implementasi fetch profiles
   const { stores } = useStores();
   const { addAuditLog } = useAuditLogs();
-  const { users, updateUser } = useUsers();
+  const { users, updateUser, createUser } = useUsers();
+  const [isSaving, setIsSaving] = useState(false);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
@@ -44,10 +45,7 @@ const UsersPage: React.FC = () => {
   };
 
   const handleAddUser = () => {
-    addToast(
-      'Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication). Setelah itu, profil dapat diedit di halaman ini.',
-      'info',
-    );
+    handleOpenFormModal(null);
   };
 
   const handleCloseFormModal = () => {
@@ -55,7 +53,8 @@ const UsersPage: React.FC = () => {
     setCurrentUserToEdit(null);
   };
 
-  const handleSaveUser = async (userData: Omit<User, 'id'>) => {
+  const handleSaveUser = async (userData: Omit<User, 'id'>, credentials?: NewUserCredentials) => {
+    if (isSaving) return;
     const finalData = { ...userData };
     if (finalData.role === UserRole.SuperAdmin) {
       finalData.storeId = undefined;
@@ -66,7 +65,11 @@ const UsersPage: React.FC = () => {
       return;
     }
 
-    const toastId = addToast('Menyimpan pengguna...', 'info');
+    const toastId = addToast(
+      currentUserToEdit ? 'Menyimpan pengguna...' : 'Membuat akun pengguna...',
+      'info',
+    );
+    setIsSaving(true);
     try {
       if (currentUserToEdit && currentUserToEdit.id) {
         await updateUser(currentUserToEdit.id, {
@@ -80,16 +83,34 @@ const UsersPage: React.FC = () => {
         updateToast(toastId, 'Pengguna berhasil diperbarui!', 'success');
         handleCloseFormModal();
       } else {
+        if (!credentials) {
+          updateToast(toastId, 'Email dan password wajib diisi.', 'warning');
+          return;
+        }
+        await createUser({
+          email: credentials.email,
+          password: credentials.password,
+          name: finalData.name,
+          role: finalData.role,
+          storeId: finalData.storeId,
+          canGiveDiscount: finalData.canGiveDiscount,
+        });
+        addAuditLog(
+          `Menambahkan pengguna baru "${finalData.name}" (${finalData.role}, ${credentials.email}).`,
+          finalData.storeId,
+        );
         updateToast(
           toastId,
-          'Penambahan pengguna baru harus dilakukan via Supabase Dashboard (Authentication).',
-          'info',
+          `Akun ${finalData.name} berhasil dibuat. Ia bisa login dengan ${credentials.email}.`,
+          'success',
         );
+        handleCloseFormModal();
       }
     } catch (error: unknown) {
-      // Catatan: Penggunaan 'as any' hanya pada error object di catch block, bukan pada payload/data. Sudah aman.
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal menyimpan: ${errMsg}`, 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -402,6 +423,9 @@ const UsersPage: React.FC = () => {
           onClose={handleCloseFormModal}
           onSave={handleSaveUser}
           stores={stores.filter((s) => s.isActive)}
+          creatorRole={currentUser?.role}
+          creatorStoreId={currentUser?.storeId}
+          disabled={isSaving}
         />
       )}
 

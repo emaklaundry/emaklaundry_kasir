@@ -10,7 +10,7 @@
 -- - Users (profiles)  
 -- - Settings (pengaturan awal)
 --
--- DATA LAINNYA sudah dipindahkan ke folder database/seeds/:
+-- DATA LAINNYA sudah dipindahkan ke folder supabase/seeds/:
 -- - Services → seed_services.sql
 -- - Inventory → seed_inventory.sql
 -- - Assets → seed_assets.sql
@@ -166,7 +166,7 @@ BEGIN
   RAISE NOTICE '- Settings: % records', (SELECT COUNT(*) FROM public.settings);
   RAISE NOTICE '';
   RAISE NOTICE 'Untuk Services, Inventory, Assets, dan Maintenances:';
-  RAISE NOTICE 'Silakan jalankan file di folder database/seeds/';
+  RAISE NOTICE 'Silakan jalankan file di folder supabase/seeds/';
 END $$;
 
 -- Query untuk cek data

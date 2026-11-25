@@ -1,8 +1,8 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
 -- Complete Schema & Functions Setup
--- Version: 3.2.0
--- Date: January 16, 2026
+-- Version: 3.3.0
+-- Date: November 25, 2026
 -- ============================================
 -- 
 -- IMPORTANT: Jalankan script ini di Supabase SQL Editor
@@ -16,6 +16,16 @@
 -- 4. SECURITY & PERFORMANCE
 -- 5. TRIGGERS & AUTOMATION
 -- 6. HRM LITE TABLES (Employees, Attendance, Advances, Payroll)
+-- 7. INVENTORY RECIPES, STOCK OPNAME, & SOP
+-- 8. RECURRING MONTHLY EXPENSES (Listrik, Air, Wi-Fi)
+-- 9. EMPLOYEE PROFILE & PIN LOGIN
+-- 10. SALDO DISKON PELANGGAN (pembulatan tunai ke atas + buku catatan saldo)
+--
+-- Section 8, 9 & 10 setara dengan migrasi:
+--   supabase/migrations/20261125042146_recurring_monthly_expenses.sql
+--   supabase/migrations/20261125043507_employee_profile_pin_login.sql
+--   supabase/migrations/20261125160000_customer_discount_balance.sql
+-- Setelah setup, deploy edge function employee-login & manage-employee-login.
 -- 
 -- Untuk data sample/testing, jalankan seed_data.sql setelah ini
 -- ============================================
@@ -131,6 +141,7 @@ CREATE TABLE public.customers (
   phone text,
   address text,
   notes text,
+  "defaultDiscount" integer DEFAULT 0, -- saldo diskon pelanggan (Rp)
   "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
@@ -1532,3 +1543,831 @@ BEGIN
     END IF;
 END $$;
 
+
+
+-- ============================================
+-- SECTION 8: RECURRING MONTHLY EXPENSES (Added Nov 2026)
+-- ============================================
+-- Template biaya bulanan per cabang (Listrik, Air, Wi-Fi) dan
+-- penanda periode di tabel expenses agar tidak tercatat dua kali.
+-- Sumber: supabase/migrations/20261125042146_recurring_monthly_expenses.sql
+
+CREATE TABLE public.monthly_expense_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  name text NOT NULL CHECK (char_length(btrim(name)) BETWEEN 1 AND 80),
+  category text NOT NULL CHECK (char_length(btrim(category)) BETWEEN 1 AND 80),
+  is_active boolean NOT NULL DEFAULT true,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (id, store_id)
+);
+
+CREATE UNIQUE INDEX monthly_expense_templates_store_name_idx
+  ON public.monthly_expense_templates (store_id, lower(name));
+CREATE INDEX monthly_expense_templates_active_store_idx
+  ON public.monthly_expense_templates (store_id, sort_order)
+  WHERE is_active;
+
+ALTER TABLE public.monthly_expense_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Store users can read monthly expense templates"
+  ON public.monthly_expense_templates
+  FOR SELECT
+  TO authenticated
+  USING (
+    store_id = (SELECT public.get_my_store_id())
+    OR (SELECT public.get_my_role()) = 'Super Admin'
+  );
+
+CREATE POLICY "Admins can manage monthly expense templates"
+  ON public.monthly_expense_templates
+  FOR ALL
+  TO authenticated
+  USING (
+    (SELECT public.get_my_role()) IN ('Admin', 'Super Admin')
+    AND (
+      (SELECT public.get_my_role()) = 'Super Admin'
+      OR store_id = (SELECT public.get_my_store_id())
+    )
+  )
+  WITH CHECK (
+    (SELECT public.get_my_role()) IN ('Admin', 'Super Admin')
+    AND (
+      (SELECT public.get_my_role()) = 'Super Admin'
+      OR store_id = (SELECT public.get_my_store_id())
+    )
+  );
+
+GRANT SELECT, INSERT, UPDATE ON public.monthly_expense_templates TO authenticated;
+GRANT ALL ON public.monthly_expense_templates TO service_role;
+
+ALTER TABLE public.expenses
+  ADD COLUMN "recurringTemplateId" uuid,
+  ADD COLUMN "recurringPeriod" date,
+  ADD CONSTRAINT expenses_recurring_template_store_fkey
+    FOREIGN KEY ("recurringTemplateId", "storeId")
+    REFERENCES public.monthly_expense_templates (id, store_id),
+  ADD CONSTRAINT expenses_recurring_fields_check
+    CHECK (
+      ("recurringTemplateId" IS NULL AND "recurringPeriod" IS NULL)
+      OR (
+        "recurringTemplateId" IS NOT NULL
+        AND "recurringPeriod" IS NOT NULL
+        AND "storeId" IS NOT NULL
+        AND "recurringPeriod" = date_trunc('month', "recurringPeriod"::timestamp)::date
+      )
+    );
+
+CREATE UNIQUE INDEX expenses_monthly_template_period_idx
+  ON public.expenses ("storeId", "recurringTemplateId", "recurringPeriod");
+
+INSERT INTO public.monthly_expense_templates (store_id, name, category, sort_order)
+SELECT stores.id, defaults.name, defaults.category, defaults.sort_order
+FROM public.stores AS stores
+CROSS JOIN (
+  VALUES
+    ('Listrik', 'Listrik', 1),
+    ('Air', 'Air', 2),
+    ('Wi-Fi', 'Operasional', 3)
+) AS defaults(name, category, sort_order)
+ON CONFLICT DO NOTHING;
+
+CREATE OR REPLACE FUNCTION public.seed_monthly_expense_templates_for_store()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  INSERT INTO public.monthly_expense_templates (store_id, name, category, sort_order)
+  VALUES
+    (NEW.id, 'Listrik', 'Listrik', 1),
+    (NEW.id, 'Air', 'Air', 2),
+    (NEW.id, 'Wi-Fi', 'Operasional', 3)
+  ON CONFLICT DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER seed_monthly_expense_templates_after_store_insert
+  AFTER INSERT ON public.stores
+  FOR EACH ROW
+  EXECUTE FUNCTION public.seed_monthly_expense_templates_for_store();
+
+REVOKE EXECUTE ON FUNCTION public.seed_monthly_expense_templates_for_store()
+  FROM PUBLIC, anon, authenticated;
+
+-- ============================================
+-- SECTION 9: EMPLOYEE PROFILE & PIN LOGIN (Added Nov 2026)
+-- ============================================
+-- Foto profil karyawan, login karyawan dengan PIN 6 digit,
+-- pembatasan percobaan login, dan bucket storage employee-photos.
+-- Dipakai oleh edge function employee-login & manage-employee-login.
+-- Sumber: supabase/migrations/20261125043507_employee_profile_pin_login.sql
+
+ALTER TABLE public.employees
+  ADD COLUMN photo_url text,
+  ADD COLUMN photo_path text,
+  ADD COLUMN login_enabled boolean NOT NULL DEFAULT false,
+  ADD CONSTRAINT employees_login_profile_check CHECK (
+    NOT login_enabled
+    OR is_active
+  );
+
+ALTER TABLE public.profiles
+  ADD COLUMN employee_id uuid UNIQUE REFERENCES public.employees(id) ON DELETE RESTRICT;
+
+CREATE OR REPLACE FUNCTION public.guard_employee_auth_profile()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF CURRENT_USER <> 'service_role' AND OLD.employee_id IS NOT NULL THEN
+      RAISE EXCEPTION 'Employee login profiles can only be managed by the service'
+        USING ERRCODE = '42501';
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  IF CURRENT_USER <> 'service_role' THEN
+    IF TG_OP = 'INSERT' AND NEW.employee_id IS NOT NULL THEN
+      RAISE EXCEPTION 'Employee login profiles can only be managed by the service'
+        USING ERRCODE = '42501';
+    ELSIF TG_OP = 'UPDATE' THEN
+      IF OLD.employee_id IS NOT NULL OR NEW.employee_id IS NOT NULL THEN
+        RAISE EXCEPTION 'Employee login profiles can only be managed by the service'
+          USING ERRCODE = '42501';
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER guard_employee_auth_profile
+  BEFORE INSERT OR UPDATE OR DELETE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.guard_employee_auth_profile();
+
+REVOKE EXECUTE ON FUNCTION public.guard_employee_auth_profile()
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.guard_employee_auth_profile()
+  TO service_role;
+
+CREATE OR REPLACE FUNCTION public.guard_employee_login_profile_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  caller_role text;
+  login_fields_changed boolean;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NOT NEW.is_active THEN
+    NEW.login_enabled := false;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    login_fields_changed :=
+      NEW.photo_url IS NOT NULL
+      OR NEW.photo_path IS NOT NULL
+      OR NEW.login_enabled;
+  ELSE
+    login_fields_changed :=
+      NEW.photo_url IS DISTINCT FROM OLD.photo_url
+      OR NEW.photo_path IS DISTINCT FROM OLD.photo_path
+      OR NEW.login_enabled IS DISTINCT FROM OLD.login_enabled;
+  END IF;
+
+  IF NOT login_fields_changed OR CURRENT_USER = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+
+  caller_role := public.get_my_role();
+  IF caller_role NOT IN ('Admin', 'Super Admin') THEN
+    RAISE EXCEPTION 'Only admins can modify employee login profiles'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF caller_role = 'Admin' THEN
+    IF NEW.store_id IS DISTINCT FROM public.get_my_store_id() THEN
+      RAISE EXCEPTION 'Admins can only modify profiles in their own store'
+        USING ERRCODE = '42501';
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+      IF OLD.store_id IS DISTINCT FROM public.get_my_store_id() THEN
+        RAISE EXCEPTION 'Admins can only modify profiles in their own store'
+          USING ERRCODE = '42501';
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER guard_employee_login_profile_fields
+  BEFORE INSERT OR UPDATE ON public.employees
+  FOR EACH ROW
+  EXECUTE FUNCTION public.guard_employee_login_profile_fields();
+
+REVOKE EXECUTE ON FUNCTION public.guard_employee_login_profile_fields()
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.guard_employee_login_profile_fields()
+  TO service_role;
+
+CREATE TABLE public.employee_auth_accounts (
+  employee_id uuid PRIMARY KEY REFERENCES public.employees(id) ON DELETE RESTRICT,
+  auth_user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  login_email text NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.employee_login_attempts (
+  employee_id uuid PRIMARY KEY REFERENCES public.employees(id) ON DELETE CASCADE,
+  window_started_at timestamptz NOT NULL DEFAULT now(),
+  attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  locked_until timestamptz
+);
+
+ALTER TABLE public.employee_auth_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.employee_login_attempts ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.employee_auth_accounts, public.employee_login_attempts
+  FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON public.employee_auth_accounts, public.employee_login_attempts
+  TO service_role;
+
+CREATE FUNCTION public.consume_employee_login_attempt(
+  p_employee_id uuid,
+  p_success boolean DEFAULT false
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  current_attempt_count integer;
+  current_locked_until timestamptz;
+BEGIN
+  IF p_success THEN
+    DELETE FROM public.employee_login_attempts
+    WHERE employee_id = p_employee_id;
+    RETURN true;
+  END IF;
+
+  INSERT INTO public.employee_login_attempts (
+    employee_id,
+    window_started_at,
+    attempt_count
+  )
+  VALUES (p_employee_id, now(), 1)
+  ON CONFLICT (employee_id) DO UPDATE
+  SET
+    window_started_at = CASE
+      WHEN public.employee_login_attempts.locked_until > now()
+        THEN public.employee_login_attempts.window_started_at
+      WHEN public.employee_login_attempts.locked_until IS NOT NULL
+        OR public.employee_login_attempts.window_started_at <= now() - interval '15 minutes'
+        THEN now()
+      ELSE public.employee_login_attempts.window_started_at
+    END,
+    attempt_count = CASE
+      WHEN public.employee_login_attempts.locked_until > now()
+        THEN public.employee_login_attempts.attempt_count
+      WHEN public.employee_login_attempts.locked_until IS NOT NULL
+        OR public.employee_login_attempts.window_started_at <= now() - interval '15 minutes'
+        THEN 1
+      ELSE public.employee_login_attempts.attempt_count + 1
+    END,
+    locked_until = CASE
+      WHEN public.employee_login_attempts.locked_until > now()
+        THEN public.employee_login_attempts.locked_until
+      WHEN public.employee_login_attempts.locked_until IS NOT NULL
+        OR public.employee_login_attempts.window_started_at <= now() - interval '15 minutes'
+        THEN NULL
+      WHEN public.employee_login_attempts.attempt_count + 1 > 5
+        THEN now() + interval '15 minutes'
+      ELSE NULL
+    END
+  RETURNING attempt_count, locked_until
+  INTO current_attempt_count, current_locked_until;
+
+  RETURN current_attempt_count <= 5 AND current_locked_until IS NULL;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.consume_employee_login_attempt(uuid, boolean)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_employee_login_attempt(uuid, boolean)
+  TO service_role;
+
+INSERT INTO storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+VALUES (
+  'employee-photos',
+  'employee-photos',
+  true,
+  3145728,
+  ARRAY['image/jpeg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE
+SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "Admins can read employee photos" ON storage.objects;
+CREATE POLICY "Admins can read employee photos"
+  ON storage.objects
+  FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'employee-photos'
+    AND (SELECT public.get_my_role()) IN ('Admin', 'Super Admin')
+    AND (
+      (SELECT public.get_my_role()) = 'Super Admin'
+      OR (storage.foldername(name))[1] = (SELECT public.get_my_store_id())::text
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can upload employee photos" ON storage.objects;
+CREATE POLICY "Admins can upload employee photos"
+  ON storage.objects
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'employee-photos'
+    AND (SELECT public.get_my_role()) IN ('Admin', 'Super Admin')
+    AND (
+      (SELECT public.get_my_role()) = 'Super Admin'
+      OR (storage.foldername(name))[1] = (SELECT public.get_my_store_id())::text
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can update employee photos" ON storage.objects;
+CREATE POLICY "Admins can update employee photos"
+  ON storage.objects
+  FOR UPDATE
+  TO authenticated
+  USING (
+    bucket_id = 'employee-photos'
+    AND (SELECT public.get_my_role()) IN ('Admin', 'Super Admin')
+    AND (
+      (SELECT public.get_my_role()) = 'Super Admin'
+      OR (storage.foldername(name))[1] = (SELECT public.get_my_store_id())::text
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'employee-photos'
+    AND (SELECT public.get_my_role()) IN ('Admin', 'Super Admin')
+    AND (
+      (SELECT public.get_my_role()) = 'Super Admin'
+      OR (storage.foldername(name))[1] = (SELECT public.get_my_store_id())::text
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can delete employee photos" ON storage.objects;
+CREATE POLICY "Admins can delete employee photos"
+  ON storage.objects
+  FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'employee-photos'
+    AND (SELECT public.get_my_role()) IN ('Admin', 'Super Admin')
+    AND (
+      (SELECT public.get_my_role()) = 'Super Admin'
+      OR (storage.foldername(name))[1] = (SELECT public.get_my_store_id())::text
+    )
+  );
+
+-- ============================================
+-- SECTION 10: SALDO DISKON PELANGGAN (Added Nov 2026)
+-- ============================================
+-- Sumber: supabase/migrations/20261125160000_customer_discount_balance.sql
+
+-- ============================================================================
+-- SALDO DISKON PELANGGAN
+-- ----------------------------------------------------------------------------
+-- Aturan bisnis:
+--   * Pembayaran TUNAI dibulatkan ke ATAS ke kelipatan Rp500. Kelebihannya
+--     (maks Rp499) masuk ke saldo diskon pelanggan  -> kolom "roundingCredit".
+--   * Saldo dipakai otomatis sebagai potongan di transaksi berikutnya,
+--     maksimal 10% dari subtotal                     -> kolom "discountBalanceUsed".
+--   * Admin / Super Admin boleh menyesuaikan saldo secara manual.
+--
+-- Semua perubahan saldo terjadi di database (trigger + fungsi SECURITY DEFINER)
+-- dalam transaksi yang sama dengan perubahan transaksi, sehingga saldo tidak
+-- bisa dobel, hilang, atau minus walau dua kasir bekerja bersamaan. Setiap
+-- perubahan dicatat di public.customer_discount_ledger.
+-- ============================================================================
+
+-- 1. Kolom saldo di customers: wajib terisi, tidak boleh negatif ---------------
+ALTER TABLE public.customers
+  ADD COLUMN IF NOT EXISTS "defaultDiscount" integer DEFAULT 0;
+
+UPDATE public.customers
+SET "defaultDiscount" = 0
+WHERE "defaultDiscount" IS NULL OR "defaultDiscount" < 0;
+
+ALTER TABLE public.customers
+  ALTER COLUMN "defaultDiscount" SET DEFAULT 0,
+  ALTER COLUMN "defaultDiscount" SET NOT NULL,
+  ADD CONSTRAINT customers_default_discount_nonnegative
+    CHECK ("defaultDiscount" >= 0);
+
+COMMENT ON COLUMN public.customers."defaultDiscount" IS
+  'Saldo diskon pelanggan (Rupiah). Hanya berubah lewat trigger saldo atau penyesuaian Admin.';
+
+-- 2. Kolom saldo di transactions ---------------------------------------------
+ALTER TABLE public.transactions
+  ADD COLUMN IF NOT EXISTS "discountBalanceUsed" integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "roundingCredit" integer NOT NULL DEFAULT 0;
+
+ALTER TABLE public.transactions
+  ADD CONSTRAINT transactions_discount_balance_used_check
+    CHECK ("discountBalanceUsed" >= 0),
+  ADD CONSTRAINT transactions_rounding_credit_check
+    CHECK ("roundingCredit" BETWEEN 0 AND 499);
+
+COMMENT ON COLUMN public.transactions."discountBalanceUsed" IS
+  'Bagian dari kolom discount yang diambil dari saldo diskon pelanggan (Rupiah).';
+COMMENT ON COLUMN public.transactions."roundingCredit" IS
+  'Kelebihan pembulatan tunai ke atas (kelipatan Rp500) yang masuk ke saldo pelanggan.';
+
+-- 3. Buku catatan saldo --------------------------------------------------------
+CREATE TABLE public.customer_discount_ledger (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id uuid NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+  store_id uuid REFERENCES public.stores(id) ON DELETE SET NULL,
+  transaction_id uuid REFERENCES public.transactions(id) ON DELETE SET NULL,
+  kind text NOT NULL CHECK (kind IN ('use', 'rounding', 'manual', 'reversal')),
+  amount integer NOT NULL CHECK (amount <> 0),
+  balance_after integer NOT NULL CHECK (balance_after >= 0),
+  note text CHECK (note IS NULL OR char_length(note) <= 200),
+  created_by uuid DEFAULT auth.uid(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE public.customer_discount_ledger IS
+  'Riwayat setiap perubahan saldo diskon pelanggan. Hanya ditulis oleh fungsi database.';
+
+-- Satu transaksi hanya boleh memakai / menambah saldo sekali.
+CREATE UNIQUE INDEX customer_discount_ledger_transaction_kind_idx
+  ON public.customer_discount_ledger (transaction_id, kind)
+  WHERE transaction_id IS NOT NULL AND kind IN ('use', 'rounding');
+CREATE INDEX customer_discount_ledger_customer_idx
+  ON public.customer_discount_ledger (customer_id, created_at DESC);
+CREATE INDEX customer_discount_ledger_store_idx
+  ON public.customer_discount_ledger (store_id);
+
+ALTER TABLE public.customer_discount_ledger ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Store users can read discount ledger"
+  ON public.customer_discount_ledger
+  FOR SELECT
+  TO authenticated
+  USING (
+    (SELECT public.get_my_role()) = 'Super Admin'
+    OR store_id = (SELECT public.get_my_store_id())
+  );
+
+-- Saldo yang sudah ada sebelum buku catatan dibuat dicatat sebagai saldo awal,
+-- supaya jumlah ledger per pelanggan selalu sama dengan saldonya.
+INSERT INTO public.customer_discount_ledger (
+  customer_id, store_id, kind, amount, balance_after, note, created_by
+)
+SELECT id, "storeId", 'manual', "defaultDiscount", "defaultDiscount",
+  'Saldo awal saat buku catatan saldo diaktifkan', NULL
+FROM public.customers
+WHERE "defaultDiscount" > 0;
+
+REVOKE ALL ON public.customer_discount_ledger FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.customer_discount_ledger TO authenticated;
+GRANT ALL ON public.customer_discount_ledger TO service_role;
+
+-- 4. Fungsi inti: ubah saldo secara atomik + catat -----------------------------
+CREATE OR REPLACE FUNCTION public.change_customer_discount_balance(
+  p_customer_id uuid,
+  p_delta integer,
+  p_kind text,
+  p_transaction_id uuid,
+  p_note text,
+  p_clamp_at_zero boolean DEFAULT false
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_balance integer;
+  v_store_id uuid;
+  v_new_balance integer;
+  v_applied integer;
+BEGIN
+  SELECT c."defaultDiscount", c."storeId"
+  INTO v_balance, v_store_id
+  FROM public.customers AS c
+  WHERE c.id = p_customer_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Pelanggan tidak ditemukan untuk saldo diskon'
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  v_new_balance := v_balance + p_delta;
+  IF v_new_balance < 0 THEN
+    IF p_clamp_at_zero THEN
+      v_new_balance := 0;
+    ELSE
+      RAISE EXCEPTION 'Saldo diskon pelanggan tidak cukup (sisa Rp%, dibutuhkan Rp%)',
+        v_balance, -p_delta
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  v_applied := v_new_balance - v_balance;
+  IF v_applied = 0 THEN
+    RETURN v_balance;
+  END IF;
+
+  -- Tanda untuk trigger penjaga: perubahan ini sah dan dicatat di bawah.
+  PERFORM set_config('app.discount_balance_internal', 'on', true);
+  UPDATE public.customers
+  SET "defaultDiscount" = v_new_balance
+  WHERE id = p_customer_id;
+  PERFORM set_config('app.discount_balance_internal', 'off', true);
+
+  INSERT INTO public.customer_discount_ledger (
+    customer_id, store_id, transaction_id, kind, amount, balance_after, note
+  )
+  VALUES (
+    p_customer_id, v_store_id, p_transaction_id, p_kind, v_applied, v_new_balance,
+    left(p_note, 200)
+  );
+
+  RETURN v_new_balance;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.change_customer_discount_balance(uuid, integer, text, uuid, text, boolean)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.change_customer_discount_balance(uuid, integer, text, uuid, text, boolean)
+  TO service_role;
+
+-- 5. Trigger transaksi: pakai saldo, tambah pembulatan, kembalikan saat dihapus -
+CREATE OR REPLACE FUNCTION public.apply_transaction_discount_balance()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_label text;
+  v_max_use integer;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD."customerId" IS NOT NULL THEN
+      v_label := coalesce(OLD."invoiceCode", OLD.id::text);
+      IF OLD."discountBalanceUsed" > 0 THEN
+        PERFORM public.change_customer_discount_balance(
+          OLD."customerId", OLD."discountBalanceUsed", 'reversal', NULL,
+          'Transaksi ' || v_label || ' dihapus: saldo yang dipakai dikembalikan'
+        );
+      END IF;
+      IF OLD."roundingCredit" > 0 THEN
+        PERFORM public.change_customer_discount_balance(
+          OLD."customerId", -OLD."roundingCredit", 'reversal', NULL,
+          'Transaksi ' || v_label || ' dihapus: saldo pembulatan dibatalkan',
+          true
+        );
+      END IF;
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  v_label := coalesce(NEW."invoiceCode", NEW.id::text);
+
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW."discountBalanceUsed" IS DISTINCT FROM OLD."discountBalanceUsed" THEN
+      RAISE EXCEPTION 'Pemakaian saldo diskon tidak dapat diubah setelah transaksi dibuat'
+        USING ERRCODE = '42501';
+    END IF;
+    -- NULL diperbolehkan: terjadi otomatis saat pelanggan dihapus (ON DELETE SET NULL).
+    IF NEW."customerId" IS DISTINCT FROM OLD."customerId"
+      AND NEW."customerId" IS NOT NULL
+      AND (OLD."discountBalanceUsed" > 0 OR OLD."roundingCredit" > 0) THEN
+      RAISE EXCEPTION 'Pelanggan tidak dapat diganti pada transaksi yang memakai saldo diskon'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  -- Pemakaian saldo (hanya saat transaksi dibuat)
+  IF TG_OP = 'INSERT' AND NEW."discountBalanceUsed" > 0 THEN
+    IF NEW."customerId" IS NULL THEN
+      RAISE EXCEPTION 'Saldo diskon hanya bisa dipakai untuk pelanggan terdaftar'
+        USING ERRCODE = '22023';
+    END IF;
+    v_max_use := floor(NEW.subtotal * 0.10)::integer;
+    IF NEW."discountBalanceUsed" > v_max_use THEN
+      RAISE EXCEPTION 'Pemakaian saldo diskon Rp% melebihi batas 10%% subtotal (Rp%)',
+        NEW."discountBalanceUsed", v_max_use
+        USING ERRCODE = '22023';
+    END IF;
+    IF NEW."discountBalanceUsed" > NEW.discount THEN
+      RAISE EXCEPTION 'Pemakaian saldo diskon harus termasuk dalam kolom diskon'
+        USING ERRCODE = '22023';
+    END IF;
+
+    PERFORM public.change_customer_discount_balance(
+      NEW."customerId", -NEW."discountBalanceUsed", 'use', NEW.id,
+      'Dipakai di transaksi ' || v_label
+    );
+  END IF;
+
+  -- Kelebihan pembulatan tunai (sekali per transaksi, saat lunas)
+  IF NEW."roundingCredit" > 0
+    AND (TG_OP = 'INSERT' OR NEW."roundingCredit" IS DISTINCT FROM OLD."roundingCredit") THEN
+    IF TG_OP = 'UPDATE' AND OLD."roundingCredit" <> 0 THEN
+      RAISE EXCEPTION 'Saldo pembulatan transaksi ini sudah tercatat'
+        USING ERRCODE = '42501';
+    END IF;
+    IF NEW."customerId" IS NULL THEN
+      RAISE EXCEPTION 'Saldo pembulatan hanya bisa untuk pelanggan terdaftar'
+        USING ERRCODE = '22023';
+    END IF;
+    IF NEW."paymentMethod" IS DISTINCT FROM 'Tunai' OR NEW."paymentStatus" IS DISTINCT FROM 'Lunas' THEN
+      RAISE EXCEPTION 'Saldo pembulatan hanya untuk pembayaran tunai yang sudah lunas'
+        USING ERRCODE = '22023';
+    END IF;
+    IF mod(NEW.total + NEW."roundingCredit", 500) <> 0 THEN
+      RAISE EXCEPTION 'Saldo pembulatan Rp% tidak sesuai dengan total Rp%',
+        NEW."roundingCredit", NEW.total
+        USING ERRCODE = '22023';
+    END IF;
+
+    PERFORM public.change_customer_discount_balance(
+      NEW."customerId", NEW."roundingCredit", 'rounding', NEW.id,
+      'Pembulatan tunai transaksi ' || v_label
+    );
+  ELSIF TG_OP = 'UPDATE' AND NEW."roundingCredit" IS DISTINCT FROM OLD."roundingCredit" THEN
+    RAISE EXCEPTION 'Saldo pembulatan transaksi ini sudah tercatat'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.apply_transaction_discount_balance()
+  FROM PUBLIC, anon, authenticated;
+
+CREATE TRIGGER apply_transaction_discount_balance
+  AFTER INSERT OR UPDATE OF "discountBalanceUsed", "roundingCredit", "customerId" OR DELETE
+  ON public.transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.apply_transaction_discount_balance();
+
+-- 6. Penjaga kolom saldo di customers ------------------------------------------
+-- Kasir tidak boleh mengubah saldo langsung. Perubahan langsung oleh Admin
+-- (form, impor Excel, restore) dicatat otomatis sebagai 'manual'.
+CREATE OR REPLACE FUNCTION public.normalize_customer_discount_balance()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  NEW."defaultDiscount" := greatest(coalesce(NEW."defaultDiscount", 0), 0);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER normalize_customer_discount_balance
+  BEFORE INSERT OR UPDATE OF "defaultDiscount" ON public.customers
+  FOR EACH ROW
+  EXECUTE FUNCTION public.normalize_customer_discount_balance();
+
+CREATE OR REPLACE FUNCTION public.guard_customer_discount_balance()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_old integer;
+  v_note text;
+BEGIN
+  -- Perubahan dari change_customer_discount_balance() sudah dicatat di sana.
+  IF current_setting('app.discount_balance_internal', true) = 'on' THEN
+    RETURN NULL;
+  END IF;
+
+  v_old := CASE WHEN TG_OP = 'INSERT' THEN 0 ELSE OLD."defaultDiscount" END;
+  IF NEW."defaultDiscount" = v_old THEN
+    RETURN NULL;
+  END IF;
+
+  IF auth.uid() IS NULL THEN
+    -- Koneksi database langsung / service role (SQL Editor, edge function).
+    v_note := 'Diubah langsung di database';
+  ELSIF coalesce(public.get_my_role(), '') IN ('Admin', 'Super Admin') THEN
+    v_note := CASE WHEN TG_OP = 'INSERT' THEN 'Saldo awal pelanggan' ELSE 'Diubah langsung oleh Admin' END;
+  ELSE
+    RAISE EXCEPTION 'Hanya Admin yang dapat mengubah saldo diskon pelanggan'
+      USING ERRCODE = '42501';
+  END IF;
+
+  INSERT INTO public.customer_discount_ledger (
+    customer_id, store_id, transaction_id, kind, amount, balance_after, note
+  )
+  VALUES (
+    NEW.id, NEW."storeId", NULL, 'manual',
+    NEW."defaultDiscount" - v_old, NEW."defaultDiscount", v_note
+  );
+  RETURN NULL;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.guard_customer_discount_balance()
+  FROM PUBLIC, anon, authenticated;
+
+CREATE TRIGGER guard_customer_discount_balance
+  AFTER INSERT OR UPDATE OF "defaultDiscount" ON public.customers
+  FOR EACH ROW
+  EXECUTE FUNCTION public.guard_customer_discount_balance();
+
+-- 7. RPC untuk Admin: setel saldo dengan pengecekan nilai lama -----------------
+-- p_expected_balance mencegah menimpa perubahan yang terjadi saat form terbuka.
+CREATE OR REPLACE FUNCTION public.set_customer_discount_balance(
+  p_customer_id uuid,
+  p_expected_balance integer,
+  p_new_balance integer,
+  p_note text DEFAULT NULL
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_role text := public.get_my_role();
+  v_store_id uuid;
+  v_balance integer;
+BEGIN
+  IF coalesce(v_role, '') NOT IN ('Admin', 'Super Admin') THEN
+    RAISE EXCEPTION 'Hanya Admin yang dapat mengubah saldo diskon pelanggan'
+      USING ERRCODE = '42501';
+  END IF;
+  IF p_new_balance IS NULL OR p_new_balance < 0 THEN
+    RAISE EXCEPTION 'Saldo diskon tidak boleh negatif' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT c."storeId", c."defaultDiscount"
+  INTO v_store_id, v_balance
+  FROM public.customers AS c
+  WHERE c.id = p_customer_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Pelanggan tidak ditemukan' USING ERRCODE = 'P0002';
+  END IF;
+  IF v_role = 'Admin' AND v_store_id IS DISTINCT FROM public.get_my_store_id() THEN
+    RAISE EXCEPTION 'Admin hanya dapat mengubah pelanggan di cabangnya sendiri'
+      USING ERRCODE = '42501';
+  END IF;
+  IF p_expected_balance IS DISTINCT FROM v_balance THEN
+    RAISE EXCEPTION 'Saldo pelanggan sudah berubah menjadi Rp%. Muat ulang lalu coba lagi.', v_balance
+      USING ERRCODE = '40001';
+  END IF;
+
+  RETURN public.change_customer_discount_balance(
+    p_customer_id,
+    p_new_balance - v_balance,
+    'manual',
+    NULL,
+    coalesce(nullif(btrim(p_note), ''), 'Penyesuaian saldo oleh Admin')
+  );
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.set_customer_discount_balance(uuid, integer, integer, text)
+  FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.set_customer_discount_balance(uuid, integer, integer, text)
+  TO authenticated;
+
+
+-- ============================================
+-- END OF SETUP
+-- ============================================

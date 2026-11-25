@@ -17,8 +17,8 @@ emaklaundry_kasir/
 │   ├── DEPLOYMENT.md                # Deployment instructions
 │   └── STRUCTURE.md                 # This file
 │
-├── 💾 database/                      # Database files
-│   ├── README.md                    # Database documentation
+├── 💾 supabase/                      # Semua backend: setup, seeds, backup, migrations, functions
+│   ├── setup/README.md              # Peta lengkap backend
 │   ├── backup/                      # SQL backups
 │   │   ├── README.md                # Backup guide
 │   │   ├── complete_backup.sql      # Full backup
@@ -89,7 +89,7 @@ emaklaundry_kasir/
 ### 1. **Clear Separation of Concerns**
 
 - **Documentation** → `docs/` folder
-- **Database** → `database/` folder (setup + backup + seeds)
+- **Database & backend** → `supabase/` folder (setup + seeds + backup + migrations + functions)
 - **Source Code** → `src/` folder
 - **Public Assets** → `public/` folder
 - **Configuration** → Root level
@@ -142,14 +142,14 @@ src/components/
 **Deployment:**
 
 1. [deployment/DEPLOYMENT.md](./deployment/DEPLOYMENT.md) - Full deployment guide
-2. [database/setup/](../database/setup/) - DB setup scripts
+2. [supabase/setup/](../supabase/setup/) - DB setup scripts
 3. `.env` - Environment configuration
 
 **Database:**
 
-- Setup → [database/setup/](../database/setup/0.complete_setup.sql)
-- Seed → [database/setup/](../database/setup/1.seed_data_awal.sql)
-- Content → [database/seeds/](../database/seeds/)
+- Setup → [supabase/setup/](../supabase/setup/0.complete_setup.sql)
+- Seed → [supabase/setup/](../supabase/setup/1.seed_data_awal.sql)
+- Content → [supabase/seeds/](../supabase/seeds/)
 
 ### 📊 For Project Managers
 
@@ -194,9 +194,9 @@ Utils: 10+ utilities
 
 ### Database
 
-- [database/setup/0.complete_setup.sql](../database/setup/0.complete_setup.sql) - Complete schema setup
-- [database/setup/1.seed_data_awal.sql](../database/setup/1.seed_data_awal.sql) - Basic seed data
-- [database/seeds/00_full_seed_bundle.sql](../database/seeds/00_full_seed_bundle.sql) - Content bundle
+- [supabase/setup/0.complete_setup.sql](../supabase/setup/0.complete_setup.sql) - Complete schema setup
+- [supabase/setup/1.seed_data_awal.sql](../supabase/setup/1.seed_data_awal.sql) - Basic seed data
+- [supabase/seeds/00_full_seed_bundle.sql](../supabase/seeds/00_full_seed_bundle.sql) - Content bundle
 
 ---
 

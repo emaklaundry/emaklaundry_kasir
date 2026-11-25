@@ -7,10 +7,22 @@ import {
   DollarSignIcon,
   ChevronLeftIcon,
   HistoryIcon,
+  TagIcon,
 } from '../../components/icons';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import {
+  fetchCustomers,
+  useCustomerBalance,
+  useDiscountLedger,
+} from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { Customer } from '../../types';
+import { Customer, DiscountLedgerKind } from '../../types';
+
+const LEDGER_KIND_LABEL: Record<DiscountLedgerKind, string> = {
+  use: 'Dipakai',
+  rounding: 'Pembulatan tunai',
+  manual: 'Penyesuaian',
+  reversal: 'Pembatalan',
+};
 // import { OrderStatus, PaymentStatus } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
 
@@ -24,6 +36,8 @@ const CustomerDetailPage: React.FC = () => {
   const { transactions } = useTransactions();
   const customer = customers.find((c: Customer) => c.id === id);
   const customerTransactions = transactions.filter((t) => t.customerId === id);
+  const { data: freshBalance } = useCustomerBalance(customer?.id);
+  const { data: ledger = [], isLoading: isLedgerLoading } = useDiscountLedger(customer?.id);
 
   if (!customer) {
     return (
@@ -47,6 +61,8 @@ const CustomerDetailPage: React.FC = () => {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
   const mostRecentTransaction = sortedTransactions.length > 0 ? sortedTransactions[0] : null;
+  const balance = freshBalance ?? customer.defaultDiscount ?? 0;
+  const invoiceById = new Map(customerTransactions.map((t) => [t.id, t]));
 
   return (
     <div className="space-y-6">
@@ -79,7 +95,7 @@ const CustomerDetailPage: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
           <DollarSignIcon className="w-8 h-8 text-green-500" />
           <div>
@@ -106,6 +122,96 @@ const CustomerDetailPage: React.FC = () => {
               Rp {avgTransactionValue.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
             </p>
           </div>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
+          <TagIcon className="w-8 h-8 text-emerald-500" />
+          <div>
+            <p className="text-base text-slate-500 dark:text-slate-400">Saldo Diskon</p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tabular-nums">
+              Rp {balance.toLocaleString('id-ID')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-1">
+          Riwayat Saldo Diskon
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+          Saldo bertambah dari pembulatan tunai dan terpakai maks. 10% subtotal per transaksi.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Tanggal</th>
+                <th className="px-4 py-3">Jenis</th>
+                <th className="px-4 py-3">Keterangan</th>
+                <th className="px-4 py-3 text-right">Perubahan</th>
+                <th className="px-4 py-3 text-right">Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLedgerLoading ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-6">
+                    Memuat riwayat saldo…
+                  </td>
+                </tr>
+              ) : ledger.length > 0 ? (
+                ledger.map((entry) => {
+                  const linkedTx = entry.transactionId
+                    ? invoiceById.get(entry.transactionId)
+                    : undefined;
+                  return (
+                    <tr key={entry.id} className="border-b dark:border-slate-700">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {entry.createdAt.toLocaleString('id-ID', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {LEDGER_KIND_LABEL[entry.kind] ?? entry.kind}
+                      </td>
+                      <td className="px-4 py-3">
+                        {linkedTx ? (
+                          <Link
+                            to={`/transactions/${linkedTx.id}/receipt`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            {entry.note ?? formatTransactionId(linkedTx)}
+                          </Link>
+                        ) : (
+                          (entry.note ?? '-')
+                        )}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-right font-medium tabular-nums ${
+                          entry.amount > 0
+                            ? 'text-emerald-700 dark:text-emerald-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}
+                      >
+                        {entry.amount > 0 ? '+' : '−'} Rp{' '}
+                        {Math.abs(entry.amount).toLocaleString('id-ID')}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-900 dark:text-white">
+                        Rp {entry.balanceAfter.toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center py-6">
+                    Belum ada riwayat saldo diskon.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

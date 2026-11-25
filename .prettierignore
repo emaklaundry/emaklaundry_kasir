@@ -2,5 +2,7 @@
 .aider-desk/
 .github/agents/
 .github/skills/
-database/
+supabase/setup/
+supabase/seeds/
+supabase/backup/
 .playwright-mcp/
