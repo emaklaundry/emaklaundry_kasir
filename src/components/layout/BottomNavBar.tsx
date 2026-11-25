@@ -36,19 +36,25 @@ const BottomNavBar: React.FC = () => {
   // Hanya menu yang boleh diakses kasir
   if (isCashier) {
     return (
-      <div className="fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
+      <nav
+        aria-label="Navigasi utama"
+        className="fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
+      >
         <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
           <NavItem to="/" icon={HomeIcon} label="Dashboard" />
           <NavItem to="/quick-actions" icon={BoltIcon} label="Aksi Cepat" />
           <NavItem to="/transactions" icon={ShoppingCartIcon} label="Transaksi" />
         </div>
-      </div>
+      </nav>
     );
   }
 
   // Menu untuk admin/superadmin
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
+    <nav
+      aria-label="Navigasi utama"
+      className="fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
+    >
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         <NavItem to="/" icon={HomeIcon} label="Dashboard" />
         <NavItem to="/quick-actions" icon={BoltIcon} label="Aksi Cepat" />
@@ -56,7 +62,7 @@ const BottomNavBar: React.FC = () => {
         <NavItem to="/management/customers" icon={UsersIcon} label="Pelanggan" />
         <NavItem to="/reports" icon={BarChartIcon} label="Laporan" />
       </div>
-    </div>
+    </nav>
   );
 };
 

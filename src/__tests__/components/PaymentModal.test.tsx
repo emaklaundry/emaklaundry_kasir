@@ -58,7 +58,7 @@ describe('PaymentModal', () => {
 
   it('calls onClose when close button is clicked', () => {
     renderWithProviders(<PaymentModal {...defaultProps} />);
-    const closeButton = screen.getByRole('button', { name: /close modal/i });
+    const closeButton = screen.getByRole('button', { name: 'Tutup dialog' });
     fireEvent.click(closeButton);
     expect(defaultProps.onClose).toHaveBeenCalled();
   });

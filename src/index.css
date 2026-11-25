@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+.modal-dialog[open] {
+  display: flex;
+}
+
+.modal-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+.modal-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 /* --- MOBILE OPTIMIZATIONS --- */
 @layer utilities {
   /* Improve touch targets for mobile */
@@ -69,6 +83,12 @@
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* Better mobile table handling */

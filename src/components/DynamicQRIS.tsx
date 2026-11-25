@@ -57,7 +57,11 @@ const DynamicQRIS: React.FC<DynamicQRISProps> = ({
   return (
     <div className={`flex flex-col items-center ${className}`}>
       {/* QR Code */}
-      <div className="bg-white p-3 rounded-lg shadow-md">
+      <div
+        role="img"
+        aria-label={`QRIS untuk membayar ${formatQRISAmount(amount)}${merchantName ? ` ke ${merchantName}` : ''}`}
+        className="bg-white p-3 rounded-lg shadow-md"
+      >
         <QRCodeSVG
           value={dynamicQRIS}
           size={size}
@@ -65,6 +69,7 @@ const DynamicQRIS: React.FC<DynamicQRISProps> = ({
           includeMargin={false}
           bgColor="#FFFFFF"
           fgColor="#000000"
+          aria-hidden="true"
         />
       </div>
 

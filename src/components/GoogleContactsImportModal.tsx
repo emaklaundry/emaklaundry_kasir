@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XIcon, UserPlusIcon, CheckIcon, RefreshCwIcon } from './icons';
+import { XIcon, UserPlusIcon, RefreshCwIcon } from './icons';
 import useGoogleContacts, { GoogleContact } from '../hooks/useGoogleContacts';
 
 interface GoogleContactsImportModalProps {
@@ -108,8 +108,10 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            aria-label="Tutup dialog"
           >
             <XIcon className="w-5 h-5 text-slate-500" />
           </button>
@@ -164,14 +166,23 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                 )}
                 <span className="text-slate-700 font-medium">Masuk dengan Google</span>
               </button>
-              {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
+              {error && (
+                <p role="alert" className="mt-4 text-sm text-red-500">
+                  {error}
+                </p>
+              )}
             </div>
           ) : (
             /* Authenticated View */
             <>
               {/* Search & Actions Bar */}
               <div className="p-4 border-b dark:border-slate-700 space-y-3">
+                <label htmlFor="google-contacts-search" className="sr-only">
+                  Cari kontak
+                </label>
                 <input
+                  id="google-contacts-search"
+                  name="google-contacts-search"
                   type="text"
                   placeholder="Cari kontak..."
                   value={searchTerm}
@@ -218,26 +229,20 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                 ) : (
                   <div className="space-y-2">
                     {filteredContacts.map((contact) => (
-                      <div
+                      <label
                         key={contact.resourceName}
-                        onClick={() => toggleContact(contact.resourceName)}
                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                           selectedContacts.has(contact.resourceName)
                             ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'
                             : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent'
                         }`}
                       >
-                        <div
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                            selectedContacts.has(contact.resourceName)
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'border-slate-300 dark:border-slate-500'
-                          }`}
-                        >
-                          {selectedContacts.has(contact.resourceName) && (
-                            <CheckIcon className="w-3 h-3 text-white" />
-                          )}
-                        </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedContacts.has(contact.resourceName)}
+                          onChange={() => toggleContact(contact.resourceName)}
+                          className="h-5 w-5 shrink-0 accent-blue-600"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-slate-900 dark:text-white truncate">
                             {contact.name}
@@ -247,7 +252,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                             {contact.address && ` · ${contact.address}`}
                           </p>
                         </div>
-                      </div>
+                      </label>
                     ))}
                   </div>
                 )}

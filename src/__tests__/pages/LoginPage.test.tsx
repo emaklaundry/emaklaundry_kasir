@@ -1,27 +1,54 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginPage from '@/pages/LoginPage';
-import { AppProvider } from '@/contexts/AppContext';
-import { ToastProvider } from '@/contexts/ToastContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const Wrapper = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-    },
-  });
+const mocks = vi.hoisted(() => ({
+  signInWithPassword: vi.fn(),
+  addAuditLog: vi.fn(),
+}));
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AppProvider>{children}</AppProvider>
-      </ToastProvider>
-    </QueryClientProvider>
-  );
-};
+vi.mock('@/utils/supabaseClient', () => ({
+  supabase: { auth: { signInWithPassword: mocks.signInWithPassword } },
+}));
+
+vi.mock('@/contexts/AuditLogContext', () => ({
+  useAuditLogs: () => ({ addAuditLog: mocks.addAuditLog }),
+}));
 
 describe('LoginPage', () => {
-  it('renders without crashing', () => {
-    render(<LoginPage />, { wrapper: Wrapper });
+  beforeEach(() => {
+    mocks.signInWithPassword.mockReset();
+    mocks.addAuditLog.mockReset();
+    document.title = '';
+  });
+
+  it('sets the login page title and exposes a main heading', () => {
+    render(<LoginPage />);
+
+    expect(document.title).toBe('Masuk | Laundry POS');
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Masuk ke Akun Anda' }),
+    ).toBeInTheDocument();
+  });
+
+  it('announces failed login attempts to assistive technology', async () => {
+    mocks.signInWithPassword.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: 'Email atau password salah' },
+    });
+
+    const { container } = render(<LoginPage />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Email' }), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'wrong-password' },
+    });
+    const form = container.querySelector('form');
+    if (!form) throw new Error('Login form was not rendered');
+    fireEvent.submit(form);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Email atau password salah');
   });
 });

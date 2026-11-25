@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import pkg from '../../package.json';
@@ -11,6 +11,10 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { addAuditLog } = useAuditLogs();
+
+  useEffect(() => {
+    document.title = 'Masuk | Laundry POS';
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +31,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4">
       {/* Login Card */}
       <div className="w-full max-w-md">
         {/* Login Form */}
@@ -35,9 +39,9 @@ const LoginPage: React.FC = () => {
           onSubmit={handleLogin}
           className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700"
         >
-          <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white">
             Masuk ke Akun Anda
-          </h2>
+          </h1>
 
           {/* Email Input */}
           <div className="mb-5">
@@ -83,7 +87,10 @@ const LoginPage: React.FC = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-5 p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg">
+            <div
+              role="alert"
+              className="mb-5 p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg"
+            >
               <p className="text-sm text-red-700 dark:text-red-400 font-medium">{error}</p>
             </div>
           )}
@@ -149,7 +156,7 @@ const LoginPage: React.FC = () => {
       <div className="fixed right-3 bottom-2 z-50 text-xs text-slate-500 opacity-70 pointer-events-none select-none">
         {APP_VERSION}
       </div>
-    </div>
+    </main>
   );
 };
 

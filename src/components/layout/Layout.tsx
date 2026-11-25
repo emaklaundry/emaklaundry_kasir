@@ -58,6 +58,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(() => {
     return typeof window === 'undefined' ? true : window.innerWidth >= 640;
   });
+  const previousPath = React.useRef(location.pathname);
 
   React.useEffect(() => {
     const desktopMedia = window.matchMedia('(min-width: 640px)');
@@ -71,10 +72,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, []);
 
   React.useEffect(() => {
+    const hasNavigated = previousPath.current !== location.pathname;
+    previousPath.current = location.pathname;
+
     if (window.innerWidth < 640) {
       setIsSidebarOpen(false);
+      if (hasNavigated) {
+        window.requestAnimationFrame(() => document.getElementById('main-content')?.focus());
+      }
     }
   }, [location.pathname]);
+
+  const handleSidebarToggle = () => {
+    const focusTarget = isSidebarOpen ? 'sidebar-toggle' : 'sidebar-close';
+    window.requestAnimationFrame(() => document.getElementById(focusTarget)?.focus());
+    setIsSidebarOpen((open) => !open);
+  };
 
   const { data: customersRaw = [] } = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
@@ -84,18 +97,34 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
   const pageTitle = getPageTitle(location.pathname, params, customers);
 
+  React.useEffect(() => {
+    document.title = `${pageTitle} | Laundry POS`;
+  }, [pageTitle]);
+
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-slate-900 focus:shadow-lg"
+      >
+        Lewati ke konten utama
+      </a>
       <Tutorial />
-      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
 
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
           isSidebarOpen ? 'ml-0 sm:ml-64' : 'ml-0'
         }`}
       >
-        <Header pageTitle={pageTitle} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <Header
+          pageTitle={pageTitle}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={handleSidebarToggle}
+        />
         <main
+          id="main-content"
+          tabIndex={-1}
           className={`p-2 sm:p-4 md:p-6 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-6 print-main-content`}
         >
           {children}
