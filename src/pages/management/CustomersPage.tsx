@@ -31,7 +31,6 @@ import {
   downloadCustomerTemplate,
 } from '../../utils/excelUtils';
 import { supabase } from '../../utils/supabaseClient';
-import { recalculateAllCustomerDiscounts } from '../../utils/discountUtils';
 import GoogleContactsImportModal from '../../components/GoogleContactsImportModal';
 import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts';
 
@@ -293,7 +292,6 @@ const CustomersPage: React.FC = () => {
         address: c.address ?? undefined,
         notes: c.notes ?? undefined,
         phone: c.phone ?? undefined,
-        defaultDiscount: c.defaultDiscount ?? undefined,
         storeId: c.storeId ?? undefined,
       })) as unknown as Customer[];
 
@@ -334,7 +332,6 @@ const CustomersPage: React.FC = () => {
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
-              defaultDiscount: customer.defaultDiscount || 0,
             };
 
             if (selectedStoreId !== 'all') {
@@ -374,7 +371,6 @@ const CustomersPage: React.FC = () => {
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
-              defaultDiscount: customer.defaultDiscount || 0,
               storeId: storeId!,
             } as Omit<Customer, 'id'>);
             successCount++;
@@ -428,68 +424,6 @@ const CustomersPage: React.FC = () => {
     }
   };
 
-  // Recalculate Discount Balances
-  const handleRecalculateDiscounts = async () => {
-    const toastId = addToast('Menghitung ulang saldo diskon...', 'info');
-    setIsSaving(true);
-    try {
-      // Fetch ALL customers to recalculate (not just current page)
-      const { data: allCustomers, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      if (!allCustomers || allCustomers.length === 0) {
-        updateToast(toastId, 'Tidak ada pelanggan untuk diproses.', 'warning');
-        setIsSaving(false);
-        return;
-      }
-
-      // Convert to Customer type
-      const customersToProcess = allCustomers.map((c) => ({
-        ...c,
-        address: c.address ?? undefined,
-        notes: c.notes ?? undefined,
-        phone: c.phone ?? undefined,
-        defaultDiscount: c.defaultDiscount ?? undefined,
-        storeId: c.storeId ?? undefined,
-      })) as unknown as Customer[];
-
-      updateToast(toastId, `Memproses ${customersToProcess.length} pelanggan...`, 'info');
-
-      const results = await recalculateAllCustomerDiscounts(
-        customersToProcess,
-        transactions,
-        updateCustomer,
-      );
-
-      if (results.updated === 0) {
-        updateToast(
-          toastId,
-          'Tidak ada saldo diskon yang perlu ditambahkan. Semua pelanggan sudah up-to-date.',
-          'info',
-        );
-      } else {
-        updateToast(
-          toastId,
-          `Berhasil! ${results.updated} pelanggan diupdate dengan total diskon Rp ${results.totalDiscountAdded.toLocaleString('id-ID')}`,
-          'success',
-        );
-
-        addAuditLog(
-          `Recalculate saldo diskon: ${results.updated} pelanggan, total Rp ${results.totalDiscountAdded.toLocaleString('id-ID')}`,
-          selectedStoreId !== 'all' ? selectedStoreId : undefined,
-        );
-      }
-    } catch (error) {
-      console.error('Recalculate error:', error);
-      updateToast(toastId, 'Gagal menghitung ulang saldo diskon', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // Google Contacts Import
   const handleGoogleContactsImport = async (contacts: GoogleContact[]) => {
     const storeId =
@@ -528,7 +462,6 @@ const CustomersPage: React.FC = () => {
           phone: phone,
           address: contact.address || undefined,
           notes: `Imported from Google Contacts`,
-          defaultDiscount: 0,
           storeId: storeId,
           createdAt: new Date(),
         });
@@ -639,17 +572,6 @@ const CustomersPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
         <div className="flex gap-2 flex-wrap">
-          {/* Recalculate Discount Balance Button */}
-          <button
-            onClick={handleRecalculateDiscounts}
-            disabled={isSaving || customers.length === 0}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed"
-            title="Hitung Ulang Saldo Diskon dari History Transaksi"
-          >
-            <RefreshCwIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Hitung Ulang Diskon</span>
-          </button>
-
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
@@ -802,15 +724,7 @@ const CustomersPage: React.FC = () => {
                   Total Belanja {getSortIcon('totalSpent')}
                 </button>
               </th>
-              <th className="px-6 py-3 text-right">
-                <button
-                  onClick={() => requestSort('defaultDiscount')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
-                >
-                  💰 Saldo Diskon {getSortIcon('defaultDiscount')}
-                </button>
-              </th>
-              <th className="px-6 py-3">Aksi</th>
+                            <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -840,13 +754,7 @@ const CustomersPage: React.FC = () => {
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {customer.defaultDiscount != null ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        Rp {customer.defaultDiscount.toLocaleString('id-ID')}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 dark:text-slate-500">-</span>
-                    )}
+                    <span className="text-slate-400 dark:text-slate-500">-</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
@@ -930,16 +838,6 @@ const CustomersPage: React.FC = () => {
                   <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">💰 Saldo Diskon</p>
-                  {customer.defaultDiscount != null ? (
-                    <p className="font-semibold text-base text-green-600 dark:text-green-400">
-                      Rp {customer.defaultDiscount.toLocaleString('id-ID')}
-                    </p>
-                  ) : (
-                    <p className="text-slate-400 dark:text-slate-500">-</p>
-                  )}
                 </div>
               </div>
             </div>

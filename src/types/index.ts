@@ -57,7 +57,6 @@ export interface Customer {
   address?: string;
   notes?: string;
   storeId: string;
-  defaultDiscount?: number;
   createdAt: Date;
 }
 

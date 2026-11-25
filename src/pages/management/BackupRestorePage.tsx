@@ -83,7 +83,6 @@ const BackupRestorePage: React.FC = () => {
         address: c.address ?? undefined,
         notes: c.notes ?? undefined,
         phone: c.phone ?? undefined,
-        defaultDiscount: c.defaultDiscount ?? undefined,
         storeId: c.storeId ?? undefined,
       }));
     },

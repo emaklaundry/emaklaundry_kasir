@@ -261,7 +261,6 @@ export type Database = {
         Row: {
           address: string | null;
           createdAt: string | null;
-          defaultDiscount: number | null;
           id: string;
           name: string;
           notes: string | null;
@@ -271,7 +270,6 @@ export type Database = {
         Insert: {
           address?: string | null;
           createdAt?: string | null;
-          defaultDiscount?: number | null;
           id?: string;
           name: string;
           notes?: string | null;
@@ -281,7 +279,6 @@ export type Database = {
         Update: {
           address?: string | null;
           createdAt?: string | null;
-          defaultDiscount?: number | null;
           id?: string;
           name?: string;
           notes?: string | null;

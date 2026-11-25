@@ -131,7 +131,6 @@ CREATE TABLE public.customers (
   phone text,
   address text,
   notes text,
-  "defaultDiscount" integer DEFAULT 0,
   "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL

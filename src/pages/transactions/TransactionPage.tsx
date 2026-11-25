@@ -220,19 +220,6 @@ const TransactionPage: React.FC = () => {
 
       await updateTransaction(updatedTransaction.id, payload);
 
-      // If points earned from rounding, add to customer's discount balance
-      if (pointsEarned && pointsEarned > 0 && updatedTransaction.customerId) {
-        const customer = customers.find((c: Customer) => c.id === updatedTransaction.customerId);
-        if (customer) {
-          const newDiscountBalance = (customer.defaultDiscount || 0) + pointsEarned;
-          await updateCustomer(customer.id, { defaultDiscount: newDiscountBalance });
-          addAuditLog(
-            `Pembulatan: Rp ${pointsEarned} ditambahkan ke saldo diskon ${customer.name}. Saldo baru: Rp ${newDiscountBalance}`,
-            updatedTransaction.storeId,
-          );
-        }
-      }
-
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,

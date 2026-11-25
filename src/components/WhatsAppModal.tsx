@@ -53,13 +53,10 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       // Calculate points earned from rounding (if change < 500)
       const pointsEarned =
         transaction.change > 0 && transaction.change < 500 ? transaction.change : 0;
-      const currentBalance = customer.defaultDiscount || 0;
 
       let balanceInfo = '';
       if (pointsEarned > 0) {
-        balanceInfo = `\n💰 *Pembulatan*: +Rp${pointsEarned.toLocaleString('id-ID')}\n💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`;
-      } else if (currentBalance > 0) {
-        balanceInfo = `\n💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`;
+        balanceInfo = `\n💰 *Pembulatan*: +Rp${pointsEarned.toLocaleString('id-ID')}\n`;
       }
 
       defaultMessage =
@@ -86,12 +83,6 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `${footer}\n\n` +
         `Salam hangat,\nTim Emak Laundry`;
     } else if (transaction.orderStatus === OrderStatus.Ready) {
-      const currentBalance = customer.defaultDiscount || 0;
-      const balanceInfo =
-        currentBalance > 0
-          ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`
-          : '';
-
       defaultMessage =
         `Halo ${customer.name},\n\n` +
         `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
@@ -101,18 +92,11 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `─────────────────────────────\n` +
         `Total Tagihan: Rp${total.toLocaleString('id-ID')}\n` +
         `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
-        balanceInfo +
         `─────────────────────────────\n` +
         `Silakan datang ke toko kami untuk pengambilan.\n\n` +
         `${footer}\n\n` +
         `Terima kasih,\nTim Emak Laundry`;
     } else {
-      const currentBalance = customer.defaultDiscount || 0;
-      const balanceInfo =
-        currentBalance > 0
-          ? `💳 *Saldo Diskon Anda*: Rp${currentBalance.toLocaleString('id-ID')}\n`
-          : '';
-
       defaultMessage =
         `Halo ${customer.name},\n\n` +
         `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
@@ -122,10 +106,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         `─────────────────────────────\n` +
         `Total: Rp${total.toLocaleString('id-ID')}\n` +
         `Status: LUNAS\n` +
-        balanceInfo +
         `─────────────────────────────\n` +
         `Terima kasih telah menggunakan layanan kami.\n\n` +
-        `${footer}\n\n` +
         `Tim Emak Laundry`;
     }
     return defaultMessage;

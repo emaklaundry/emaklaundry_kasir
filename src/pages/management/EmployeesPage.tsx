@@ -442,8 +442,6 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            </label>
-
             <div>
             <label
               htmlFor="employee-login-pin"
@@ -471,8 +469,9 @@ const EmployeesPage: React.FC = () => {
             >
               {editingEmployee?.loginEnabled
                 ? 'Kosongkan jika PIN tidak ingin diubah.'
-                : 'Foto dan PIN diperlukan untuk mengaktifkan login profil.'}
+                : 'PIN 6 angka diperlukan untuk mengaktifkan login profil.'}
             </p>
+          </div>
           </div>
 
           <div className="flex items-center gap-2">

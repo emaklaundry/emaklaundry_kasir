@@ -33,7 +33,6 @@ export async function fetchCustomers(
     address: c.address ?? undefined,
     notes: c.notes ?? undefined,
     phone: c.phone ?? undefined,
-    defaultDiscount: c.defaultDiscount ?? undefined,
     storeId: c.storeId ?? undefined,
   })) as unknown as Customer[];
   return { data: customers, count: count || 0 };
@@ -50,7 +49,6 @@ export function useCustomerMutations() {
         address: customer.address ?? null,
         notes: customer.notes ?? null,
         phone: customer.phone ?? null,
-        defaultDiscount: customer.defaultDiscount ?? null,
         storeId: customer.storeId ?? null,
       };
       const { data, error } = await supabase

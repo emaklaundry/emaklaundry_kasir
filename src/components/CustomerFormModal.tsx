@@ -22,7 +22,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     phone: customer?.phone || '',
     address: customer?.address || '',
     notes: customer?.notes || '',
-    defaultDiscount: customer?.defaultDiscount || 0,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -53,12 +52,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         );
         return;
       }
-    }
-
-    const discount = formData.defaultDiscount ?? 0;
-    if (discount < 0 || discount > 100) {
-      addToast('Diskon default harus antara 0-100%.', 'error');
-      return;
     }
 
     await onSave(formData);
@@ -144,28 +137,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             onChange={handleChange}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           />
-        </div>
-        <div>
-          <label
-            htmlFor="customer-defaultDiscount"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
-            Diskon Standar (%)
-          </label>
-          <input
-            type="number"
-            name="defaultDiscount"
-            id="customer-defaultDiscount"
-            min="0"
-            max="100"
-            autoComplete="off"
-            value={formData.defaultDiscount}
-            onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-          />
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Diskon ini akan otomatis diterapkan saat membuat transaksi baru.
-          </p>
         </div>
         <div>
           <label
