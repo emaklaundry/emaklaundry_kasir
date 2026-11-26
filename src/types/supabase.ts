@@ -685,6 +685,8 @@ export type Database = {
           maintenanceMessage: string | null;
           whatsappFooter: string | null;
           qrisStaticCode: string | null;
+          businessName: string | null;
+          trackingUrl: string | null;
         };
         Insert: {
           id?: never;
@@ -694,6 +696,8 @@ export type Database = {
           maintenanceMessage?: string | null;
           whatsappFooter?: string | null;
           qrisStaticCode?: string | null;
+          businessName?: string | null;
+          trackingUrl?: string | null;
         };
         Update: {
           id?: never;
@@ -703,6 +707,8 @@ export type Database = {
           maintenanceMessage?: string | null;
           whatsappFooter?: string | null;
           qrisStaticCode?: string | null;
+          businessName?: string | null;
+          trackingUrl?: string | null;
         };
         Relationships: [];
       };
@@ -830,6 +836,7 @@ export type Database = {
           paymentStatus: string;
           storeId: string | null;
           supervisorApprovalId: string | null;
+          whatsappSentAt: string | null;
           subtotal: number;
           tax: number;
           total: number;
@@ -852,6 +859,7 @@ export type Database = {
           paymentStatus: string;
           storeId?: string | null;
           supervisorApprovalId?: string | null;
+          whatsappSentAt?: string | null;
           subtotal: number;
           tax: number;
           total: number;
@@ -874,6 +882,7 @@ export type Database = {
           paymentStatus?: string;
           storeId?: string | null;
           supervisorApprovalId?: string | null;
+          whatsappSentAt?: string | null;
           subtotal?: number;
           tax?: number;
           total?: number;

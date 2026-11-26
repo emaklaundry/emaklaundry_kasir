@@ -349,3 +349,23 @@ export function useTransactions(filter: TransactionFilter = {}) {
     ...query,
   };
 }
+
+/**
+ * Tandai transaksi sudah dikirimi struk/notifikasi WhatsApp (waktu sekarang).
+ * Sengaja tidak lewat updateTransaction: verifikasinya membandingkan nilai persis,
+ * sedangkan timestamptz yang dikembalikan Postgres berbeda format dari ISO yang dikirim.
+ */
+export async function markTransactionWhatsAppSent(id: string): Promise<string> {
+  const sentAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('transactions')
+    .update({ whatsappSentAt: sentAt })
+    .eq('id', id)
+    .select('id');
+  if (error) throw error;
+  // RLS menolak tanpa error: hasilnya 0 baris.
+  if (!data || data.length === 0) {
+    throw new Error('Tidak dapat menandai struk terkirim untuk transaksi ini.');
+  }
+  return sentAt;
+}

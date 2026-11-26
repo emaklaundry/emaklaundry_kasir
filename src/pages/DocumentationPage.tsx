@@ -462,32 +462,46 @@ const DocumentationPage: React.FC = () => {
           </p>
 
           <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-            <h3 className="font-semibold text-slate-800 dark:text-white mb-2">Endpoint</h3>
-            <code className="block bg-slate-800 text-white p-3 rounded text-sm overflow-x-auto mb-4">
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
+              Endpoint publik (disarankan)
+            </h3>
+            <code className="block bg-slate-800 text-white p-3 rounded text-sm overflow-x-auto mb-2">
+              GET https://emaklaundry.my.id/api/cek-status?invoice=[NO-INVOICE]
+            </code>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Dipanggil dari domain landing page sendiri, tanpa API key. Endpoint ini meneruskan
+              permintaan ke fungsi <code>check-order</code> di server.
+            </p>
+
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
+              Endpoint Supabase (langsung)
+            </h3>
+            <code className="block bg-slate-800 text-white p-3 rounded text-sm overflow-x-auto mb-2">
               GET https://[PROJECT-REF].supabase.co/functions/v1/check-order?invoice=[NO-INVOICE]
             </code>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Wajib mengirim header <code>Authorization: Bearer [ANON-KEY]</code>. Dari browser, domain
+              pemanggil harus terdaftar di secret <code>ALLOWED_ORIGIN</code> (pisahkan dengan koma).
+            </p>
 
             <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
               Contoh Request (Javascript)
             </h3>
             <pre className="bg-slate-800 text-slate-300 p-4 rounded text-sm overflow-x-auto font-mono">
               {`async function checkOrderStatus(invoiceNumber) {
-  const API_URL = 'https://[PROJECT_REF].supabase.co/functions/v1/check-order';
-  
-  try {
-    const response = await fetch(\`\${API_URL}?invoice=\${invoiceNumber}\`);
-    const data = await response.json();
-    
-    if (response.ok) {
-      console.log('Status:', data.status);
-      console.log('Total:', data.total);
-      return data;
-    } else {
-      console.error('Error:', data.error);
-    }
-  } catch (error) {
-    console.error('Network Error:', error);
+  const response = await fetch(
+    \`/api/cek-status?invoice=\${encodeURIComponent(invoiceNumber)}\`,
+  );
+  const data = await response.json();
+
+  if (!response.ok) {
+    // 400 format salah, 404 tidak ditemukan, 429 terlalu sering, 5xx server
+    throw new Error(data.error);
   }
+
+  // data: { invoice, customerName (disamarkan), status, paymentStatus,
+  //         total, amountPaid, estimatedCompletion, items }
+  return data;
 }`}
             </pre>
           </div>
