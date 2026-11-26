@@ -59,7 +59,6 @@ const UsersPage: React.FC = () => {
     if (finalData.role === UserRole.SuperAdmin) {
       finalData.storeId = undefined;
       finalData.isActive = true;
-      finalData.canGiveDiscount = true;
     } else if (!finalData.storeId) {
       addToast('Silakan pilih cabang untuk peran ini.', 'warning');
       return;
@@ -77,7 +76,6 @@ const UsersPage: React.FC = () => {
           role: finalData.role,
           storeId: finalData.storeId,
           isActive: finalData.isActive,
-          canGiveDiscount: finalData.canGiveDiscount,
         });
         addAuditLog(`Memperbarui data pengguna: "${finalData.name}".`);
         updateToast(toastId, 'Pengguna berhasil diperbarui!', 'success');
@@ -93,7 +91,6 @@ const UsersPage: React.FC = () => {
           name: finalData.name,
           role: finalData.role,
           storeId: finalData.storeId,
-          canGiveDiscount: finalData.canGiveDiscount,
         });
         addAuditLog(
           `Menambahkan pengguna baru "${finalData.name}" (${finalData.role}, ${credentials.email}).`,

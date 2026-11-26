@@ -11,10 +11,8 @@ import {
 interface SupervisorPinModalProps {
   isOpen: boolean;
   action: SupervisorAction;
-  /** Ringkasan yang disetujui, mis. "Diskon Rp 15.000 untuk transaksi Budi". */
+  /** Ringkasan yang disetujui, mis. "Batalkan transaksi EL-0012 milik Budi". */
   description: string;
-  /** Batas jumlah yang disetujui (Rp), untuk diskon manual. */
-  maxAmount?: number;
   transactionId?: string;
   onApproved: (approvalId: string, approverName: string) => void;
   onClose: () => void;
@@ -24,7 +22,6 @@ const SupervisorPinModal: React.FC<SupervisorPinModalProps> = ({
   isOpen,
   action,
   description,
-  maxAmount,
   transactionId,
   onApproved,
   onClose,
@@ -54,7 +51,7 @@ const SupervisorPinModal: React.FC<SupervisorPinModalProps> = ({
     setIsChecking(true);
     setError(null);
     try {
-      const result = await requestSupervisorApproval(action, pin, { maxAmount, transactionId });
+      const result = await requestSupervisorApproval(action, pin, { transactionId });
       if (result.ok) {
         onApproved(result.approvalId, result.approverName);
         return;

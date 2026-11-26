@@ -99,7 +99,6 @@ serve(async (req) => {
   const password = typeof body.password === 'string' ? body.password : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   const role = (typeof body.role === 'string' ? body.role : 'Kasir') as Role;
-  const canGiveDiscount = body.canGiveDiscount === true;
 
   if (!email || !password || !name) {
     return jsonResponse({ error: 'Email, password, dan nama wajib diisi' }, 400, corsHeaders);
@@ -170,9 +169,8 @@ serve(async (req) => {
   }
   const newUserId = created.user.id;
 
-  // 6. Setel profil dengan peran & izin yang diminta. Kalau gagal, batalkan akunnya
+  // 6. Setel profil dengan peran yang diminta. Kalau gagal, batalkan akunnya
   //    supaya tidak ada akun setengah jadi yang bisa login sebagai Kasir.
-  const finalCanGiveDiscount = role === 'Super Admin' ? true : canGiveDiscount;
   const { error: upsertError } = await admin.from('profiles').upsert(
     {
       id: newUserId,
@@ -180,7 +178,6 @@ serve(async (req) => {
       role,
       store_id: storeId,
       isActive: true,
-      canGiveDiscount: finalCanGiveDiscount,
     },
     { onConflict: 'id' },
   );
@@ -198,7 +195,6 @@ serve(async (req) => {
         role,
         storeId,
         isActive: true,
-        canGiveDiscount: finalCanGiveDiscount,
       },
     },
     200,

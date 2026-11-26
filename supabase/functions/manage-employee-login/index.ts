@@ -121,7 +121,6 @@ serve(async (req) => {
         role: 'Kasir',
         store_id: employee.store_id,
         isActive: employee.is_active,
-        canGiveDiscount: false,
       });
       if (syncError) throw syncError;
 
@@ -211,21 +210,24 @@ serve(async (req) => {
       role: 'Kasir',
       store_id: employee.store_id,
       isActive: true,
-      canGiveDiscount: false,
     });
     if (saveProfileError) {
       await cleanupNewUser();
       throw saveProfileError;
     }
 
-    const { error: saveAccountError } = await admin.from('employee_auth_accounts').insert({
-      employee_id: employee.id,
-      auth_user_id: authUserId,
-      login_email: loginEmail,
-    });
-    if (saveAccountError) {
-      await cleanupNewUser();
-      throw saveAccountError;
+    // Akun baru saja dibuat: catat tautannya. Untuk akun lama (ganti/reset PIN)
+    // tautan sudah ada; INSERT ulang akan gagal karena employee_id adalah primary key.
+    if (createdAuthUserId) {
+      const { error: saveAccountError } = await admin.from('employee_auth_accounts').insert({
+        employee_id: employee.id,
+        auth_user_id: authUserId,
+        login_email: loginEmail,
+      });
+      if (saveAccountError) {
+        await cleanupNewUser();
+        throw saveAccountError;
+      }
     }
 
     const { error: enableError } = await admin

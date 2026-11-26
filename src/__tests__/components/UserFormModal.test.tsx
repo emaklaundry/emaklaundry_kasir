@@ -39,7 +39,6 @@ describe('UserFormModal', () => {
     fill(/password awal/i, 'rahasia123');
     fill(/peran/i, UserRole.Cashier);
     fill(/cabang/i, 'store-b');
-    fireEvent.click(screen.getByLabelText(/bisa beri diskon/i));
     fireEvent.click(screen.getByRole('button', { name: 'Buat Akun' }));
 
     expect(onSave).toHaveBeenCalledWith(
@@ -47,10 +46,11 @@ describe('UserFormModal', () => {
         name: 'Siti',
         role: UserRole.Cashier,
         storeId: 'store-b',
-        canGiveDiscount: true,
       }),
       { email: 'siti@contoh.com', password: 'rahasia123' },
     );
+    expect(onSave.mock.calls[0][0]).not.toHaveProperty('canGiveDiscount');
+    expect(screen.queryByLabelText(/bisa beri diskon/i)).not.toBeInTheDocument();
   });
 
   it('menolak password kurang dari 8 karakter', () => {
@@ -102,7 +102,6 @@ describe('UserFormModal', () => {
       role: UserRole.Cashier,
       storeId: 'store-a',
       isActive: true,
-      canGiveDiscount: false,
     };
     const { onSave } = renderModal({ user });
     expect(screen.queryByLabelText(/email login/i)).not.toBeInTheDocument();

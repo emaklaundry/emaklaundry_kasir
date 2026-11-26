@@ -24,9 +24,12 @@ const getPageTitle = (
     '/management/assets': 'Manajemen Aset & Pemeliharaan',
     '/management/expenses': 'Manajemen Pengeluaran',
     '/management/users': 'Manajemen Pengguna',
+    '/management/employees': 'Manajemen Karyawan',
+    '/management/attendance': 'Absensi',
     '/reports': 'Laporan',
     '/audit-log': 'Log Audit',
     '/settings': 'Pengaturan',
+    '/help': 'Bantuan & Tutorial',
   };
 
   if (staticTitles[pathname]) {

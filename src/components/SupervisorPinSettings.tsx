@@ -13,7 +13,7 @@ const inputClass =
 
 /**
  * Admin / Super Admin mengatur PIN supervisor miliknya.
- * PIN dipakai untuk menyetujui diskon manual dan aksi sensitif Kasir.
+ * PIN dipakai untuk menyetujui aksi sensitif Kasir (ubah nota lunas, pembatalan).
  */
 const SupervisorPinSettings: React.FC = () => {
   const { addToast } = useToasts();
@@ -87,8 +87,8 @@ const SupervisorPinSettings: React.FC = () => {
             PIN Supervisor
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Dipakai untuk menyetujui diskon manual dan aksi sensitif yang dilakukan Kasir. Jangan
-            bagikan PIN ini ke Kasir.
+            Dipakai untuk menyetujui aksi sensitif Kasir, seperti mengubah pembayaran nota yang
+            sudah lunas. Jangan bagikan PIN ini ke Kasir.
           </p>
           <p className="mt-2 text-sm font-medium">
             {hasPin === null ? (

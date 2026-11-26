@@ -1,10 +1,9 @@
 import { supabase } from './supabaseClient';
 
 /** Aksi Kasir yang wajib disetujui PIN supervisor (Admin cabang / Super Admin). */
-export type SupervisorAction = 'manual_discount' | 'edit_paid' | 'cancel_transaction';
+export type SupervisorAction = 'edit_paid' | 'cancel_transaction';
 
 export const SUPERVISOR_ACTION_LABELS: Record<SupervisorAction, string> = {
-  manual_discount: 'Diskon manual',
   edit_paid: 'Ubah pembayaran nota lunas',
   cancel_transaction: 'Batalkan transaksi',
 };
@@ -20,12 +19,11 @@ export type SupervisorApprovalResult =
 export async function requestSupervisorApproval(
   action: SupervisorAction,
   pin: string,
-  options: { maxAmount?: number; transactionId?: string } = {},
+  options: { transactionId?: string } = {},
 ): Promise<SupervisorApprovalResult> {
   const { data, error } = await supabase.rpc('request_supervisor_approval', {
     p_action: action,
     p_pin: pin,
-    p_max_amount: options.maxAmount,
     p_transaction_id: options.transactionId,
   });
   if (error) throw new Error(error.message);
@@ -50,20 +48,6 @@ export async function hasMySupervisorPin(): Promise<boolean> {
 export async function setMySupervisorPin(pin: string): Promise<void> {
   const { error } = await supabase.rpc('set_my_supervisor_pin', { p_pin: pin });
   if (error) throw new Error(error.message);
-}
-
-/** Diskon otomatis dari Pengaturan (Rp) yang boleh dipakai Kasir tanpa PIN. */
-export function autoDiscountAmount(subtotal: number, discountRate: number | undefined): number {
-  return Math.round(subtotal * ((discountRate ?? 0) / 100));
-}
-
-/** Sama dengan aturan di trigger database (toleransi Rp1 untuk pembulatan). */
-export function needsManualDiscountApproval(
-  manualDiscount: number,
-  subtotal: number,
-  discountRate: number | undefined,
-): boolean {
-  return manualDiscount > autoDiscountAmount(subtotal, discountRate) + 1;
 }
 
 export const isValidPinFormat = (pin: string) => /^[0-9]{6}$/.test(pin);

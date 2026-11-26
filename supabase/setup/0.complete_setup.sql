@@ -1,8 +1,8 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
 -- Complete Schema & Functions Setup
--- Version: 3.3.0
--- Date: November 25, 2026
+-- Version: 3.4.0
+-- Date: November 26, 2026
 -- ============================================
 -- 
 -- IMPORTANT: Jalankan script ini di Supabase SQL Editor
@@ -19,12 +19,11 @@
 -- 7. INVENTORY RECIPES, STOCK OPNAME, & SOP
 -- 8. RECURRING MONTHLY EXPENSES (Listrik, Air, Wi-Fi)
 -- 9. EMPLOYEE PROFILE & PIN LOGIN
--- 10. SALDO DISKON PELANGGAN (pembulatan tunai ke atas + buku catatan saldo)
+-- 10. KUNCI AKSES FUNGSI SECURITY DEFINER
+-- 11. PIN SUPERVISOR (otorisasi Kasir oleh Admin)
 --
--- Section 8, 9 & 10 setara dengan migrasi:
---   supabase/migrations/20261125042146_recurring_monthly_expenses.sql
---   supabase/migrations/20261125043507_employee_profile_pin_login.sql
---   supabase/migrations/20261125160000_customer_discount_balance.sql
+-- File ini adalah sumber utama skema database. Setiap perubahan skema baru
+-- ditulis di sini, lalu dijalankan ke database live sebagai SQL terpisah.
 -- Setelah setup, deploy edge function employee-login & manage-employee-login.
 -- 
 -- Untuk data sample/testing, jalankan seed_data.sql setelah ini
@@ -69,8 +68,6 @@ CREATE TABLE public.stores (
 CREATE TABLE public.settings (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   "receiptMessage" text,
-  "taxRate" numeric,
-  "discountRate" numeric,
   "storeId" uuid REFERENCES public.stores(id) ON DELETE CASCADE
 );
 
@@ -131,8 +128,7 @@ CREATE TABLE public.profiles (
   role text NOT NULL, -- 'Super Admin', 'Admin', 'Kasir'
   store_id uuid REFERENCES stores(id) ON DELETE SET NULL, -- DITAMBAHKAN: ON DELETE SET NULL
   created_at timestamp WITH TIME ZONE DEFAULT NOW(),
-  "isActive" boolean DEFAULT true,
-  "canGiveDiscount" boolean DEFAULT false
+  "isActive" boolean DEFAULT true
 );
 
 CREATE TABLE public.customers (
@@ -141,7 +137,6 @@ CREATE TABLE public.customers (
   phone text,
   address text,
   notes text,
-  "defaultDiscount" integer DEFAULT 0, -- saldo diskon pelanggan (Rp)
   "createdAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "updatedAt" timestamp WITH TIME ZONE DEFAULT NOW(),
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
@@ -1130,8 +1125,8 @@ CREATE TRIGGER update_inventory_updated_at
 -- 6. GRANT PERMISSIONS
 -- Pastikan permissions benar untuk security definer functions
 
-GRANT EXECUTE ON FUNCTION public.update_transaction_status_safe TO authenticated;
-GRANT EXECUTE ON FUNCTION public.cleanup_old_audit_logs TO authenticated;
+-- Hak akses fungsi diatur lengkap di SECTION 10 (Kunci akses fungsi).
+-- cleanup_old_audit_logs sengaja TIDAK diberikan ke authenticated.
 
 -- ============================================
 -- CATATAN DEPLOYMENT:
@@ -1422,34 +1417,72 @@ CREATE TABLE IF NOT EXISTS payroll (
 -- HRM Row Level Security (RLS) Policies
 -- ============================================
 
-ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
-ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
-ALTER TABLE advances ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payroll ENABLE ROW LEVEL SECURITY;
+-- Model akses (halaman Karyawan & Absensi hanya untuk Admin):
+--   * Super Admin : semua cabang
+--   * Admin       : karyawan di cabangnya sendiri
+--   * Kasir / anon: tidak ada akses
+-- Edge function (employee-login, manage-employee-login) memakai service role.
 
--- Employees RLS
-CREATE POLICY "employees_select" ON employees FOR SELECT USING (true);
-CREATE POLICY "employees_insert" ON employees FOR INSERT WITH CHECK (true);
-CREATE POLICY "employees_update" ON employees FOR UPDATE USING (true);
-CREATE POLICY "employees_delete" ON employees FOR DELETE USING (true);
+-- Helper: apakah user saat ini Admin/Super Admin yang boleh mengelola cabang ini?
+CREATE OR REPLACE FUNCTION public.can_manage_store(p_store_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+  SELECT public.get_my_role() = 'Super Admin'
+      OR (public.get_my_role() = 'Admin' AND p_store_id = public.get_my_store_id());
+$$;
 
--- Attendance RLS
-CREATE POLICY "attendance_select" ON attendance FOR SELECT USING (true);
-CREATE POLICY "attendance_insert" ON attendance FOR INSERT WITH CHECK (true);
-CREATE POLICY "attendance_update" ON attendance FOR UPDATE USING (true);
-CREATE POLICY "attendance_delete" ON attendance FOR DELETE USING (true);
+-- Helper: pemeriksaan yang sama, lewat cabang milik karyawan.
+CREATE OR REPLACE FUNCTION public.can_manage_employee(p_employee_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.employees e
+    WHERE e.id = p_employee_id
+      AND public.can_manage_store(e.store_id)
+  );
+$$;
 
--- Advances RLS
-CREATE POLICY "advances_select" ON advances FOR SELECT USING (true);
-CREATE POLICY "advances_insert" ON advances FOR INSERT WITH CHECK (true);
-CREATE POLICY "advances_update" ON advances FOR UPDATE USING (true);
-CREATE POLICY "advances_delete" ON advances FOR DELETE USING (true);
+REVOKE EXECUTE ON FUNCTION public.can_manage_store(uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.can_manage_employee(uuid) FROM anon, PUBLIC;
+GRANT EXECUTE ON FUNCTION public.can_manage_store(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_manage_employee(uuid) TO authenticated;
 
--- Payroll RLS
-CREATE POLICY "payroll_select" ON payroll FOR SELECT USING (true);
-CREATE POLICY "payroll_insert" ON payroll FOR INSERT WITH CHECK (true);
-CREATE POLICY "payroll_update" ON payroll FOR UPDATE USING (true);
-CREATE POLICY "payroll_delete" ON payroll FOR DELETE USING (true);
+ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.advances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payroll ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins manage employees in their store" ON public.employees;
+CREATE POLICY "Admins manage employees in their store"
+  ON public.employees FOR ALL TO authenticated
+  USING ((SELECT public.can_manage_store(store_id)))
+  WITH CHECK ((SELECT public.can_manage_store(store_id)));
+
+DROP POLICY IF EXISTS "Admins manage attendance in their store" ON public.attendance;
+CREATE POLICY "Admins manage attendance in their store"
+  ON public.attendance FOR ALL TO authenticated
+  USING (public.can_manage_employee(employee_id))
+  WITH CHECK (public.can_manage_employee(employee_id));
+
+DROP POLICY IF EXISTS "Admins manage advances in their store" ON public.advances;
+CREATE POLICY "Admins manage advances in their store"
+  ON public.advances FOR ALL TO authenticated
+  USING (public.can_manage_employee(employee_id))
+  WITH CHECK (public.can_manage_employee(employee_id));
+
+DROP POLICY IF EXISTS "Admins manage payroll in their store" ON public.payroll;
+CREATE POLICY "Admins manage payroll in their store"
+  ON public.payroll FOR ALL TO authenticated
+  USING (public.can_manage_employee(employee_id))
+  WITH CHECK (public.can_manage_employee(employee_id));
 
 -- ============================================
 -- HRM Indexes for performance
@@ -1952,421 +1985,364 @@ CREATE POLICY "Admins can delete employee photos"
   );
 
 -- ============================================
--- SECTION 10: SALDO DISKON PELANGGAN (Added Nov 2026)
+-- SECTION 10: KUNCI AKSES FUNGSI SECURITY DEFINER (Added Nov 2026)
 -- ============================================
--- Sumber: supabase/migrations/20261125160000_customer_discount_balance.sql
-
--- ============================================================================
--- SALDO DISKON PELANGGAN
--- ----------------------------------------------------------------------------
--- Aturan bisnis:
---   * Pembayaran TUNAI dibulatkan ke ATAS ke kelipatan Rp500. Kelebihannya
---     (maks Rp499) masuk ke saldo diskon pelanggan  -> kolom "roundingCredit".
---   * Saldo dipakai otomatis sebagai potongan di transaksi berikutnya,
---     maksimal 10% dari subtotal                     -> kolom "discountBalanceUsed".
---   * Admin / Super Admin boleh menyesuaikan saldo secara manual.
+-- Postgres memberi EXECUTE ke PUBLIC secara default, sehingga fungsi
+-- SECURITY DEFINER bisa dipanggil siapa saja lewat /rest/v1/rpc/*.
+-- Fungsi admin/maintenance/trigger dicabut aksesnya dari client; hanya
+-- yang dipakai aplikasi yang diberikan kembali.
 --
--- Semua perubahan saldo terjadi di database (trigger + fungsi SECURITY DEFINER)
--- dalam transaksi yang sama dengan perubahan transaksi, sehingga saldo tidak
--- bisa dobel, hilang, atau minus walau dua kasir bekerja bersamaan. Setiap
--- perubahan dicatat di public.customer_discount_ledger.
+-- Sengaja tetap publik: get_laundry_status, get_public_services,
+-- get_my_role, get_my_store_id (dipakai RLS; NULL untuk anon).
+-- Semua overload ditangani otomatis.
+
+DO $$
+DECLARE
+  r record;
+BEGIN
+  -- 1. Admin / maintenance / trigger: tanpa akses client
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN (
+        'cleanup_old_audit_logs', 'backfill_invoice_codes', 'generate_invoice_code',
+        'bulk_update_order_status', 'complete_scheduled_maintenance',
+        'handle_new_user', 'handle_new_user_trigger',
+        'prevent_immutable_transaction_update', 'set_invoice_code',
+        'update_updated_at_column'
+      )
+  LOOP
+    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated', r.sig);
+    EXECUTE format('ALTER FUNCTION %s SET search_path = public', r.sig);
+  END LOOP;
+
+  -- 2. Dipakai staf yang login saja
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN ('update_transaction_progress', 'update_transaction_status_safe')
+  LOOP
+    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon', r.sig);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', r.sig);
+  END LOOP;
+END;
+$$;
+
+-- handle_new_user(uuid, ...) tetap bisa dipakai service_role
+GRANT EXECUTE ON FUNCTION public.handle_new_user(uuid, text, text, uuid) TO service_role;
+
+-- ============================================
+-- SECTION 11: PIN SUPERVISOR (Added Nov 2026)
+-- ============================================
+-- Aksi sensitif oleh Kasir wajib disetujui PIN supervisor (Admin cabang yang
+-- sama atau Super Admin):
+--   * edit_paid          : mengubah pembayaran transaksi yang sudah Lunas
+--   * cancel_transaction : (disiapkan untuk tahap berikutnya)
+--
+-- Alur: Kasir -> request_supervisor_approval(aksi, PIN) -> izin sekali pakai
+-- (berlaku 2 menit) -> dikirim di kolom transactions."supervisorApprovalId" ->
+-- trigger enforce_supervisor_approval memeriksa & menandai izin terpakai.
+-- Semua pemeriksaan di database, jadi tidak bisa dilewati dari browser.
+-- Admin dan Super Admin tidak perlu PIN.
 -- ============================================================================
 
--- 1. Kolom saldo di customers: wajib terisi, tidak boleh negatif ---------------
-ALTER TABLE public.customers
-  ADD COLUMN IF NOT EXISTS "defaultDiscount" integer DEFAULT 0;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
-UPDATE public.customers
-SET "defaultDiscount" = 0
-WHERE "defaultDiscount" IS NULL OR "defaultDiscount" < 0;
-
-ALTER TABLE public.customers
-  ALTER COLUMN "defaultDiscount" SET DEFAULT 0,
-  ALTER COLUMN "defaultDiscount" SET NOT NULL,
-  ADD CONSTRAINT customers_default_discount_nonnegative
-    CHECK ("defaultDiscount" >= 0);
-
-COMMENT ON COLUMN public.customers."defaultDiscount" IS
-  'Saldo diskon pelanggan (Rupiah). Hanya berubah lewat trigger saldo atau penyesuaian Admin.';
-
--- 2. Kolom saldo di transactions ---------------------------------------------
-ALTER TABLE public.transactions
-  ADD COLUMN IF NOT EXISTS "discountBalanceUsed" integer NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS "roundingCredit" integer NOT NULL DEFAULT 0;
-
-ALTER TABLE public.transactions
-  ADD CONSTRAINT transactions_discount_balance_used_check
-    CHECK ("discountBalanceUsed" >= 0),
-  ADD CONSTRAINT transactions_rounding_credit_check
-    CHECK ("roundingCredit" BETWEEN 0 AND 499);
-
-COMMENT ON COLUMN public.transactions."discountBalanceUsed" IS
-  'Bagian dari kolom discount yang diambil dari saldo diskon pelanggan (Rupiah).';
-COMMENT ON COLUMN public.transactions."roundingCredit" IS
-  'Kelebihan pembulatan tunai ke atas (kelipatan Rp500) yang masuk ke saldo pelanggan.';
-
--- 3. Buku catatan saldo --------------------------------------------------------
-CREATE TABLE public.customer_discount_ledger (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id uuid NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
-  store_id uuid REFERENCES public.stores(id) ON DELETE SET NULL,
-  transaction_id uuid REFERENCES public.transactions(id) ON DELETE SET NULL,
-  kind text NOT NULL CHECK (kind IN ('use', 'rounding', 'manual', 'reversal')),
-  amount integer NOT NULL CHECK (amount <> 0),
-  balance_after integer NOT NULL CHECK (balance_after >= 0),
-  note text CHECK (note IS NULL OR char_length(note) <= 200),
-  created_by uuid DEFAULT auth.uid(),
-  created_at timestamptz NOT NULL DEFAULT now()
+-- 1. PIN supervisor (hash bcrypt) ---------------------------------------------
+CREATE TABLE public.supervisor_pins (
+  user_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  pin_hash text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.supervisor_pins ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.supervisor_pins FROM PUBLIC, anon, authenticated;
 
-COMMENT ON TABLE public.customer_discount_ledger IS
-  'Riwayat setiap perubahan saldo diskon pelanggan. Hanya ditulis oleh fungsi database.';
+-- 2. Pembatas percobaan PIN salah (per kasir) ---------------------------------
+CREATE TABLE public.supervisor_pin_attempts (
+  user_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  failed_count integer NOT NULL DEFAULT 0,
+  window_started_at timestamptz NOT NULL DEFAULT now(),
+  locked_until timestamptz
+);
+ALTER TABLE public.supervisor_pin_attempts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.supervisor_pin_attempts FROM PUBLIC, anon, authenticated;
 
--- Satu transaksi hanya boleh memakai / menambah saldo sekali.
-CREATE UNIQUE INDEX customer_discount_ledger_transaction_kind_idx
-  ON public.customer_discount_ledger (transaction_id, kind)
-  WHERE transaction_id IS NOT NULL AND kind IN ('use', 'rounding');
-CREATE INDEX customer_discount_ledger_customer_idx
-  ON public.customer_discount_ledger (customer_id, created_at DESC);
-CREATE INDEX customer_discount_ledger_store_idx
-  ON public.customer_discount_ledger (store_id);
+-- 3. Izin sekali pakai ----------------------------------------------------------
+CREATE TABLE public.supervisor_approvals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  action text NOT NULL CHECK (action IN ('edit_paid', 'cancel_transaction')),
+  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  requested_by uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  approved_by uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  -- Diisi saat izin terpakai (tanpa FK: baris transaksi belum ada saat INSERT).
+  transaction_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL DEFAULT now() + interval '2 minutes',
+  used_at timestamptz
+);
+CREATE INDEX supervisor_approvals_requested_by_idx ON public.supervisor_approvals (requested_by, created_at DESC);
+CREATE INDEX supervisor_approvals_store_idx ON public.supervisor_approvals (store_id, created_at DESC);
+CREATE INDEX supervisor_approvals_approved_by_idx ON public.supervisor_approvals (approved_by);
+ALTER TABLE public.supervisor_approvals ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.supervisor_approvals FROM PUBLIC, anon, authenticated;
 
-ALTER TABLE public.customer_discount_ledger ENABLE ROW LEVEL SECURITY;
+-- Admin bisa melihat riwayat persetujuan di cabangnya (untuk laporan nanti).
+CREATE POLICY "Admins read supervisor approvals in their store"
+  ON public.supervisor_approvals FOR SELECT TO authenticated
+  USING ((SELECT public.can_manage_store(store_id)));
+GRANT SELECT ON public.supervisor_approvals TO authenticated;
 
-CREATE POLICY "Store users can read discount ledger"
-  ON public.customer_discount_ledger
-  FOR SELECT
-  TO authenticated
-  USING (
-    (SELECT public.get_my_role()) = 'Super Admin'
-    OR store_id = (SELECT public.get_my_store_id())
-  );
+-- 4. Kolom penanda di transaksi -------------------------------------------------
+ALTER TABLE public.transactions
+  ADD COLUMN IF NOT EXISTS "supervisorApprovalId" uuid;
+COMMENT ON COLUMN public.transactions."supervisorApprovalId" IS
+  'Izin PIN supervisor terakhir yang dipakai untuk aksi sensitif Kasir pada transaksi ini.';
 
--- Saldo yang sudah ada sebelum buku catatan dibuat dicatat sebagai saldo awal,
--- supaya jumlah ledger per pelanggan selalu sama dengan saldonya.
-INSERT INTO public.customer_discount_ledger (
-  customer_id, store_id, kind, amount, balance_after, note, created_by
-)
-SELECT id, "storeId", 'manual', "defaultDiscount", "defaultDiscount",
-  'Saldo awal saat buku catatan saldo diaktifkan', NULL
-FROM public.customers
-WHERE "defaultDiscount" > 0;
-
-REVOKE ALL ON public.customer_discount_ledger FROM PUBLIC, anon, authenticated;
-GRANT SELECT ON public.customer_discount_ledger TO authenticated;
-GRANT ALL ON public.customer_discount_ledger TO service_role;
-
--- 4. Fungsi inti: ubah saldo secara atomik + catat -----------------------------
-CREATE OR REPLACE FUNCTION public.change_customer_discount_balance(
-  p_customer_id uuid,
-  p_delta integer,
-  p_kind text,
-  p_transaction_id uuid,
-  p_note text,
-  p_clamp_at_zero boolean DEFAULT false
-)
-RETURNS integer
+-- 5. Admin mengatur PIN miliknya sendiri ----------------------------------------
+CREATE OR REPLACE FUNCTION public.set_my_supervisor_pin(p_pin text)
+RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_balance integer;
-  v_store_id uuid;
-  v_new_balance integer;
-  v_applied integer;
+  v_uid uuid := auth.uid();
+  v_role text;
+  v_store uuid;
 BEGIN
-  SELECT c."defaultDiscount", c."storeId"
-  INTO v_balance, v_store_id
-  FROM public.customers AS c
-  WHERE c.id = p_customer_id
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Pelanggan tidak ditemukan untuk saldo diskon'
-      USING ERRCODE = 'P0002';
+  SELECT p.role, p.store_id INTO v_role, v_store FROM public.profiles p WHERE p.id = v_uid;
+  IF v_role IS NULL OR v_role NOT IN ('Admin', 'Super Admin') THEN
+    RAISE EXCEPTION 'Hanya Admin yang dapat memiliki PIN supervisor' USING ERRCODE = '42501';
+  END IF;
+  IF p_pin IS NULL OR p_pin !~ '^[0-9]{6}$' THEN
+    RAISE EXCEPTION 'PIN harus 6 angka' USING ERRCODE = '22023';
+  END IF;
+  IF p_pin ~ '^([0-9])\1{5}$'
+     OR p_pin IN ('012345', '123456', '234567', '345678', '456789', '987654', '876543', '765432', '654321', '543210') THEN
+    RAISE EXCEPTION 'PIN terlalu mudah ditebak. Pilih PIN lain.' USING ERRCODE = '22023';
+  END IF;
+  -- PIN tidak boleh sama dengan PIN supervisor lain di lingkup yang sama,
+  -- supaya setiap persetujuan tercatat atas nama orang yang benar.
+  IF EXISTS (
+    SELECT 1
+    FROM public.supervisor_pins sp
+    JOIN public.profiles p ON p.id = sp.user_id
+    WHERE sp.user_id <> v_uid
+      AND (p.role = 'Super Admin' OR v_role = 'Super Admin' OR p.store_id = v_store)
+      AND sp.pin_hash = extensions.crypt(p_pin, sp.pin_hash)
+  ) THEN
+    RAISE EXCEPTION 'PIN ini tidak dapat dipakai. Pilih PIN lain.' USING ERRCODE = '22023';
   END IF;
 
-  v_new_balance := v_balance + p_delta;
-  IF v_new_balance < 0 THEN
-    IF p_clamp_at_zero THEN
-      v_new_balance := 0;
+  INSERT INTO public.supervisor_pins (user_id, pin_hash, updated_at)
+  VALUES (v_uid, extensions.crypt(p_pin, extensions.gen_salt('bf', 8)), now())
+  ON CONFLICT (user_id) DO UPDATE SET pin_hash = EXCLUDED.pin_hash, updated_at = now();
+
+  INSERT INTO public.audit_logs ("user", action, "storeId")
+  VALUES ((SELECT p.name FROM public.profiles p WHERE p.id = v_uid), 'Mengatur PIN supervisor.', v_store);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_my_supervisor_pin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.supervisor_pins WHERE user_id = auth.uid());
+$$;
+
+-- 6. Kasir meminta persetujuan dengan PIN supervisor ----------------------------
+-- Hasil: {"approval_id": uuid, "approver_name": text} bila PIN benar,
+--        {"approval_id": null, "remaining_attempts": n} bila PIN salah.
+CREATE OR REPLACE FUNCTION public.request_supervisor_approval(
+  p_action text,
+  p_pin text,
+  p_transaction_id uuid DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  c_max_failures constant integer := 5;
+  c_window constant interval := interval '15 minutes';
+  v_uid uuid := auth.uid();
+  v_role text;
+  v_store uuid;
+  v_attempt public.supervisor_pin_attempts%ROWTYPE;
+  v_approver uuid;
+  v_approver_name text;
+  v_id uuid;
+BEGIN
+  SELECT p.role, p.store_id INTO v_role, v_store FROM public.profiles p WHERE p.id = v_uid;
+  IF v_role IS NULL THEN
+    RAISE EXCEPTION 'Sesi tidak valid. Silakan login ulang.' USING ERRCODE = '42501';
+  END IF;
+  IF v_store IS NULL THEN
+    RAISE EXCEPTION 'Akun Anda belum terhubung ke cabang.' USING ERRCODE = '42501';
+  END IF;
+  IF p_action NOT IN ('edit_paid', 'cancel_transaction') THEN
+    RAISE EXCEPTION 'Aksi tidak dikenal' USING ERRCODE = '22023';
+  END IF;
+  IF p_pin IS NULL OR p_pin !~ '^[0-9]{6}$' THEN
+    RAISE EXCEPTION 'PIN harus 6 angka' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.supervisor_pin_attempts (user_id) VALUES (v_uid) ON CONFLICT (user_id) DO NOTHING;
+  SELECT * INTO v_attempt FROM public.supervisor_pin_attempts WHERE user_id = v_uid FOR UPDATE;
+
+  IF v_attempt.locked_until IS NOT NULL AND v_attempt.locked_until > now() THEN
+    RAISE EXCEPTION 'Terlalu banyak PIN salah. Coba lagi dalam % menit.',
+      ceil(extract(epoch FROM v_attempt.locked_until - now()) / 60)::integer
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  SELECT p.id, p.name INTO v_approver, v_approver_name
+  FROM public.supervisor_pins sp
+  JOIN public.profiles p ON p.id = sp.user_id
+  WHERE p.id <> v_uid
+    AND coalesce(p."isActive", true)
+    AND (p.role = 'Super Admin' OR (p.role = 'Admin' AND p.store_id = v_store))
+    AND sp.pin_hash = extensions.crypt(p_pin, sp.pin_hash)
+  LIMIT 1;
+
+  IF v_approver IS NULL THEN
+    -- Catat kegagalan (tanpa RAISE, supaya hitungan tidak ikut dibatalkan).
+    IF v_attempt.window_started_at < now() - c_window THEN
+      v_attempt.failed_count := 1;
+      v_attempt.window_started_at := now();
     ELSE
-      RAISE EXCEPTION 'Saldo diskon pelanggan tidak cukup (sisa Rp%, dibutuhkan Rp%)',
-        v_balance, -p_delta
-        USING ERRCODE = 'P0001';
+      v_attempt.failed_count := v_attempt.failed_count + 1;
     END IF;
-  END IF;
-
-  v_applied := v_new_balance - v_balance;
-  IF v_applied = 0 THEN
-    RETURN v_balance;
-  END IF;
-
-  -- Tanda untuk trigger penjaga: perubahan ini sah dan dicatat di bawah.
-  PERFORM set_config('app.discount_balance_internal', 'on', true);
-  UPDATE public.customers
-  SET "defaultDiscount" = v_new_balance
-  WHERE id = p_customer_id;
-  PERFORM set_config('app.discount_balance_internal', 'off', true);
-
-  INSERT INTO public.customer_discount_ledger (
-    customer_id, store_id, transaction_id, kind, amount, balance_after, note
-  )
-  VALUES (
-    p_customer_id, v_store_id, p_transaction_id, p_kind, v_applied, v_new_balance,
-    left(p_note, 200)
-  );
-
-  RETURN v_new_balance;
-END;
-$$;
-
-REVOKE EXECUTE ON FUNCTION public.change_customer_discount_balance(uuid, integer, text, uuid, text, boolean)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.change_customer_discount_balance(uuid, integer, text, uuid, text, boolean)
-  TO service_role;
-
--- 5. Trigger transaksi: pakai saldo, tambah pembulatan, kembalikan saat dihapus -
-CREATE OR REPLACE FUNCTION public.apply_transaction_discount_balance()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-DECLARE
-  v_label text;
-  v_max_use integer;
-BEGIN
-  IF TG_OP = 'DELETE' THEN
-    IF OLD."customerId" IS NOT NULL THEN
-      v_label := coalesce(OLD."invoiceCode", OLD.id::text);
-      IF OLD."discountBalanceUsed" > 0 THEN
-        PERFORM public.change_customer_discount_balance(
-          OLD."customerId", OLD."discountBalanceUsed", 'reversal', NULL,
-          'Transaksi ' || v_label || ' dihapus: saldo yang dipakai dikembalikan'
-        );
-      END IF;
-      IF OLD."roundingCredit" > 0 THEN
-        PERFORM public.change_customer_discount_balance(
-          OLD."customerId", -OLD."roundingCredit", 'reversal', NULL,
-          'Transaksi ' || v_label || ' dihapus: saldo pembulatan dibatalkan',
-          true
-        );
-      END IF;
+    IF v_attempt.failed_count >= c_max_failures THEN
+      v_attempt.locked_until := now() + c_window;
     END IF;
-    RETURN OLD;
-  END IF;
+    UPDATE public.supervisor_pin_attempts
+    SET failed_count = v_attempt.failed_count,
+        window_started_at = v_attempt.window_started_at,
+        locked_until = v_attempt.locked_until
+    WHERE user_id = v_uid;
 
-  v_label := coalesce(NEW."invoiceCode", NEW.id::text);
-
-  IF TG_OP = 'UPDATE' THEN
-    IF NEW."discountBalanceUsed" IS DISTINCT FROM OLD."discountBalanceUsed" THEN
-      RAISE EXCEPTION 'Pemakaian saldo diskon tidak dapat diubah setelah transaksi dibuat'
-        USING ERRCODE = '42501';
-    END IF;
-    -- NULL diperbolehkan: terjadi otomatis saat pelanggan dihapus (ON DELETE SET NULL).
-    IF NEW."customerId" IS DISTINCT FROM OLD."customerId"
-      AND NEW."customerId" IS NOT NULL
-      AND (OLD."discountBalanceUsed" > 0 OR OLD."roundingCredit" > 0) THEN
-      RAISE EXCEPTION 'Pelanggan tidak dapat diganti pada transaksi yang memakai saldo diskon'
-        USING ERRCODE = '42501';
-    END IF;
-  END IF;
-
-  -- Pemakaian saldo (hanya saat transaksi dibuat)
-  IF TG_OP = 'INSERT' AND NEW."discountBalanceUsed" > 0 THEN
-    IF NEW."customerId" IS NULL THEN
-      RAISE EXCEPTION 'Saldo diskon hanya bisa dipakai untuk pelanggan terdaftar'
-        USING ERRCODE = '22023';
-    END IF;
-    v_max_use := floor(NEW.subtotal * 0.10)::integer;
-    IF NEW."discountBalanceUsed" > v_max_use THEN
-      RAISE EXCEPTION 'Pemakaian saldo diskon Rp% melebihi batas 10%% subtotal (Rp%)',
-        NEW."discountBalanceUsed", v_max_use
-        USING ERRCODE = '22023';
-    END IF;
-    IF NEW."discountBalanceUsed" > NEW.discount THEN
-      RAISE EXCEPTION 'Pemakaian saldo diskon harus termasuk dalam kolom diskon'
-        USING ERRCODE = '22023';
+    IF v_attempt.failed_count >= c_max_failures THEN
+      INSERT INTO public.audit_logs ("user", action, "storeId")
+      VALUES ((SELECT p.name FROM public.profiles p WHERE p.id = v_uid),
+              'PIN supervisor salah 5 kali. Permintaan persetujuan dikunci 15 menit.', v_store);
     END IF;
 
-    PERFORM public.change_customer_discount_balance(
-      NEW."customerId", -NEW."discountBalanceUsed", 'use', NEW.id,
-      'Dipakai di transaksi ' || v_label
+    RETURN jsonb_build_object(
+      'approval_id', NULL,
+      'remaining_attempts', greatest(c_max_failures - v_attempt.failed_count, 0)
     );
   END IF;
 
-  -- Kelebihan pembulatan tunai (sekali per transaksi, saat lunas)
-  IF NEW."roundingCredit" > 0
-    AND (TG_OP = 'INSERT' OR NEW."roundingCredit" IS DISTINCT FROM OLD."roundingCredit") THEN
-    IF TG_OP = 'UPDATE' AND OLD."roundingCredit" <> 0 THEN
-      RAISE EXCEPTION 'Saldo pembulatan transaksi ini sudah tercatat'
-        USING ERRCODE = '42501';
-    END IF;
-    IF NEW."customerId" IS NULL THEN
-      RAISE EXCEPTION 'Saldo pembulatan hanya bisa untuk pelanggan terdaftar'
-        USING ERRCODE = '22023';
-    END IF;
-    IF NEW."paymentMethod" IS DISTINCT FROM 'Tunai' OR NEW."paymentStatus" IS DISTINCT FROM 'Lunas' THEN
-      RAISE EXCEPTION 'Saldo pembulatan hanya untuk pembayaran tunai yang sudah lunas'
-        USING ERRCODE = '22023';
-    END IF;
-    IF mod(NEW.total + NEW."roundingCredit", 500) <> 0 THEN
-      RAISE EXCEPTION 'Saldo pembulatan Rp% tidak sesuai dengan total Rp%',
-        NEW."roundingCredit", NEW.total
-        USING ERRCODE = '22023';
-    END IF;
+  UPDATE public.supervisor_pin_attempts
+  SET failed_count = 0, window_started_at = now(), locked_until = NULL
+  WHERE user_id = v_uid;
 
-    PERFORM public.change_customer_discount_balance(
-      NEW."customerId", NEW."roundingCredit", 'rounding', NEW.id,
-      'Pembulatan tunai transaksi ' || v_label
-    );
-  ELSIF TG_OP = 'UPDATE' AND NEW."roundingCredit" IS DISTINCT FROM OLD."roundingCredit" THEN
-    RAISE EXCEPTION 'Saldo pembulatan transaksi ini sudah tercatat'
-      USING ERRCODE = '42501';
-  END IF;
+  INSERT INTO public.supervisor_approvals (action, store_id, requested_by, approved_by, transaction_id)
+  VALUES (p_action, v_store, v_uid, v_approver, p_transaction_id)
+  RETURNING id INTO v_id;
 
-  RETURN NEW;
+  RETURN jsonb_build_object('approval_id', v_id, 'approver_name', v_approver_name);
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.apply_transaction_discount_balance()
-  FROM PUBLIC, anon, authenticated;
-
-CREATE TRIGGER apply_transaction_discount_balance
-  AFTER INSERT OR UPDATE OF "discountBalanceUsed", "roundingCredit", "customerId" OR DELETE
-  ON public.transactions
-  FOR EACH ROW
-  EXECUTE FUNCTION public.apply_transaction_discount_balance();
-
--- 6. Penjaga kolom saldo di customers ------------------------------------------
--- Kasir tidak boleh mengubah saldo langsung. Perubahan langsung oleh Admin
--- (form, impor Excel, restore) dicatat otomatis sebagai 'manual'.
-CREATE OR REPLACE FUNCTION public.normalize_customer_discount_balance()
+-- 7. Penjaga di tabel transaksi -------------------------------------------------
+CREATE OR REPLACE FUNCTION public.enforce_supervisor_approval()
 RETURNS trigger
-LANGUAGE plpgsql
-SET search_path = ''
-AS $$
-BEGIN
-  NEW."defaultDiscount" := greatest(coalesce(NEW."defaultDiscount", 0), 0);
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER normalize_customer_discount_balance
-  BEFORE INSERT OR UPDATE OF "defaultDiscount" ON public.customers
-  FOR EACH ROW
-  EXECUTE FUNCTION public.normalize_customer_discount_balance();
-
-CREATE OR REPLACE FUNCTION public.guard_customer_discount_balance()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-DECLARE
-  v_old integer;
-  v_note text;
-BEGIN
-  -- Perubahan dari change_customer_discount_balance() sudah dicatat di sana.
-  IF current_setting('app.discount_balance_internal', true) = 'on' THEN
-    RETURN NULL;
-  END IF;
-
-  v_old := CASE WHEN TG_OP = 'INSERT' THEN 0 ELSE OLD."defaultDiscount" END;
-  IF NEW."defaultDiscount" = v_old THEN
-    RETURN NULL;
-  END IF;
-
-  IF auth.uid() IS NULL THEN
-    -- Koneksi database langsung / service role (SQL Editor, edge function).
-    v_note := 'Diubah langsung di database';
-  ELSIF coalesce(public.get_my_role(), '') IN ('Admin', 'Super Admin') THEN
-    v_note := CASE WHEN TG_OP = 'INSERT' THEN 'Saldo awal pelanggan' ELSE 'Diubah langsung oleh Admin' END;
-  ELSE
-    RAISE EXCEPTION 'Hanya Admin yang dapat mengubah saldo diskon pelanggan'
-      USING ERRCODE = '42501';
-  END IF;
-
-  INSERT INTO public.customer_discount_ledger (
-    customer_id, store_id, transaction_id, kind, amount, balance_after, note
-  )
-  VALUES (
-    NEW.id, NEW."storeId", NULL, 'manual',
-    NEW."defaultDiscount" - v_old, NEW."defaultDiscount", v_note
-  );
-  RETURN NULL;
-END;
-$$;
-
-REVOKE EXECUTE ON FUNCTION public.guard_customer_discount_balance()
-  FROM PUBLIC, anon, authenticated;
-
-CREATE TRIGGER guard_customer_discount_balance
-  AFTER INSERT OR UPDATE OF "defaultDiscount" ON public.customers
-  FOR EACH ROW
-  EXECUTE FUNCTION public.guard_customer_discount_balance();
-
--- 7. RPC untuk Admin: setel saldo dengan pengecekan nilai lama -----------------
--- p_expected_balance mencegah menimpa perubahan yang terjadi saat form terbuka.
-CREATE OR REPLACE FUNCTION public.set_customer_discount_balance(
-  p_customer_id uuid,
-  p_expected_balance integer,
-  p_new_balance integer,
-  p_note text DEFAULT NULL
-)
-RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
   v_role text := public.get_my_role();
-  v_store_id uuid;
-  v_balance integer;
+  v_needed text;
+  v_approval public.supervisor_approvals%ROWTYPE;
 BEGIN
-  IF coalesce(v_role, '') NOT IN ('Admin', 'Super Admin') THEN
-    RAISE EXCEPTION 'Hanya Admin yang dapat mengubah saldo diskon pelanggan'
-      USING ERRCODE = '42501';
-  END IF;
-  IF p_new_balance IS NULL OR p_new_balance < 0 THEN
-    RAISE EXCEPTION 'Saldo diskon tidak boleh negatif' USING ERRCODE = '22023';
+  -- Admin, Super Admin, dan proses server (service role / SQL) tidak perlu PIN.
+  IF v_role IS DISTINCT FROM 'Kasir' THEN
+    RETURN NEW;
   END IF;
 
-  SELECT c."storeId", c."defaultDiscount"
-  INTO v_store_id, v_balance
-  FROM public.customers AS c
-  WHERE c.id = p_customer_id
+  IF TG_OP = 'UPDATE' AND OLD."paymentStatus" = 'Lunas' AND (
+       NEW."paymentStatus" IS DISTINCT FROM OLD."paymentStatus"
+    OR NEW."paymentMethod" IS DISTINCT FROM OLD."paymentMethod"
+    OR NEW."amountPaid" IS DISTINCT FROM OLD."amountPaid"
+    OR NEW."change" IS DISTINCT FROM OLD."change"
+  ) THEN
+    v_needed := 'edit_paid';
+  END IF;
+
+  IF v_needed IS NULL THEN
+    -- Kasir tidak boleh mengisi/mengubah penanda izin sendiri.
+    IF TG_OP = 'INSERT' THEN
+      NEW."supervisorApprovalId" := NULL;
+    ELSE
+      NEW."supervisorApprovalId" := OLD."supervisorApprovalId";
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW."supervisorApprovalId" IS NULL
+     OR NEW."supervisorApprovalId" IS NOT DISTINCT FROM OLD."supervisorApprovalId" THEN
+    RAISE EXCEPTION 'Mengubah pembayaran transaksi yang sudah lunas memerlukan PIN supervisor.'
+      USING ERRCODE = '42501', HINT = 'SUPERVISOR_APPROVAL_REQUIRED:' || v_needed;
+  END IF;
+
+  SELECT * INTO v_approval
+  FROM public.supervisor_approvals a
+  WHERE a.id = NEW."supervisorApprovalId"
   FOR UPDATE;
 
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Pelanggan tidak ditemukan' USING ERRCODE = 'P0002';
-  END IF;
-  IF v_role = 'Admin' AND v_store_id IS DISTINCT FROM public.get_my_store_id() THEN
-    RAISE EXCEPTION 'Admin hanya dapat mengubah pelanggan di cabangnya sendiri'
-      USING ERRCODE = '42501';
-  END IF;
-  IF p_expected_balance IS DISTINCT FROM v_balance THEN
-    RAISE EXCEPTION 'Saldo pelanggan sudah berubah menjadi Rp%. Muat ulang lalu coba lagi.', v_balance
-      USING ERRCODE = '40001';
+  IF NOT FOUND
+     OR v_approval.used_at IS NOT NULL
+     OR v_approval.expires_at < now()
+     OR v_approval.requested_by IS DISTINCT FROM auth.uid()
+     OR v_approval.action <> v_needed
+     OR v_approval.store_id IS DISTINCT FROM NEW."storeId"
+     OR (v_approval.transaction_id IS NOT NULL AND v_approval.transaction_id <> NEW.id) THEN
+    RAISE EXCEPTION 'Persetujuan supervisor tidak berlaku atau sudah kedaluwarsa. Minta PIN lagi.'
+      USING ERRCODE = '42501', HINT = 'SUPERVISOR_APPROVAL_INVALID';
   END IF;
 
-  RETURN public.change_customer_discount_balance(
-    p_customer_id,
-    p_new_balance - v_balance,
-    'manual',
-    NULL,
-    coalesce(nullif(btrim(p_note), ''), 'Penyesuaian saldo oleh Admin')
+  UPDATE public.supervisor_approvals
+  SET used_at = now(), transaction_id = NEW.id
+  WHERE id = v_approval.id;
+
+  INSERT INTO public.audit_logs ("user", action, "storeId")
+  VALUES (
+    (SELECT p.name FROM public.profiles p WHERE p.id = auth.uid()),
+    format('Perubahan pembayaran nota lunas pada transaksi %s disetujui PIN supervisor %s.',
+      coalesce(NEW."invoiceCode", NEW.id::text),
+      coalesce((SELECT p.name FROM public.profiles p WHERE p.id = v_approval.approved_by), '-')),
+    NEW."storeId"
   );
+
+  RETURN NEW;
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.set_customer_discount_balance(uuid, integer, integer, text)
-  FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.set_customer_discount_balance(uuid, integer, integer, text)
-  TO authenticated;
+-- BELUM AKTIF: trigger ini memblokir Kasir mengubah pembayaran nota Lunas tanpa
+-- PIN. Aktifkan setelah UI input PIN untuk Kasir (SupervisorPinModal) dipasang
+-- di alur ubah pembayaran. Database live juga belum memasang trigger ini.
+-- CREATE TRIGGER enforce_supervisor_approval
+--   BEFORE INSERT OR UPDATE ON public.transactions
+--   FOR EACH ROW
+--   EXECUTE FUNCTION public.enforce_supervisor_approval();
 
+-- 8. Hak akses fungsi -----------------------------------------------------------
+REVOKE EXECUTE ON FUNCTION public.set_my_supervisor_pin(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.set_my_supervisor_pin(text) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.has_my_supervisor_pin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_my_supervisor_pin() TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.request_supervisor_approval(text, text, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.request_supervisor_approval(text, text, uuid) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.enforce_supervisor_approval() FROM PUBLIC, anon, authenticated;
 
 -- ============================================
 -- END OF SETUP

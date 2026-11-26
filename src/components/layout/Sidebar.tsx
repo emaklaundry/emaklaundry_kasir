@@ -1,135 +1,23 @@
 import React, { useLayoutEffect, useRef } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import useAppContext from '../../contexts/useAppContext';
-import {
-  HomeIcon,
-  ShoppingCartIcon,
-  PackageIcon,
-  UsersIcon,
-  BarChartIcon,
-  SettingsIcon,
-  WrenchIcon,
-  DollarSignIcon,
-  HistoryIcon,
-  TruckIcon,
-  ChevronLeftIcon,
-  DatabaseIcon,
-  BookOpenIcon,
-  HelpCircleIcon,
-  ArrowTrendingUpIcon,
-  CalculatorIcon,
-  FileTextIcon,
-} from '../icons';
-import { useTutorial } from '../../hooks/useTutorial';
-import { UserRole } from '@/types';
+import { ChevronLeftIcon } from '../icons';
+import { NavItem, canSeeNavItem, navSections } from '../../config/navigation';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-interface NavItem {
-  path: string;
-  label: string;
-  icon: React.FC<{ className?: string }>;
-  adminOnly?: boolean;
-  superAdminOnly?: boolean;
-}
-
-interface NavSection {
-  /** Judul kelompok; kosong untuk menu utama di paling atas. */
-  title?: string;
-  items: NavItem[];
-}
-
-// Urutan: kerja harian -> data master -> operasional -> SDM -> analisis -> sistem -> panduan.
-const navSections: NavSection[] = [
-  {
-    items: [
-      { path: '/', label: 'Dashboard', icon: HomeIcon },
-      { path: '/transactions', label: 'Transaksi', icon: ShoppingCartIcon },
-    ],
-  },
-  {
-    title: 'Data Master',
-    items: [
-      { path: '/management/customers', label: 'Pelanggan', icon: UsersIcon, adminOnly: true },
-      { path: '/management/services', label: 'Layanan', icon: PackageIcon, adminOnly: true },
-    ],
-  },
-  {
-    title: 'Operasional',
-    items: [
-      { path: '/management/inventory', label: 'Inventaris', icon: PackageIcon, adminOnly: true },
-      {
-        path: '/management/assets',
-        label: 'Aset & Pemeliharaan',
-        icon: WrenchIcon,
-        adminOnly: true,
-      },
-      {
-        path: '/management/expenses',
-        label: 'Pengeluaran',
-        icon: DollarSignIcon,
-        adminOnly: true,
-      },
-    ],
-  },
-  {
-    title: 'SDM',
-    items: [
-      { path: '/management/employees', label: 'Karyawan', icon: UsersIcon, adminOnly: true },
-      { path: '/management/attendance', label: 'Absensi', icon: HistoryIcon, adminOnly: true },
-    ],
-  },
-  {
-    title: 'Analisis',
-    items: [
-      { path: '/reports', label: 'Laporan', icon: BarChartIcon, adminOnly: true },
-      { path: '/audit-log', label: 'Log Audit', icon: HistoryIcon, adminOnly: true },
-    ],
-  },
-  {
-    title: 'Sistem',
-    items: [
-      { path: '/management/stores', label: 'Cabang', icon: TruckIcon, superAdminOnly: true },
-      { path: '/management/users', label: 'Pengguna', icon: UsersIcon, adminOnly: true },
-      { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
-      {
-        path: '/management/backup',
-        label: 'Backup & Restore',
-        icon: DatabaseIcon,
-        adminOnly: true,
-      },
-    ],
-  },
-  {
-    title: 'Panduan',
-    items: [
-      { path: '/management/sop', label: 'SOP (Prosedur)', icon: FileTextIcon, adminOnly: true },
-      { path: '/docs', label: 'Dokumentasi', icon: BookOpenIcon },
-      { path: '/business-guide', label: 'Panduan Bisnis', icon: ArrowTrendingUpIcon },
-      { path: '/business/calculator', label: 'Kalkulator Bisnis', icon: CalculatorIcon },
-    ],
-  },
-];
-
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { currentUser } = useAppContext();
-  const { startTour } = useTutorial();
-  const location = useLocation();
   const sidebarRef = useRef<HTMLElement>(null);
 
   useLayoutEffect(() => {
     if (sidebarRef.current) sidebarRef.current.inert = !isOpen;
   }, [isOpen]);
 
-  const hasAdminAccess =
-    currentUser?.role === UserRole.SuperAdmin || currentUser?.role === UserRole.Admin;
-  const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
-
-  const canSee = (item: NavItem) =>
-    !(item.superAdminOnly && !isSuperAdmin) && !(item.adminOnly && !hasAdminAccess);
+  const canSee = (item: NavItem) => canSeeNavItem(item, currentUser?.role);
 
   const renderNavLink = (item: NavItem) => (
     <li key={item.path}>
@@ -195,19 +83,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
           <nav aria-label="Navigasi samping" className="flex-1">
             {visibleSections.map((section, index) => {
-              const headingId = section.title
-                ? `sidebar-section-${section.title.toLowerCase().replace(/\W+/g, '-')}`
-                : undefined;
+              const headingId = `sidebar-section-${section.title.toLowerCase().replace(/\W+/g, '-')}`;
               return (
-                <div key={section.title ?? 'utama'} className={index > 0 ? 'mt-5' : undefined}>
-                  {section.title && (
-                    <h3
-                      id={headingId}
-                      className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
-                    >
-                      {section.title}
-                    </h3>
-                  )}
+                <div
+                  key={section.title}
+                  className={
+                    index > 0
+                      ? 'mt-4 pt-4 border-t border-slate-200 dark:border-slate-700'
+                      : undefined
+                  }
+                >
+                  <h3
+                    id={headingId}
+                    className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                  >
+                    {section.title}
+                  </h3>
                   <ul className="space-y-1" aria-labelledby={headingId}>
                     {section.items.map(renderNavLink)}
                   </ul>
@@ -215,31 +106,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               );
             })}
           </nav>
-
-          {/* Tutorial Button */}
-          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => {
-                if (location.pathname === '/' || location.pathname === '/dashboard') {
-                  startTour('dashboard');
-                } else if (location.pathname === '/transactions/new') {
-                  startTour('new_transaction');
-                } else if (location.pathname === '/transactions') {
-                  startTour('transaction_list');
-                } else if (location.pathname === '/management/employees') {
-                  startTour('employees');
-                } else {
-                  // Fallback to dashboard tour if on other pages
-                  startTour('dashboard');
-                }
-                if (window.innerWidth < 1024) onToggle(); // Tutup laci di mobile & tablet
-              }}
-              className="w-full flex items-center p-3 text-base rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 group"
-            >
-              <HelpCircleIcon className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-brand-blue-600 dark:group-hover:text-brand-blue-400 transition-colors" />
-              <span className="ml-3 font-medium">Bantuan / Tutorial</span>
-            </button>
-          </div>
         </div>
       </aside>
     </>

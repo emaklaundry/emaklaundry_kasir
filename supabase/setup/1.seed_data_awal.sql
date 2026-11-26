@@ -91,34 +91,26 @@ ON CONFLICT (id) DO UPDATE SET
 
 
 
--- Kasir 1: YOPI
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
-ON CONFLICT (id) DO UPDATE SET 
-  name = EXCLUDED.name,
-  role = EXCLUDED.role;
+-- -- Kasir 1: YOPI
+-- INSERT INTO public.profiles (id, name, role, store_id)
+-- VALUES ('e0efe954-3fcc-4688-a78d-45640228df47', 'YOPI', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+-- ON CONFLICT (id) DO UPDATE SET 
+--   name = EXCLUDED.name,
+--   role = EXCLUDED.role;
 
--- Kasir 2: ani
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
-ON CONFLICT (id) DO UPDATE SET 
-  name = EXCLUDED.name,
-  role = EXCLUDED.role;
+-- -- Kasir 2: ani
+-- INSERT INTO public.profiles (id, name, role, store_id)
+-- VALUES ('2c093716-8e1e-4237-92a2-04cd5ef2658b', 'ani', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+-- ON CONFLICT (id) DO UPDATE SET 
+--   name = EXCLUDED.name,
+--   role = EXCLUDED.role;
 
--- Kasir 3: didi
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
-ON CONFLICT (id) DO UPDATE SET 
-  name = EXCLUDED.name,
-  role = EXCLUDED.role;
-
--- Kasir 4: lilis
-INSERT INTO public.profiles (id, name, role, store_id)
-VALUES ('7b13d493-23ea-49a0-99cf-133ed7ecf05e', 'lilis', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
-ON CONFLICT (id) DO UPDATE SET 
-  name = EXCLUDED.name,
-  role = EXCLUDED.role;
-
+-- -- Kasir 3: didi
+-- INSERT INTO public.profiles (id, name, role, store_id)
+-- VALUES ('8cbdd6f3-ee72-4500-b2c8-b6401ed6c053', 'didi', 'Kasir', '9b7e1c2a-1234-4bcd-8e9f-abcdef123456')
+-- ON CONFLICT (id) DO UPDATE SET 
+--   name = EXCLUDED.name,
+--   role = EXCLUDED.role;
 
 
 -- ============================================
@@ -128,8 +120,6 @@ ON CONFLICT (id) DO UPDATE SET
 -- Insert default settings untuk Cabang Kota Banjar
 INSERT INTO public.settings (
   "receiptMessage", 
-  "taxRate", 
-  "discountRate", 
   "storeId",
   "isMaintenanceMode",
   "maintenanceMessage",
@@ -137,8 +127,6 @@ INSERT INTO public.settings (
 ) 
 VALUES (
   'Terima kasih telah laundry di tempat kami!', 
-  0, 
-  0, 
   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456',
   FALSE,
   NULL,

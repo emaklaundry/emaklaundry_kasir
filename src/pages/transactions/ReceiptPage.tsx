@@ -62,9 +62,8 @@ const ReceiptPage: React.FC = () => {
   }
 
   const remainingBalance = tx.total - tx.amountPaid;
-  const balanceUsed = Number(tx.discountBalanceUsed ?? 0);
-  const roundingCredit = Number(tx.roundingCredit ?? 0);
-  const manualDiscount = tx.discount - balanceUsed;
+  // Nota lama (sebelum diskon/pajak dihapus) bisa punya total ≠ subtotal.
+  const legacyAdjustment = tx.total - tx.subtotal;
 
   return (
     <div className="max-w-md mx-auto bg-slate-50 dark:bg-slate-800 p-8 rounded-lg shadow-lg receipt-print">
@@ -140,27 +139,20 @@ const ReceiptPage: React.FC = () => {
       </div>
 
       <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mt-4 space-y-2">
-        <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
-          <span>Subtotal</span>
-          <span>Rp {tx.subtotal.toLocaleString('id-ID')}</span>
-        </div>
-        {manualDiscount > 0 && (
-          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
-            <span>Diskon</span>
-            <span>- Rp {manualDiscount.toLocaleString('id-ID')}</span>
-          </div>
-        )}
-        {balanceUsed > 0 && (
-          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
-            <span>Saldo Diskon</span>
-            <span>- Rp {balanceUsed.toLocaleString('id-ID')}</span>
-          </div>
-        )}
-        {tx.tax > 0 && (
-          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
-            <span>Pajak</span>
-            <span>+ Rp {tx.tax.toLocaleString('id-ID')}</span>
-          </div>
+        {legacyAdjustment !== 0 && (
+          <>
+            <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+              <span>Subtotal</span>
+              <span>Rp {tx.subtotal.toLocaleString('id-ID')}</span>
+            </div>
+            <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
+              <span>Penyesuaian</span>
+              <span>
+                {legacyAdjustment < 0 ? '- ' : '+ '}Rp{' '}
+                {Math.abs(legacyAdjustment).toLocaleString('id-ID')}
+              </span>
+            </div>
+          </>
         )}
         <div className="flex justify-between font-bold text-xl text-slate-900 dark:text-white pt-2 border-t border-slate-300 dark:border-slate-600">
           <span>Total</span>
@@ -177,22 +169,10 @@ const ReceiptPage: React.FC = () => {
           <span>Dibayar</span>
           <span>Rp {tx.amountPaid.toLocaleString('id-ID')}</span>
         </div>
-        {roundingCredit > 0 && (
-          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
-            <span>Pembulatan ke saldo</span>
-            <span>Rp {roundingCredit.toLocaleString('id-ID')}</span>
-          </div>
-        )}
         {tx.change > 0 && (
           <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
             <span>Kembalian</span>
             <span>Rp {tx.change.toLocaleString('id-ID')}</span>
-          </div>
-        )}
-        {(customer.defaultDiscount ?? 0) > 0 && (
-          <div className="flex justify-between text-base text-slate-600 dark:text-slate-400">
-            <span>Saldo diskon Anda</span>
-            <span>Rp {(customer.defaultDiscount ?? 0).toLocaleString('id-ID')}</span>
           </div>
         )}
         <div className="flex justify-between font-semibold text-lg text-slate-900 dark:text-white">

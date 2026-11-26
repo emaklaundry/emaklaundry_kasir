@@ -92,7 +92,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 storeId: data.store_id ?? undefined,
                 createdAt: data.created_at ? new Date(data.created_at) : undefined,
                 isActive: data.isActive ?? false,
-                canGiveDiscount: data.canGiveDiscount ?? false,
               });
 
               // Automatically select the store if the user is bound to one

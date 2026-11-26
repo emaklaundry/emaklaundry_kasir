@@ -17,7 +17,7 @@ emaklaundry_kasir/
 │   ├── DEPLOYMENT.md                # Deployment instructions
 │   └── STRUCTURE.md                 # This file
 │
-├── 💾 supabase/                      # Semua backend: setup, seeds, backup, migrations, functions
+├── 💾 supabase/                      # Semua backend: setup, seeds, backup, functions
 │   ├── setup/README.md              # Peta lengkap backend
 │   ├── backup/                      # SQL backups
 │   │   ├── README.md                # Backup guide
@@ -89,7 +89,7 @@ emaklaundry_kasir/
 ### 1. **Clear Separation of Concerns**
 
 - **Documentation** → `docs/` folder
-- **Database & backend** → `supabase/` folder (setup + seeds + backup + migrations + functions)
+- **Database & backend** → `supabase/` folder (setup + seeds + backup + functions)
 - **Source Code** → `src/` folder
 - **Public Assets** → `public/` folder
 - **Configuration** → Root level

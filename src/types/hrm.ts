@@ -4,14 +4,29 @@
 
 export type EmployeeRole = 'operator' | 'kasir' | 'admin';
 
+/** Hari kerja ISO: 1 = Senin ... 7 = Minggu. */
+export type WorkDay = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
 export interface Employee {
   id: string;
   storeId: string;
   name: string;
   phone?: string;
+  address?: string;
+  /** Posisi kerja. */
   role: EmployeeRole;
+  /** Tanggal mulai bekerja (YYYY-MM-DD). */
+  startDate?: string;
+  /** Jam mulai & selesai shift (HH:MM). Keduanya diisi atau keduanya kosong. */
+  shiftStart?: string;
+  shiftEnd?: string;
+  workDays: WorkDay[];
+  /** Menit toleransi sebelum absensi masuk dihitung terlambat. */
+  lateToleranceMinutes: number;
   baseSalary: number;
   commissionRate: number; // percentage
+  /** Insentif tetap per bulan (Rp). */
+  monthlyIncentive: number;
   isActive: boolean;
   loginEnabled?: boolean;
   createdAt: Date;
@@ -62,5 +77,5 @@ export interface Payroll {
 }
 
 // Form types
-export type EmployeeFormData = Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>;
+export type EmployeeFormData = Omit<Employee, 'id' | 'createdAt' | 'updatedAt' | 'loginEnabled'>;
 export type AdvanceFormData = Omit<Advance, 'id' | 'createdAt' | 'employee'>;

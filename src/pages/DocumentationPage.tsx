@@ -356,8 +356,7 @@ const DocumentationPage: React.FC = () => {
                 <SettingsIcon className="w-4 h-4" /> Pengaturan Toko
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Ubah Footer WhatsApp, Pesan Struk, dan Tarif Pajak/Diskon Global di menu{' '}
-                <strong>Pengaturan</strong>.
+                Ubah Footer WhatsApp dan Pesan Struk di menu <strong>Pengaturan</strong>.
               </p>
             </div>
             <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">

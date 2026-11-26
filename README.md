@@ -79,7 +79,6 @@ Dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
 emaklaundry_kasir/
 ├── supabase/             # 💾 Semua backend (lihat supabase/setup/README.md)
 │   ├── config.toml       # Pengaturan Supabase CLI
-│   ├── migrations/       # Perubahan database bertahap (supabase db push)
 │   ├── functions/        # Edge Functions (login karyawan, buat pengguna, dll.)
 │   ├── setup/            # SQL Setup (Schema + Triggers)
 │   │   ├── 0.complete_setup.sql    # MAIN SCRIPT (Run this first)

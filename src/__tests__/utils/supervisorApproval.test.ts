@@ -5,23 +5,9 @@ vi.mock('@/utils/supabaseClient', () => ({
   supabase: { rpc: (...args: unknown[]) => rpc(...args) },
 }));
 
-import {
-  autoDiscountAmount,
-  isValidPinFormat,
-  needsManualDiscountApproval,
-  requestSupervisorApproval,
-} from '@/utils/supervisorApproval';
+import { isValidPinFormat, requestSupervisorApproval } from '@/utils/supervisorApproval';
 
 describe('supervisor approval rules', () => {
-  it('matches the database: only discount above the automatic rate needs a PIN', () => {
-    expect(autoDiscountAmount(50_000, 10)).toBe(5_000);
-    expect(needsManualDiscountApproval(5_000, 50_000, 10)).toBe(false);
-    expect(needsManualDiscountApproval(5_001, 50_000, 10)).toBe(false); // toleransi Rp1
-    expect(needsManualDiscountApproval(5_002, 50_000, 10)).toBe(true);
-    expect(needsManualDiscountApproval(1, 50_000, undefined)).toBe(false);
-    expect(needsManualDiscountApproval(2, 50_000, undefined)).toBe(true);
-  });
-
   it('accepts only 6-digit PINs', () => {
     expect(isValidPinFormat('482913')).toBe(true);
     expect(isValidPinFormat('48291')).toBe(false);
@@ -38,13 +24,12 @@ describe('requestSupervisorApproval', () => {
       error: null,
     });
     await expect(
-      requestSupervisorApproval('manual_discount', '482913', { maxAmount: 15_000 }),
+      requestSupervisorApproval('edit_paid', '482913', { transactionId: 'tx-1' }),
     ).resolves.toEqual({ ok: true, approvalId: 'ap-1', approverName: 'Bu Admin' });
     expect(rpc).toHaveBeenCalledWith('request_supervisor_approval', {
-      p_action: 'manual_discount',
+      p_action: 'edit_paid',
       p_pin: '482913',
-      p_max_amount: 15_000,
-      p_transaction_id: undefined,
+      p_transaction_id: 'tx-1',
     });
   });
 
@@ -61,7 +46,7 @@ describe('requestSupervisorApproval', () => {
       data: null,
       error: { message: 'Terlalu banyak PIN salah. Coba lagi dalam 12 menit.' },
     });
-    await expect(requestSupervisorApproval('manual_discount', '111222')).rejects.toThrow(
+    await expect(requestSupervisorApproval('cancel_transaction', '111222')).rejects.toThrow(
       'Terlalu banyak PIN salah',
     );
   });

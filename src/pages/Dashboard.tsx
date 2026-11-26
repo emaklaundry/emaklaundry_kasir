@@ -17,7 +17,7 @@ import QuickStockUpdateModal from '../components/QuickStockUpdateModal';
 import ExpenseFormModal from '../components/ExpenseFormModal';
 import QuickMaintenanceModal from '../components/QuickMaintenanceModal';
 import WhatsAppModal from '../components/WhatsAppModal';
-import { savePaymentWithRoundingCredit } from '../utils/paymentUpdate';
+import { savePayment } from '../utils/paymentUpdate';
 import PaymentModal from '../components/PaymentModal';
 import WashSettingsModal from '../components/WashSettingsModal';
 import {
@@ -481,35 +481,14 @@ const Dashboard: React.FC = () => {
 
   const handleSavePayment = useCallback(
     async (updatedTransaction: Transaction) => {
-      const { creditSaved, creditError } = await savePaymentWithRoundingCredit(
-        updateTransaction,
-        updatedTransaction,
-      );
+      await savePayment(updateTransaction, updatedTransaction);
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,
       );
-      if (creditSaved > 0) {
-        addAuditLog(
-          `Pembulatan tunai Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan (transaksi ${updatedTransaction.invoiceCode ?? updatedTransaction.id}).`,
-          updatedTransaction.storeId,
-        );
-      }
       setIsPaymentModalOpen(false);
       setTransactionForPayment(null);
-      if (creditError) {
-        addToast(
-          `Pembayaran tersimpan, tetapi saldo pembulatan gagal dicatat: ${creditError}`,
-          'warning',
-        );
-      } else if (creditSaved > 0) {
-        addToast(
-          `Pembayaran berhasil! Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan.`,
-          'success',
-        );
-      } else {
-        addToast('Pembayaran berhasil disimpan.', 'success');
-      }
+      addToast('Pembayaran berhasil disimpan.', 'success');
     },
     [updateTransaction, addAuditLog, addToast],
   );

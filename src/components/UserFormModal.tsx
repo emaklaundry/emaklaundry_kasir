@@ -41,7 +41,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
     role: user?.role || UserRole.Cashier,
     storeId: user?.storeId || (lockStore ? creatorStoreId : '') || '',
     isActive: user?.isActive ?? true,
-    canGiveDiscount: user?.canGiveDiscount ?? false,
   });
   const [credentials, setCredentials] = useState<NewUserCredentials>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -68,7 +67,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
     const finalData = { ...formData };
     if (finalData.role === UserRole.SuperAdmin) {
       finalData.storeId = undefined;
-      // Catatan: Properti isActive dan canGiveDiscount untuk Super Admin diatur di logic penyimpanan (UsersPage),
+      // Catatan: Properti isActive untuk Super Admin diatur di logic penyimpanan (UsersPage),
       // bukan di modal ini. Modal hanya menonaktifkan input.
     } else if (!finalData.storeId) {
       addToast('Silakan pilih cabang untuk peran ini.', 'warning');
@@ -269,23 +268,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
               </label>
             </div>
           )}
-          <div className="flex items-center">
-            <input
-              id="user-canGiveDiscount"
-              name="canGiveDiscount"
-              type="checkbox"
-              checked={formData.canGiveDiscount}
-              onChange={handleChange}
-              disabled={isEditingSuperAdmin}
-              className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
-            />
-            <label
-              htmlFor="user-canGiveDiscount"
-              className="ml-2 text-base font-medium text-slate-900 dark:text-white"
-            >
-              Bisa Beri Diskon
-            </label>
-          </div>
         </div>
       </form>
     </Modal>

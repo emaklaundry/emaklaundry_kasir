@@ -41,7 +41,7 @@ export const newTransactionSteps: Step[] = [
   },
   {
     target: '#payment-section',
-    content: 'Lihat total tagihan, berikan diskon, dan proses pembayaran di sini.',
+    content: 'Lihat total tagihan dan proses pembayaran di sini.',
   },
 ];
 
@@ -63,20 +63,21 @@ export const transactionListSteps: Step[] = [
 export const employeesSteps: Step[] = [
   {
     target: '#employees-header',
-    content: 'Halaman ini untuk mengelola data karyawan, gaji, dan komisi.',
+    content:
+      'Halaman ini untuk mengelola karyawan: profil, cabang, jadwal kerja, gaji, dan akun login.',
     disableBeacon: true,
   },
   {
     target: '#employees-import-btn',
     content:
-      'Fitur Baru! Anda bisa mengimport data dari pengguna (User) yang sudah ada agar tidak perlu mengetik ulang.',
+      'Ambil nama dan cabang dari akun Pengguna yang sudah ada agar tidak perlu mengetik ulang.',
   },
   {
     target: '#employees-add-btn',
-    content: 'Atau tambah karyawan secara manual dengan mengisi form lengkap.',
+    content: 'Atau tambah karyawan baru dan isi profil, jadwal, kompensasi, serta PIN login.',
   },
   {
     target: '#employees-list',
-    content: 'Daftar karyawan aktif beserta status dan kinerjanya akan muncul di sini.',
+    content: 'Cari, saring per status, lalu Edit atau Nonaktifkan karyawan dari daftar ini.',
   },
 ];
