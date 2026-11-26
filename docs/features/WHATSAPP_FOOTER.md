@@ -18,25 +18,15 @@ https://forms.gle/8JnjZZ4cu5oTXGYr9
 
 ## Cara Menggunakan
 
-### 1. Update Database
+### 1. Database
 
-Jalankan migration di Supabase SQL Editor:
+Kolom `settings."whatsappFooter"` sudah termasuk di `supabase/setup/0.complete_setup.sql`
+(Section 4). Tidak perlu SQL tambahan.
 
-```sql
--- File: database/setup/5.add_whatsapp_footer.sql
-```
-
-Atau jalankan manual:
-
-```sql
-ALTER TABLE public.settings
-ADD COLUMN IF NOT EXISTS "whatsappFooter" text;
-```
-
-### 2. Ubah di Settings Page
+### 2. Ubah di halaman Pengaturan
 
 1. Login sebagai Super Admin atau Admin
-2. Buka **Pengaturan Aplikasi**
+2. Buka **Sistem & Keamanan → Pengaturan**
 3. Scroll ke bagian **Footer Pesan WhatsApp**
 4. Edit teks sesuai kebutuhan
 5. Klik **Simpan**
@@ -53,11 +43,10 @@ ADD COLUMN IF NOT EXISTS "whatsappFooter" text;
 settings {
   id: bigint
   receiptMessage: text
-  taxRate: numeric
-  discountRate: numeric
+  storeId: uuid
   isMaintenanceMode: boolean
   maintenanceMessage: text
-  whatsappFooter: text  ← NEW
+  whatsappFooter: text
 }
 ```
 
@@ -66,5 +55,4 @@ settings {
 - `src/types/index.ts` - Added whatsappFooter field
 - `src/pages/management/SettingsPage.tsx` - Added UI for editing
 - `src/components/WhatsAppModal.tsx` - Use custom footer
-- `database/setup/complete_setup.sql` - Added column
-- `database/setup/5.add_whatsapp_footer.sql` - Migration script
+- `supabase/setup/0.complete_setup.sql` - Kolom `whatsappFooter`

@@ -185,8 +185,8 @@ export const HELP_TOPICS: HelpTopic[] = [
     steps: [
       'Buka Inventaris untuk melihat stok setiap bahan.',
       'Atur batas stok minimum; bahan di bawah batas ditandai stok menipis.',
-      'Pakai Update Stok untuk menambah stok setelah belanja, dan Stock Opname untuk mencocokkan hitungan fisik.',
-      'Atur Resep agar stok bahan terpotong otomatis setiap ada transaksi.',
+      'Tambah stok setelah belanja lewat Aksi Cepat → Update Stok, atau edit barangnya di Inventaris. Tekan Opname untuk mencocokkan hitungan fisik.',
+      'Tekan Resep untuk mengatur pemakaian bahan per layanan, agar stok terpotong otomatis setiap ada transaksi.',
     ],
     adminOnly: true,
     link: { to: '/management/inventory', label: 'Buka Inventaris' },
@@ -249,7 +249,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     steps: [
       'Buka Aset & Pemeliharaan lalu tambahkan aset beserta tanggal beli dan biayanya.',
       'Buat jadwal perawatan berkala (misalnya tiap 3 bulan).',
-      'Tandai perawatan selesai agar jadwal berikutnya terhitung otomatis.',
+      'Saat perawatan dikerjakan, buka jadwalnya lalu tekan Tandai Selesai; jadwal berikutnya terhitung otomatis.',
     ],
     adminOnly: true,
     link: { to: '/management/assets', label: 'Buka Aset' },

@@ -11,24 +11,31 @@
 
 ### 2. **Supabase Security**
 
-- ✅ Row Level Security (RLS) enabled di semua tabel
-- ✅ Anon key digunakan di client (public-safe)
-- ✅ Service key TIDAK di-commit ke repository
+- ✅ Row Level Security (RLS) aktif di semua tabel schema `public` (dicek 26 Nov 2026)
+- ✅ Anon key digunakan di client (public-safe; data dijaga RLS)
+- ✅ Service key TIDAK di-commit ke repository dan hanya dipakai di Edge Functions
 - ✅ Database policies berdasarkan user role & store
+- ✅ Data karyawan, absensi, kasbon, dan gaji hanya untuk Admin cabang & Super Admin
+- ✅ Fungsi admin/maintenance (`SECURITY DEFINER`) tidak bisa dipanggil tanpa login
+- ✅ Edge Functions hanya menerima origin di secret `ALLOWED_ORIGIN`
 
 ### 3. **Authentication**
 
 - ✅ Login menggunakan Supabase Auth
 - ✅ Password tidak disimpan di client
 - ✅ Session management otomatis via Supabase
-- ✅ Role-based access control (SuperAdmin, Admin, Kasir)
+- ✅ Role-based access control (SuperAdmin, Admin, Kasir), di menu (`src/config/navigation.ts`), rute
+  (`AdminRoute` di `src/App.tsx`), dan database (RLS)
+- ✅ Login karyawan dengan PIN 6 angka lewat Edge Function `employee-login`
+- ✅ PIN Supervisor: disimpan sebagai hash bcrypt, 5 kali salah dikunci 15 menit, setiap persetujuan
+  tercatat di Log Audit
 
 ### 4. **Code Security**
 
 - ✅ No hardcoded secrets
 - ✅ TypeScript strict mode enabled
 - ✅ ESLint configured dengan security rules
-- ✅ Dependencies audit: `npm audit` - 0 vulnerabilities
+- ✅ `npm audit --omit=dev`: 0 vulnerabilities (26 Nov 2026)
 
 ### 5. **API Security**
 
@@ -73,16 +80,15 @@
 **Before deploying:**
 
 1. **Environment Variables**
-   - [ ] Set `VITE_SUPABASE_URL` di platform (Vercel/Netlify)
-   - [ ] Set `VITE_SUPABASE_ANON_KEY` di platform
+   - [ ] Set `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` di Vercel
    - [ ] Verify `.env` tidak ter-commit
-   - [ ] Set `VITE_APP_ENV=production`
+   - [ ] Secret `ALLOWED_ORIGIN` Edge Functions berisi domain production
 
 2. **Database Security**
    - [ ] Review semua RLS policies
    - [ ] Test RLS dengan different user roles
    - [ ] Backup database sebelum deploy
-   - [ ] Verify migrations applied
+   - [ ] SQL rilis dijalankan sesuai urutan di [DEPLOYMENT.md](../deployment/DEPLOYMENT.md)
 
 3. **Application Security**
    - [ ] Run `npm audit` - fix vulnerabilities
@@ -106,5 +112,5 @@
 
 ---
 
-**Last Security Audit:** December 14, 2025  
+**Pemeriksaan terakhir:** 26 November 2026 (RLS, policy anon, npm audit)  
 **Next Review:** Setiap 3 bulan atau saat ada major update

@@ -1,10 +1,9 @@
 # Database & Backend Emak Laundry: Peta Lengkap
 
 Satu halaman untuk melihat **semua** bagian backend: database dan fungsi server (Edge Functions).
-Dokumen ini menggantikan isi lama README ini. `SETUP_GUIDE.md` dan `DEPLOYMENT.md` di folder ini sudah
-lama (masih menyebut `complete_setup.sql` dan `seed_data.sql` yang tidak ada lagi); pakai halaman ini.
+`SETUP_GUIDE.md` dan `DEPLOYMENT.md` di folder ini hanya menunjuk ke halaman ini.
 
-**Diperbarui:** 26 November 2026 · **Versi setup:** 3.4.0
+**Diperbarui:** 26 November 2026 · **Versi setup:** 3.5.0
 
 ---
 
@@ -47,6 +46,7 @@ Folder `supabase/` harus tetap di root proyek dengan nama itu: Supabase CLI hany
 | 9 | Profil karyawan & login PIN |
 | 10 | Kunci akses fungsi SECURITY DEFINER (cabut akses `anon`/client dari fungsi admin & trigger) |
 | 11 | PIN supervisor: tabel, RPC `set_my_supervisor_pin` / `request_supervisor_approval`. Trigger `enforce_supervisor_approval` masih dikomentari sampai UI PIN Kasir siap |
+| 12 | Karyawan: alamat, tanggal mulai, jam shift & hari kerja, toleransi terlambat, insentif bulanan. Aman dijalankan ulang |
 
 ---
 
@@ -58,7 +58,7 @@ harus di-deploy terpisah.
 | Fungsi | Dipakai oleh | Kegunaan |
 |---|---|---|
 | `employee-login` | Halaman Login (`src/pages/LoginPage.tsx`) | Daftar profil karyawan & login dengan PIN 6 digit |
-| `manage-employee-login` | Manajemen Karyawan (`src/pages/management/EmployeesPage.tsx`) | Aktifkan/ubah/hapus login PIN karyawan |
+| `manage-employee-login` | Manajemen Karyawan (`src/utils/employeeLogin.ts`) | Atur/reset PIN, sinkronkan status, dan cabut login karyawan |
 | `create-user` | Manajemen Pengguna (`src/contexts/UserContext.tsx`) | Buat akun Admin/Kasir/Super Admin dengan email & password |
 | `check-order` | Tidak dipanggil dari aplikasi kasir (untuk situs publik cek pesanan) | Cek status pesanan pelanggan |
 | `get-services` | Tidak dipanggil dari aplikasi kasir (untuk situs publik) | Daftar layanan publik |
@@ -93,6 +93,12 @@ Tanpa `ALLOWED_ORIGIN`, fungsi hanya bisa dipanggil dari `localhost` (pengembang
 6. **Akun pertama** — buat satu pengguna di Dashboard → Authentication, lalu ubah `role` profilnya menjadi
    `Super Admin` di tabel `profiles`. Pengguna berikutnya bisa dibuat dari menu Manajemen Pengguna.
 
+Alternatif lewat terminal (butuh `psql`; connection string ada di Dashboard → Project Settings → Database):
+
+```
+psql "postgresql://<USER>:<PASSWORD>@<HOST>:5432/postgres" -f supabase/setup/0.complete_setup.sql
+```
+
 > `0.complete_setup.sql` **tidak** aman dijalankan ulang di database yang sudah berisi tabel
 > (banyak `CREATE TABLE` tanpa `IF NOT EXISTS`). Untuk database yang sudah berjalan, lihat bagian 5.
 
@@ -109,9 +115,12 @@ Urutan saat rilis tergantung jenis perubahan:
 - **Menghapus** kolom/fungsi: deploy frontend & edge function dulu, **baru** jalankan SQL (frontend lama
   masih memakai kolom itu). Simpan SQL-nya sementara di `2.jalankan_setelah_deploy.sql`.
 
-Saat ini `2.jalankan_setelah_deploy.sql` berisi penghapusan sisa fitur saldo diskon, Pajak (%),
-Diskon (%) dan `canGiveDiscount`. Jalankan setelah frontend baru live **dan**
-`supabase functions deploy create-user manage-employee-login`.
+Perubahan yang sedang menunggu di production (per 26 Nov 2026):
+
+| Kapan | SQL | Isi |
+|---|---|---|
+| **Sebelum** frontend baru live | Section 12 dari `0.complete_setup.sql` (salin bagian itu saja) | Kolom profil, jadwal & kompensasi karyawan. Tanpa ini, menyimpan data di halaman Karyawan gagal |
+| **Sesudah** frontend baru live **dan** `supabase functions deploy create-user manage-employee-login` | `2.jalankan_setelah_deploy.sql` | Hapus sisa saldo diskon, Pajak (%), Diskon (%), dan `canGiveDiscount` |
 
 ---
 
@@ -147,5 +156,8 @@ WHERE schemaname = 'public' ORDER BY tablename, policyname;
 ## 8. Masalah yang diketahui
 
 - **Production, 25 Nov 2026:** data `customers` dan `transactions` bisa dibaca tanpa login memakai kunci
-  publik. Aturan penyebabnya tidak ada di repo ini (ditambahkan langsung di server). Cek dengan query
-  `pg_policies` di bagian 7, lalu tutup lewat SQL baru (lihat bagian 6).
+  publik. **Dicek ulang 26 Nov 2026: sudah tertutup.** Aturan SELECT yang tersisa di kedua tabel
+  mewajibkan login (`get_my_role()` / `get_my_store_id()`), dan semua tabel publik memakai RLS.
+  Ulangi cek dengan query `pg_policies` di bagian 7 setiap ada perubahan aturan.
+- **QRIS statis belum tersimpan:** isian "QRIS statis" di Pengaturan dan pembayaran QRIS dinamis membaca
+  `settings."qrisStaticCode"`, tetapi kolom itu tidak ada di database live maupun di `0.complete_setup.sql`.

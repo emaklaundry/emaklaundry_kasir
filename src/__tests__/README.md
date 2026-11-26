@@ -2,108 +2,22 @@
 
 ## 📁 Struktur Test Files
 
-Semua file test telah dirapihkan dan dipindahkan ke folder `src/__tests__/`:
+Folder tes mengikuti struktur `src/`. Tes untuk `src/components/Foo.tsx` ada di
+`src/__tests__/components/Foo.test.tsx`, dan seterusnya.
 
 ```
 src/__tests__/
-├── components/          # 34 files - Component tests
-│   ├── AssetFormModal.test.tsx
-│   ├── BottomNavBar.test.tsx
-│   ├── CommandPalette.test.tsx
-│   ├── ConfirmationModal.test.tsx
-│   ├── CustomerFormModal.test.tsx
-│   ├── CustomerSelector.test.tsx
-│   ├── EmptyState.test.tsx
-│   ├── ExpenseFormModal.test.tsx
-│   ├── Header.test.tsx
-│   ├── icons.test.tsx
-│   ├── InventoryFormModal.test.tsx
-│   ├── ItemNotesModal.test.tsx
-│   ├── KiloanTaggingModal.test.tsx
-│   ├── Layout.test.tsx
-│   ├── MaintenanceFormModal.test.tsx
-│   ├── MaintenanceHistoryModal.test.tsx
-│   ├── MaintenanceMode.test.tsx
-│   ├── Modal.test.tsx
-│   ├── Pagination.test.tsx
-│   ├── PaymentModal.test.tsx
-│   ├── QuickMaintenanceModal.test.tsx
-│   ├── QuickStockUpdateModal.test.tsx
-│   ├── ScheduledMaintenanceFormModal.test.tsx
-│   ├── ScheduledMaintenanceModal.test.tsx
-│   ├── ServiceFormModal.test.tsx
-│   ├── ServiceSelector.test.tsx
-│   ├── Sidebar.test.tsx
-│   ├── SortableHeader.test.tsx
-│   ├── StoreFormModal.test.tsx
-│   ├── SuccessModal.test.tsx
-│   ├── ToastContainer.test.tsx
-│   ├── UserFormModal.test.tsx
-│   ├── VersionInfo.test.tsx
-│   └── WhatsAppModal.test.tsx
-│
-├── contexts/            # 13 files - Context/State management tests
-│   ├── AppContext.test.tsx
-│   ├── AssetContext.test.tsx
-│   ├── AuditLogContext.test.tsx
-│   ├── CustomerContext.test.tsx
-│   ├── ExpenseContext.test.tsx
-│   ├── InventoryContext.test.tsx
-│   ├── ScheduledMaintenanceContext.test.tsx
-│   ├── ServiceContext.test.tsx
-│   ├── SettingsContext.test.tsx
-│   ├── StoreContext.test.tsx
-│   ├── ToastContext.test.tsx
-│   ├── TransactionContext.test.tsx
-│   └── UserContext.test.tsx
-│
-├── hooks/               # 5 files - Custom hooks tests
-│   ├── useDebounce.test.ts
-│   ├── usePagination.test.ts
-│   ├── useSortableData.test.ts
-│   ├── useStoreFilteredData.test.ts
-│   └── useTheme.test.ts
-│
-├── pages/               # 14 files - Page component tests
-│   ├── management/      # 5 files
-│   │   ├── AssetsPage.test.tsx
-│   │   ├── CustomerDetailPage.test.tsx
-│   │   ├── CustomersPage.test.tsx
-│   │   ├── ExpensesPage.test.tsx
-│   │   └── InventoryPage.test.tsx
-│   │
-│   ├── transactions/    # 4 files
-│   │   ├── NewTransactionPage.test.tsx
-│   │   ├── ReceiptPage.test.tsx
-│   │   ├── TransactionDetailPage.test.tsx
-│   │   └── TransactionPage.test.tsx
-│   │
-│   └── Root pages:      # 5 files
-│       ├── AuditLogPage.test.tsx
-│       ├── Dashboard.test.tsx
-│       ├── LoginPage.test.tsx
-│       ├── QuickActionsPage.test.tsx
-│       └── ReportsPage.test.tsx
-│
-├── utils/               # 7 files - Utility function tests
-│   ├── dateHelpers.test.ts
-│   ├── formatting.test.ts
-│   ├── index.test.ts
-│   ├── rateLimiter.test.ts
-│   ├── supabaseClient.real.test.ts
-│   ├── supabaseClient.test.ts
-│   └── uiHelpers.test.ts
-│
-├── types/               # 2 files - Type definition tests
-│   ├── index.test.ts
-│   └── shims.test.ts
-│
-└── integration/         # 2 files - Integration/E2E tests
-    ├── audit-tracking.test.tsx
-    └── critical-flows.test.tsx
-
-Total: 77 test files
+├── components/    # Komponen UI & modal (termasuk layout/Sidebar, Header)
+├── contexts/      # State global (AppContext, TransactionContext, ...)
+├── hooks/         # Hook kustom
+├── pages/         # Halaman (termasuk HelpPage, EmployeesPage, pages/transactions/)
+├── utils/         # Logika murni (employee, supervisorApproval, excel, ...)
+├── types/         # Pemeriksaan tipe
+└── integration/   # Alur lintas modul: audit-tracking, critical-flows
 ```
+
+Satu tes lama masih berada di `src/utils/__tests__/`. Lihat daftar lengkap dengan
+`npx vitest list`.
 
 ---
 
@@ -159,16 +73,17 @@ npm test -- --coverage
 
 ## 📊 Test Statistics
 
-| Category        | Files  | Description              |
-| --------------- | ------ | ------------------------ |
-| **Components**  | 34     | UI component unit tests  |
-| **Contexts**    | 13     | State management tests   |
-| **Pages**       | 14     | Page component tests     |
-| **Utils**       | 7      | Utility function tests   |
-| **Hooks**       | 5      | Custom React hooks tests |
-| **Types**       | 2      | TypeScript type tests    |
-| **Integration** | 2      | End-to-end flow tests    |
-| **Total**       | **77** | All test files           |
+Per 26 November 2026: **86 file, 252 tes lulus, 2 dilewati** (`npm test`).
+
+| Folder | File |
+| --- | --- |
+| components | 36 |
+| pages | 16 |
+| contexts | 13 |
+| utils | 11 (+1 di `src/utils/__tests__/`) |
+| hooks | 5 |
+| types | 2 |
+| integration | 2 |
 
 ---
 
@@ -333,5 +248,4 @@ Before committing:
 
 ---
 
-**Last Updated:** December 14, 2025  
-**Version:** 2.0.0
+**Diperbarui:** 26 November 2026

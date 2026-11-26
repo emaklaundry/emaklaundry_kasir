@@ -320,8 +320,8 @@ const handleDownloadTemplate = async () => {
 - No. HP
 - Layanan (detail item transaksi)
 - Subtotal
-- Diskon
-- Pajak
+- Diskon *(historis — fitur diskon dihapus Nov 2026; transaksi baru selalu 0)*
+- Pajak *(historis — fitur pajak dihapus Nov 2026; transaksi baru selalu 0)*
 - Total
 - Status Pesanan
 - Status Bayar
@@ -350,6 +350,6 @@ const handleDownloadTemplate = async () => {
 
 ## �📚 Dependencies
 
-- ✅ `exceljs@^4.4.0` - Already installed in package.json
+- ✅ `exceljs@^3.4.0` - Already installed in package.json
 - ✅ Icons (DownloadIcon, UploadIcon) - Added to icons.tsx
 - ✅ Excel utilities - Created in utils/excelUtils.ts

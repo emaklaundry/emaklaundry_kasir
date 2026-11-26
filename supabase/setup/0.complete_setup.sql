@@ -1,7 +1,7 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
 -- Complete Schema & Functions Setup
--- Version: 3.4.0
+-- Version: 3.5.0
 -- Date: November 26, 2026
 -- ============================================
 -- 
@@ -21,12 +21,13 @@
 -- 9. EMPLOYEE PROFILE & PIN LOGIN
 -- 10. KUNCI AKSES FUNGSI SECURITY DEFINER
 -- 11. PIN SUPERVISOR (otorisasi Kasir oleh Admin)
+-- 12. KARYAWAN: PROFIL, JADWAL & KOMPENSASI
 --
 -- File ini adalah sumber utama skema database. Setiap perubahan skema baru
 -- ditulis di sini, lalu dijalankan ke database live sebagai SQL terpisah.
 -- Setelah setup, deploy edge function employee-login & manage-employee-login.
 -- 
--- Untuk data sample/testing, jalankan seed_data.sql setelah ini
+-- Untuk data sample/testing, jalankan 1.seed_data_awal.sql setelah ini
 -- ============================================
 
 
@@ -2343,6 +2344,52 @@ GRANT EXECUTE ON FUNCTION public.has_my_supervisor_pin() TO authenticated;
 REVOKE EXECUTE ON FUNCTION public.request_supervisor_approval(text, text, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.request_supervisor_approval(text, text, uuid) TO authenticated;
 REVOKE EXECUTE ON FUNCTION public.enforce_supervisor_approval() FROM PUBLIC, anon, authenticated;
+
+-- ============================================
+-- SECTION 12: KARYAWAN - PROFIL, JADWAL & KOMPENSASI (Added Nov 2026)
+-- ============================================
+-- Dipakai halaman Karyawan: alamat, tanggal mulai, shift & hari kerja,
+-- toleransi terlambat, dan insentif bulanan. Akses tetap Admin/Super Admin
+-- (RLS di Section 9/10).
+
+ALTER TABLE public.employees
+  ADD COLUMN IF NOT EXISTS address text,
+  ADD COLUMN IF NOT EXISTS start_date date,
+  -- Jadwal kerja: jam shift & hari kerja (1 = Senin ... 7 = Minggu, ISO).
+  ADD COLUMN IF NOT EXISTS shift_start time,
+  ADD COLUMN IF NOT EXISTS shift_end time,
+  ADD COLUMN IF NOT EXISTS work_days smallint[] NOT NULL DEFAULT '{1,2,3,4,5,6}',
+  -- Aturan absensi: masuk lewat dari toleransi dihitung terlambat.
+  ADD COLUMN IF NOT EXISTS late_tolerance_minutes integer NOT NULL DEFAULT 15,
+  -- Insentif tetap per bulan (di luar gaji pokok & komisi).
+  ADD COLUMN IF NOT EXISTS monthly_incentive numeric NOT NULL DEFAULT 0;
+
+ALTER TABLE public.employees
+  DROP CONSTRAINT IF EXISTS employees_name_not_blank,
+  DROP CONSTRAINT IF EXISTS employees_role_check,
+  DROP CONSTRAINT IF EXISTS employees_base_salary_check,
+  DROP CONSTRAINT IF EXISTS employees_commission_rate_check,
+  DROP CONSTRAINT IF EXISTS employees_monthly_incentive_check,
+  DROP CONSTRAINT IF EXISTS employees_late_tolerance_check,
+  DROP CONSTRAINT IF EXISTS employees_shift_pair_check,
+  DROP CONSTRAINT IF EXISTS employees_work_days_check,
+  ADD CONSTRAINT employees_name_not_blank CHECK (btrim(name) <> ''),
+  ADD CONSTRAINT employees_role_check CHECK (role IN ('operator', 'kasir', 'admin')),
+  ADD CONSTRAINT employees_base_salary_check CHECK (base_salary >= 0),
+  ADD CONSTRAINT employees_commission_rate_check CHECK (commission_rate BETWEEN 0 AND 100),
+  ADD CONSTRAINT employees_monthly_incentive_check CHECK (monthly_incentive >= 0),
+  ADD CONSTRAINT employees_late_tolerance_check CHECK (late_tolerance_minutes BETWEEN 0 AND 240),
+  ADD CONSTRAINT employees_shift_pair_check CHECK ((shift_start IS NULL) = (shift_end IS NULL)),
+  ADD CONSTRAINT employees_work_days_check CHECK (work_days <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[]);
+
+COMMENT ON COLUMN public.employees.role IS 'Posisi kerja: operator, kasir, atau admin.';
+COMMENT ON COLUMN public.employees.work_days IS 'Hari kerja ISO: 1 = Senin ... 7 = Minggu.';
+COMMENT ON COLUMN public.employees.late_tolerance_minutes IS
+  'Menit toleransi setelah shift_start sebelum absensi masuk dihitung terlambat.';
+COMMENT ON COLUMN public.employees.monthly_incentive IS 'Insentif tetap per bulan (Rp).';
+
+-- Filter umum di halaman Karyawan: per cabang + status.
+CREATE INDEX IF NOT EXISTS idx_employees_store_active ON public.employees (store_id, is_active);
 
 -- ============================================
 -- END OF SETUP

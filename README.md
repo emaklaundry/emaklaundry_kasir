@@ -1,135 +1,105 @@
-# Laundry Management System (Web Kasir)
+# Emak Laundry — Web Kasir
 
-**Versi:** 2.7.0  
-**Update terakhir:** 26 Desember 2024  
-**Status:** ✅ Production Ready
+Aplikasi kasir dan manajemen laundry multi-cabang berbasis web (PWA). Dipakai kasir untuk transaksi
+harian dan admin untuk mengelola pelanggan, layanan, stok, karyawan, aset, pengeluaran, dan laporan.
 
----
-
-Sistem manajemen laundry berbasis web untuk kasir dan admin. Mendukung transaksi (kiloan/satuan), sistem saldo diskon pelanggan, inventaris, aset, dan laporan keuangan multi-cabang. Dibangun dengan fokus pada performa, keamanan (RLS), dan pengalaman pengguna mobile (PWA).
+**Versi:** 2.7.1 · **Diperbarui:** 26 November 2026
 
 ---
 
-## 📚 Documentation
+## Fitur
 
-Dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
+**Kasir**
 
-- **[FINAL_AUDIT_REPORT.md](./docs/FINAL_AUDIT_REPORT.md)** - Laporan audit terakhir (v2.7.0)
-- **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Panduan deployment production
-- **[Database Setup](./supabase/setup/README.md)** - Script setup database & seed data
-- **[MAINTENANCE_MODE.md](./docs/MAINTENANCE_MODE.md)** - Panduan mode maintenance
+- Transaksi kiloan, satuan, sepatu, dan karpet (per meter), dengan catatan per item.
+- Pembayaran Tunai, QRIS dinamis, dan Transfer Bank. Total = jumlah harga layanan; tidak ada diskon,
+  pajak, atau pembulatan.
+- Status pesanan Diproses → Siap Diambil → Selesai, struk cetak, dan pesan WhatsApp ke pelanggan.
+- Login karyawan dengan memilih nama + PIN 6 angka.
 
----
+**Admin & Super Admin**
 
-## ✨ Fitur Utama
+- Pelanggan, layanan, inventaris (stok minimum, stock opname, resep pemakaian bahan), dan pengeluaran
+  (termasuk tagihan bulanan).
+- Karyawan: profil, cabang, jadwal shift & hari kerja, toleransi terlambat, gaji/komisi/insentif, dan
+  akun login PIN. Absensi masuk/pulang.
+- Aset & jadwal perawatan, laporan keuangan & performa kasir, log audit, backup & restore Excel.
+- PIN Supervisor untuk menyetujui aksi sensitif Kasir.
+- Multi-cabang: data dipisah per cabang dengan Row Level Security; Super Admin melihat semua cabang.
 
-- ✅ **Smart Transaction**: Kiloan, Satuan, Karpet, Sepatu dengan perhitungan otomatis
-- ✅ **Sistem Saldo Diskon**: Otomatis simpan kembalian receh (< Rp 500) ke saldo pelanggan
-- ✅ **Multi-Cabang**: Isolasi data per store dengan Super Admin overview
-- ✅ **Mobile Optimized**: Tampilan responsif sempurna untuk kasir HP/Tablet
-- ✅ **Laporan Lengkap**: Pendapatan, performa kasir, layanan terlaris, ekspor Excel
-- ✅ **Manajemen Aset**: Jadwal maintenance & tracking nilai aset
-- ✅ **PWA Ready**: Installable, offline support, auto-update
-- ✅ **Secure**: proteksi Row Level Security (RLS) & Role Based Access
-
----
-
-## 📝 Changelog
-
-### v2.7.0 (26 Desember 2024) - "Polished Production Release"
-
-**✨ New Features & Logic Improvements**
-
-- **Smart Discount Balance System**:
-  - Otomatis konversi kembalian receh (rounding < Rp 500) menjadi saldo pelanggan
-  - Pelanggan bisa pakai saldo diskon tersimpan untuk transaksi berikutnya
-  - Utilitas recalculation otomatis untuk sinkronisasi histori transaksi
-- **Enhanced Database Functions**:
-  - Updated RPC `get_public_services` dengan field `wash_type`
-  - Consolidated setup script (`0.complete_setup.sql`) yang lebih robust dan clean
-  - Fixed `updatedAt` trigger logic pada inventory
-
-**📱 UI/UX Refinements**
-
-- **Mobile Transaction View**: Fixed card collapsing & double rendering issues
-- **Responsive Layout**: Improved padding & spacing pada layar kecil
-- **Banner Info**: Fixed format currency pada banner saldo diskon (Rp X instead of %)
-
-**🔧 Technical**
-
-- **Lint Free**: 0 ESLint errors
-- **Clean Code**: Removed redundant SQL functions & triggers
-- **Build Optimized**: Bundle size 938KB (Gzipped)
+Panduan pemakaian untuk pengguna ada di dalam aplikasi: menu **Bantuan & Panduan → Bantuan / Tutorial**.
 
 ---
 
-### v2.6.0 (24 Desember 2024)
+## Mulai cepat (development)
 
-**Critical Fixes**
-
-- **Reports Accuracy**: Perbaikan perhitungan revenue menggunakan sales value
-- **Data Integrity**: Service ID mapping fix untuk import Excel
-- **Audit Success**: Lolos comprehensive audit dengan score 99/100
-
----
-
-## 📂 Project Structure
-
-```
-emaklaundry_kasir/
-├── supabase/             # 💾 Semua backend (lihat supabase/setup/README.md)
-│   ├── config.toml       # Pengaturan Supabase CLI
-│   ├── functions/        # Edge Functions (login karyawan, buat pengguna, dll.)
-│   ├── setup/            # SQL Setup (Schema + Triggers)
-│   │   ├── 0.complete_setup.sql    # MAIN SCRIPT (Run this first)
-│   │   └── 1.seed_data_awal.sql    # Basic Seed (Stores, Users)
-│   ├── seeds/            # Data Seeds (Services, Inventory)
-│   │   └── 00_full_seed_bundle.sql # ALL SEEDS MERGED (Run this second)
-│   └── backup/           # Cadangan data (xlsx/csv/pdf)
-├── src/                  # 💻 Source Code
-│   ├── components/      # UI Components (Modals, Widgets)
-│   ├── pages/           # Application Pages
-│   ├── hooks/           # Custom React Hooks
-│   ├── utils/           # Logic Utilities (Discount, Format)
-│   └── types/           # TypeScript Definitions
-└── public/               # Static Assets
-```
-
----
-
-## 🚀 Quick Start (Database Setup)
-
-**1. Setup Schema & Functions:**
-Copy & Run isi file ini di Supabase SQL Editor:
+Butuh Node.js 20+ dan akses ke project Supabase.
 
 ```bash
-supabase/setup/0.complete_setup.sql
+npm install
+cp .env.example .env    # isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY
+npm run dev             # http://localhost:3000
 ```
 
-**2. Isi Data Awal (Wajib):**
+Database baru dari nol: ikuti [supabase/setup/README.md](./supabase/setup/README.md) bagian 4.
 
-```bash
-supabase/setup/1.seed_data_awal.sql
-```
-
-**3. Isi Data Pelengkap (Services, dll):**
-
-```bash
-supabase/seeds/00_full_seed_bundle.sql
-```
+| Perintah | Kegunaan |
+|---|---|
+| `npm run dev` | Server pengembangan |
+| `npm run build` | Build production ke `dist/` |
+| `npm run type-check` | Pemeriksaan TypeScript |
+| `npm run lint` | ESLint |
+| `npm test` | Semua tes (Vitest) |
+| `npm run test:all` | Cek format + lint + tes, jalankan sebelum commit |
 
 ---
 
-## 🛠️ Tech Stack
+## Dokumentasi
 
-- **Frontend**: React 19, Vite 6, Tailwind CSS 3
-- **Language**: TypeScript 5.6
-- **State**: TanStack Query 5 (Server State)
-- **Database**: Supabase (PostgreSQL 15)
-- **Testing**: Vitest, React Testing Library
+| Untuk | Dokumen |
+|---|---|
+| Semua dokumentasi | [docs/00-INDEX.md](./docs/00-INDEX.md) |
+| Database & Edge Functions | [supabase/setup/README.md](./supabase/setup/README.md) |
+| Deploy & rilis | [docs/deployment/DEPLOYMENT.md](./docs/deployment/DEPLOYMENT.md) |
+| Struktur folder | [docs/STRUCTURE.md](./docs/STRUCTURE.md) |
+| Kontribusi | [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) |
+| Tes | [src/\_\_tests\_\_/README.md](./src/__tests__/README.md) |
 
 ---
 
-## 📞 Support
+## Teknologi
 
-Kontak tim teknis di [mhmdnvn18@gmail.com](mailto:mhmdnvn18@gmail.com) untuk pelaporan bug atau request fitur.
+- **Frontend:** React 18, React Router 7, Vite 6, Tailwind CSS 3, PWA (vite-plugin-pwa)
+- **Bahasa:** TypeScript 5.8 (target ES2024)
+- **Data:** TanStack Query 5, Supabase JS 2
+- **Backend:** Supabase (PostgreSQL 17, Auth, Edge Functions Deno)
+- **Hosting:** Vercel
+- **Tes:** Vitest 4, React Testing Library
+
+---
+
+## Perubahan
+
+### Belum dirilis (26 November 2026)
+
+- **Dihapus:** saldo diskon pelanggan (pembulatan tunai ke saldo), Pajak (%) & Diskon (%) di
+  Pengaturan, diskon manual di transaksi, dan izin pengguna "Bisa Beri Diskon".
+- **Baru:** halaman Bantuan / Tutorial dengan pencarian dan tur interaktif; menu samping dikelompokkan
+  menjadi 6 kategori; PIN Supervisor di Pengaturan; manajemen karyawan lengkap (profil, jadwal,
+  kompensasi, akun login) dengan filter dan tampilan kartu di ponsel.
+- **Diperbaiki:** reset PIN karyawan yang sudah punya login; menonaktifkan karyawan yang punya login;
+  tampilan responsif (sidebar menjadi laci di bawah 1024px, tabel bisa digeser, safe-area ponsel).
+- **Keamanan:** RLS untuk tabel karyawan/absensi/kasbon/gaji; fungsi admin tidak bisa dipanggil tanpa
+  login.
+- **Langkah rilis database:** lihat [supabase/setup/README.md](./supabase/setup/README.md) bagian 5.
+
+### v2.7.0 (26 Desember 2024)
+
+Fungsi RPC `get_public_services` menambah `wash_type`, skrip setup digabung menjadi
+`0.complete_setup.sql`, dan perbaikan tampilan transaksi di ponsel.
+
+---
+
+## Kontak
+
+Bug atau permintaan fitur: [mhmdnvn18@gmail.com](mailto:mhmdnvn18@gmail.com).
