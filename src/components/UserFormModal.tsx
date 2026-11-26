@@ -126,7 +126,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             autoComplete="name"
             value={formData.name}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -144,7 +144,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                 inputMode="email"
                 value={credentials.email}
                 onChange={(e) => setCredentials((prev) => ({ ...prev, email: e.target.value }))}
-                className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                className="form-input"
                 required
               />
             </div>
@@ -164,7 +164,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                     setCredentials((prev) => ({ ...prev, password: e.target.value }))
                   }
                   aria-describedby="user-password-help"
-                  className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pr-28 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  className="form-input pr-28"
                   required
                 />
                 <button
@@ -195,7 +195,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             id="role"
             value={formData.role}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
+            className="form-input"
             disabled={isEditingSuperAdmin}
             aria-describedby="role-help"
           >
@@ -230,7 +230,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
               value={formData.storeId}
               onChange={handleChange}
               disabled={lockStore}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
+              className="form-input"
               required
             >
               <option value="">Pilih Cabang</option>

@@ -576,7 +576,7 @@ const AssetsPage: React.FC = () => {
                         <button
                           onClick={() => handleOpenSchedule(asset)}
                           title="Jadwal Perawatan"
-                          className="p-2 rounded-md text-purple-600 hover:text-purple-900 dark:text-purple-500 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="p-2 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
                           <CalendarIcon className="w-5 h-5" />
                         </button>
@@ -682,7 +682,7 @@ const AssetsPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => handleOpenSchedule(asset)}
-                    className="flex items-center gap-1 py-1 px-3 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300"
+                    className="flex items-center gap-1 py-1 px-3 rounded-md bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
                   >
                     <CalendarIcon className="w-4 h-4" /> Jadwal
                   </button>

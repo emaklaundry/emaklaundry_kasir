@@ -81,7 +81,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="name"
             value={formData.name}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -94,7 +94,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="category"
             value={formData.category}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           >
             {Object.values(ServiceCategory).map((cat) => (
               <option key={cat} value={cat}>
@@ -112,7 +112,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="washType"
             value={formData.washType}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           >
             {Object.values(WashType).map((type) => (
               <option key={type} value={type}>
@@ -132,7 +132,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
               id="price"
               value={formatRupiah(formData.price)}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -146,7 +146,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
               id="unit"
               value={formData.unit}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -162,7 +162,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="durationDays"
             value={formData.durationDays}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>

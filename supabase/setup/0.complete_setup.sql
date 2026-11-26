@@ -2502,5 +2502,80 @@ COMMENT ON COLUMN public.profiles.role IS
   'Peran akun: Operator, Kasir, Admin, atau Super Admin. Lihat src/config/permissions.ts.';
 
 -- ============================================
+-- SECTION 15: ABSENSI OTOMATIS DARI LOGIN
+-- Jam masuk  = aktivitas pertama akun PIN karyawan hari itu (WIB).
+-- Jam pulang = saat menekan "Keluar"; bila tidak, aktivitas terakhir (last_seen_at).
+-- Admin tetap bisa mengoreksi manual (sumber 'manual' tidak ditimpa otomatis).
+-- ============================================
+
+ALTER TABLE public.attendance
+  ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS clock_in_source TEXT,
+  ADD COLUMN IF NOT EXISTS clock_out_source TEXT;
+
+ALTER TABLE public.attendance DROP CONSTRAINT IF EXISTS attendance_clock_in_source_check;
+ALTER TABLE public.attendance ADD CONSTRAINT attendance_clock_in_source_check
+  CHECK (clock_in_source IS NULL OR clock_in_source IN ('auto', 'manual'));
+ALTER TABLE public.attendance DROP CONSTRAINT IF EXISTS attendance_clock_out_source_check;
+ALTER TABLE public.attendance ADD CONSTRAINT attendance_clock_out_source_check
+  CHECK (clock_out_source IS NULL OR clock_out_source IN ('logout', 'manual'));
+
+COMMENT ON COLUMN public.attendance.last_seen_at IS
+  'Aktivitas terakhir karyawan di aplikasi hari itu; dipakai sebagai jam pulang bila tidak menekan Keluar.';
+
+CREATE OR REPLACE FUNCTION public.record_attendance(p_event TEXT DEFAULT 'activity')
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_employee_id UUID;
+  v_now TIMESTAMPTZ := now();
+  v_date DATE := (now() AT TIME ZONE 'Asia/Jakarta')::date;
+BEGIN
+  IF p_event IS NULL OR p_event NOT IN ('activity', 'logout') THEN
+    RAISE EXCEPTION 'Invalid attendance event';
+  END IF;
+
+  -- Hanya akun login milik karyawan aktif; akun lain diabaikan.
+  SELECT p.employee_id INTO v_employee_id
+  FROM public.profiles p
+  JOIN public.employees e ON e.id = p.employee_id
+  WHERE p.id = (SELECT auth.uid())
+    AND e.is_active;
+
+  IF v_employee_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  IF p_event = 'logout' THEN
+    UPDATE public.attendance a
+    SET clock_out = v_now,
+        clock_out_source = 'logout',
+        last_seen_at = v_now
+    WHERE a.employee_id = v_employee_id
+      AND a.date = v_date
+      AND a.clock_in IS NOT NULL
+      AND a.clock_out_source IS DISTINCT FROM 'manual';
+    RETURN;
+  END IF;
+
+  INSERT INTO public.attendance AS a (employee_id, date, clock_in, clock_in_source, last_seen_at)
+  VALUES (v_employee_id, v_date, v_now, 'auto', v_now)
+  ON CONFLICT (employee_id, date) DO UPDATE SET
+    clock_in = COALESCE(a.clock_in, EXCLUDED.clock_in),
+    clock_in_source = CASE WHEN a.clock_in IS NULL THEN 'auto' ELSE a.clock_in_source END,
+    last_seen_at = GREATEST(COALESCE(a.last_seen_at, EXCLUDED.last_seen_at), EXCLUDED.last_seen_at),
+    -- Kembali bekerja setelah menekan Keluar: jam pulang dibuka lagi.
+    clock_out = CASE WHEN a.clock_out_source = 'logout' THEN NULL ELSE a.clock_out END,
+    clock_out_source = CASE WHEN a.clock_out_source = 'logout' THEN NULL ELSE a.clock_out_source END;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.record_attendance(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.record_attendance(TEXT) TO authenticated;
+
+-- ============================================
 -- END OF SETUP
 -- ============================================

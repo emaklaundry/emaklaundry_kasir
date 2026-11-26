@@ -95,7 +95,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="name"
               value={formData.name}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -109,7 +109,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="serialNumber"
               value={formData.serialNumber}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             />
           </div>
         </div>
@@ -124,7 +124,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="purchaseDate"
               value={formData.purchaseDate}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -138,7 +138,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="purchaseCost"
               value={formatRupiah(formData.purchaseCost)}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -152,7 +152,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
             id="status"
             value={formData.status}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           >
             <option value="Active">Aktif</option>
             <option value="Under Maintenance">Dalam Perbaikan</option>

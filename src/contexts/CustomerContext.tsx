@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Customer } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { escapeLikePattern } from '../utils/sanitize';
+import { normalizePhone } from '../utils/phone';
 
 export interface CustomerFilter {
   page?: number;
@@ -38,17 +39,57 @@ export async function fetchCustomers(
   return { data: customers, count: count || 0 };
 }
 
+// Kode Postgres untuk pelanggaran indeks unik (phone, storeId).
+const UNIQUE_VIOLATION = '23505';
+
+function toFriendlyCustomerError(error: { code?: string; message: string }, phone: string | null) {
+  if (error.code === UNIQUE_VIOLATION) {
+    const label = phone ? `Nomor telepon ${phone}` : 'Nomor telepon ini';
+    return new Error(`${label} sudah terdaftar untuk pelanggan lain di cabang ini.`);
+  }
+  return error;
+}
+
+/**
+ * Cari pelanggan di satu cabang berdasarkan nomor HP (format apa pun).
+ * Indeks unik (phone, storeId) menjamin paling banyak satu hasil.
+ */
+export async function findCustomerByPhone(
+  phone: string | null | undefined,
+  storeId: string,
+): Promise<Customer | null> {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return null;
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('storeId', storeId)
+    .eq('phone', normalized)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    ...data,
+    phone: data.phone ?? undefined,
+    address: data.address ?? undefined,
+    notes: data.notes ?? undefined,
+    storeId: data.storeId ?? undefined,
+    createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+  } as unknown as Customer;
+}
+
 export function useCustomerMutations() {
   const queryClient = useQueryClient();
 
   const addCustomer = useMutation({
     mutationFn: async (customer: Omit<Customer, 'id'>) => {
       // Convert undefined to null for Supabase
+      const phone = normalizePhone(customer.phone) || null;
       const dbCustomer = {
         ...customer,
         address: customer.address ?? null,
         notes: customer.notes ?? null,
-        phone: customer.phone ?? null,
+        phone,
         storeId: customer.storeId ?? null,
       };
       const { data, error } = await supabase
@@ -56,7 +97,7 @@ export function useCustomerMutations() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert([dbCustomer as any])
         .select();
-      if (error) throw error;
+      if (error) throw toFriendlyCustomerError(error, phone);
       return data?.[0] || null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
@@ -70,12 +111,15 @@ export function useCustomerMutations() {
       for (const key in data) {
         dbData[key] = (data as Record<string, unknown>)[key] ?? null;
       }
+      if ('phone' in dbData) {
+        dbData.phone = normalizePhone(dbData.phone as string | null) || null;
+      }
       const { data: updated, error } = await supabase
         .from('customers')
         .update(dbData)
         .eq('id', id)
         .select();
-      if (error) throw error;
+      if (error) throw toFriendlyCustomerError(error, (dbData.phone as string | null) ?? null);
       return updated?.[0] || null;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),

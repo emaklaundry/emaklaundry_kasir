@@ -4,6 +4,7 @@ import { useEmployees } from '../../contexts/useEmployees';
 import { useUsers } from '../../contexts/UserContext';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import Modal from '../../components/Modal';
 import EmployeeFormModal from '../../components/employees/EmployeeFormModal';
 import { Employee, EmployeeFormData, EmployeeRole } from '../../types/hrm';
@@ -15,6 +16,7 @@ import {
   UserIcon,
   ArrowDownIcon,
   SearchIcon,
+  SpinnerIcon,
 } from '../../components/icons';
 import { formatRupiah } from '../../utils/formatting';
 import { EMPLOYEE_ROLE_LABELS, formatSchedule } from '../../utils/employeeSchedule';
@@ -63,6 +65,7 @@ const EmployeesPage: React.FC = () => {
   const { users } = useUsers();
   const { currentUser, stores, selectedStoreId } = useAppContext();
   const { addToast } = useToasts();
+  const [confirm, confirmDialog] = useConfirmDialog();
 
   const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
   const ownStoreId = currentUser?.storeId ?? '';
@@ -175,9 +178,11 @@ const EmployeesPage: React.FC = () => {
     const nextActive = !employee.isActive;
     if (
       !nextActive &&
-      !window.confirm(
-        `Nonaktifkan ${employee.name}? Login-nya ditutup, data dan riwayatnya tetap tersimpan.`,
-      )
+      !(await confirm({
+        title: 'Nonaktifkan karyawan',
+        message: `Nonaktifkan ${employee.name}? Login-nya ditutup, data dan riwayatnya tetap tersimpan.`,
+        confirmText: 'Nonaktifkan',
+      }))
     )
       return;
     try {
@@ -197,8 +202,12 @@ const EmployeesPage: React.FC = () => {
   };
 
   const handleRevokeLogin = async (employee: Employee) => {
-    if (!window.confirm(`Cabut akses login ${employee.name}? PIN-nya tidak bisa dipakai lagi.`))
-      return;
+    const ok = await confirm({
+      title: 'Cabut akses login',
+      message: `Cabut akses login ${employee.name}? PIN-nya tidak bisa dipakai lagi.`,
+      confirmText: 'Cabut akses',
+    });
+    if (!ok) return;
     setIsSaving(true);
     try {
       await revokeEmployeeLogin(employee.id);
@@ -215,9 +224,11 @@ const EmployeesPage: React.FC = () => {
 
   const handleDelete = async (employee: Employee) => {
     if (
-      !window.confirm(
-        `Hapus permanen ${employee.name}? Riwayat absensi, kasbon, dan gaji karyawan ini ikut terhapus.\n\nUntuk karyawan yang berhenti, gunakan Nonaktifkan.`,
-      )
+      !(await confirm({
+        title: 'Hapus karyawan',
+        message: `Hapus permanen ${employee.name}? Riwayat absensi, kasbon, dan gaji karyawan ini ikut terhapus.\n\nUntuk karyawan yang berhenti, gunakan Nonaktifkan.`,
+        confirmText: 'Hapus permanen',
+      }))
     )
       return;
     try {
@@ -336,7 +347,7 @@ const EmployeesPage: React.FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari nama atau nomor HP"
-            className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="form-input py-2.5 pl-10 pr-3"
           />
         </div>
         {isSuperAdmin && (
@@ -348,7 +359,7 @@ const EmployeesPage: React.FC = () => {
               id="employee-store-filter"
               value={storeFilter}
               onChange={(e) => setStoreFilter(e.target.value)}
-              className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white md:w-48"
+              className="form-input px-3 py-2.5 md:w-48"
             >
               <option value="all">Semua cabang</option>
               {stores.map((store) => (
@@ -386,7 +397,7 @@ const EmployeesPage: React.FC = () => {
       <div id="employees-list">
         {isLoading ? (
           <div className="py-12 text-center" role="status">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-blue-500 border-t-transparent" />
+            <SpinnerIcon className="h-8 w-8 mx-auto block text-brand-blue-600 dark:text-brand-blue-400" />
             <p className="mt-3 text-slate-500">Memuat data karyawan…</p>
           </div>
         ) : visibleEmployees.length === 0 ? (
@@ -570,6 +581,7 @@ const EmployeesPage: React.FC = () => {
           )}
         </div>
       </Modal>
+      {confirmDialog}
     </div>
   );
 };

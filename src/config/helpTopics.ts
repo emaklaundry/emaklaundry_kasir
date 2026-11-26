@@ -231,11 +231,13 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     id: 'attendance',
     section: 'SDM & Aset',
-    title: 'Mencatat absensi',
-    summary: 'Jam masuk dan pulang karyawan setiap hari.',
+    title: 'Absensi otomatis dari login',
+    summary: 'Jam masuk dan pulang karyawan tercatat sendiri dari akun PIN-nya.',
     steps: [
-      'Buka Absensi dan pilih tanggal.',
-      'Tekan Masuk saat karyawan datang dan Pulang saat karyawan selesai bekerja.',
+      'Karyawan login dengan PIN: pertama kali membuka aplikasi hari itu = jam masuk.',
+      'Karyawan menekan Keluar saat pulang. Jika lupa, jam pulang diambil dari aktivitas terakhirnya.',
+      'Admin membuka Absensi untuk melihat yang hadir, terlambat, atau belum hadir.',
+      'Karyawan tanpa akun login, atau data yang keliru, dicatat lewat tombol Catat Masuk / Catat Pulang.',
     ],
     adminOnly: true,
     link: { to: '/management/attendance', label: 'Buka Absensi' },

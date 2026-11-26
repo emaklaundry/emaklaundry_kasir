@@ -151,7 +151,7 @@ const Header: React.FC<{
                     id="store-filter"
                     value={selectedStoreId}
                     onChange={(e) => setSelectedStoreId(e.target.value)}
-                    className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    className="form-input text-sm p-2"
                   >
                     <option value="all">Semua Cabang</option>
                     {activeStores.map((store) => (
@@ -216,7 +216,7 @@ const Header: React.FC<{
               id="store-filter-mobile"
               value={selectedStoreId}
               onChange={(e) => setSelectedStoreId(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input text-sm p-2"
             >
               <option value="all">Semua Cabang</option>
               {activeStores.map((store) => (

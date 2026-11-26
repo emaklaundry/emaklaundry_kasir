@@ -618,7 +618,7 @@ const TransactionPage: React.FC = () => {
               placeholder="Cari ID, Invoice, Nama, atau No. HP..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-sm sm:text-base rounded-lg block w-full pl-10 p-2 sm:p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input text-sm sm:text-base pl-10 p-2 sm:p-3"
               autoComplete="off"
             />
           </div>
@@ -631,7 +631,7 @@ const TransactionPage: React.FC = () => {
               name="customerFilter"
               value={customerFilter}
               onChange={(e) => setCustomerFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             >
               <option value="all">Semua Pelanggan</option>
               {customers.map((c: Customer) => (
@@ -650,7 +650,7 @@ const TransactionPage: React.FC = () => {
               name="paymentFilter"
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value as PaymentStatus | 'all')}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             >
               <option value="all">Semua St. Bayar</option>
               <option value={PaymentStatus.Paid}>Lunas</option>
@@ -667,7 +667,7 @@ const TransactionPage: React.FC = () => {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             />
           </div>
         </div>

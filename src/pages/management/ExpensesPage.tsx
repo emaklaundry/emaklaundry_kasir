@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { SearchIcon, DownloadIcon, UploadIcon } from '../../components/icons';
+import EmptyState from '../../components/EmptyState';
 import {
   exportExpensesToExcel,
   importExpensesFromExcel,
@@ -514,8 +515,19 @@ const ExpensesPage: React.FC = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center">
-                  Tidak ada data.
+                <td colSpan={7}>
+                  <EmptyState
+                    title={
+                      searchTerm || categoryFilter !== 'all'
+                        ? 'Pengeluaran tidak ditemukan'
+                        : 'Belum ada pengeluaran'
+                    }
+                    description={
+                      searchTerm || categoryFilter !== 'all'
+                        ? 'Coba ubah kata kunci atau kategori.'
+                        : 'Pengeluaran dan pembelian aset yang dicatat akan muncul di sini.'
+                    }
+                  />
                 </td>
               </tr>
             )}

@@ -4,6 +4,11 @@ import { User, Store } from '../types/index';
 import { supabase } from '../utils/supabaseClient';
 import { useStores } from './StoreContext';
 import useToasts from './useToasts'; // 1. IMPOR useToasts
+import {
+  ATTENDANCE_ACTIVITY_EVENTS,
+  ATTENDANCE_PING_INTERVAL_MS,
+  recordAttendance,
+} from '../utils/attendanceTracker';
 
 // Konfigurasi waktu timeout (5 menit)
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 menit = 300000ms
@@ -92,6 +97,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 storeId: data.store_id ?? undefined,
                 createdAt: data.created_at ? new Date(data.created_at) : undefined,
                 isActive: data.isActive ?? false,
+                employeeId: data.employee_id ?? undefined,
               });
 
               // Automatically select the store if the user is bound to one
@@ -133,20 +139,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [addToast]);
 
+  // recordClockOut: hanya "Keluar" yang ditekan karyawan yang dihitung jam pulang.
+  // Logout otomatis karena tidak aktif tidak dihitung; jam pulangnya = aktivitas terakhir.
+  const endSession = useCallback(
+    async (recordClockOut: boolean) => {
+      if (currentUser) {
+        const newLog = {
+          timestamp: new Date().toISOString(),
+          user: currentUser.name ?? null,
+          action: 'Melakukan logout.',
+          storeId: currentUser.storeId ?? null,
+        };
+        supabase.from('audit_logs').insert([newLog]).then();
+        if (recordClockOut && currentUser.employeeId) {
+          await recordAttendance('logout');
+        }
+      }
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+    },
+    [currentUser],
+  );
+
   // Bungkus signOut dengan useCallback agar stabil di dalam useEffect dependency
-  const signOut = useCallback(async () => {
-    if (currentUser) {
-      const newLog = {
-        timestamp: new Date().toISOString(),
-        user: currentUser.name ?? null,
-        action: 'Melakukan logout.',
-        storeId: currentUser.storeId ?? null,
-      };
-      supabase.from('audit_logs').insert([newLog]).then();
-    }
-    await supabase.auth.signOut();
-    setCurrentUser(null);
-  }, [currentUser]);
+  const signOut = useCallback(() => endSession(true), [endSession]);
+
+  // --- ABSENSI OTOMATIS (khusus akun login karyawan) ---
+  const employeeId = currentUser?.employeeId;
+  useEffect(() => {
+    if (!employeeId) return;
+
+    let lastPingAt = 0;
+    const ping = () => {
+      lastPingAt = Date.now();
+      void recordAttendance('activity');
+    };
+    const onActivity = () => {
+      if (Date.now() - lastPingAt >= ATTENDANCE_PING_INTERVAL_MS) ping();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') onActivity();
+    };
+
+    // Membuka aplikasi / login = hadir.
+    ping();
+    ATTENDANCE_ACTIVITY_EVENTS.forEach((event) =>
+      document.addEventListener(event, onActivity, { passive: true }),
+    );
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      ATTENDANCE_ACTIVITY_EVENTS.forEach((event) =>
+        document.removeEventListener(event, onActivity),
+      );
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [employeeId]);
+  // -------------------------
 
   // --- LOGIC AUTO LOGOUT ---
   useEffect(() => {
@@ -156,7 +205,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     let timeoutId: NodeJS.Timeout;
 
     const handleInactivity = () => {
-      signOut();
+      endSession(false);
       addToast('Sesi Anda telah berakhir karena tidak ada aktivitas.', 'info');
     };
 
@@ -181,7 +230,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         document.removeEventListener(event, resetTimer);
       });
     };
-  }, [currentUser, signOut, addToast]);
+  }, [currentUser, endSession, addToast]);
   // -------------------------
 
   // --- AUTO LOGOUT SAAT TUTUP BROWSER/TAB ---

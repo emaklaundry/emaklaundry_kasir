@@ -56,7 +56,7 @@ const WashSettingsRecommendation: React.FC<WashSettingsRecommendationProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-2xl">🧺</span>
         <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">

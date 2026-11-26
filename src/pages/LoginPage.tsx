@@ -104,9 +104,9 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 px-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 dark:bg-zinc-950">
       <div className="w-full max-w-md">
-        <section className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
+        <section className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           <h1
             id="login-heading"
             className="text-xl sm:text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white"
@@ -133,7 +133,7 @@ const LoginPage: React.FC = () => {
                   placeholder="nama@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 transition-all outline-none"
+                  className="form-input px-4 py-3"
                   required
                 />
               </div>
@@ -149,23 +149,19 @@ const LoginPage: React.FC = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 transition-all outline-none"
+                  className="form-input px-4 py-3"
                   required
                 />
               </div>
               {error && (
                 <div
                   role="alert"
-                  className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg"
+                  className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800/60 dark:bg-red-900/20"
                 >
                   <p className="text-sm text-red-700 dark:text-red-400 font-medium">{error}</p>
                 </div>
               )}
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-500 dark:hover:to-blue-600 text-white font-semibold py-3.5 rounded-lg shadow-md hover:shadow-lg disabled:from-blue-400 disabled:to-blue-500 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200"
-                disabled={loading}
-              >
+              <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading}>
                 {loading ? 'Memproses...' : 'Masuk'}
               </button>
             </form>
@@ -254,14 +250,14 @@ const LoginPage: React.FC = () => {
                     setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
                     setError(null);
                   }}
-                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-all outline-none"
+                  className="form-input px-4 py-3"
                   required
                 />
               </div>
               {error && (
                 <div
                   role="alert"
-                  className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg"
+                  className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800/60 dark:bg-red-900/20"
                 >
                   <p className="text-sm text-red-700 dark:text-red-400 font-medium">{error}</p>
                 </div>

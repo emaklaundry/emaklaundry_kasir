@@ -18,6 +18,7 @@ import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerCon
 import { useTransactions } from '../../contexts/TransactionContext';
 import useAppContext from '../../contexts/useAppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
+import { normalizePhone } from '../../utils/phone';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import { useSortableData } from '../../hooks/useSortableData';
@@ -157,16 +158,9 @@ const CustomersPage: React.FC = () => {
       return;
     }
     // Normalisasi nomor telepon hanya jika diisi
-    let phone = customerData.phone?.replace(/\D/g, '') || '';
+    // Format 08xxx sama dengan data yang sudah tersimpan, agar cek duplikat akurat.
+    const phone = normalizePhone(customerData.phone);
     if (phone) {
-      if (phone.startsWith('0')) {
-        phone = '62' + phone.substring(1);
-      } else if (phone.startsWith('62')) {
-        // sudah benar
-      } else if (phone.startsWith('8')) {
-        phone = '62' + phone;
-      }
-
       // Check for duplicate phone number hanya jika phone diisi
       const existingCustomers = customers.filter(
         (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,

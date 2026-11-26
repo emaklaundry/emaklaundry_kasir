@@ -61,7 +61,7 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             id="date"
             value={formData.date.toISOString().split('T')[0]}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -75,7 +75,7 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             id="description"
             value={formData.description}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -89,7 +89,7 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             id="cost"
             value={formatRupiah(formData.cost)}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>

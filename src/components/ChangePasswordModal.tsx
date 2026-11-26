@@ -183,7 +183,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               value={formData.currentPassword}
               onChange={handleChange}
               disabled={isChanging}
-              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg block w-full p-3 input-mobile disabled:opacity-50"
+              className="form-input input-mobile"
               placeholder="Masukkan password lama"
               autoComplete="current-password"
             />
@@ -210,7 +210,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               value={formData.newPassword}
               onChange={handleChange}
               disabled={isChanging}
-              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg block w-full p-3 input-mobile disabled:opacity-50"
+              className="form-input input-mobile"
               placeholder="Minimal 6 karakter"
               autoComplete="new-password"
             />
@@ -238,7 +238,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               value={formData.confirmPassword}
               onChange={handleChange}
               disabled={isChanging}
-              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg block w-full p-3 input-mobile disabled:opacity-50"
+              className="form-input input-mobile"
               placeholder="Ketik ulang password baru"
               autoComplete="new-password"
             />

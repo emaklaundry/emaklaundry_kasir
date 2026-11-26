@@ -72,7 +72,6 @@ describe('EmployeesPage', () => {
   beforeEach(() => {
     updateEmployee.mockClear();
     syncEmployeeLogin.mockClear();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   const table = () => screen.getByRole('table');
@@ -110,6 +109,9 @@ describe('EmployeesPage', () => {
     render(<EmployeesPage />, { wrapper: MemoryRouter });
     const row = within(table()).getByText('Siti Aminah').closest('tr')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Nonaktifkan' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Nonaktifkan karyawan' });
+    expect(updateEmployee).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Nonaktifkan' }));
     await waitFor(() => expect(syncEmployeeLogin).toHaveBeenCalledWith('e1'));
     expect(updateEmployee).toHaveBeenCalledWith('e1', { isActive: false });
   });

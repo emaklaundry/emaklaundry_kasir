@@ -276,8 +276,10 @@ const DocumentationPage: React.FC = () => {
             <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700 sm:col-span-2">
               <h3 className="font-bold text-slate-900 dark:text-white">Absensi</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Di menu <strong>Absensi</strong>, pilih tanggal lalu catat jam Masuk dan Pulang
-                setiap karyawan.
+                Absensi tercatat otomatis dari login PIN karyawan: jam masuk saat pertama membuka
+                aplikasi hari itu, jam pulang saat menekan Keluar (atau aktivitas terakhirnya bila
+                lupa). Di menu <strong>Absensi</strong> admin melihat rekapnya, termasuk yang
+                terlambat, dan bisa mengoreksi secara manual.
               </p>
             </div>
           </div>
@@ -1007,11 +1009,11 @@ v           v
                 </ul>
               </div>
 
-              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800">
-                <h4 className="font-bold text-purple-900 dark:text-purple-100">
+              <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded border border-sky-200 dark:border-sky-800">
+                <h4 className="font-bold text-sky-900 dark:text-sky-100">
                   Tahap 3 (Expand - 3 Phase)
                 </h4>
-                <ul className="text-sm text-purple-800 dark:text-purple-200 mt-2 space-y-1">
+                <ul className="text-sm text-sky-800 dark:text-sky-200 mt-2 space-y-1">
                   <li>• Jika mesin &gt;8 unit</li>
                   <li>• Ganti Main MCB jadi 4-Pole</li>
                   <li>• Ganti Busbar Sisir 3 Phase</li>

@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           {/* Header dengan toggle button */}
           <div className="flex items-center justify-between mb-6">
             <NavLink to="/" className="flex items-center group">
-              <span className="self-center text-2xl font-bold bg-gradient-to-r from-brand-blue-600 to-brand-blue-400 bg-clip-text text-transparent dark:from-brand-blue-400 dark:to-brand-blue-300">
+              <span className="self-center text-2xl font-bold text-brand-blue-600 dark:text-brand-blue-400">
                 Laundry POS
               </span>
             </NavLink>

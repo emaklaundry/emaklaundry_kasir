@@ -8,8 +8,7 @@ import {
   setMySupervisorPin,
 } from '../utils/supervisorApproval';
 
-const inputClass =
-  'block w-full rounded-lg border border-slate-300 bg-white p-3 text-base text-slate-900 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white';
+const inputClass = 'form-input';
 
 /**
  * Admin / Super Admin mengatur PIN supervisor miliknya.

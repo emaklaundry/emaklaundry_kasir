@@ -10,9 +10,8 @@ import {
   validateEmployeeForm,
 } from '../../utils/employeeSchedule';
 
-const inputClass =
-  'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white';
-const labelClass = 'mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300';
+const inputClass = 'form-input';
+const labelClass = 'form-label';
 
 interface EmployeeFormModalProps {
   isOpen: boolean;

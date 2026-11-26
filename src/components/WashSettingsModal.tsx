@@ -54,7 +54,7 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
               id="wash-type-select"
               value={selectedWashType}
               onChange={(e) => setSelectedWashType(e.target.value as WashType)}
-              className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             >
               {washTypes.map((type) => (
                 <option key={type} value={type}>
@@ -80,7 +80,7 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
               id="machine-select"
               value={selectedMachineId}
               onChange={(e) => setSelectedMachineId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             >
               {washingMachines.map((machine) => (
                 <option key={machine.id} value={machine.id}>

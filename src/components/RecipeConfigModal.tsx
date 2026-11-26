@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { XIcon, CheckCircleIcon } from './icons';
 import { InventoryItem, InventoryRecipe } from '../types';
 import { useRecipes, useRecipeMutations } from '../contexts/InventoryRecipeContext';
+import useToasts from '../contexts/useToasts';
 
 interface RecipeConfigModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
 }) => {
   const { data: recipes = [], isLoading: loadingRecipes } = useRecipes(storeId);
   const { upsertRecipe, isLoading: saving } = useRecipeMutations();
+  const { addToast } = useToasts();
   const [prevRecipes, setPrevRecipes] = useState(recipes);
   const [recipeValues, setRecipeValues] = useState<Record<string, string>>({});
 
@@ -39,11 +41,13 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
     setRecipeValues((prev) => ({ ...prev, [itemId]: value }));
   };
 
-  const handleSave = async (itemId: string) => {
+  /** Mengembalikan `true` bila resep berhasil disimpan. */
+  const handleSave = async (itemId: string): Promise<boolean> => {
     const usagePerKg = parseFloat(recipeValues[itemId] || '0');
+    const itemName = inventoryItems.find((i) => i.id === itemId)?.name ?? 'item';
     if (isNaN(usagePerKg) || usagePerKg < 0) {
-      alert('Masukkan nilai yang valid');
-      return;
+      addToast(`Takaran ${itemName} harus berupa angka 0 atau lebih.`, 'error');
+      return false;
     }
 
     try {
@@ -52,19 +56,26 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
         usagePerKg,
         storeId,
       });
+      return true;
     } catch (error) {
       console.error('Error saving recipe:', error);
-      alert('Gagal menyimpan resep');
+      addToast(`Gagal menyimpan resep ${itemName}. Coba lagi.`, 'error');
+      return false;
     }
   };
 
   const handleSaveAll = async () => {
+    let allSaved = true;
     for (const item of inventoryItems) {
       if (recipeValues[item.id]) {
-        await handleSave(item.id);
+        allSaved = (await handleSave(item.id)) && allSaved;
       }
     }
-    onClose();
+    // Modal tetap terbuka bila ada yang gagal, supaya isian bisa diperbaiki.
+    if (allSaved) {
+      addToast('Resep tersimpan.', 'success');
+      onClose();
+    }
   };
 
   // Default recommendations

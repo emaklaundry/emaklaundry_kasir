@@ -6,7 +6,12 @@ import { supabase } from '../../utils/supabaseClient';
 import { SpinnerIcon } from '../../components/icons';
 import SuccessModal from '../../components/SuccessModal';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
+import {
+  fetchCustomers,
+  findCustomerByPhone,
+  useCustomerMutations,
+} from '../../contexts/CustomerContext';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import useAppContext from '../../contexts/useAppContext';
@@ -47,6 +52,7 @@ const NewTransactionPage: React.FC = () => {
     ? customersData
     : (customersData?.data ?? []);
   const { addCustomer } = useCustomerMutations();
+  const [confirm, confirmDialog] = useConfirmDialog();
   const { services } = useServices();
   const { currentUser, selectedStoreId } = useAppContext();
   const { addAuditLog } = useAuditLogs();
@@ -248,6 +254,28 @@ const NewTransactionPage: React.FC = () => {
       addToast('Silakan pilih cabang spesifik untuk menambah pelanggan.', 'warning');
       return;
     }
+    // Nomor HP sudah terdaftar? Tawarkan pakai pelanggan lama daripada gagal disimpan.
+    try {
+      const existing = await findCustomerByPhone(customer.phone, currentStoreId);
+      if (existing) {
+        const usePrevious = await confirm({
+          title: 'Nomor Sudah Terdaftar',
+          message: `Nomor ${existing.phone} sudah terdaftar atas nama "${existing.name}". Pakai pelanggan ini untuk transaksi?`,
+          confirmText: 'Pakai Pelanggan Ini',
+          confirmVariant: 'primary',
+        });
+        if (usePrevious) {
+          setSelectedCustomer(existing);
+          setIsCustomerModalOpen(false);
+          addToast(`Pelanggan "${existing.name}" dipilih.`, 'success');
+        }
+        // Batal: form tetap terbuka agar nomor bisa dibetulkan.
+        return;
+      }
+    } catch {
+      // Pengecekan gagal (mis. koneksi): lanjut simpan, database tetap menolak nomor ganda.
+    }
+
     const toastId = addToast('Menambah pelanggan...', 'info');
     try {
       const newCustomer = await addCustomer({
@@ -576,7 +604,7 @@ const NewTransactionPage: React.FC = () => {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
-                    className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    className="form-input"
                   ></textarea>
                 </div>
                 <div className="space-y-3 pt-4 border-t dark:border-slate-700">
@@ -646,7 +674,7 @@ const NewTransactionPage: React.FC = () => {
                             const val = parseRupiah(e.target.value);
                             setTenderedAmountStr(val === 0 ? '' : formatRupiah(val));
                           }}
-                          className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                          className="form-input text-lg"
                           placeholder="0"
                           disabled={false}
                           autoComplete="off"
@@ -697,6 +725,8 @@ const NewTransactionPage: React.FC = () => {
           />
         )}
       </form>
+      {/* Di luar <form>: tombol dialog konfirmasi tidak boleh ikut men-submit transaksi. */}
+      {confirmDialog}
       <SuccessModal
         isOpen={isSuccessModalOpen}
         onClose={handleViewTransactions}

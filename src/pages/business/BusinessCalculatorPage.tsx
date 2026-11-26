@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import { CalculatorIcon, TrendingUpIcon, DollarSignIcon, BanknoteIcon } from 'lucide-react';
+import React, { useId, useState } from 'react';
+import {
+  CalculatorIcon,
+  TrendingUpIcon,
+  DollarSignIcon,
+  BanknoteIcon,
+  CheckIcon,
+  AlertTriangleIcon,
+} from 'lucide-react';
 
 // Default assumptions from user example
 const DEFAULT_VALUES = {
@@ -21,65 +28,106 @@ const DEFAULT_VALUES = {
   },
 };
 
+const formatCurrency = (val: number) =>
+  new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(val);
+
 // --- Reusable Simple Components ---
 
-const Card = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-  <div
-    className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}
-  >
-    {children}
+const Card = ({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) => (
+  <section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <h3 className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 p-4 text-lg font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-100">
+      {icon}
+      {title}
+    </h3>
+    <div className="space-y-6 p-4">{children}</div>
+  </section>
+);
+
+/** Kolom angka berlabel; label terhubung ke input lewat `htmlFor`. */
+const NumberField = ({
+  label,
+  value,
+  onChange,
+  hint,
+  inputClassName = '',
+}: {
+  label: string;
+  value: number;
+  onChange: (value: string) => void;
+  hint?: string;
+  inputClassName?: string;
+}) => {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id} className="form-label">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="number"
+        min={0}
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-describedby={hint ? `${id}-hint` : undefined}
+        className={`form-input px-3 py-2 tabular-nums ${inputClassName}`}
+      />
+      {hint && (
+        <p id={`${id}-hint`} className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const RevenueStream = ({
+  title,
+  revenue,
+  children,
+}: {
+  title: string;
+  revenue: number;
+  children: React.ReactNode;
+}) => (
+  <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{title}</h4>
+      <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+        {formatCurrency(revenue)}
+        <span className="font-normal text-slate-500 dark:text-slate-400">/bln</span>
+      </span>
+    </div>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
   </div>
 );
 
-const CardHeader = ({
-  children,
-  className = '',
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`p-4 border-b border-slate-100 ${className}`}>{children}</div>;
-
-const CardTitle = ({
-  children,
-  className = '',
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <h3 className={`font-bold text-slate-800 ${className}`}>{children}</h3>;
-
-const CardContent = ({
-  children,
-  className = '',
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`p-4 ${className}`}>{children}</div>;
-
-const Label = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-  <label
-    className={`block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 ${className}`}
-  >
-    {children}
-  </label>
-);
-
-const Input = ({
-  type = 'text',
-  value,
-  onChange,
-  className = '',
-}: {
-  type?: string;
-  value: string | number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  className?: string;
-}) => (
-  <input
-    type={type}
-    value={value}
-    onChange={onChange}
-    className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${className}`}
-  />
+const Conclusion = ({ ok, children }: { ok: boolean; children: React.ReactNode }) => (
+  <li className="flex items-start gap-2">
+    {ok ? (
+      <CheckIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-400" aria-label="Baik" />
+    ) : (
+      <AlertTriangleIcon
+        className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400"
+        aria-label="Perlu perhatian"
+      />
+    )}
+    <span>{children}</span>
+  </li>
 );
 
 // ----------------------------------
@@ -111,22 +159,11 @@ const BusinessCalculatorPage = () => {
   const ebitda = totalRev - totalOperationalCost;
   const margin = totalRev > 0 ? (ebitda / totalRev) * 100 : 0;
   const roi = ebitda > 0 ? values.investment / ebitda : Infinity;
-
-  const results = {
-    revenueKiloan: revKiloan,
-    revenueSatuan: revSatuan,
-    revenueShoes: revShoes,
-    revenueCarpet: revCarpet,
-    totalRevenue: totalRev,
-    hppTotal: totalHpp,
-    totalCost: totalOperationalCost,
-    ebitda,
-    netProfitMargin: margin,
-    roiMonths: roi,
-  };
+  const hppRatio = totalRev > 0 ? (totalHpp / totalRev) * 100 : 0;
+  const breaksEven = Number.isFinite(roi);
 
   const handleChange = (section: string, field: string, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    const numValue = Math.max(0, parseFloat(value) || 0);
     setValues((prev) => ({
       ...prev,
       [section]:
@@ -136,323 +173,222 @@ const BusinessCalculatorPage = () => {
     }));
   };
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
-
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-6">
+    <div className="space-y-6">
+      <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 pb-6 dark:border-slate-700 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <CalculatorIcon className="w-8 h-8 text-blue-600" />
+          <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white">
+            <CalculatorIcon className="h-7 w-7 text-blue-600 dark:text-blue-400" />
             Simulasi Bisnis Laundry
-          </h1>
-          <p className="text-slate-500 mt-1">
+          </h2>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             Proyeksi bisnis laundry kiloan, satuan, dan cuci sepatu dalam satu dashboard.
           </p>
         </div>
 
-        <div className="bg-blue-600 text-white rounded-xl shadow-lg p-5 min-w-[200px] text-center transform hover:scale-105 transition-transform">
-          <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">
+        <div className="w-full rounded-xl border border-slate-200 bg-white p-5 text-center md:w-auto md:min-w-[200px] dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             ROI (Break Even Point)
           </p>
-          <p className="text-4xl font-extrabold flex items-baseline justify-center gap-1">
-            {results.roiMonths === Infinity ? '∞' : results.roiMonths.toFixed(1)}{' '}
-            <span className="text-xl font-medium">Bulan</span>
+          <p className="flex items-baseline justify-center gap-1 text-4xl font-extrabold tabular-nums text-slate-900 dark:text-white">
+            {breaksEven ? roi.toFixed(1) : '∞'}{' '}
+            <span className="text-xl font-medium text-slate-600 dark:text-slate-300">Bulan</span>
           </p>
-          <div className="mt-2 text-xs bg-blue-700 py-1 px-2 rounded inline-block">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Investasi {formatCurrency(values.investment)}
-          </div>
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* INPUT COLUMN */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="space-y-8 lg:col-span-2">
           {/* 1. INVESTASI */}
-          <Card>
-            <CardHeader className="bg-slate-50">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <BanknoteIcon className="w-5 h-5 text-slate-500" />
-                1. Investasi Awal & Asumsi
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div>
-                  <Label>Total Modal Investasi (Rp)</Label>
-                  <Input
-                    type="number"
-                    value={values.investment}
-                    onChange={(e) => handleChange('investment', '', e.target.value)}
-                    className="text-lg font-bold text-slate-700"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Termasuk renovasi, mesin, peralatan, dan biaya awal lainnya.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
+          <Card
+            title="1. Investasi Awal & Asumsi"
+            icon={<BanknoteIcon className="h-5 w-5 text-slate-500 dark:text-slate-400" />}
+          >
+            <NumberField
+              label="Total Modal Investasi (Rp)"
+              value={values.investment}
+              onChange={(v) => handleChange('investment', '', v)}
+              hint="Termasuk renovasi, mesin, peralatan, dan biaya awal lainnya."
+              inputClassName="text-lg font-bold"
+            />
           </Card>
 
           {/* 2. REVENUE STREAMS */}
-          <Card>
-            <CardHeader className="bg-slate-50">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUpIcon className="w-5 h-5 text-green-600" />
-                2. Sumber Pendapatan (Omzet)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Kiloan */}
-              <div className="p-4 bg-green-50/50 rounded-xl border border-green-100/50">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-bold text-slate-700 text-lg">Laundry Kiloan</h4>
-                  <span className="text-green-700 font-bold bg-green-100 px-3 py-1 rounded-full text-sm">
-                    {formatCurrency(results.revenueKiloan)}/bln
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Target Kg / Hari</Label>
-                    <Input
-                      type="number"
-                      value={values.kiloan.kgPerDay}
-                      onChange={(e) => handleChange('kiloan', 'kgPerDay', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Harga / Kg</Label>
-                    <Input
-                      type="number"
-                      value={values.kiloan.price}
-                      onChange={(e) => handleChange('kiloan', 'price', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+          <Card
+            title="2. Sumber Pendapatan (Omzet)"
+            icon={<TrendingUpIcon className="h-5 w-5 text-green-600 dark:text-green-400" />}
+          >
+            <RevenueStream title="Laundry Kiloan" revenue={revKiloan}>
+              <NumberField
+                label="Target Kg / Hari"
+                value={values.kiloan.kgPerDay}
+                onChange={(v) => handleChange('kiloan', 'kgPerDay', v)}
+              />
+              <NumberField
+                label="Harga / Kg"
+                value={values.kiloan.price}
+                onChange={(v) => handleChange('kiloan', 'price', v)}
+              />
+            </RevenueStream>
 
-              {/* Satuan */}
-              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-bold text-slate-700 text-lg">Laundry Satuan</h4>
-                  <span className="text-blue-700 font-bold bg-blue-100 px-3 py-1 rounded-full text-sm">
-                    {formatCurrency(results.revenueSatuan)}/bln
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Target Pcs / Hari</Label>
-                    <Input
-                      type="number"
-                      value={values.satuan.pcsPerDay}
-                      onChange={(e) => handleChange('satuan', 'pcsPerDay', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Harga Rata-rata / Pcs</Label>
-                    <Input
-                      type="number"
-                      value={values.satuan.price}
-                      onChange={(e) => handleChange('satuan', 'price', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+            <RevenueStream title="Laundry Satuan" revenue={revSatuan}>
+              <NumberField
+                label="Target Pcs / Hari"
+                value={values.satuan.pcsPerDay}
+                onChange={(v) => handleChange('satuan', 'pcsPerDay', v)}
+              />
+              <NumberField
+                label="Harga Rata-rata / Pcs"
+                value={values.satuan.price}
+                onChange={(v) => handleChange('satuan', 'price', v)}
+              />
+            </RevenueStream>
 
-              {/* Shoes */}
-              <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-100/50">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-bold text-slate-700 text-lg">Cuci Sepatu</h4>
-                  <span className="text-purple-700 font-bold bg-purple-100 px-3 py-1 rounded-full text-sm">
-                    {formatCurrency(results.revenueShoes)}/bln
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Target Pasang / Hari</Label>
-                    <Input
-                      type="number"
-                      value={values.shoes.pairsPerDay}
-                      onChange={(e) => handleChange('shoes', 'pairsPerDay', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Harga / Pasang</Label>
-                    <Input
-                      type="number"
-                      value={values.shoes.price}
-                      onChange={(e) => handleChange('shoes', 'price', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+            <RevenueStream title="Cuci Sepatu" revenue={revShoes}>
+              <NumberField
+                label="Target Pasang / Hari"
+                value={values.shoes.pairsPerDay}
+                onChange={(v) => handleChange('shoes', 'pairsPerDay', v)}
+              />
+              <NumberField
+                label="Harga / Pasang"
+                value={values.shoes.price}
+                onChange={(v) => handleChange('shoes', 'price', v)}
+              />
+            </RevenueStream>
 
-              {/* Karpet */}
-              <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100/50">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-bold text-slate-700 text-lg">Cuci Karpet (Seasonal)</h4>
-                  <span className="text-orange-700 font-bold bg-orange-100 px-3 py-1 rounded-full text-sm">
-                    {formatCurrency(results.revenueCarpet)}/bln
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Target m² / Bulan</Label>
-                    <Input
-                      type="number"
-                      value={values.carpet.m2PerMonth}
-                      onChange={(e) => handleChange('carpet', 'm2PerMonth', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Harga / m²</Label>
-                    <Input
-                      type="number"
-                      value={values.carpet.price}
-                      onChange={(e) => handleChange('carpet', 'price', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
+            <RevenueStream title="Cuci Karpet (Seasonal)" revenue={revCarpet}>
+              <NumberField
+                label="Target m² / Bulan"
+                value={values.carpet.m2PerMonth}
+                onChange={(v) => handleChange('carpet', 'm2PerMonth', v)}
+              />
+              <NumberField
+                label="Harga / m²"
+                value={values.carpet.price}
+                onChange={(v) => handleChange('carpet', 'price', v)}
+              />
+            </RevenueStream>
           </Card>
 
           {/* 3. OPEX */}
-          <Card>
-            <CardHeader className="bg-slate-50">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <DollarSignIcon className="w-5 h-5 text-red-500" />
-                3. Biaya Operasional (Bulanan)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label>Gaji Karyawan & Bonus</Label>
-                  <Input
-                    type="number"
-                    value={values.costs.salary}
-                    onChange={(e) => handleChange('costs', 'salary', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Sewa Tempat (Amortisasi)</Label>
-                  <Input
-                    type="number"
-                    value={values.costs.rent}
-                    onChange={(e) => handleChange('costs', 'rent', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Marketing & Maintenance</Label>
-                  <Input
-                    type="number"
-                    value={values.costs.marketing}
-                    onChange={(e) => handleChange('costs', 'marketing', e.target.value)}
-                  />
-                </div>
-                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200">
-                  <Label>Estimasi HPP (Bahan Baku)</Label>
-                  <div className="text-xl font-bold text-slate-700 my-1">
-                    {formatCurrency(results.hppTotal)}
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight">
-                    *HPP dihitung otomatis: {values.hpp.kiloanPercent}% Kiloan,{' '}
-                    {values.hpp.satuanPercent}% Satuan, {values.hpp.shoesPercent}% Sepatu
-                  </div>
-                </div>
+          <Card
+            title="3. Biaya Operasional (Bulanan)"
+            icon={<DollarSignIcon className="h-5 w-5 text-red-500 dark:text-red-400" />}
+          >
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <NumberField
+                label="Gaji Karyawan & Bonus"
+                value={values.costs.salary}
+                onChange={(v) => handleChange('costs', 'salary', v)}
+              />
+              <NumberField
+                label="Sewa Tempat (Amortisasi)"
+                value={values.costs.rent}
+                onChange={(v) => handleChange('costs', 'rent', v)}
+              />
+              <NumberField
+                label="Marketing & Maintenance"
+                value={values.costs.marketing}
+                onChange={(v) => handleChange('costs', 'marketing', v)}
+              />
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                <p className="form-label">Estimasi HPP (Bahan Baku)</p>
+                <p className="my-1 text-xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
+                  {formatCurrency(totalHpp)}
+                </p>
+                <p className="text-sm leading-snug text-slate-500 dark:text-slate-400">
+                  Dihitung otomatis: {values.hpp.kiloanPercent}% Kiloan, {values.hpp.satuanPercent}%
+                  Satuan, {values.hpp.shoesPercent}% Sepatu, {values.hpp.carpetPercent}% Karpet.
+                </p>
               </div>
-            </CardContent>
+            </div>
           </Card>
         </div>
 
         {/* RESULTS COLUMN */}
-        <div className="space-y-6">
-          <div className="sticky top-6">
-            <div className="bg-slate-900 text-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="p-6 border-b border-slate-700">
-                <h3 className="text-xl font-bold">Ringkasan Profit</h3>
-                <p className="text-slate-400 text-sm">Proyeksi Bulanan</p>
+        <div>
+          <section
+            aria-labelledby="calc-summary-heading"
+            className="sticky top-6 overflow-hidden rounded-2xl bg-slate-900 text-white dark:border dark:border-slate-700"
+          >
+            <div className="border-b border-slate-700 p-6">
+              <h3 id="calc-summary-heading" className="text-xl font-bold">
+                Ringkasan Profit
+              </h3>
+              <p className="text-sm text-slate-400">Proyeksi Bulanan</p>
+            </div>
+
+            <div className="space-y-6 p-6 tabular-nums">
+              <div>
+                <p className="mb-1 text-sm font-medium uppercase text-slate-400">Total Omzet</p>
+                <p className="text-3xl font-extrabold tracking-tight text-green-400 xl:text-4xl">
+                  {formatCurrency(totalRev)}
+                </p>
               </div>
 
-              <div className="p-6 space-y-6">
-                <div>
-                  <p className="text-sm font-medium text-slate-400 uppercase mb-1">Total Omzet</p>
-                  <p className="text-4xl font-extrabold text-green-400 tracking-tight">
-                    {formatCurrency(results.totalRevenue)}
+              <div className="space-y-3 border-t border-slate-700 pt-4">
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-slate-300">Biaya HPP</span>
+                  <span className="font-medium text-red-300">({formatCurrency(totalHpp)})</span>
+                </div>
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-slate-300">Biaya Operasional</span>
+                  <span className="font-medium text-red-300">
+                    ({formatCurrency(totalOperationalCost - totalHpp)})
+                  </span>
+                </div>
+                <div className="flex justify-between gap-3 border-t border-slate-700 pt-3 font-bold text-slate-100">
+                  <span>Total Pengeluaran</span>
+                  <span className="text-red-400">{formatCurrency(totalOperationalCost)}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-700 pt-6">
+                <p className="mb-2 text-sm font-medium uppercase text-slate-400">
+                  EBITDA (Laba Bersih)
+                </p>
+                <div className="rounded-xl border border-slate-600 bg-slate-800 p-4">
+                  <p
+                    className={`text-3xl font-extrabold tracking-tight xl:text-4xl ${
+                      ebitda >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}
+                  >
+                    {formatCurrency(ebitda)}
+                  </p>
+                  <p className="mt-2 flex items-center justify-between text-sm font-medium text-slate-300">
+                    <span>Net Profit Margin</span>
+                    <span className="rounded bg-slate-700 px-2 py-1 text-slate-100">
+                      {margin.toFixed(1)}%
+                    </span>
                   </p>
                 </div>
+              </div>
 
-                <div className="space-y-3 pt-4 border-t border-slate-700">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-300">Biaya HPP</span>
-                    <span className="text-red-300 font-medium">
-                      ({formatCurrency(results.hppTotal)})
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-300">Biaya Operasional</span>
-                    <span className="text-red-300 font-medium">
-                      ({formatCurrency(results.totalCost - results.hppTotal)})
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-bold pt-3 border-t border-slate-700 text-slate-100">
-                    <span>Total Pengeluaran</span>
-                    <span className="text-red-400">{formatCurrency(results.totalCost)}</span>
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-slate-700">
-                  <p className="text-sm font-medium text-slate-400 uppercase mb-2">
-                    EBITDA (Laba Bersih)
-                  </p>
-                  <div className="bg-slate-800 p-4 rounded-xl border border-slate-600">
-                    <p className="text-4xl font-extrabold text-blue-400 tracking-tight">
-                      {formatCurrency(results.ebitda)}
-                    </p>
-                    <p className="text-sm text-blue-200 mt-2 font-medium flex items-center justify-between">
-                      <span>Net Profit Margin</span>
-                      <span className="bg-blue-900/50 px-2 py-1 rounded text-blue-300">
-                        {results.netProfitMargin.toFixed(1)}%
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-slate-800 p-4 rounded-xl mt-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUpIcon className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm font-bold text-yellow-500 uppercase tracking-wider">
-                      Kesimpulan
-                    </span>
-                  </div>
-                  <ul className="text-xs space-y-2 text-slate-300 leading-relaxed">
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-500 font-bold">✓</span>
-                      Margin {results.netProfitMargin > 30 ? 'Sangat Sehat (>30%)' : 'Standard'}
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-500 font-bold">✓</span>
-                      Balik Modal: {results.roiMonths.toFixed(1)} Bulan (
-                      {(results.roiMonths / 12).toFixed(1)} Tahun)
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-500 font-bold">✓</span>
-                      HPP Ratio: {((results.hppTotal / results.totalRevenue) * 100).toFixed(1)}%
-                      dari Omzet
-                    </li>
-                  </ul>
-                </div>
+              <div className="rounded-xl bg-slate-800 p-4">
+                <p className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-200">
+                  Kesimpulan
+                </p>
+                <ul className="space-y-2 text-sm leading-relaxed text-slate-300">
+                  <Conclusion ok={margin > 30}>
+                    Margin {margin > 30 ? 'Sangat Sehat (>30%)' : margin > 0 ? 'Standard' : 'Rugi'}
+                  </Conclusion>
+                  <Conclusion ok={breaksEven}>
+                    {breaksEven
+                      ? `Balik Modal: ${roi.toFixed(1)} Bulan (${(roi / 12).toFixed(1)} Tahun)`
+                      : 'Belum balik modal: laba bersih masih nol atau minus'}
+                  </Conclusion>
+                  <Conclusion ok={totalRev > 0 && hppRatio <= 30}>
+                    HPP Ratio: {hppRatio.toFixed(1)}% dari Omzet
+                  </Conclusion>
+                </ul>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>

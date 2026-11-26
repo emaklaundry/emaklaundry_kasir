@@ -96,7 +96,7 @@ const MonthlyExpensesManager: React.FC<{ storeId: string }> = ({ storeId }) => {
               onChange={(event) => setName(event.target.value)}
               maxLength={80}
               autoComplete="off"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="form-input px-3 py-2"
               required
             />
           </div>
@@ -109,7 +109,7 @@ const MonthlyExpensesManager: React.FC<{ storeId: string }> = ({ storeId }) => {
               name="category"
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="form-input px-3 py-2"
             >
               {categories.map((option) => (
                 <option key={option} value={option}>

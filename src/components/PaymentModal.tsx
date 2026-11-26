@@ -147,7 +147,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             className="btn btn-primary"
             type="button"
           >
-            {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin" />}
+            {isSaving && <SpinnerIcon className="w-5 h-5" />}
             <span>{isSaving ? 'Menyimpan...' : 'Simpan Pembayaran'}</span>
           </button>
         </>
@@ -227,7 +227,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             name="amountToPay"
             value={formatRupiah(amountToPay)}
             readOnly
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white opacity-70 cursor-not-allowed"
+            className="form-input text-lg opacity-70 cursor-not-allowed"
             autoComplete="off"
           />
         </div>
@@ -244,7 +244,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               disabled={isSaving}
               value={tenderedAmountStr}
               onChange={(e) => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input text-lg"
               placeholder="Masukkan jumlah uang tunai"
               autoComplete="off"
             />

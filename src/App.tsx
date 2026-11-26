@@ -13,6 +13,7 @@ import CommandPalette from './components/CommandPalette';
 import QuickActionsPage from './pages/QuickActionsPage';
 import MonthlyExpenseReminder from './components/MonthlyExpenseReminder';
 import { can, isAdminRole, type Permission } from './config/permissions';
+import { SpinnerIcon } from './components/icons';
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -61,13 +62,9 @@ const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
 };
 
 const PageLoader: React.FC = () => (
-  <div className="flex justify-center items-center w-full h-96">
-    <div
-      className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-brand-blue-500"
-      role="status"
-    >
-      <span className="sr-only">Loading...</span>
-    </div>
+  <div className="flex h-96 w-full items-center justify-center" role="status">
+    <SpinnerIcon className="h-12 w-12 text-brand-blue-600 dark:text-brand-blue-400" />
+    <span className="sr-only">Memuat halaman…</span>
   </div>
 );
 

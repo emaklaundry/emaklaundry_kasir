@@ -24,6 +24,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     notes: customer?.notes || '',
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -50,7 +52,15 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       }
     }
 
-    await onSave(formData);
+    // Cegah ketukan ganda: tanpa ini, tap kedua mengirim insert yang sama dan
+    // ditolak database karena nomor HP sudah tersimpan oleh tap pertama.
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onSave(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -66,7 +76,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={disabled}
+            disabled={disabled || isSubmitting}
             className="btn btn-primary w-32"
           >
             Simpan
@@ -87,7 +97,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               autoComplete="name"
               value={formData.name}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -103,7 +113,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               value={formData.phone}
               onChange={handleChange}
               placeholder="Contoh: 081234567890"
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             />
           </div>
         </div>
@@ -118,7 +128,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             autoComplete="street-address"
             value={formData.address}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           />
         </div>
         <div>
@@ -132,7 +142,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             value={formData.notes}
             onChange={handleChange}
             rows={3}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           ></textarea>
         </div>
       </div>

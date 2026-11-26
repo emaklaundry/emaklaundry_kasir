@@ -190,7 +190,23 @@
   }
   /* --- LABEL FORM ------------------------------------------------------- */
   .form-label {
-    @apply mb-1.5 block text-sm font-medium text-slate-800 dark:text-slate-200;
+    @apply mb-1.5 block text-sm font-medium text-slate-800;
+  }
+  /* Kolom teks/angka/select/textarea standar. Fokus & caret diatur di @layer base. */
+  .form-input {
+    @apply block w-full rounded-lg border border-slate-300 bg-slate-50 p-3 text-base text-slate-900;
+  }
+  /* Remap `[class*=slate-…]` di layer utilities tidak menangkap kelas ini, jadi token gelap ditulis langsung. */
+  html.dark .form-label {
+    color: rgb(var(--text-primary-dark));
+  }
+  html.dark .form-input {
+    background-color: rgb(var(--surface-muted-dark));
+    border-color: rgb(var(--surface-border-control-dark));
+    color: rgb(var(--text-primary-dark));
+  }
+  .form-input:disabled {
+    @apply cursor-not-allowed opacity-60;
   }
 
   /* --- BADGE STATUS ------------------------------------------------------
@@ -214,7 +230,11 @@
     @apply bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200;
   }
   .badge-neutral {
-    @apply bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200;
+    @apply bg-slate-100 text-slate-700;
+  }
+  html.dark .badge-neutral {
+    background-color: rgb(var(--surface-border-strong-dark));
+    color: rgb(var(--text-secondary-strong-dark));
   }
 
   .btn-icon {

@@ -6,7 +6,7 @@ import useToasts from '../../contexts/useToasts';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
 import SupervisorPinSettings from '../../components/SupervisorPinSettings';
 import { isStaticQRIS, validateQRIS } from '../../utils/qrisUtils';
-import { KeyIcon, MapIcon } from '../../components/icons';
+import { KeyIcon, MapIcon, SpinnerIcon } from '../../components/icons';
 import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
 import { UserRole } from '../../types';
@@ -127,7 +127,12 @@ const SettingsPage: React.FC = () => {
   };
 
   if (!formData) {
-    return <div>Loading settings...</div>;
+    return (
+      <div className="flex justify-center py-16" role="status">
+        <SpinnerIcon className="h-10 w-10 text-brand-blue-600 dark:text-brand-blue-400" />
+        <span className="sr-only">Memuat pengaturan…</span>
+      </div>
+    );
   }
 
   return (
@@ -206,7 +211,7 @@ const SettingsPage: React.FC = () => {
                       latitude: parseFloat(e.target.value) || 0,
                     }))
                   }
-                  className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  className="form-input text-sm p-2.5"
                 />
               </div>
               <div>
@@ -221,7 +226,7 @@ const SettingsPage: React.FC = () => {
                       longitude: parseFloat(e.target.value) || 0,
                     }))
                   }
-                  className="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  className="form-input text-sm p-2.5"
                 />
               </div>
             </div>
@@ -255,7 +260,7 @@ const SettingsPage: React.FC = () => {
 
         {/* Maintenance Mode Section - Only for Super Admin */}
         {isSuperAdmin && (
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-6 space-y-4">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-6 space-y-4 dark:border-amber-800/60 dark:bg-amber-900/20">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-yellow-500 rounded-full p-2">
                 <Wrench className="h-6 w-6 text-white" />
@@ -335,7 +340,7 @@ const SettingsPage: React.FC = () => {
             value={formData.receiptMessage}
             onChange={handleChange}
             disabled={isSaving}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           />
         </div>
 
@@ -350,7 +355,7 @@ const SettingsPage: React.FC = () => {
             onChange={handleChange}
             disabled={isSaving}
             rows={4}
-            className="bg-slate-50 border border-slate-300 text-slate-900 rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white font-mono text-sm"
+            className="form-input font-mono text-sm"
           />
           <div className="flex items-center justify-between mt-2">
             <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -409,7 +414,7 @@ const SettingsPage: React.FC = () => {
               disabled={isSaving}
               rows={3}
               placeholder="Scan QRIS stiker Anda dan paste kode string di sini (format: 00020101021126...)"
-              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg block w-full p-3 font-mono"
+              className="form-input text-sm font-mono"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
               💡 Cara mendapatkan kode: Scan QRIS stiker Anda dengan aplikasi scanner QR, lalu copy

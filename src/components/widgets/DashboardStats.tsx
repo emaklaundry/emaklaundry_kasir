@@ -11,7 +11,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Pesanan "Siap Diambil" yang lewat sekian hari dari estimasi dianggap menumpuk. */
 const STALE_PICKUP_DAYS = 3;
 
-type Tone = 'blue' | 'green' | 'amber' | 'red' | 'slate' | 'purple';
+type Tone = 'blue' | 'green' | 'amber' | 'red' | 'slate';
 
 const TONES: Record<Tone, { box: string; label: string; value: string; sub: string }> = {
   blue: {
@@ -37,12 +37,6 @@ const TONES: Record<Tone, { box: string; label: string; value: string; sub: stri
     label: 'text-red-700 dark:text-red-300',
     value: 'text-red-950 dark:text-red-50',
     sub: 'text-red-800 dark:text-red-200',
-  },
-  purple: {
-    box: 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800',
-    label: 'text-purple-700 dark:text-purple-300',
-    value: 'text-purple-950 dark:text-purple-50',
-    sub: 'text-purple-800 dark:text-purple-200',
   },
   slate: {
     box: 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700',
@@ -286,7 +280,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
             to={`/transactions?status=${encodeURIComponent(OrderStatus.Ready)}`}
           />
           <StatCard
-            tone={unpaidCount > 0 ? 'purple' : 'slate'}
+            tone={unpaidCount > 0 ? 'amber' : 'slate'}
             label="Nota belum lunas"
             value={dash(unpaidCount)}
             sub={

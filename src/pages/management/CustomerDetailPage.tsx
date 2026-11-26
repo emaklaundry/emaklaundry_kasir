@@ -11,6 +11,7 @@ import {
 import { fetchCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { Customer } from '../../types';
+import EmptyState from '../../components/EmptyState';
 
 // import { OrderStatus, PaymentStatus } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
@@ -73,7 +74,7 @@ const CustomerDetailPage: React.FC = () => {
           </div>
         </div>
         {customer.notes && (
-          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 text-yellow-800 dark:text-yellow-300 rounded-r-lg">
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-800/60 dark:bg-amber-900/30 dark:text-amber-200">
             <p className="text-base font-medium">Catatan:</p>
             <p className="text-base">{customer.notes}</p>
           </div>
@@ -182,8 +183,11 @@ const CustomerDetailPage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-6 text-slate-500 dark:text-slate-400">
-                    Belum ada riwayat transaksi.
+                  <td colSpan={5}>
+                    <EmptyState
+                      title="Belum ada transaksi"
+                      description="Transaksi pelanggan ini akan tercatat di sini."
+                    />
                   </td>
                 </tr>
               )}

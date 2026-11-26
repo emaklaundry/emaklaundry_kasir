@@ -39,6 +39,12 @@ export interface Attendance {
   date: string; // YYYY-MM-DD
   clockIn?: Date;
   clockOut?: Date;
+  /** Aktivitas terakhir di aplikasi; jam pulang otomatis bila tidak menekan Keluar. */
+  lastSeenAt?: Date;
+  /** 'auto' = dari login karyawan, 'manual' = dicatat admin. */
+  clockInSource?: 'auto' | 'manual';
+  /** 'logout' = menekan Keluar, 'manual' = dicatat admin. */
+  clockOutSource?: 'logout' | 'manual';
   notes?: string;
   createdAt: Date;
   // Computed

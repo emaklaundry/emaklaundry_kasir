@@ -1,6 +1,11 @@
 import React, { Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowTrendingUpIcon, BookOpenIcon, CalculatorIcon } from '../../components/icons';
+import {
+  ArrowTrendingUpIcon,
+  BookOpenIcon,
+  CalculatorIcon,
+  SpinnerIcon,
+} from '../../components/icons';
 
 const BusinessGuidePage = lazy(() => import('../BusinessGuidePage'));
 const BusinessCalculatorPage = lazy(() => import('./BusinessCalculatorPage'));
@@ -39,7 +44,7 @@ const isTab = (value: string | null): value is BusinessHubTab =>
 
 const TabLoader: React.FC = () => (
   <div className="flex h-64 items-center justify-center" role="status">
-    <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-blue-500 border-t-transparent" />
+    <SpinnerIcon className="h-10 w-10 text-brand-blue-600 dark:text-brand-blue-400" />
     <span className="sr-only">Memuat…</span>
   </div>
 );

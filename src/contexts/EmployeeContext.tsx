@@ -3,6 +3,7 @@ import { supabase } from '../utils/supabaseClient';
 import { Database } from '../types/supabase';
 import { Employee, Attendance, Advance, EmployeeFormData, AdvanceFormData } from '../types/hrm';
 import { mapEmployeeRow, toEmployeeRow } from '../utils/employeeMappers';
+import { getLocalDateString } from '../utils/dateHelpers';
 import EmployeeContext from './EmployeeContextContext';
 
 // Helper to convert snake_case to camelCase
@@ -110,13 +111,14 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const clockIn = useCallback(
     async (employeeId: string) => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       try {
         const { error: err } = await supabase.from('attendance').upsert(
           {
             employee_id: employeeId,
             date: today,
             clock_in: new Date().toISOString(),
+            clock_in_source: 'manual',
           },
           { onConflict: 'employee_id,date' },
         );
@@ -131,11 +133,11 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const clockOut = useCallback(
     async (employeeId: string) => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       try {
         const { error: err } = await supabase
           .from('attendance')
-          .update({ clock_out: new Date().toISOString() })
+          .update({ clock_out: new Date().toISOString(), clock_out_source: 'manual' })
           .eq('employee_id', employeeId)
           .eq('date', today);
         if (err) throw err;

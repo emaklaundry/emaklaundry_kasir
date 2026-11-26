@@ -81,7 +81,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             onChange={handleInputChange}
             onFocus={() => setIsDropdownOpen(true)}
             onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input pl-10"
             placeholder="Cari nama atau no. HP"
             required
             autoComplete="off"

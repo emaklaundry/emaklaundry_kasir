@@ -43,127 +43,6 @@ import {
 import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
 import { calculateNextDueDate } from '../utils/formatting';
 
-// WeeklyRevenueChart component - currently unused but kept for future use
-/* const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }> = ({ data }) => {
-  const [tooltip, setTooltip] = useState<{
-    visible: boolean;
-    content: string;
-    x: number;
-    y: number;
-  }>({ visible: false, content: '', x: 0, y: 0 });
-
-  const maxValue = useMemo(() => {
-    const maxVal = Math.max(...data.map((d) => d.revenue), 0); // FIXED: Ensure minimum of 0
-    return maxVal === 0 ? 100000 : Math.ceil(maxVal / 10000) * 10000;
-  }, [data]);
-
-  const chartHeight = 200;
-
-  const showTooltip = (content: string, event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltip({
-      visible: true,
-      content,
-      x: rect.left + window.scrollX + rect.width / 2,
-      y: rect.top + window.scrollY - 10,
-    });
-  };
-
-  const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
-
-  return (
-    <div className="relative">
-      {tooltip.visible && (
-        <div
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: 'translateX(-50%) translateY(-100%)',
-          }}
-          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg whitespace-nowrap"
-        >
-          {tooltip.content}
-        </div>
-      )}
-      <div
-        className="flex justify-between items-end h-full pt-4"
-        style={{ height: `${chartHeight}px` }}
-      >
-        {data.map((d, i) => {
-          const barHeight = Math.max((d.revenue / maxValue) * (chartHeight - 30), 0);
-          const tooltipContent = `${d.day}: Rp ${d.revenue.toLocaleString('id-ID')}`;
-          return (
-            <div key={i} className="flex flex-col items-center w-full">
-              <div
-                className="w-4/5 bg-brand-blue-500 rounded-t-md hover:bg-brand-blue-400 transition-colors"
-                style={{ height: `${barHeight}px`, minHeight: '2px' }}
-                onMouseMove={(e) => showTooltip(tooltipContent, e)}
-                onMouseLeave={hideTooltip}
-              ></div>
-              <span className="text-xs mt-2 text-slate-500 dark:text-slate-400">{d.day}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}; */
-
-/* function TrendIndicator({ trendData }: { trendData?: TrendData }) {
-  if (!trendData || trendData.trend === 'neutral') return null;
-  const isUp = trendData.trend === 'up';
-  const trendColor = isUp ? 'text-green-500' : 'text-red-500';
-  const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
-  return (
-    <div className={`flex items-center text-sm font-semibold mt-1 ${trendColor}`}>
-      <TrendIcon className="w-4 h-4 mr-1" />
-      <span>{trendData.percentage} vs 30 hari lalu</span>
-    </div>
-  );
-} */
-
-// StatCard component - currently unused but kept for future use
-/* const StatCard: React.FC<{
-  icon: React.FC<{ className?: string }>;
-  title: string;
-  value: string | number;
-  color: string;
-  to?: string;
-  trendData?: TrendData;
-  subtitle?: string;
-}> = ({ icon: Icon, title, value, color, to, trendData, subtitle }) => {
-  const content = (
-    <div
-      className={`bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-[0.98]' : ''}`}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 truncate mb-1">
-            {title}
-          </p>
-          <p className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 dark:text-white break-all">
-            {value}
-          </p>
-          {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-              {subtitle}
-            </p>
-          )}
-        </div>
-        <div
-          className={`p-3 sm:p-3 rounded-full flex-shrink-0 ${color.replace('border-', 'bg-').replace('-500', '-100')} dark:${color.replace('border-', 'bg-').replace('-500', '-900/50')}`}
-        >
-          <Icon
-            className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 ${color.replace('border-', 'text-')}`}
-          />
-        </div>
-      </div>
-      <TrendIndicator trendData={trendData} />
-    </div>
-  );
-  return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
-}; */
-
 // Tipe kustom untuk order aktif
 type ActiveOrder = Transaction & { customerName: string };
 
@@ -494,8 +373,8 @@ const Dashboard: React.FC = () => {
               disabled={isActionDisabled}
               className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-teal-100 dark:bg-teal-900/50 flex-shrink-0">
-                <WrenchIcon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 dark:text-teal-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <WrenchIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
               </div>
               <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Update Stok
@@ -508,8 +387,8 @@ const Dashboard: React.FC = () => {
                 disabled={isActionDisabled}
                 className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
               >
-                <div className="p-2 sm:p-3 rounded-full bg-purple-100 dark:bg-purple-900/50 flex-shrink-0">
-                  <DollarSignIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
+                <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                  <DollarSignIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
                 </div>
                 <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                   Catat Pengeluaran
@@ -522,8 +401,8 @@ const Dashboard: React.FC = () => {
               disabled={isActionDisabled}
               className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-orange-100 dark:bg-orange-900/50 flex-shrink-0">
-                <PlusCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <PlusCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
               </div>
               <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Lapor Kerusakan
@@ -534,8 +413,8 @@ const Dashboard: React.FC = () => {
               onClick={() => setIsWashSettingsModalOpen(true)}
               className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex-shrink-0">
-                <BookOpenIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <BookOpenIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
               </div>
               <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Panduan Mesin Cuci

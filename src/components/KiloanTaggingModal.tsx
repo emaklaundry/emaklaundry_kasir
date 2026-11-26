@@ -56,7 +56,7 @@ const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({
           rows={5}
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          className="form-input"
           placeholder="Contoh:&#10;3 Kemeja Lengan Panjang&#10;2 Celana Jeans&#10;1 Jaket"
         />
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">

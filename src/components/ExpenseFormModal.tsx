@@ -106,7 +106,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -121,7 +121,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             value={formData.description}
             onChange={handleChange}
             placeholder="Contoh: Beli deterjen, bayar listrik, dll."
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -134,7 +134,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="category"
             value={formData.category}
             onChange={handleChange}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           >
             {categoryOptions.map((cat) => (
@@ -155,7 +155,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             value={formatRupiah(formData.amount)}
             onChange={handleChange}
             placeholder="Contoh: 10000"
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>

@@ -198,6 +198,8 @@ export interface User {
   storeId?: string;
   createdAt?: Date;
   isActive: boolean;
+  /** Diisi bila akun ini adalah login PIN milik karyawan (dipakai untuk absensi otomatis). */
+  employeeId?: string;
 }
 
 export interface AuditLog {

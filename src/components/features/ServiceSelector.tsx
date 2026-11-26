@@ -31,7 +31,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Cari layanan..."
-          className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+          className="form-input pl-10"
           autoComplete="off"
         />
       </div>

@@ -131,7 +131,7 @@ const SupervisorPinModal: React.FC<SupervisorPinModalProps> = ({
             }}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className="block w-full rounded-lg border border-slate-300 bg-white p-3 text-center font-mono text-2xl tracking-[0.5em] text-slate-900 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="form-input text-center font-mono text-2xl tracking-[0.5em]"
           />
           {error && (
             <p id={errorId} role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">

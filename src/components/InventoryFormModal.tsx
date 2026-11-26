@@ -57,7 +57,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
             id="name"
             value={formData.name}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -73,7 +73,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
               id="stock"
               value={formData.stock}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -87,7 +87,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
               id="unit"
               value={formData.unit}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
@@ -103,7 +103,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
             id="lowStockThreshold"
             value={formData.lowStockThreshold}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>

@@ -87,7 +87,7 @@ const EditPaidPaymentModal: React.FC<EditPaidPaymentModalProps> = ({
             disabled={isSaving || isUnchanged}
             className="btn btn-primary"
           >
-            {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin" />}
+            {isSaving && <SpinnerIcon className="w-5 h-5" />}
             <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
           </button>
         </>
@@ -160,7 +160,7 @@ const EditPaidPaymentModal: React.FC<EditPaidPaymentModalProps> = ({
                 setTenderedStr(formatRupiah(parseRupiah(e.target.value)));
                 setError(null);
               }}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input text-lg"
             />
           </div>
         )}

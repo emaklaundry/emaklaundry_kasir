@@ -47,7 +47,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         </>
       }
     >
-      <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-300">{message}</p>
+      <p className="whitespace-pre-line text-lg leading-relaxed text-slate-500 dark:text-slate-300">
+        {message}
+      </p>
     </Modal>
   );
 };

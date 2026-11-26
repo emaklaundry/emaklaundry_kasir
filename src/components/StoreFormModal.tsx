@@ -51,7 +51,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
             id="name"
             value={formData.name}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
@@ -65,7 +65,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
             id="address"
             value={formData.address}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
