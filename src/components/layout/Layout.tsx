@@ -4,6 +4,7 @@ import ToastContainer from '../ToastContainer';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import BottomNavBar from './BottomNavBar';
+import ActivityTracker from './ActivityTracker';
 
 const getPageTitle = (pathname: string): string => {
   const staticTitles: { [key: string]: string } = {
@@ -106,6 +107,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       >
         Lewati ke konten utama
       </a>
+      <ActivityTracker pageTitle={pageTitle} />
       <Tutorial />
       <Sidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
 

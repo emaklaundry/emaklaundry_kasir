@@ -9,6 +9,7 @@ import { MapIcon, SpinnerIcon } from '../../components/icons';
 import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
 import { UserRole } from '../../types';
+import { DEFAULT_BUSINESS_NAME, DEFAULT_TRACKING_URL } from '@/utils/whatsappReceipt';
 
 // Template default untuk WhatsApp footer
 const DEFAULT_WHATSAPP_FOOTER = `🔍 Cek status cucian Anda:
@@ -96,12 +97,19 @@ const SettingsPage: React.FC = () => {
       return;
     }
 
+    const businessName = formData.businessName?.trim() || null;
+    const trackingUrl = formData.trackingUrl?.trim() || null;
+    if (trackingUrl && !/^https?:\/\/\S+$/i.test(trackingUrl)) {
+      addToast('Link cek status harus diawali http:// atau https:// tanpa spasi.', 'error');
+      return;
+    }
+
     setIsSaving(true);
     // Create a replaceable toast and keep its id so we can update it later
     const toastId = addToast('Menyimpan perubahan...', 'info');
     try {
       // 1. Update Layout/General Settings
-      await updateSettings({ ...formData, qrisStaticCode });
+      await updateSettings({ ...formData, qrisStaticCode, businessName, trackingUrl });
 
       // 2. Update Store Location (if valid store selected)
       if (currentStore && currentStore.id !== 'all') {
@@ -319,6 +327,46 @@ const SettingsPage: React.FC = () => {
             )}
           </div>
         )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="businessName" className="form-label">
+              Nama Usaha (pesan WhatsApp)
+            </label>
+            <input
+              id="businessName"
+              name="businessName"
+              type="text"
+              value={formData.businessName ?? ''}
+              onChange={handleChange}
+              disabled={isSaving}
+              placeholder={DEFAULT_BUSINESS_NAME}
+              className="form-input"
+            />
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Dipakai untuk salam penutup "Tim …" dan nama cabang. Kosong = {DEFAULT_BUSINESS_NAME}.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="trackingUrl" className="form-label">
+              Link Cek Status Cucian
+            </label>
+            <input
+              id="trackingUrl"
+              name="trackingUrl"
+              type="url"
+              inputMode="url"
+              value={formData.trackingUrl ?? ''}
+              onChange={handleChange}
+              disabled={isSaving}
+              placeholder={DEFAULT_TRACKING_URL}
+              className="form-input"
+            />
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Nomor invoice ditambahkan otomatis (?invoice=…). Kosong = {DEFAULT_TRACKING_URL}.
+            </p>
+          </div>
+        </div>
 
         <div>
           <label htmlFor="receiptMessage" className="form-label">

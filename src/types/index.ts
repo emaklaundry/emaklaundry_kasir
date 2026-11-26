@@ -210,6 +210,18 @@ export interface AuditLog {
   user: string;
   action: string;
   storeId?: string;
+  /** data | aktivitas | navigasi | klik | sesi | error */
+  category?: 'data' | 'aktivitas' | 'navigasi' | 'klik' | 'sesi' | 'error';
+  /** Untuk kategori data: tabel, id baris, dan INSERT/UPDATE/DELETE */
+  tableName?: string;
+  recordId?: string;
+  operation?: string;
+  changedFields?: string[];
+  oldData?: Record<string, unknown>;
+  newData?: Record<string, unknown>;
+  /** Halaman tempat aksi terjadi (path + query) */
+  page?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Settings {

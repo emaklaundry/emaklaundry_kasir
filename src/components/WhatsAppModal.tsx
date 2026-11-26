@@ -45,27 +45,27 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     [stores, transaction?.storeId],
   );
 
-  const generatedMessage = React.useMemo(() => {
+  // Pesan selalu disusun otomatis dari data transaksi dan tidak bisa diedit kasir,
+  // supaya isinya konsisten dan nominal tidak bisa diubah sebelum dikirim.
+  const message = React.useMemo(() => {
     if (!transaction || !customer) return '';
     return buildWhatsAppReceiptMessage({ transaction, customer, settings, store });
   }, [transaction, customer, settings, store]);
 
-  // draft = hasil edit kasir; null = pakai pesan otomatis (ikut berubah bila data selesai dimuat).
-  const [draft, setDraft] = React.useState<string | null>(null);
+  // Nomor tujuan dikunci ke data pelanggan bila sudah valid, supaya struk tidak bisa
+  // dialihkan ke nomor lain. Hanya pelanggan tanpa nomor valid yang boleh diisi di sini,
+  // dan nomor itu wajib disimpan ke data pelanggan (jejaknya tercatat).
+  const savedPhone = normalizeWhatsAppPhone(customer?.phone);
+  const isPhoneLocked = savedPhone !== null;
   const [phoneInput, setPhoneInput] = React.useState('');
-  const [savePhone, setSavePhone] = React.useState(false);
 
   // Reset isian setiap kali modal dibuka untuk transaksi/pelanggan tertentu.
   React.useEffect(() => {
     if (!isOpen) return;
-    setDraft(null);
     setPhoneInput(customer?.phone ?? '');
-    setSavePhone(!normalizeWhatsAppPhone(customer?.phone));
   }, [isOpen, transaction?.id, customer?.id, customer?.phone]);
 
-  const message = draft ?? generatedMessage;
-  const phone = normalizeWhatsAppPhone(phoneInput);
-  const phoneChanged = phone !== null && phone !== normalizeWhatsAppPhone(customer?.phone);
+  const phone = isPhoneLocked ? savedPhone : normalizeWhatsAppPhone(phoneInput);
 
   const handleSend = () => {
     if (!transaction || !customer) return;
@@ -85,7 +85,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
     const invoiceNumber = formatTransactionId(transaction);
     addAuditLog(
-      `Mengirim notifikasi WhatsApp untuk transaksi ${invoiceNumber} kepada ${customer.name}.`,
+      `Mengirim notifikasi WhatsApp untuk transaksi ${invoiceNumber} kepada ${customer.name} (+${phone})` +
+        (isPhoneLocked ? '.' : ', nomor baru diisi saat pengiriman.'),
       transaction.storeId,
     );
 
@@ -101,7 +102,7 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         addToast(`Struk terkirim, tetapi penanda "sudah dikirim" gagal disimpan: ${msg}`, 'error');
       });
 
-    if (phoneChanged && savePhone) {
+    if (!isPhoneLocked) {
       void updateCustomer(customer.id, { phone: phoneInput.trim() })
         .then(() => addToast(`Nomor HP ${customer.name} disimpan.`, 'success'))
         .catch((err: unknown) => {
@@ -138,65 +139,61 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         )}
 
         <div>
-          <label htmlFor="wa-phone" className="form-label">
-            Kirim ke {customer.name}
-          </label>
-          <input
-            id="wa-phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="off"
-            className="form-input"
-            placeholder="Contoh: 0812 3456 7890"
-            value={phoneInput}
-            onChange={(e) => setPhoneInput(e.target.value)}
-            aria-invalid={!phone}
-            aria-describedby="wa-phone-hint"
-          />
-          <p
-            id="wa-phone-hint"
-            className={`mt-1 text-sm ${phone ? 'text-slate-500 dark:text-slate-400' : 'text-red-600 dark:text-red-400'}`}
-          >
-            {phone
-              ? `Akan dikirim ke +${phone}`
-              : customer.phone
-                ? 'Nomor tidak valid. Periksa kembali nomor WhatsApp pelanggan.'
-                : 'Pelanggan belum punya nomor HP. Isi nomor WhatsApp-nya di sini.'}
-          </p>
-          {phoneChanged && (
-            <label className="mt-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+          {isPhoneLocked ? (
+            <>
+              <p className="form-label">Kirim ke</p>
+              <p className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                {customer.name} (+{savedPhone})
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Nomor diambil dari data pelanggan. Untuk mengubahnya, buka halaman Pelanggan.
+              </p>
+            </>
+          ) : (
+            <>
+              <label htmlFor="wa-phone" className="form-label">
+                Kirim ke {customer.name}
+              </label>
               <input
-                type="checkbox"
-                checked={savePhone}
-                onChange={(e) => setSavePhone(e.target.checked)}
+                id="wa-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                className="form-input"
+                placeholder="Contoh: 0812 3456 7890"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                aria-invalid={!phone}
+                aria-describedby="wa-phone-hint"
               />
-              Simpan nomor ini ke data pelanggan
-            </label>
+              <p
+                id="wa-phone-hint"
+                className={`mt-1 text-sm ${phone ? 'text-slate-500 dark:text-slate-400' : 'text-red-600 dark:text-red-400'}`}
+              >
+                {phone
+                  ? `Akan dikirim ke +${phone}. Nomor ini otomatis disimpan ke data pelanggan.`
+                  : customer.phone
+                    ? 'Nomor di data pelanggan tidak valid. Isi nomor WhatsApp yang benar.'
+                    : 'Pelanggan belum punya nomor HP. Isi nomor WhatsApp-nya di sini.'}
+              </p>
+            </>
           )}
         </div>
 
         <div>
-          <div className="flex items-center justify-between gap-2">
-            <label htmlFor="wa-message" className="form-label">
-              Isi Pesan
-            </label>
-            {draft !== null && (
-              <button
-                type="button"
-                className="btn btn-ghost text-sm"
-                onClick={() => setDraft(null)}
-              >
-                Kembalikan pesan awal
-              </button>
-            )}
+          <p id="wa-message-label" className="form-label">
+            Isi Pesan
+          </p>
+          <div
+            aria-labelledby="wa-message-label"
+            className="max-h-96 overflow-y-auto bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            style={{ whiteSpace: 'pre-wrap' }}
+          >
+            {message}
           </div>
-          <textarea
-            id="wa-message"
-            className="form-input min-h-64 font-normal"
-            rows={14}
-            value={message}
-            onChange={(e) => setDraft(e.target.value)}
-          />
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Pesan disusun otomatis dari data transaksi. Ubah teks penutup di menu Pengaturan.
+          </p>
         </div>
       </div>
     </Modal>

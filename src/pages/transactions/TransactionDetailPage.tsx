@@ -11,7 +11,7 @@ import {
   PrinterIcon,
   UsersIcon,
   ShoppingCartIcon,
-  // SendIcon, // Import icon Send (unused)
+  SendIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import useAppContext from '../../contexts/useAppContext';
@@ -42,6 +42,7 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
 
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false);
 
   // Mengambil fungsi updateTransaction dari context
   const { updateTransaction } = useTransactions({ enabled: false });
@@ -159,15 +160,19 @@ const TransactionDetailPage: React.FC = () => {
         <div className="flex justify-end mb-6">
           <div className="flex gap-2">
             {/* Tombol Kirim WA Manual */}
-            {/*
-            <button aria-label="Kirim struk via WhatsApp"
+            <button
+              type="button"
               onClick={() => setIsHeaderWAOpen(true)}
-              className="btn btn-primary"
-              title="Kirim Struk WhatsApp"
+              className="btn btn-secondary"
+              title={
+                transaction.whatsappSentAt
+                  ? 'Struk sudah pernah dikirim via WhatsApp. Klik untuk kirim ulang.'
+                  : 'Kirim struk via WhatsApp'
+              }
             >
               <SendIcon className="h-5 w-5" />
+              {transaction.whatsappSentAt ? 'Kirim Ulang WA' : 'Kirim WA'}
             </button>
-            */}
             <Link to={`/transactions/${transaction.id}/receipt`} className="btn btn-secondary">
               <PrinterIcon className="h-5 w-5" />
               Cetak Struk
@@ -215,6 +220,24 @@ const TransactionDetailPage: React.FC = () => {
               }
             />
             <DetailItem label="Metode Bayar" value={transaction.paymentMethod || '-'} />
+            <DetailItem
+              label="Struk WhatsApp"
+              value={
+                transaction.whatsappSentAt ? (
+                  <span className="badge badge-success">
+                    ✓ Terkirim{' '}
+                    {new Date(transaction.whatsappSentAt).toLocaleString('id-ID', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </span>
+                ) : (
+                  <span className="badge badge-neutral">
+                    Belum dikirim
+                  </span>
+                )
+              }
+            />
           </div>
         </div>
         {transaction.notes && (
@@ -355,7 +378,6 @@ const TransactionDetailPage: React.FC = () => {
       </div>
 
       {/* WhatsApp Modal untuk tombol manual di header */}
-      {/*
       {isHeaderWAOpen && (
         <WhatsAppModal
           isOpen={isHeaderWAOpen}
@@ -364,7 +386,6 @@ const TransactionDetailPage: React.FC = () => {
           customer={customer}
         />
       )}
-      */}
     </div>
   );
 };

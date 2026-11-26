@@ -1,12 +1,27 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import WhatsAppModal from '@/components/WhatsAppModal';
-import { normalizeWhatsAppPhone } from '@/utils/whatsappPhone';
 import { Customer, OrderStatus, PaymentMethod, PaymentStatus, Transaction } from '@/types';
 
-vi.mock('@/contexts/useToasts', () => ({ default: () => ({ addToast: vi.fn() }) }));
+const addToast = vi.fn();
+const updateCustomer = vi.fn().mockResolvedValue({});
+const markSent = vi.fn().mockResolvedValue('2026-11-28T00:00:00Z');
+
+vi.mock('@/contexts/useToasts', () => ({ default: () => ({ addToast }) }));
 vi.mock('@/contexts/AuditLogContext', () => ({ useAuditLogs: () => ({ addAuditLog: vi.fn() }) }));
 vi.mock('@/contexts/SettingsContext', () => ({ useSettings: () => ({ settings: null }) }));
+vi.mock('@/contexts/StoreContext', () => ({
+  useStores: () => ({
+    stores: [{ id: 's1', name: 'Cimenyan', address: 'Jl. Contoh No. 1', isActive: true }],
+  }),
+}));
+vi.mock('@/contexts/CustomerContext', () => ({
+  useCustomerMutations: () => ({ updateCustomer }),
+}));
+vi.mock('@/contexts/TransactionContext', () => ({
+  markTransactionWhatsAppSent: (id: string) => markSent(id),
+}));
 
 const customer: Customer = {
   id: 'c1',
@@ -35,7 +50,7 @@ const tx: Transaction = {
   tax: 0,
   total: 21000,
   amountPaid: 21000,
-  change: 1000,
+  change: 0,
   paymentMethod: PaymentMethod.Cash,
   paymentStatus: PaymentStatus.Paid,
   orderStatus: OrderStatus.Processing,
@@ -45,68 +60,78 @@ const tx: Transaction = {
   storeId: 's1',
 };
 
-const renderModal = (t: Transaction, c: Customer = customer) =>
-  render(<WhatsAppModal isOpen onClose={vi.fn()} transaction={t} customer={c} />);
+const renderModal = (t: Transaction = tx, c: Customer = customer) =>
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <WhatsAppModal isOpen onClose={vi.fn()} transaction={t} customer={c} />
+    </QueryClientProvider>,
+  );
 
 describe('WhatsAppModal', () => {
-  it('pesan transaksi baru: total, dibayar, tanpa saldo/diskon/pajak', () => {
-    renderModal(tx);
-    expect(screen.getByText(/Total: Rp21\.000/)).toBeInTheDocument();
-    expect(screen.getByText(/Dibayar: Rp21\.000/)).toBeInTheDocument();
-    expect(screen.queryByText(/Saldo/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Diskon:|Pajak:/)).not.toBeInTheDocument();
+  let openSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+  });
+  afterEach(() => openSpy.mockRestore());
+
+  it('pesan tidak bisa diedit dan yang terkirim adalah pesan otomatis', async () => {
+    renderModal();
+    expect(screen.queryByRole('textbox', { name: 'Isi Pesan' })).not.toBeInTheDocument();
+    const shown = screen.getByText(/Halo Bu Ani/);
+    expect(shown).toHaveTextContent('Cimenyan');
+    fireEvent.click(screen.getByRole('button', { name: /Kirim/ }));
+    const url = openSpy.mock.calls[0][0] as string;
+    expect(url).toMatch(/^https:\/\/wa\.me\/628123456789\?text=/);
+    const sentText = decodeURIComponent(url.split('?text=')[1]);
+    expect(sentText).toContain('Total: Rp21.000');
+    expect(sentText).toContain('Halo Bu Ani');
+    await waitFor(() => expect(markSent).toHaveBeenCalledWith('t1'));
+    expect(updateCustomer).not.toHaveBeenCalled();
   });
 
-  it('pesan siap diambil tanpa baris saldo', () => {
-    renderModal({ ...tx, orderStatus: OrderStatus.Ready });
-    expect(screen.getByText(/SIAP DIAMBIL/)).toBeInTheDocument();
-    expect(screen.queryByText(/Saldo/i)).not.toBeInTheDocument();
-  });
+  it('pelanggan tanpa nomor: tombol kirim nonaktif sampai nomor diisi, lalu nomor disimpan', async () => {
+    renderModal(tx, { ...customer, phone: undefined });
+    const sendBtn = screen.getByRole('button', { name: /Kirim/ });
+    expect(sendBtn).toBeDisabled();
+    expect(screen.getByText(/belum punya nomor HP/)).toBeInTheDocument();
 
-  it('pesan selesai tapi belum lunas tidak menulis LUNAS', () => {
-    renderModal({
-      ...tx,
-      orderStatus: OrderStatus.Completed,
-      paymentStatus: PaymentStatus.Unpaid,
-      amountPaid: 5000,
+    fireEvent.change(screen.getByLabelText(/Kirim ke Bu Ani/), {
+      target: { value: '0812 3456 7890' },
     });
-    expect(screen.getByText(/Status Bayar\*: Belum Lunas/)).toBeInTheDocument();
-    expect(screen.getByText(/Sisa Tagihan: Rp16\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/otomatis disimpan ke data pelanggan/)).toBeInTheDocument();
+    expect(sendBtn).toBeEnabled();
+    fireEvent.click(sendBtn);
+
+    expect(openSpy.mock.calls[0][0]).toMatch(/^https:\/\/wa\.me\/6281234567890\?text=/);
+    await waitFor(() =>
+      expect(updateCustomer).toHaveBeenCalledWith('c1', { phone: '0812 3456 7890' }),
+    );
   });
 
-  it('pesan selesai lunas memakai footer', () => {
-    renderModal({ ...tx, orderStatus: OrderStatus.Completed });
-    expect(screen.getByText(/Status Bayar\*: Lunas/)).toBeInTheDocument();
-    expect(screen.getByText(/forms\.gle/)).toBeInTheDocument();
+  it('nomor pelanggan yang valid dikunci (tidak ada kolom isian)', () => {
+    renderModal();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByText('Bu Ani (+628123456789)')).toBeInTheDocument();
+    expect(screen.getByText(/buka halaman Pelanggan/)).toBeInTheDocument();
   });
 
-  it('menampilkan subtotal, diskon dan pajak bila ada', () => {
-    renderModal({ ...tx, discount: 2000, tax: 1000, total: 20000, amountPaid: 20000 });
-    expect(screen.getByText(/Subtotal: Rp21\.000/)).toBeInTheDocument();
-    expect(screen.getByText(/Diskon: -Rp2\.000/)).toBeInTheDocument();
-    expect(screen.getByText(/Pajak: Rp1\.000/)).toBeInTheDocument();
+  it('nomor tidak valid di data pelanggan boleh diperbaiki dan disimpan', async () => {
+    renderModal(tx, { ...customer, phone: '0812' });
+    const input = screen.getByLabelText(/Kirim ke Bu Ani/) as HTMLInputElement;
+    expect(input.value).toBe('0812');
+    expect(screen.getByText(/tidak valid/)).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: '081298765432' } });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim/ }));
+    expect(openSpy.mock.calls[0][0]).toMatch(/^https:\/\/wa\.me\/6281298765432\?text=/);
+    await waitFor(() =>
+      expect(updateCustomer).toHaveBeenCalledWith('c1', { phone: '081298765432' }),
+    );
   });
 
-  it('estimasi kosong tidak menghasilkan Invalid Date', () => {
-    renderModal({ ...tx, estimatedCompletionDate: '' });
-    expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Estimasi Selesai/)).not.toBeInTheDocument();
-  });
-});
-
-describe('normalizeWhatsAppPhone', () => {
-  it.each([
-    ['08123456789', '628123456789'],
-    ['+62 812-3456-789', '628123456789'],
-    ['628123456789', '628123456789'],
-    ['8123456789', '628123456789'],
-  ])('%s → %s', (input, expected) => {
-    expect(normalizeWhatsAppPhone(input)).toBe(expected);
-  });
-
-  it('kosong atau terlalu pendek → null', () => {
-    expect(normalizeWhatsAppPhone('')).toBeNull();
-    expect(normalizeWhatsAppPhone(undefined)).toBeNull();
-    expect(normalizeWhatsAppPhone('0812')).toBeNull();
+  it('menampilkan status sudah dikirim dan tombol kirim ulang', () => {
+    renderModal({ ...tx, whatsappSentAt: '2026-11-27T08:00:00Z' });
+    expect(screen.getByRole('status')).toHaveTextContent(/Sudah pernah dikirim/);
+    expect(screen.getByRole('button', { name: /Kirim Ulang/ })).toBeInTheDocument();
   });
 });

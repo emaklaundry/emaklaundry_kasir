@@ -46,6 +46,24 @@ import {
 // Tipe kustom untuk transaksi dengan nama pelanggan
 type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
 
+const waButtonTitle = (t: Transaction) =>
+  t.whatsappSentAt
+    ? `Struk sudah dikirim via WhatsApp (${new Date(t.whatsappSentAt).toLocaleString('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })}). Klik untuk kirim ulang.`
+    : 'Kirim Struk via WhatsApp (belum dikirim)';
+
+/** Titik centang kecil di pojok ikon kirim: struk sudah pernah dikirim. */
+const WaSentDot: React.FC = () => (
+  <span
+    aria-hidden="true"
+    className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold leading-none text-white"
+  >
+    ✓
+  </span>
+);
+
 const TransactionPage: React.FC = () => {
   const { currentUser } = useAppContext();
   const canCreateTransaction = can(currentUser?.role, 'transaction.create');
@@ -905,10 +923,16 @@ const TransactionPage: React.FC = () => {
                               addToast('Data pelanggan tidak ditemukan.', 'error');
                             }
                           }}
-                          title="Kirim Struk via WhatsApp"
-                          className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700"
+                          title={waButtonTitle(t)}
+                          aria-label={waButtonTitle(t)}
+                          className={`relative p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${
+                            t.whatsappSentAt
+                              ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
+                              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                          }`}
                         >
                           <SendIcon className="w-5 h-5" />
+                          {t.whatsappSentAt && <WaSentDot />}
                         </button>
                       </td>
                     </tr>
@@ -1041,10 +1065,16 @@ const TransactionPage: React.FC = () => {
                           addToast('Data pelanggan tidak ditemukan.', 'error');
                         }
                       }}
-                      title="Kirim Struk via WhatsApp"
-                      className="hover:text-slate-900 dark:hover:text-white"
+                      title={waButtonTitle(t)}
+                      aria-label={waButtonTitle(t)}
+                      className={`relative ${
+                        t.whatsappSentAt
+                          ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
+                          : 'hover:text-slate-900 dark:hover:text-white'
+                      }`}
                     >
                       <SendIcon className="w-6 h-6" />
+                      {t.whatsappSentAt && <WaSentDot />}
                     </button>
                   </div>
                 </div>

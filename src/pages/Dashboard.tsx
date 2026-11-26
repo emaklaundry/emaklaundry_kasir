@@ -332,9 +332,9 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
+      <div className="space-y-4 p-3 sm:p-0">
         <div className="mb-3 sm:mb-4 flex justify-between items-center">
-          <h2 className="text-base sm:text-xl font-medium text-slate-600 dark:text-slate-400">
+          <h2 className="text-base sm:text-lg font-medium text-slate-600 dark:text-slate-400">
             Tampilan Data:{' '}
             <span className="font-semibold text-slate-800 dark:text-slate-200">
               {getStoreName()}
@@ -343,7 +343,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Weather Widget */}
-        <div className="mb-6">
+        <div>
           <WeatherWidget
             latitude={selectedStoreData?.latitude}
             longitude={selectedStoreData?.longitude}
@@ -362,21 +362,21 @@ const Dashboard: React.FC = () => {
         />
 
         <div
-          className={`card p-4 sm:p-6 ${isStaff ? 'hidden sm:block' : 'block'}`}
+          className={`card p-4 ${isStaff ? 'hidden sm:block' : 'block'}`}
         >
-          <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
             Aksi Cepat
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <button
               onClick={() => setIsStockModalOpen(true)}
               disabled={isActionDisabled}
-              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+              className="p-3 md:px-3 md:py-2 rounded-lg border dark:border-slate-700 flex items-center gap-3 md:gap-2.5 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
-                <WrenchIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
+              <div className="p-2 md:p-1.5 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <WrenchIcon className="w-5 h-5 md:w-4 md:h-4 text-slate-600 dark:text-slate-300" />
               </div>
-              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
+              <span className="font-semibold text-base md:text-sm text-slate-700 dark:text-slate-200">
                 Update Stok
               </span>
             </button>
@@ -385,12 +385,12 @@ const Dashboard: React.FC = () => {
               <button
                 onClick={() => setIsExpenseModalOpen(true)}
                 disabled={isActionDisabled}
-                className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+                className="p-3 md:px-3 md:py-2 rounded-lg border dark:border-slate-700 flex items-center gap-3 md:gap-2.5 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
               >
-                <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
-                  <DollarSignIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
+                <div className="p-2 md:p-1.5 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                  <DollarSignIcon className="w-5 h-5 md:w-4 md:h-4 text-slate-600 dark:text-slate-300" />
                 </div>
-                <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
+                <span className="font-semibold text-base md:text-sm text-slate-700 dark:text-slate-200">
                   Catat Pengeluaran
                 </span>
               </button>
@@ -399,24 +399,24 @@ const Dashboard: React.FC = () => {
             <button
               onClick={() => setIsMaintenanceModalOpen(true)}
               disabled={isActionDisabled}
-              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+              className="p-3 md:px-3 md:py-2 rounded-lg border dark:border-slate-700 flex items-center gap-3 md:gap-2.5 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
-                <PlusCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
+              <div className="p-2 md:p-1.5 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <PlusCircleIcon className="w-5 h-5 md:w-4 md:h-4 text-slate-600 dark:text-slate-300" />
               </div>
-              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
+              <span className="font-semibold text-base md:text-sm text-slate-700 dark:text-slate-200">
                 Lapor Kerusakan
               </span>
             </button>
 
             <button
               onClick={() => setIsWashSettingsModalOpen(true)}
-              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+              className="p-3 md:px-3 md:py-2 rounded-lg border dark:border-slate-700 flex items-center gap-3 md:gap-2.5 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
-                <BookOpenIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
+              <div className="p-2 md:p-1.5 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <BookOpenIcon className="w-5 h-5 md:w-4 md:h-4 text-slate-600 dark:text-slate-300" />
               </div>
-              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
+              <span className="font-semibold text-base md:text-sm text-slate-700 dark:text-slate-200">
                 Panduan Mesin Cuci
               </span>
             </button>
@@ -430,24 +430,24 @@ const Dashboard: React.FC = () => {
 
         <div
           id="dashboard-recent"
-          className="card p-3 sm:p-4 md:p-6"
+          className="card p-3 sm:p-4"
         >
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
               Progres Pesanan Aktif
             </h2>
           </div>
           {/* Desktop Table View */}
           <div className="overflow-x-auto hidden sm:block">
-            <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-              <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+            <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+              <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">ID Transaksi</th>
-                  <th className="px-4 py-3">Pelanggan</th>
-                  <th className="px-4 py-3">Estimasi Selesai</th>
-                  <th className="px-4 py-3">Status Pesanan</th>
-                  <th className="px-4 py-3">Status Bayar</th>
-                  <th className="px-4 py-3 text-center">Aksi</th>
+                  <th className="px-4 py-2.5">ID Transaksi</th>
+                  <th className="px-4 py-2.5">Pelanggan</th>
+                  <th className="px-4 py-2.5">Estimasi Selesai</th>
+                  <th className="px-4 py-2.5">Status Pesanan</th>
+                  <th className="px-4 py-2.5">Status Bayar</th>
+                  <th className="px-4 py-2.5 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -464,26 +464,26 @@ const Dashboard: React.FC = () => {
 
                     return (
                       <tr key={t.id} className="border-b dark:border-slate-700">
-                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                        <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                           <Link to={`/transactions/${t.id}/details`} className="hover:underline">
                             {formatTransactionId(t)}
                           </Link>
                         </td>
-                        <td className="px-4 py-3">{t.customerName}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2.5">{t.customerName}</td>
+                        <td className="px-4 py-2.5">
                           {new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2.5">
                           <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                             {t.orderStatus}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2.5">
                           <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                             {t.paymentStatus}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-2.5 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                               <button
@@ -628,32 +628,32 @@ const Dashboard: React.FC = () => {
         </div>
 
         {!isStaff && (
-          <div className="card p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
+          <div className="card p-4">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
               Jadwal Perawatan Jatuh Tempo
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+              <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                   <tr>
-                    <th className="px-4 py-3">Aset</th>
-                    <th className="px-4 py-3">Deskripsi Perawatan</th>
-                    <th className="px-4 py-3">Jatuh Tempo</th>
-                    <th className="px-4 py-3 text-center">Aksi</th>
+                    <th className="px-4 py-2.5">Aset</th>
+                    <th className="px-4 py-2.5">Deskripsi Perawatan</th>
+                    <th className="px-4 py-2.5">Jatuh Tempo</th>
+                    <th className="px-4 py-2.5 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {maintenanceDue.length > 0 ? (
                     maintenanceDue.map((m) => (
                       <tr key={m.id} className="border-b dark:border-slate-700">
-                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                        <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                           {m.assetName}
                         </td>
-                        <td className="px-4 py-3">{m.description}</td>
-                        <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold">
+                        <td className="px-4 py-2.5">{m.description}</td>
+                        <td className="px-4 py-2.5 text-red-600 dark:text-red-400 font-semibold">
                           {new Date(m.nextDueDate).toLocaleDateString('id-ID')}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-2.5 text-center">
                           <button
                             onClick={() => handleMarkMaintenanceAsComplete(m)}
                             disabled={isActionDisabled}

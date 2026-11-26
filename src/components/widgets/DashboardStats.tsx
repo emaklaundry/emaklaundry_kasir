@@ -57,11 +57,11 @@ const StatCard: React.FC<{
   const t = TONES[tone];
   const body = (
     <div
-      className={`h-full rounded-lg border p-4 sm:p-5 ${t.box} ${to ? 'transition-colors hover:brightness-95' : ''}`}
+      className={`h-full rounded-lg border p-4 ${t.box} ${to ? 'transition-colors hover:brightness-95' : ''}`}
       title={hint}
     >
       <p className={`mb-1 text-xs font-medium sm:text-sm ${t.label}`}>{label}</p>
-      <p className={`text-xl font-bold tabular-nums sm:text-2xl md:text-3xl ${t.value}`}>{value}</p>
+      <p className={`text-xl font-bold tabular-nums sm:text-2xl ${t.value}`}>{value}</p>
       {sub && <div className={`mt-1 text-xs sm:text-sm ${t.sub}`}>{sub}</div>}
     </div>
   );

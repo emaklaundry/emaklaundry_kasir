@@ -9,6 +9,7 @@ import {
   ATTENDANCE_PING_INTERVAL_MS,
   recordAttendance,
 } from '../utils/attendanceTracker';
+import { flushAudit, setAuditActor, trackAudit } from '../utils/auditTracker';
 
 // Konfigurasi waktu timeout (5 menit)
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 menit = 300000ms
@@ -79,6 +80,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [loading, setLoading] = useState(true);
   const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Identitas pencatat log audit mengikuti pengguna yang sedang login.
+  useEffect(() => {
+    setAuditActor(
+      currentUser ? { name: currentUser.name, storeId: currentUser.storeId ?? null } : null,
+    );
+  }, [currentUser]);
   const { addToast } = useToasts(); // 2. INISIALISASI HOOK
 
   const prevLoggedInRef = useRef(false);
@@ -194,19 +202,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const endSession = useCallback(
     async (recordClockOut: boolean) => {
       if (currentUser) {
-        const newLog = {
-          timestamp: new Date().toISOString(),
-          user: currentUser.name ?? null,
-          action: 'Melakukan logout.',
-          storeId: currentUser.storeId ?? null,
-        };
-        supabase.from('audit_logs').insert([newLog]).then();
+        trackAudit({
+          action: recordClockOut
+            ? 'Melakukan logout.'
+            : 'Logout otomatis karena tidak ada aktivitas.',
+          category: 'sesi',
+        });
+        // Kirim semua log yang masih antre sebelum sesi auth berakhir.
+        await flushAudit();
         if (recordClockOut && currentUser.employeeId) {
           await recordAttendance('logout');
         }
       }
       removeSessionStorageItem(OFFLINE_PROFILE_KEY);
       await supabase.auth.signOut();
+      setAuditActor(null);
       setCurrentUser(null);
     },
     [currentUser],
