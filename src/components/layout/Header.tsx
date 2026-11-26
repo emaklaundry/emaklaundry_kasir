@@ -2,7 +2,7 @@ import * as React from 'react';
 import useAppContext from '../../contexts/useAppContext';
 import useTheme from '../../hooks/useTheme';
 import useCommandPalette from '../../hooks/useCommandPalette';
-import { SunIcon, MoonIcon, CommandIcon, KeyIcon, MenuIcon } from '../icons';
+import { SunIcon, MoonIcon, CommandIcon, KeyIcon, MenuIcon, LogOutIcon } from '../icons';
 import { UserRole } from '@/types';
 import ChangePasswordModal from '../ChangePasswordModal';
 
@@ -76,7 +76,7 @@ const Header: React.FC<{
 
   return (
     <>
-      <header className="print-hide bg-slate-50 dark:bg-slate-800 shadow-sm p-3 sm:p-4 sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
+      <header className="print-hide bg-slate-50 dark:bg-slate-800 shadow-sm p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-[max(1rem,env(safe-area-inset-top))] sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-3">
           {/* Menu button untuk toggle sidebar - di paling kiri */}
           {onToggleSidebar && (
@@ -100,16 +100,24 @@ const Header: React.FC<{
 
           <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
             {/* Mobile: Only essential items */}
-            <div className="flex items-center gap-1 sm:hidden">
+            <div className="flex items-center gap-0.5 sm:hidden">
               <ConnectionStatus />
               <ThemeToggleButton />
               <button
+                onClick={() => setIsPasswordModalOpen(true)}
+                className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors touch-target"
+                aria-label="Ubah Password"
+                title="Ubah Password"
+              >
+                <KeyIcon className="w-5 h-5" />
+              </button>
+              <button
                 onClick={signOut}
-                className="p-2 rounded-lg bg-red-600 text-white hover:bg-red-700 active:bg-red-800 transition-colors touch-target"
+                className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 active:bg-red-100 transition-colors touch-target"
                 aria-label="Logout"
                 title="Logout"
               >
-                <span className="text-sm">✕</span>
+                <LogOutIcon className="w-5 h-5" />
               </button>
             </div>
 
@@ -160,8 +168,8 @@ const Header: React.FC<{
             <div className="hidden sm:flex items-center gap-2">
               <div className="h-6 w-px bg-slate-300 dark:bg-slate-600" />
               <div className="flex items-center gap-2">
-                <div className="flex flex-col items-end text-right">
-                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-200">
+                <div className="hidden md:flex flex-col items-end text-right min-w-0">
+                  <span className="font-semibold text-sm text-slate-700 dark:text-slate-200 max-w-[10rem] truncate">
                     {currentUser?.name}
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400">

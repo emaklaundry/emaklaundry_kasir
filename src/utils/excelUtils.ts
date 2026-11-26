@@ -54,7 +54,6 @@ export async function exportCustomersToExcel(customers: Customer[]): Promise<voi
     { header: 'Nomor HP', key: 'phone', width: 20 },
     { header: 'Alamat', key: 'address', width: 45 },
     { header: 'Catatan', key: 'notes', width: 35 },
-    { header: 'Saldo Diskon', key: 'defaultDiscount', width: 15 },
   ];
 
   // Style header
@@ -76,7 +75,6 @@ export async function exportCustomersToExcel(customers: Customer[]): Promise<voi
       phone: customer.phone || '',
       address: customer.address || '',
       notes: customer.notes || '',
-      defaultDiscount: customer.defaultDiscount || 0,
     });
 
     // Alternate row styling
@@ -444,14 +442,13 @@ export async function importCustomersFromExcel(file: File): Promise<Partial<Cust
     const rawId = row.getCell(1).value?.toString();
     const customerId = rawId && rawId.trim() !== '' ? rawId : undefined;
 
-    // Structure: ID, Name, Phone, Address, Notes, Saldo Diskon
+    // Structure: ID, Name, Phone, Address, Notes
     const customer: Partial<Customer> = {
       id: customerId,
       name: row.getCell(2).value?.toString() || '',
       phone: row.getCell(3).value?.toString() || undefined,
       address: row.getCell(4).value?.toString() || undefined,
       notes: row.getCell(5).value?.toString() || undefined,
-      defaultDiscount: Number(row.getCell(6).value) || 0,
     };
 
     // Only add if name is not empty
@@ -744,7 +741,6 @@ export async function downloadCustomerTemplate(): Promise<void> {
     { header: 'Nomor HP', key: 'phone', width: 20 },
     { header: 'Alamat', key: 'address', width: 50 },
     { header: 'Catatan', key: 'notes', width: 40 },
-    { header: 'Saldo Diskon', key: 'defaultDiscount', width: 15 },
   ];
 
   // Style header
@@ -765,21 +761,18 @@ export async function downloadCustomerTemplate(): Promise<void> {
       phone: '081234567890',
       address: 'Jl. Merdeka No. 45, Jakarta',
       notes: 'Pelanggan VIP',
-      defaultDiscount: 50000,
     },
     {
       name: 'Pak Budi',
       phone: '082198765432',
       address: 'Perum Griya Asri Blok C12',
       notes: 'Pelanggan reguler',
-      defaultDiscount: 0,
     },
     {
       name: 'Hotel Grand Plaza',
       phone: '+6281234567890',
       address: 'Jl. Gatot Subroto No. 100',
       notes: 'Corporate client - tagihan bulanan',
-      defaultDiscount: 100000,
     },
   ];
 
@@ -2059,7 +2052,6 @@ export async function exportAllData(
     { header: 'Nomor HP', key: 'phone', width: 20 },
     { header: 'Alamat', key: 'address', width: 40 },
     { header: 'Catatan', key: 'notes', width: 30 },
-    { header: 'Saldo Diskon', key: 'defaultDiscount', width: 15 },
     { header: 'Store ID', key: 'storeId', width: 40 },
   ];
   customerSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2077,11 +2069,9 @@ export async function exportAllData(
       phone: customer.phone || '',
       address: customer.address || '',
       notes: customer.notes || '',
-      defaultDiscount: customer.defaultDiscount || 0,
       storeId: customer.storeId || '',
     });
   });
-  customerSheet.getColumn('F').numFmt = 'Rp #,##0';
 
   // Sheet 3: Services
   const serviceSheet = workbook.addWorksheet('🧺 Layanan');
@@ -2307,16 +2297,24 @@ export async function importAllData(file: File): Promise<{
   const customerSheet = workbook.getWorksheet('👥 Pelanggan');
   const customers: Customer[] = [];
   if (customerSheet) {
+    // Baca kolom berdasarkan nama header, supaya backup lama (masih punya kolom
+    // "Saldo Diskon") dan backup baru sama-sama bisa dipulihkan.
+    const customerColumns = new Map<string, number>();
+    customerSheet.getRow(1).eachCell((cell, colNumber) => {
+      customerColumns.set(String(cell.value ?? '').trim(), colNumber);
+    });
+    const customerCell = (row: ExcelJS.Row, header: string, fallback: number) =>
+      row.getCell(customerColumns.get(header) ?? fallback).value as string;
+
     customerSheet.eachRow((row, _rowNumber) => {
       if (_rowNumber > 1) {
         // Skip header
-        const id = row.getCell(1).value as string;
-        const name = row.getCell(2).value as string;
-        const phone = row.getCell(3).value as string;
-        const address = row.getCell(4).value as string;
-        const notes = row.getCell(5).value as string;
-        const defaultDiscount = Number(row.getCell(6).value) || 0;
-        const storeId = row.getCell(7).value as string;
+        const id = customerCell(row, 'ID', 1);
+        const name = customerCell(row, 'Nama', 2);
+        const phone = customerCell(row, 'Nomor HP', 3);
+        const address = customerCell(row, 'Alamat', 4);
+        const notes = customerCell(row, 'Catatan', 5);
+        const storeId = customerCell(row, 'Store ID', 6);
 
         if (id && name) {
           // @ts-expect-error - Partial customer from Excel, missing createdAt
@@ -2326,7 +2324,6 @@ export async function importAllData(file: File): Promise<{
             phone: phone || undefined,
             address: address || undefined,
             notes: notes || undefined,
-            defaultDiscount: defaultDiscount || 0,
             storeId: storeId || '',
           });
         }

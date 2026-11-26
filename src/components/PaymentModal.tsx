@@ -7,13 +7,11 @@ import Modal from './Modal';
 import DynamicQRIS from './DynamicQRIS';
 import { SpinnerIcon } from './icons';
 import { Transaction, PaymentMethod, PaymentStatus } from '@/types';
-import { calculateCashRounding } from '@/utils/roundingUtils';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | null;
-  /** `updatedTransaction.roundingCredit` berisi kelebihan pembulatan tunai (masuk saldo). */
   onSave: (updatedTransaction: Transaction) => Promise<void> | void;
   disabled?: boolean;
 }
@@ -49,26 +47,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const amountToPay = remainingBalance;
   const tenderedAmount = parseRupiah(tenderedAmountStr);
 
-  // Tunai dibulatkan ke atas ke Rp500; kelebihannya masuk saldo diskon pelanggan.
-  // Hanya untuk transaksi pelanggan terdaftar yang belum dibayar sama sekali
-  // (database mencocokkan kelebihan dengan total transaksi).
-  const canCreditRounding = Boolean(transaction?.customerId) && transaction?.amountPaid === 0;
-  const {
-    amountDue: roundedAmountToPay,
-    roundingCredit,
-    shouldRound: shouldRoundTotal,
-  } = useMemo(
-    () => calculateCashRounding(amountToPay, method, { hasCustomer: canCreditRounding }),
-    [amountToPay, method, canCreditRounding],
-  );
-
   // Calculate cash change (only applies to Cash payment)
   const change = useMemo(() => {
-    if (method !== PaymentMethod.Cash || !tenderedAmount || tenderedAmount < roundedAmountToPay) {
+    if (method !== PaymentMethod.Cash || !tenderedAmount || tenderedAmount < amountToPay) {
       return 0;
     }
-    return tenderedAmount - roundedAmountToPay;
-  }, [method, tenderedAmount, roundedAmountToPay]);
+    return tenderedAmount - amountToPay;
+  }, [method, tenderedAmount, amountToPay]);
 
   const handleSave = async () => {
     if (!transaction || isSaving) return;
@@ -85,7 +70,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         return;
       }
 
-      // Jika total 0 (karena diskon penuh atau pajak), atau amountPaid >= total, status harus Lunas
+      // Jika total 0 atau amountPaid >= total, status harus Lunas
       if (transaction.total === 0 || transaction.amountPaid >= transaction.total) {
         await onSave({
           ...transaction,
@@ -112,13 +97,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         return;
       }
 
-      if (method === PaymentMethod.Cash && lockedTenderedAmount < roundedAmountToPay) {
+      if (method === PaymentMethod.Cash && lockedTenderedAmount < lockedAmountToPay) {
         addToast('Jumlah uang yang diterima kurang dari jumlah yang harus dibayar.', 'error');
         return;
       }
 
-      // Total transaksi tidak berubah. Yang tercatat dibayar = sisa tagihan pas;
-      // kelebihan pembulatan tunai dicatat sebagai roundingCredit (masuk saldo).
       const newAmountPaid = Math.min(transaction.amountPaid + lockedAmountToPay, transaction.total);
       const newStatus =
         newAmountPaid >= transaction.total ? PaymentStatus.Paid : PaymentStatus.Unpaid;
@@ -130,7 +113,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         paymentStatus: newStatus,
         paymentMethod: method,
         change: isPaid ? change : 0,
-        roundingCredit: isPaid && method === PaymentMethod.Cash ? roundingCredit : 0,
       });
 
       onClose();
@@ -242,18 +224,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             htmlFor="amountToPay"
             className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
           >
-            {shouldRoundTotal ? 'Tagihan Tunai (Rp)' : 'Jumlah Bayar (Rp)'}
-            {shouldRoundTotal && (
-              <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-                (dibulatkan ke atas)
-              </span>
-            )}
+            Jumlah Bayar (Rp)
           </label>
           <input
             type="text"
             id="amountToPay"
             name="amountToPay"
-            value={formatRupiah(roundedAmountToPay)}
+            value={formatRupiah(amountToPay)}
             readOnly
             className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white opacity-70 cursor-not-allowed"
             autoComplete="off"
@@ -286,34 +263,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <div className="p-3 rounded-lg flex justify-between items-center text-xl font-bold bg-green-50 dark:bg-green-900/50 text-green-800 dark:text-green-300">
             <span>Kembalian:</span>
             <span>Rp {formatRupiah(change)}</span>
-          </div>
-        )}
-
-        {shouldRoundTotal && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700">
-            <div className="flex items-start gap-2">
-              <svg
-                className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div className="flex-1">
-                <p className="font-semibold text-blue-900 dark:text-blue-100 text-sm">
-                  Pembulatan tunai
-                </p>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  Sisa tagihan Rp {formatRupiah(amountToPay)} dibulatkan ke atas menjadi Rp{' '}
-                  {formatRupiah(roundedAmountToPay)}. Kelebihan Rp {formatRupiah(roundingCredit)}{' '}
-                  masuk saldo diskon pelanggan untuk transaksi berikutnya.
-                </p>
-              </div>
-            </div>
           </div>
         )}
       </div>

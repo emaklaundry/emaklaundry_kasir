@@ -24,9 +24,12 @@ const getPageTitle = (
     '/management/assets': 'Manajemen Aset & Pemeliharaan',
     '/management/expenses': 'Manajemen Pengeluaran',
     '/management/users': 'Manajemen Pengguna',
+    '/management/employees': 'Manajemen Karyawan',
+    '/management/attendance': 'Absensi',
     '/reports': 'Laporan',
     '/audit-log': 'Log Audit',
     '/settings': 'Pengaturan',
+    '/help': 'Bantuan & Tutorial',
   };
 
   if (staticTitles[pathname]) {
@@ -52,16 +55,19 @@ const getPageTitle = (
 
 import Tutorial from '../features/Tutorial';
 
+/** Lebar minimum (Tailwind `lg`) agar sidebar tetap terbuka di samping konten. Di bawahnya sidebar menjadi laci. */
+const SIDEBAR_PINNED_MIN_WIDTH = 1024;
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const params = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(() => {
-    return typeof window === 'undefined' ? true : window.innerWidth >= 640;
+    return typeof window === 'undefined' ? true : window.innerWidth >= SIDEBAR_PINNED_MIN_WIDTH;
   });
   const previousPath = React.useRef(location.pathname);
 
   React.useEffect(() => {
-    const desktopMedia = window.matchMedia('(min-width: 640px)');
+    const desktopMedia = window.matchMedia(`(min-width: ${SIDEBAR_PINNED_MIN_WIDTH}px)`);
     const syncSidebarWithViewport = (event: MediaQueryList | MediaQueryListEvent) => {
       setIsSidebarOpen(event.matches);
     };
@@ -75,7 +81,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const hasNavigated = previousPath.current !== location.pathname;
     previousPath.current = location.pathname;
 
-    if (window.innerWidth < 640) {
+    if (window.innerWidth < SIDEBAR_PINNED_MIN_WIDTH) {
       setIsSidebarOpen(false);
       if (hasNavigated) {
         window.requestAnimationFrame(() => document.getElementById('main-content')?.focus());
@@ -113,8 +119,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Sidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
 
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${
-          isSidebarOpen ? 'ml-0 sm:ml-64' : 'ml-0'
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+          isSidebarOpen ? 'ml-0 lg:ml-64' : 'ml-0'
         }`}
       >
         <Header
@@ -125,9 +131,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <main
           id="main-content"
           tabIndex={-1}
-          className={`p-2 sm:p-4 md:p-6 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-6 print-main-content`}
+          className={`p-3 sm:p-4 md:p-6 flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-6 print-main-content`}
         >
-          {children}
+          <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
         </main>
         <footer className="print-hide bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-2 sm:py-3 px-4 text-center hidden sm:block">
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">

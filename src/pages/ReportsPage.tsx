@@ -661,7 +661,6 @@ const ReportsPage: React.FC = () => {
         name: string;
         transactionCount: number;
         totalRevenue: number;
-        totalDiscount: number;
       };
     } = {};
     (filteredData.transactions as NormalizedTransaction[]).forEach((t) => {
@@ -675,11 +674,9 @@ const ReportsPage: React.FC = () => {
           name: name,
           transactionCount: 0,
           totalRevenue: 0,
-          totalDiscount: 0,
         };
       stats[userId].transactionCount++;
       stats[userId].totalRevenue += t.total;
-      stats[userId].totalDiscount += t.discount;
     });
     return Object.values(stats).sort((a, b) => b.totalRevenue - a.totalRevenue);
   }, [filteredData.transactions, userMap]);
@@ -1118,7 +1115,6 @@ const ReportsPage: React.FC = () => {
                     <th className="px-4 py-2">Nama Kasir</th>
                     <th className="px-4 py-2 text-center">Total Transaksi</th>
                     <th className="px-4 py-2 text-right">Total Pendapatan</th>
-                    <th className="px-4 py-2 text-right">Total Diskon</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1132,15 +1128,12 @@ const ReportsPage: React.FC = () => {
                         <td className="px-4 py-2 text-right">
                           Rp {c.totalRevenue.toLocaleString('id-ID')}
                         </td>
-                        <td className="px-4 py-2 text-right">
-                          Rp {c.totalDiscount.toLocaleString('id-ID')}
-                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={3}
                         className="text-center py-6 text-slate-500 dark:text-slate-400"
                       >
                         Tidak ada data performa.

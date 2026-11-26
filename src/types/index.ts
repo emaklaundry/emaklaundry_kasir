@@ -56,7 +56,6 @@ export interface Customer {
   phone?: string; // Optional - tidak wajib diisi
   address?: string;
   notes?: string;
-  defaultDiscount?: number; // Saldo diskon pelanggan (Rp)
   storeId: string;
   createdAt: Date;
 }
@@ -112,24 +111,8 @@ export interface Transaction {
   storeId: string;
   notes?: string;
   idempotencyKey?: string;
-  /** Bagian dari `discount` yang diambil dari saldo diskon pelanggan (Rp). */
-  discountBalanceUsed?: number;
-  /** Kelebihan pembulatan tunai ke atas yang masuk ke saldo pelanggan (Rp). */
-  roundingCredit?: number;
-}
-
-export type DiscountLedgerKind = 'use' | 'rounding' | 'manual' | 'reversal';
-
-/** Satu baris riwayat perubahan saldo diskon pelanggan. */
-export interface DiscountLedgerEntry {
-  id: string;
-  customerId: string;
-  transactionId: string | null;
-  kind: DiscountLedgerKind;
-  amount: number;
-  balanceAfter: number;
-  note: string | null;
-  createdAt: Date;
+  /** Izin PIN supervisor sekali pakai untuk aksi sensitif Kasir (ubah nota lunas, pembatalan). */
+  supervisorApprovalId?: string | null;
 }
 
 export interface InventoryItem {
@@ -213,7 +196,6 @@ export interface User {
   storeId?: string;
   createdAt?: Date;
   isActive: boolean;
-  canGiveDiscount: boolean;
 }
 
 export interface AuditLog {
@@ -227,8 +209,6 @@ export interface AuditLog {
 export interface Settings {
   id: number;
   receiptMessage: string;
-  taxRate: number;
-  discountRate: number;
   isMaintenanceMode?: boolean;
   maintenanceMessage?: string;
   whatsappFooter?: string;

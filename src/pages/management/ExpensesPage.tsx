@@ -457,17 +457,17 @@ const ExpensesPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-x-auto">
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-6 py-3">No</th>
-              <th className="px-6 py-3">Tanggal</th>
-              <th className="px-6 py-3">Keterangan</th>
-              <th className="px-6 py-3">Kategori</th>
-              <th className="px-6 py-3 text-right">Jumlah</th>
-              <th className="px-6 py-3 text-center">Sumber</th>
-              <th className="px-6 py-3 text-center">Aksi</th>
+              <th className="hidden sm:table-cell px-3 sm:px-6 py-3">No</th>
+              <th className="px-3 sm:px-6 py-3">Tanggal</th>
+              <th className="px-3 sm:px-6 py-3">Keterangan</th>
+              <th className="px-3 sm:px-6 py-3">Kategori</th>
+              <th className="px-3 sm:px-6 py-3 text-right">Jumlah</th>
+              <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-center">Sumber</th>
+              <th className="px-3 sm:px-6 py-3 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -477,27 +477,29 @@ const ExpensesPage: React.FC = () => {
                   key={`${item.source}-${item.id}`}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                  <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 text-slate-500 dark:text-slate-400">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </td>
-                  <td className="px-6 py-4">{new Date(item.date).toLocaleDateString('id-ID')}</td>
-                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    {new Date(item.date).toLocaleDateString('id-ID')}
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-slate-900 dark:text-white">
                     {item.description}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs ${item.category.includes('Aset') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'}`}
+                      className={`whitespace-nowrap px-2 py-1 rounded-full text-xs ${item.category.includes('Aset') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'}`}
                     >
                       {item.category}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right text-slate-900 dark:text-white">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right whitespace-nowrap tabular-nums text-slate-900 dark:text-white">
                     Rp {formatRupiah(item.amount)}
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 text-center">
                     {item.source === 'asset' ? 'Aset' : 'Pengeluaran'}
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
                     {item.source === 'expense' ? (
                       <button
                         onClick={() =>
@@ -515,7 +517,7 @@ const ExpensesPage: React.FC = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center">
+                <td colSpan={7} className="px-6 py-8 text-center">
                   Tidak ada data.
                 </td>
               </tr>

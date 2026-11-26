@@ -1,183 +1,53 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import React, { useLayoutEffect, useRef } from 'react';
+import { NavLink } from 'react-router-dom';
 import useAppContext from '../../contexts/useAppContext';
-import {
-  HomeIcon,
-  ShoppingCartIcon,
-  PackageIcon,
-  UsersIcon,
-  BarChartIcon,
-  SettingsIcon,
-  WrenchIcon,
-  DollarSignIcon,
-  HistoryIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  TruckIcon,
-  ChevronLeftIcon,
-  DatabaseIcon,
-  BookOpenIcon,
-  HelpCircleIcon,
-  ArrowTrendingUpIcon,
-  CalculatorIcon,
-  FileTextIcon,
-} from '../icons';
-import { useTutorial } from '../../hooks/useTutorial';
-import { UserRole } from '@/types';
+import { ChevronLeftIcon } from '../icons';
+import { NavItem, canSeeNavItem, navSections } from '../../config/navigation';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-interface NavItem {
-  path: string;
-  label: string;
-  icon: React.FC<{ className?: string }>;
-  adminOnly?: boolean;
-  superAdminOnly?: boolean;
-  children?: NavItem[];
-}
-
-const navItems: NavItem[] = [
-  { path: '/', label: 'Dashboard', icon: HomeIcon },
-  { path: '/transactions', label: 'Transaksi', icon: ShoppingCartIcon },
-  {
-    path: '/management',
-    label: 'Manajemen',
-    icon: PackageIcon,
-    adminOnly: true,
-    children: [
-      { path: '/management/stores', label: 'Cabang', icon: TruckIcon, superAdminOnly: true },
-      { path: '/management/customers', label: 'Pelanggan', icon: UsersIcon },
-      { path: '/management/services', label: 'Layanan', icon: PackageIcon },
-      { path: '/management/employees', label: 'Karyawan', icon: UsersIcon },
-      { path: '/management/attendance', label: 'Absensi', icon: HistoryIcon },
-      { path: '/management/inventory', label: 'Inventaris', icon: WrenchIcon },
-      { path: '/management/assets', label: 'Aset & Pemeliharaan', icon: WrenchIcon },
-      { path: '/management/expenses', label: 'Pengeluaran', icon: DollarSignIcon },
-      { path: '/management/sop', label: 'SOP (Prosedur)', icon: FileTextIcon },
-      { path: '/management/users', label: 'Pengguna', icon: UsersIcon },
-    ],
-  },
-  { path: '/reports', label: 'Laporan', icon: BarChartIcon, adminOnly: true },
-  { path: '/audit-log', label: 'Log Audit', icon: HistoryIcon, adminOnly: true },
-  { path: '/management/backup', label: 'Backup & Restore', icon: DatabaseIcon, adminOnly: true },
-  { path: '/docs', label: 'Dokumentasi', icon: BookOpenIcon },
-  { path: '/business-guide', label: 'Panduan Bisnis', icon: ArrowTrendingUpIcon },
-  { path: '/business/calculator', label: 'Kalkulator Bisnis', icon: CalculatorIcon },
-  { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
-];
-
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { currentUser } = useAppContext();
-  const { startTour } = useTutorial();
-  const location = useLocation();
-  const [openMenus, setOpenMenus] = useState<string[]>(['/management']);
   const sidebarRef = useRef<HTMLElement>(null);
 
   useLayoutEffect(() => {
     if (sidebarRef.current) sidebarRef.current.inert = !isOpen;
   }, [isOpen]);
 
-  const toggleMenu = (path: string) => {
-    setOpenMenus((prev) =>
-      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
-    );
-  };
+  const canSee = (item: NavItem) => canSeeNavItem(item, currentUser?.role);
 
-  const hasAdminAccess =
-    currentUser?.role === UserRole.SuperAdmin || currentUser?.role === UserRole.Admin;
-  const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
-
-  const renderNavLinks = (items: NavItem[]) => {
-    return items
-      .filter((item) => {
-        if (item.superAdminOnly && !isSuperAdmin) return false;
-        if (item.adminOnly && !hasAdminAccess) return false;
-
-        if (item.children) {
-          return item.children.some((child) => {
-            if (child.superAdminOnly && !isSuperAdmin) return false;
-            if (child.adminOnly && !hasAdminAccess) return false;
-            return true;
-          });
+  const renderNavLink = (item: NavItem) => (
+    <li key={item.path}>
+      <NavLink
+        to={item.path}
+        end={item.path === '/'}
+        className={({ isActive }) =>
+          `flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors duration-200 group ${
+            isActive
+              ? 'bg-brand-blue-600 dark:bg-brand-blue-600 text-white shadow-md shadow-brand-blue-500/30'
+              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+          }`
         }
-        return true;
-      })
-      .map((item) => {
-        if (item.children) {
-          const isParentActive = location.pathname.startsWith(item.path);
-          const isOpen = openMenus.includes(item.path);
-          const submenuId = `sidebar-submenu-${item.path.replace(/\W/g, '-')}`;
-          return (
-            <li key={item.path}>
-              <button
-                onClick={() => toggleMenu(item.path)}
-                aria-expanded={isOpen}
-                aria-controls={submenuId}
-                className={`w-full flex items-center p-3 text-base rounded-lg transition-all duration-200 group ${
-                  isParentActive
-                    ? 'bg-brand-blue-50 dark:bg-slate-700 text-brand-blue-700 dark:text-brand-blue-300'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
-                }`}
-              >
-                <item.icon
-                  className={`w-5 h-5 transition-all duration-200 ${
-                    isParentActive
-                      ? 'text-brand-blue-600 dark:text-brand-blue-400'
-                      : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-blue-600 dark:group-hover:text-brand-blue-400'
-                  }`}
-                />
-                <span className="flex-1 ml-3 text-left whitespace-nowrap font-medium">
-                  {item.label}
-                </span>
-                {isOpen ? (
-                  <ChevronUpIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                ) : (
-                  <ChevronDownIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                )}
-              </button>
-              {isOpen && (
-                <ul
-                  id={submenuId}
-                  className="mt-2 space-y-1 pl-3 border-l-2 border-slate-200 dark:border-slate-700"
-                >
-                  {renderNavLinks(item.children)}
-                </ul>
-              )}
-            </li>
-          );
-        }
-        return (
-          <li key={item.path}>
-            <NavLink
-              to={item.path}
-              end={item.path === '/'}
-              className={({ isActive }) =>
-                `flex items-center p-3 text-base rounded-lg transition-all duration-200 group ${
-                  isActive
-                    ? 'bg-brand-blue-600 dark:bg-brand-blue-600 text-white shadow-lg shadow-brand-blue-500/30'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:pl-4'
-                }`
-              }
-            >
-              <item.icon
-                className={`w-5 h-5 transition-all duration-200 ${'group-[.active]:text-white'}`}
-              />
-              <span className="ml-3 font-medium">{item.label}</span>
-            </NavLink>
-          </li>
-        );
-      });
-  };
+      >
+        <item.icon className="w-5 h-5 shrink-0" />
+        <span className="ml-3 font-medium truncate">{item.label}</span>
+      </NavLink>
+    </li>
+  );
+
+  const visibleSections = navSections
+    .map((section) => ({ ...section, items: section.items.filter(canSee) }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <>
       {/* Overlay untuk mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 z-30 sm:hidden"
+          className="fixed inset-0 bg-slate-900/50 z-30 lg:hidden"
           onClick={onToggle}
           aria-hidden="true"
         />
@@ -192,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         aria-label="Sidebar"
         aria-hidden={!isOpen}
       >
-        <div className="h-full px-3 py-4 overflow-y-auto bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
+        <div className="h-full px-3 py-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
           {/* Header dengan toggle button */}
           <div className="flex items-center justify-between mb-6">
             <NavLink to="/" className="flex items-center group">
@@ -212,33 +82,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           </div>
 
           <nav aria-label="Navigasi samping" className="flex-1">
-            <ul className="space-y-2 font-medium">{renderNavLinks(navItems)}</ul>
+            {visibleSections.map((section, index) => {
+              const headingId = `sidebar-section-${section.title.toLowerCase().replace(/\W+/g, '-')}`;
+              return (
+                <div
+                  key={section.title}
+                  className={
+                    index > 0
+                      ? 'mt-4 pt-4 border-t border-slate-200 dark:border-slate-700'
+                      : undefined
+                  }
+                >
+                  <h3
+                    id={headingId}
+                    className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                  >
+                    {section.title}
+                  </h3>
+                  <ul className="space-y-1" aria-labelledby={headingId}>
+                    {section.items.map(renderNavLink)}
+                  </ul>
+                </div>
+              );
+            })}
           </nav>
-
-          {/* Tutorial Button */}
-          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => {
-                if (location.pathname === '/' || location.pathname === '/dashboard') {
-                  startTour('dashboard');
-                } else if (location.pathname === '/transactions/new') {
-                  startTour('new_transaction');
-                } else if (location.pathname === '/transactions') {
-                  startTour('transaction_list');
-                } else if (location.pathname === '/management/employees') {
-                  startTour('employees');
-                } else {
-                  // Fallback to dashboard tour if on other pages
-                  startTour('dashboard');
-                }
-                if (window.innerWidth < 640) onToggle(); // Close sidebar on mobile
-              }}
-              className="w-full flex items-center p-3 text-base rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 group"
-            >
-              <HelpCircleIcon className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-brand-blue-600 dark:group-hover:text-brand-blue-400 transition-colors" />
-              <span className="ml-3 font-medium">Bantuan / Tutorial</span>
-            </button>
-          </div>
         </div>
       </aside>
     </>

@@ -225,7 +225,6 @@ const BusinessGuidePage: React.FC = () => {
                   🎁 Loyalty Program
                 </h4>
                 <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
-                  <li>• Diskon pembulatan otomatis (fitur POS)</li>
                   <li>• Bonus kg ke-10 gratis</li>
                   <li>• Member card dengan poin</li>
                 </ul>

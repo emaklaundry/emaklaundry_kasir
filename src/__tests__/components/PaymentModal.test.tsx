@@ -63,26 +63,25 @@ describe('PaymentModal', () => {
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
-  it('tunai: dibulatkan ke atas, total tetap, kelebihan jadi roundingCredit', async () => {
+  it('tunai: dibayar pas sesuai total, kembalian = uang diterima - total', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const tx = { ...mockTransaction, subtotal: 10300, total: 10300 };
     renderWithProviders(<PaymentModal {...defaultProps} transaction={tx} onSave={onSave} />);
 
-    expect(screen.getByLabelText(/tagihan tunai/i)).toHaveValue('10.500');
+    expect(screen.getByLabelText(/jumlah bayar/i)).toHaveValue('10.300');
     fireEvent.change(screen.getByLabelText(/uang diterima/i), { target: { value: '20000' } });
     fireEvent.click(screen.getByRole('button', { name: /simpan pembayaran/i }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     const saved = onSave.mock.calls[0][0];
     expect(saved.total).toBe(10300);
-    expect(saved.discount).toBe(0);
     expect(saved.amountPaid).toBe(10300);
     expect(saved.paymentStatus).toBe(PaymentStatus.Paid);
-    expect(saved.roundingCredit).toBe(200);
-    expect(saved.change).toBe(9500);
+    expect(saved.change).toBe(9700);
+    expect(saved).not.toHaveProperty('roundingCredit');
   });
 
-  it('non-tunai: dibayar pas tanpa roundingCredit', async () => {
+  it('non-tunai: dibayar pas tanpa kembalian', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const tx = { ...mockTransaction, subtotal: 10300, total: 10300 };
     renderWithProviders(<PaymentModal {...defaultProps} transaction={tx} onSave={onSave} />);
@@ -94,12 +93,12 @@ describe('PaymentModal', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     const saved = onSave.mock.calls[0][0];
     expect(saved.amountPaid).toBe(10300);
-    expect(saved.roundingCredit).toBe(0);
+    expect(saved.change).toBe(0);
   });
 
-  it('tanpa pelanggan terdaftar: tunai tidak dibulatkan', () => {
-    const tx = { ...mockTransaction, customerId: '', subtotal: 10300, total: 10300 };
-    renderWithProviders(<PaymentModal {...defaultProps} transaction={tx} />);
-    expect(screen.getByLabelText(/jumlah bayar/i)).toHaveValue('10.300');
+  it('tidak menampilkan info pembulatan atau saldo', () => {
+    renderWithProviders(<PaymentModal {...defaultProps} />);
+    expect(screen.queryByText(/pembulatan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/saldo/i)).not.toBeInTheDocument();
   });
 });

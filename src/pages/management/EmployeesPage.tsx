@@ -1,20 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useEmployees } from '../../contexts/useEmployees';
 import { useUsers } from '../../contexts/UserContext';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
 import Modal from '../../components/Modal';
+import EmployeeFormModal from '../../components/employees/EmployeeFormModal';
 import { Employee, EmployeeFormData, EmployeeRole } from '../../types/hrm';
 import { User, UserRole } from '../../types';
-import { supabase } from '../../utils/supabaseClient';
 import {
   PlusCircleIcon,
   EditIcon,
   TrashIcon,
   UserIcon,
   ArrowDownIcon,
+  SearchIcon,
 } from '../../components/icons';
 import { formatRupiah } from '../../utils/formatting';
+import { EMPLOYEE_ROLE_LABELS, formatSchedule } from '../../utils/employeeSchedule';
+import { revokeEmployeeLogin, setEmployeePin, syncEmployeeLogin } from '../../utils/employeeLogin';
+
+type StatusFilter = 'active' | 'inactive' | 'all';
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: 'active', label: 'Aktif' },
+  { value: 'inactive', label: 'Nonaktif' },
+  { value: 'all', label: 'Semua' },
+];
 
 const mapUserRoleToEmployeeRole = (userRole: UserRole): EmployeeRole => {
   switch (userRole) {
@@ -28,529 +39,526 @@ const mapUserRoleToEmployeeRole = (userRole: UserRole): EmployeeRole => {
   }
 };
 
+const errorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error && err.message ? err.message : fallback;
+
+const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => (
+  <span
+    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+      active
+        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+        : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+    }`}
+  >
+    {active ? 'Aktif' : 'Nonaktif'}
+  </span>
+);
+
+const LoginBadge: React.FC<{ enabled?: boolean }> = ({ enabled }) =>
+  enabled ? (
+    <span className="text-sm font-medium text-green-700 dark:text-green-400">Bisa login</span>
+  ) : (
+    <span className="text-sm text-slate-500 dark:text-slate-400">Belum diatur</span>
+  );
+
 const EmployeesPage: React.FC = () => {
   const { employees, isLoading, fetchEmployees, addEmployee, updateEmployee, deleteEmployee } =
     useEmployees();
   const { users } = useUsers();
-  const { selectedStoreId } = useAppContext();
+  const { currentUser, stores, selectedStoreId } = useAppContext();
   const { addToast } = useToasts();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [loginPin, setLoginPin] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<EmployeeFormData>({
-    storeId: selectedStoreId || '',
-    name: '',
-    phone: '',
-    role: 'operator',
-    baseSalary: 0,
-    commissionRate: 0,
-    isActive: true,
-  });
+  const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
+  const ownStoreId = currentUser?.storeId ?? '';
 
-  const handleImportUser = (user: User) => {
-    setIsImportModalOpen(false);
-    setEditingEmployee(null);
-    setFormData({
-      storeId: user.storeId || selectedStoreId || '',
-      name: user.name,
-      phone: '',
-      role: mapUserRoleToEmployeeRole(user.role),
-      baseSalary: 0,
-      commissionRate: 0,
-      isActive: true,
-    });
-    setIsModalOpen(true);
-    addToast('Data pengguna dimuat. Silakan lengkapi gaji dan komisi.', 'info');
-  };
+  const [storeFilter, setStoreFilter] = useState<string>(
+    isSuperAdmin ? selectedStoreId || 'all' : ownStoreId,
+  );
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Employee | null>(null);
+  const [initialData, setInitialData] = useState<Partial<EmployeeFormData> | undefined>();
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (selectedStoreId) {
-      fetchEmployees(selectedStoreId);
-    }
-  }, [selectedStoreId, fetchEmployees]);
+    if (isSuperAdmin) setStoreFilter(selectedStoreId || 'all');
+  }, [isSuperAdmin, selectedStoreId]);
 
-  const handleOpenModal = (employee?: Employee) => {
-    setLoginPin('');
-    if (employee) {
-      setEditingEmployee(employee);
-      setFormData({
-        storeId: employee.storeId,
-        name: employee.name,
-        phone: employee.phone || '',
-        role: employee.role,
-        baseSalary: employee.baseSalary,
-        commissionRate: employee.commissionRate,
-        isActive: employee.isActive,
-      });
-    } else {
-      setEditingEmployee(null);
-      setFormData({
-        storeId: selectedStoreId || '',
-        name: '',
-        phone: '',
-        role: 'operator',
-        baseSalary: 0,
-        commissionRate: 0,
-        isActive: true,
-      });
-    }
-    setIsModalOpen(true);
+  useEffect(() => {
+    fetchEmployees(storeFilter || undefined);
+  }, [storeFilter, fetchEmployees]);
+
+  const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? '-';
+  const showStoreColumn = isSuperAdmin && storeFilter === 'all';
+  const defaultStoreId = storeFilter && storeFilter !== 'all' ? storeFilter : ownStoreId;
+
+  const counts = useMemo(
+    () => ({
+      active: employees.filter((e) => e.isActive).length,
+      inactive: employees.filter((e) => !e.isActive).length,
+      canLogin: employees.filter((e) => e.loginEnabled).length,
+    }),
+    [employees],
+  );
+
+  const visibleEmployees = useMemo(() => {
+    const term = deferredQuery.trim().toLocaleLowerCase('id-ID');
+    return employees
+      .filter((e) =>
+        statusFilter === 'all' ? true : statusFilter === 'active' ? e.isActive : !e.isActive,
+      )
+      .filter(
+        (e) =>
+          !term ||
+          e.name.toLocaleLowerCase('id-ID').includes(term) ||
+          (e.phone ?? '').includes(term),
+      );
+  }, [employees, statusFilter, deferredQuery]);
+
+  const openForm = (employee: Employee | null, data?: Partial<EmployeeFormData>) => {
+    setEditing(employee);
+    setInitialData(data);
+    setFormOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingEmployee(null);
-    setLoginPin('');
+  const closeForm = () => {
+    if (isSaving) return;
+    setFormOpen(false);
+    setEditing(null);
+    setInitialData(undefined);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const refresh = () => fetchEmployees(storeFilter || undefined);
 
-    if (!formData.name.trim()) {
-      addToast('Nama karyawan wajib diisi', 'error');
-      return;
-    }
-
-    if (loginPin && !/^\d{6}$/.test(loginPin)) {
-      addToast('PIN harus terdiri dari 6 angka.', 'error');
-      return;
-    }
-
+  const handleSubmit = async (data: EmployeeFormData, pin: string) => {
     setIsSaving(true);
+    let saved: Employee | null = editing;
     try {
-      let employee: Employee;
-      if (editingEmployee) {
-        employee = editingEmployee;
-        await updateEmployee(employee.id, formData);
+      if (editing) {
+        await updateEmployee(editing.id, data);
       } else {
-        employee = await addEmployee(formData);
-        setEditingEmployee(employee);
+        saved = await addEmployee(data);
       }
+    } catch (err) {
+      addToast(errorMessage(err, 'Gagal menyimpan data karyawan.'), 'error');
+      setIsSaving(false);
+      return;
+    }
 
-      if (loginPin) {
-        const { data, error } = await supabase.functions.invoke('manage-employee-login', {
-          body: { action: 'set-pin', employeeId: employee.id, pin: loginPin },
-        });
-        if (error || data?.error) {
-          throw new Error(data?.error || error?.message || 'Gagal mengatur PIN karyawan.');
-        }
-      } else if (editingEmployee) {
-        const { data, error } = await supabase.functions.invoke('manage-employee-login', {
-          body: { action: 'sync', employeeId: employee.id },
-        });
-        if (error || data?.error) {
-          throw new Error(data?.error || error?.message || 'Gagal menyinkronkan profil login.');
-        }
-      }
-
-      await fetchEmployees(selectedStoreId);
-      handleCloseModal();
+    // Data karyawan sudah tersimpan; akun login diurus terpisah agar pesan galatnya jelas.
+    try {
+      if (saved && pin) await setEmployeePin(saved.id, pin);
+      else if (saved && editing?.loginEnabled) await syncEmployeeLogin(saved.id);
       addToast(
-        editingEmployee ? 'Data karyawan berhasil diupdate' : 'Karyawan baru berhasil ditambahkan',
+        pin
+          ? 'Data karyawan tersimpan dan PIN login sudah diatur.'
+          : editing
+            ? 'Data karyawan berhasil diperbarui.'
+            : 'Karyawan baru berhasil ditambahkan.',
         'success',
       );
-    } catch {
-      addToast('Gagal menyimpan data karyawan atau profil login.', 'error');
+    } catch (err) {
+      addToast(
+        `Data karyawan tersimpan, tetapi akun login gagal diperbarui: ${errorMessage(err, 'coba lagi.')}`,
+        'warning',
+      );
+    } finally {
+      await refresh();
+      setIsSaving(false);
+      setFormOpen(false);
+      setEditing(null);
+      setInitialData(undefined);
+    }
+  };
+
+  const handleToggleActive = async (employee: Employee) => {
+    const nextActive = !employee.isActive;
+    if (
+      !nextActive &&
+      !window.confirm(
+        `Nonaktifkan ${employee.name}? Login-nya ditutup, data dan riwayatnya tetap tersimpan.`,
+      )
+    )
+      return;
+    try {
+      await updateEmployee(employee.id, { isActive: nextActive });
+      if (employee.loginEnabled || !nextActive) await syncEmployeeLogin(employee.id);
+      addToast(
+        nextActive
+          ? `${employee.name} diaktifkan kembali. Atur PIN bila perlu login.`
+          : `${employee.name} dinonaktifkan.`,
+        'success',
+      );
+    } catch (err) {
+      addToast(errorMessage(err, 'Gagal mengubah status karyawan.'), 'error');
+    } finally {
+      await refresh();
+    }
+  };
+
+  const handleRevokeLogin = async (employee: Employee) => {
+    if (!window.confirm(`Cabut akses login ${employee.name}? PIN-nya tidak bisa dipakai lagi.`))
+      return;
+    setIsSaving(true);
+    try {
+      await revokeEmployeeLogin(employee.id);
+      addToast(`Akses login ${employee.name} dicabut.`, 'success');
+      setFormOpen(false);
+      setEditing(null);
+    } catch (err) {
+      addToast(errorMessage(err, 'Gagal mencabut akses login.'), 'error');
     } finally {
       setIsSaving(false);
+      await refresh();
     }
   };
 
   const handleDelete = async (employee: Employee) => {
-    if (window.confirm(`Yakin ingin menghapus karyawan "${employee.name}"?`)) {
-      try {
-        const { data, error } = await supabase.functions.invoke('manage-employee-login', {
-          body: { action: 'delete', employeeId: employee.id },
-        });
-        if (error || data?.error) {
-          throw new Error(data?.error || error?.message || 'Gagal menghapus akun login.');
-        }
-        await deleteEmployee(employee.id);
-        addToast('Karyawan berhasil dihapus', 'success');
-      } catch {
-        addToast('Gagal menghapus karyawan atau akun loginnya.', 'error');
-      }
+    if (
+      !window.confirm(
+        `Hapus permanen ${employee.name}? Riwayat absensi, kasbon, dan gaji karyawan ini ikut terhapus.\n\nUntuk karyawan yang berhenti, gunakan Nonaktifkan.`,
+      )
+    )
+      return;
+    try {
+      if (employee.loginEnabled) await revokeEmployeeLogin(employee.id);
+      await deleteEmployee(employee.id);
+      addToast(`${employee.name} dihapus.`, 'success');
+    } catch (err) {
+      addToast(errorMessage(err, 'Gagal menghapus karyawan.'), 'error');
+      await refresh();
     }
   };
 
-  const getRoleBadge = (role: EmployeeRole) => {
-    const styles = {
-      operator: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-      kasir: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-      admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
-    };
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[role]}`}>
-        {role.charAt(0).toUpperCase() + role.slice(1)}
-      </span>
-    );
+  const handleImportUser = (user: User) => {
+    setIsImportOpen(false);
+    openForm(null, {
+      storeId: user.storeId || defaultStoreId,
+      name: user.name,
+      role: mapUserRoleToEmployeeRole(user.role),
+    });
+    addToast('Data pengguna dimuat. Lengkapi jadwal dan kompensasinya.', 'info');
   };
 
+  const compensation = (e: Employee) =>
+    [
+      `Rp ${formatRupiah(e.baseSalary)}`,
+      e.commissionRate > 0 ? `+${e.commissionRate}% komisi` : '',
+      e.monthlyIncentive > 0 ? `+Rp ${formatRupiah(e.monthlyIncentive)} insentif` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+  const actionButtons = (employee: Employee) => (
+    <>
+      <button
+        type="button"
+        onClick={() => openForm(employee)}
+        className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 touch-target"
+      >
+        <EditIcon className="h-4 w-4" />
+        Edit
+      </button>
+      <button
+        type="button"
+        onClick={() => handleToggleActive(employee)}
+        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 touch-target"
+      >
+        {employee.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+      </button>
+      <button
+        type="button"
+        onClick={() => handleDelete(employee)}
+        aria-label={`Hapus ${employee.name}`}
+        title="Hapus permanen"
+        className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 touch-target"
+      >
+        <TrashIcon className="h-4 w-4" />
+      </button>
+    </>
+  );
+
+  const importableUsers = users.filter((u) => u.role !== UserRole.SuperAdmin);
+
   return (
-    <div className="p-4 sm:p-6">
-      <div className="flex justify-between items-center mb-6" id="employees-header">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Karyawan</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Kelola data karyawan dan komisi
-          </p>
-        </div>
+    <div className="space-y-4">
+      <div
+        id="employees-header"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p className="text-slate-600 dark:text-slate-400">
+          {counts.active} aktif · {counts.inactive} nonaktif · {counts.canLogin} bisa login
+        </p>
         <div className="flex gap-2">
           <button
             id="employees-import-btn"
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+            type="button"
+            onClick={() => setIsImportOpen(true)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2.5 font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 sm:flex-none touch-target"
           >
-            <ArrowDownIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Import dari Pengguna</span>
+            <ArrowDownIcon className="h-5 w-5" />
+            Import dari Pengguna
           </button>
           <button
             id="employees-add-btn"
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            type="button"
+            onClick={() => openForm(null)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-blue-600 px-4 py-2.5 font-medium text-white hover:bg-brand-blue-700 sm:flex-none touch-target"
           >
-            <PlusCircleIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Tambah Karyawan</span>
+            <PlusCircleIcon className="h-5 w-5" />
+            Tambah Karyawan
           </button>
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-slate-500 mt-3">Memuat data...</p>
+      <div className="flex flex-col gap-3 rounded-lg bg-white p-3 shadow-sm dark:bg-slate-800 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <label htmlFor="employee-search" className="sr-only">
+            Cari karyawan
+          </label>
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+          <input
+            id="employee-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cari nama atau nomor HP"
+            className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+          />
         </div>
-      ) : employees.length === 0 ? (
-        <div
-          className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg"
-          id="employees-list"
-        >
-          <UserIcon className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-slate-400">Belum ada data karyawan</p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
-          >
-            + Tambah Karyawan Pertama
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="employees-list">
-          {employees.map((employee) => (
-            <div
-              key={employee.id}
-              className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 border border-slate-200 dark:border-slate-700"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                    <UserIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">
-                      {employee.name}
-                    </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {employee.phone || '-'}
-                    </p>
-                  </div>
-                </div>
-                {getRoleBadge(employee.role)}
-              </div>
-
-              <div className="space-y-2 text-sm mb-4">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Gaji Pokok</span>
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    Rp {formatRupiah(employee.baseSalary)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Komisi</span>
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {employee.commissionRate}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Status</span>
-                  <span
-                    className={`font-medium ${employee.isActive ? 'text-green-600' : 'text-red-600'}`}
-                  >
-                    {employee.isActive ? 'Aktif' : 'Nonaktif'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Login profil</span>
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {employee.loginEnabled ? 'Aktif' : 'Belum diatur'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
-                <button
-                  onClick={() => handleOpenModal(employee)}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-300"
-                >
-                  <EditIcon className="w-4 h-4" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(employee)}
-                  className="flex items-center justify-center gap-1 px-3 py-2 text-sm bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg text-red-600 dark:text-red-400"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Employee Form Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title={editingEmployee ? 'Edit Karyawan' : 'Tambah Karyawan'}
-        footer={
-          <>
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={handleCloseModal}
-              className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium dark:bg-slate-700 dark:text-slate-300"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              form="employee-form"
-              disabled={isSaving}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
-            >
-              {isSaving ? 'Menyimpan...' : editingEmployee ? 'Update' : 'Simpan'}
-            </button>
-          </>
-        }
-      >
-        <form
-          id="employee-form"
-          aria-label="Form karyawan"
-          method="post"
-          onSubmit={handleSubmit}
-          className="space-y-4"
-        >
+        {isSuperAdmin && (
           <div>
-            <label
-              htmlFor="employee-name"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
-              Nama Karyawan *
-            </label>
-            <input
-              id="employee-name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              placeholder="Masukkan nama"
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="employee-phone"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
-              Nomor HP
-            </label>
-            <input
-              id="employee-phone"
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              placeholder="08xxxxxxxxxx"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="employee-role"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
-              Posisi
+            <label htmlFor="employee-store-filter" className="sr-only">
+              Filter cabang
             </label>
             <select
-              id="employee-role"
-              name="role"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as EmployeeRole })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              id="employee-store-filter"
+              value={storeFilter}
+              onChange={(e) => setStoreFilter(e.target.value)}
+              className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white md:w-48"
             >
-              <option value="operator">Operator</option>
-              <option value="kasir">Kasir</option>
-              <option value="admin">Admin</option>
+              <option value="all">Semua cabang</option>
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
             </select>
           </div>
+        )}
+        <div
+          role="radiogroup"
+          aria-label="Filter status"
+          className="grid grid-cols-3 rounded-lg bg-slate-100 p-1 dark:bg-slate-700"
+        >
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              role="radio"
+              aria-checked={statusFilter === f.value}
+              onClick={() => setStatusFilter(f.value)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                statusFilter === f.value
+                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="employee-salary"
-                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-              >
-                Gaji Pokok (Rp)
-              </label>
-              <input
-                id="employee-salary"
-                name="baseSalary"
-                type="number"
-                value={formData.baseSalary}
-                onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                min="0"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="employee-commission"
-                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-              >
-                Komisi (%)
-              </label>
-              <input
-                id="employee-commission"
-                name="commissionRate"
-                type="number"
-                value={formData.commissionRate}
-                onChange={(e) =>
-                  setFormData({ ...formData, commissionRate: Number(e.target.value) })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                min="0"
-                max="100"
-                step="0.1"
-              />
-            </div>
+      <div id="employees-list">
+        {isLoading ? (
+          <div className="py-12 text-center" role="status">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-blue-500 border-t-transparent" />
+            <p className="mt-3 text-slate-500">Memuat data karyawan…</p>
           </div>
-
-          <div className="space-y-2">
-            <div>
-            <label
-              htmlFor="employee-login-pin"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
-              PIN login (6 digit)
-            </label>
-            <input
-              id="employee-login-pin"
-              name="loginPin"
-              type="password"
-              inputMode="numeric"
-              autoComplete="new-password"
-              pattern="[0-9]{6}"
-              minLength={6}
-              maxLength={6}
-              value={loginPin}
-              onChange={(e) => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              aria-describedby="employee-login-pin-help"
-            />
-            <p
-              id="employee-login-pin-help"
-              className="mt-1 text-xs text-slate-500 dark:text-slate-400"
-            >
-              {editingEmployee?.loginEnabled
-                ? 'Kosongkan jika PIN tidak ingin diubah.'
-                : 'PIN 6 angka diperlukan untuk mengaktifkan login profil.'}
+        ) : visibleEmployees.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center dark:border-slate-600">
+            <UserIcon className="mx-auto mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" />
+            <p className="font-medium text-slate-700 dark:text-slate-200">
+              {employees.length === 0
+                ? 'Belum ada data karyawan.'
+                : 'Tidak ada karyawan yang cocok dengan filter.'}
             </p>
+            {employees.length === 0 && (
+              <button
+                type="button"
+                onClick={() => openForm(null)}
+                className="mt-4 rounded-lg bg-brand-blue-600 px-4 py-2 font-medium text-white hover:bg-brand-blue-700 touch-target"
+              >
+                Tambah karyawan pertama
+              </button>
+            )}
           </div>
-          </div>
+        ) : (
+          <>
+            {/* Desktop: tabel */}
+            <div className="hidden overflow-x-auto rounded-lg bg-white shadow-sm dark:bg-slate-800 md:block">
+              <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                  <tr>
+                    <th className="px-4 py-3">Karyawan</th>
+                    <th className="px-4 py-3">Posisi</th>
+                    {showStoreColumn && <th className="px-4 py-3">Cabang</th>}
+                    <th className="hidden px-4 py-3 lg:table-cell">Jadwal</th>
+                    <th className="px-4 py-3">Kompensasi</th>
+                    <th className="px-4 py-3">Login</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleEmployees.map((e) => (
+                    <tr key={e.id} className="border-t border-slate-200 dark:border-slate-700">
+                      <td className="px-4 py-3">
+                        <span className="block font-medium text-slate-900 dark:text-white">
+                          {e.name}
+                        </span>
+                        <span className="text-xs text-slate-500">{e.phone || '-'}</span>
+                      </td>
+                      <td className="px-4 py-3">{EMPLOYEE_ROLE_LABELS[e.role] ?? e.role}</td>
+                      {showStoreColumn && <td className="px-4 py-3">{storeName(e.storeId)}</td>}
+                      <td className="hidden px-4 py-3 lg:table-cell">
+                        {formatSchedule(e.workDays, e.shiftStart, e.shiftEnd)}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">{compensation(e)}</td>
+                      <td className="px-4 py-3">
+                        <LoginBadge enabled={e.loginEnabled} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge active={e.isActive} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1.5">{actionButtons(e)}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="w-4 h-4 text-blue-600 rounded"
-            />
-            <label htmlFor="isActive" className="text-sm text-slate-700 dark:text-slate-300">
-              Karyawan Aktif
-            </label>
-          </div>
-        </form>
-      </Modal>
+            {/* Mobile: kartu */}
+            <ul className="space-y-3 md:hidden">
+              {visibleEmployees.map((e) => (
+                <li
+                  key={e.id}
+                  className="rounded-lg bg-white p-4 shadow-sm dark:bg-slate-800"
+                  aria-label={e.name}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-slate-900 dark:text-white">
+                        {e.name}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {EMPLOYEE_ROLE_LABELS[e.role] ?? e.role}
+                        {showStoreColumn ? ` · ${storeName(e.storeId)}` : ''}
+                        {e.phone ? ` · ${e.phone}` : ''}
+                      </p>
+                    </div>
+                    <StatusBadge active={e.isActive} />
+                  </div>
+                  <dl className="mt-3 grid grid-cols-1 gap-1.5 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">Jadwal</dt>
+                      <dd className="text-right text-slate-800 dark:text-slate-200">
+                        {formatSchedule(e.workDays, e.shiftStart, e.shiftEnd)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">Kompensasi</dt>
+                      <dd className="text-right tabular-nums text-slate-800 dark:text-slate-200">
+                        {compensation(e)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">Login</dt>
+                      <dd>
+                        <LoginBadge enabled={e.loginEnabled} />
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                    {actionButtons(e)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
 
-      {/* Import User Modal */}
+      {formOpen && (
+        <EmployeeFormModal
+          key={editing?.id ?? 'new'}
+          isOpen
+          employee={editing}
+          initialData={initialData}
+          stores={stores}
+          canChooseStore={isSuperAdmin}
+          defaultStoreId={defaultStoreId}
+          isSaving={isSaving}
+          onClose={closeForm}
+          onSubmit={handleSubmit}
+          onRevokeLogin={handleRevokeLogin}
+        />
+      )}
+
       <Modal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
         title="Import dari Pengguna"
         footer={
           <button
-            onClick={() => setIsImportModalOpen(false)}
-            className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium dark:bg-slate-700 dark:text-slate-300"
+            type="button"
+            onClick={() => setIsImportOpen(false)}
+            className="rounded-lg bg-slate-100 px-4 py-2 font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
           >
             Tutup
           </button>
         }
       >
-        <div className="space-y-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Pilih pengguna aplikasi yang ingin dijadikan karyawan. Data nama dan peran akan otomatis
-            diambil.
-          </p>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {users.filter((u) => u.role !== UserRole.SuperAdmin).length === 0 ? (
-              <p className="text-center py-4 text-slate-500">Tidak ada pengguna yang tersedia.</p>
-            ) : (
-              users
-                .filter((u) => u.role !== UserRole.SuperAdmin) // Filter SuperAdmin out normally
-                .map((user) => {
-                  const isAlreadyEmployee = employees.some(
-                    (e) => e.name.toLowerCase() === user.name.toLowerCase(),
-                  );
-                  return (
-                    <button
-                      key={user.id}
-                      onClick={() => !isAlreadyEmployee && handleImportUser(user)}
-                      disabled={isAlreadyEmployee}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-colors ${
-                        isAlreadyEmployee
-                          ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed dark:bg-slate-800 dark:border-slate-700'
-                          : 'bg-white border-slate-200 hover:bg-blue-50 hover:border-blue-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${isAlreadyEmployee ? 'bg-slate-200' : 'bg-blue-100 text-blue-600'}`}
-                        >
-                          <UserIcon className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">{user.name}</p>
-                          <p className="text-xs text-slate-500">{user.role}</p>
-                        </div>
-                      </div>
-                      {isAlreadyEmployee && (
-                        <span className="text-xs font-medium text-slate-400">
-                          Sudah Ditambahkan
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-            )}
-          </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Pilih pengguna aplikasi yang ingin dijadikan karyawan. Nama, cabang, dan posisi diambil
+          otomatis.
+        </p>
+        <div className="max-h-96 space-y-2 overflow-y-auto">
+          {importableUsers.length === 0 ? (
+            <p className="py-4 text-center text-slate-500">Tidak ada pengguna yang tersedia.</p>
+          ) : (
+            importableUsers.map((user) => {
+              const isAlreadyEmployee = employees.some(
+                (e) => e.name.toLowerCase() === user.name.toLowerCase(),
+              );
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => !isAlreadyEmployee && handleImportUser(user)}
+                  disabled={isAlreadyEmployee}
+                  className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-brand-blue-200 hover:bg-brand-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                >
+                  <span>
+                    <span className="block font-medium text-slate-900 dark:text-white">
+                      {user.name}
+                    </span>
+                    <span className="text-xs text-slate-500">{user.role}</span>
+                  </span>
+                  {isAlreadyEmployee && (
+                    <span className="text-xs font-medium text-slate-400">Sudah ditambahkan</span>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
       </Modal>
     </div>

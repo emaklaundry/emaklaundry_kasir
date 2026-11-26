@@ -31,7 +31,6 @@ import {
   downloadCustomerTemplate,
 } from '../../utils/excelUtils';
 import { supabase } from '../../utils/supabaseClient';
-import { formatRupiah } from '../../utils/formatting';
 import GoogleContactsImportModal from '../../components/GoogleContactsImportModal';
 import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts';
 
@@ -61,8 +60,7 @@ const CustomersPage: React.FC = () => {
   const totalCount = result.count;
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  const { addCustomer, updateCustomer, deleteCustomer, setDiscountBalance } =
-    useCustomerMutations();
+  const { addCustomer, updateCustomer, deleteCustomer } = useCustomerMutations();
   const { transactions } = useTransactions();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
@@ -194,33 +192,6 @@ const CustomersPage: React.FC = () => {
         });
         addAuditLog(`Memperbarui data pelanggan: "${customerData.name}".`, storeId);
 
-        const oldBalance = currentCustomer.defaultDiscount ?? 0;
-        const newBalance = customerData.defaultDiscount ?? oldBalance;
-        if (newBalance !== oldBalance) {
-          try {
-            await setDiscountBalance({
-              customerId: currentCustomer.id,
-              expectedBalance: oldBalance,
-              newBalance,
-            });
-            addAuditLog(
-              `Mengubah saldo diskon "${customerData.name}": Rp ${formatRupiah(oldBalance)} → Rp ${formatRupiah(newBalance)}.`,
-              storeId,
-            );
-          } catch (balanceError) {
-            const msg =
-              balanceError && typeof balanceError === 'object' && 'message' in balanceError
-                ? String((balanceError as { message: unknown }).message)
-                : 'Unknown error';
-            updateToast(
-              toastId,
-              `Data pelanggan tersimpan, tetapi saldo diskon gagal diubah: ${msg}`,
-              'warning',
-            );
-            handleCloseFormModal();
-            return;
-          }
-        }
         updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
       } else {
         await addCustomer({
@@ -395,15 +366,12 @@ const CustomersPage: React.FC = () => {
               continue;
             }
 
-            // Add new customer. Kolom "Saldo Diskon" di Excel dipakai sebagai saldo awal
-            // pelanggan baru (tercatat di riwayat saldo). Untuk pelanggan yang sudah ada,
-            // saldo tidak ditimpa dari Excel agar pemakaian saldo terbaru tidak hilang.
+            // Add new customer
             await addCustomer({
               name: customer.name!,
               phone: customer.phone || '',
               address: customer.address,
               notes: customer.notes,
-              defaultDiscount: customer.defaultDiscount || 0,
               storeId: storeId!,
             } as Omit<Customer, 'id'>);
             successCount++;
@@ -717,7 +685,7 @@ const CustomersPage: React.FC = () => {
         </p>
       )}
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden hidden md:block">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-x-auto hidden md:block">
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
@@ -757,14 +725,6 @@ const CustomersPage: React.FC = () => {
                   Total Belanja {getSortIcon('totalSpent')}
                 </button>
               </th>
-              <th className="px-6 py-3 text-right">
-                <button
-                  onClick={() => requestSort('defaultDiscount')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
-                >
-                  Saldo Diskon {getSortIcon('defaultDiscount')}
-                </button>
-              </th>
               <th className="px-6 py-3">Aksi</th>
             </tr>
           </thead>
@@ -794,15 +754,6 @@ const CustomersPage: React.FC = () => {
                   <td className="px-6 py-4 text-right">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
                   </td>
-                  <td className="px-6 py-4 text-right tabular-nums">
-                    {customer.defaultDiscount ? (
-                      <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                        Rp {formatRupiah(customer.defaultDiscount)}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 dark:text-slate-500">-</span>
-                    )}
-                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
                       <button
@@ -825,7 +776,7 @@ const CustomersPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 8 : 7
+                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6
                   }
                 >
                   <NoCustomersFound />
@@ -873,7 +824,7 @@ const CustomersPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-1 min-[360px]:grid-cols-3 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
+              <div className="mt-4 grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Transaksi</p>
                   <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
@@ -884,12 +835,6 @@ const CustomersPage: React.FC = () => {
                   <p className="text-xs text-slate-500 dark:text-slate-400">Total Belanja</p>
                   <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
                     Rp {customer.totalSpent.toLocaleString('id-ID')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Saldo Diskon</p>
-                  <p className="font-semibold text-base text-emerald-700 dark:text-emerald-400">
-                    Rp {formatRupiah(customer.defaultDiscount ?? 0)}
                   </p>
                 </div>
               </div>

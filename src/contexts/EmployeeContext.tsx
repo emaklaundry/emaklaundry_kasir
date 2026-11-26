@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { Database } from '../types/supabase';
 import { Employee, Attendance, Advance, EmployeeFormData, AdvanceFormData } from '../types/hrm';
+import { mapEmployeeRow, toEmployeeRow } from '../utils/employeeMappers';
 import EmployeeContext from './EmployeeContextContext';
 
 // Helper to convert snake_case to camelCase
@@ -41,7 +42,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       const { data, error: err } = await query.order('name');
       if (err) throw err;
-      setEmployees((data || []).map((e) => toCamelCase(e) as unknown as Employee));
+      setEmployees((data || []).map(mapEmployeeRow));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch employees');
     } finally {
@@ -53,15 +54,11 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const { data, error: err } = await supabase
         .from('employees')
-        .insert([
-          toSnakeCase(
-            employee as unknown as Record<string, unknown>,
-          ) as Database['public']['Tables']['employees']['Insert'],
-        ])
+        .insert([toEmployeeRow(employee) as Database['public']['Tables']['employees']['Insert']])
         .select()
         .single();
       if (err) throw err;
-      const newEmployee = toCamelCase(data) as unknown as Employee;
+      const newEmployee = mapEmployeeRow(data);
       setEmployees((prev) => [...prev, newEmployee]);
       return newEmployee;
     } catch (err) {
@@ -72,12 +69,15 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateEmployee = useCallback(async (id: string, employee: Partial<EmployeeFormData>) => {
     try {
-      const payload = toSnakeCase(
-        employee as unknown as Record<string, unknown>,
-      ) as Database['public']['Tables']['employees']['Update'];
-      const { error: err } = await supabase.from('employees').update(payload).eq('id', id);
+      const { data, error: err } = await supabase
+        .from('employees')
+        .update(toEmployeeRow(employee))
+        .eq('id', id)
+        .select()
+        .single();
       if (err) throw err;
-      setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...employee } : e)));
+      const updated = mapEmployeeRow(data);
+      setEmployees((prev) => prev.map((e) => (e.id === id ? updated : e)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update employee');
       throw err;

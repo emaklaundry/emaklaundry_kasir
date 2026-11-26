@@ -27,7 +27,8 @@ Belum ditentukan. Jangan membuat klaim pembeda atau positioning pemasaran tanpa 
 
 ## Capabilities and Constraints
 
-- Fitur yang ada mencakup saldo diskon pelanggan, laporan keuangan dan performa, ekspor Excel, pembayaran QRIS dinamis, serta pengelolaan aset dan jadwal perawatan.
+- Fitur yang ada mencakup laporan keuangan dan performa, ekspor Excel, pembayaran QRIS dinamis, pengelolaan aset dan jadwal perawatan, manajemen karyawan (profil, jadwal, kompensasi, login PIN), PIN Supervisor, serta halaman Bantuan / Tutorial.
+- Transaksi tidak memakai diskon, pajak, maupun saldo diskon pelanggan (fitur tersebut sudah dihapus, November 2026).
 - Implementasi menggunakan React, TypeScript, Vite, Tailwind CSS, dan Supabase. Data cabang dan akses peran merupakan bagian dari model produk.
 - TypeScript dan build frontend saat ini menargetkan ES2024. Kebijakan dukungan browser di luar kebutuhan fitur ES2024 belum ditentukan.
 - Positioning, kebijakan dukungan browser yang lebih spesifik, dan batasan produk tambahan belum dikonfirmasi.
@@ -40,7 +41,7 @@ Belum ditentukan. Jangan membuat klaim pembeda atau positioning pemasaran tanpa 
 ## Evidence on Hand
 
 - Implementasi aplikasi dan alur berdasarkan role di `src/App.tsx`.
-- Dokumentasi fitur di `README.md` dan halaman operasional yang tercantum dalam routing aplikasi.
+- Dokumentasi fitur di `README.md`, panduan pengguna di `src/config/helpTopics.ts` (halaman Bantuan), dan halaman operasional yang tercantum dalam routing aplikasi.
 - Aset logo/favikon di `public/` dan aset QRIS di `public/Kode QRIS Emak Laundry.png`.
 - Belum ada positioning unik atau bukti pemasaran seperti testimoni dan benchmark yang dikonfirmasi; jangan mengarangnya.
 

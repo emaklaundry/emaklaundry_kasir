@@ -8,17 +8,26 @@ Terima kasih atas minat Anda untuk berkontribusi! 🎉
 2. Clone fork Anda: `git clone https://github.com/YOUR_USERNAME/emaklaundry_kasir.git`
 3. Install dependencies: `npm install`
 4. Setup environment: `cp .env.example .env`
-5. Baca [README.md](README.md) dan [docs/](docs/)
+5. Baca [README.md](../README.md), [STRUCTURE.md](STRUCTURE.md), dan [indeks dokumentasi](00-INDEX.md)
 
 ## 🔨 Development Workflow
 
 ### 1. Buat Branch Baru
 
+Branch utama:
+
+- `main` — production. Setiap merge ke `main` otomatis di-deploy Vercel ke production.
+- `Development` — pengembangan. Setiap push otomatis mendapat preview deployment di Vercel.
+
+Buat branch kerja dari `Development`, lalu buka PR kembali ke `Development`:
+
 ```bash
-git checkout -b feature/nama-fitur
-# atau
-git checkout -b fix/nama-bug
+git checkout Development
+git checkout -b feature/nama-fitur   # atau fix/nama-bug
 ```
+
+Perubahan database **tidak** ikut otomatis. Ikuti [supabase/setup/README.md](../supabase/setup/README.md)
+bagian 5–6 dan tulis langkah SQL-nya di deskripsi PR.
 
 ### 2. Coding Standards
 
@@ -95,7 +104,8 @@ npm run test:all  # Format + Lint + Test
 - [ ] Code mengikuti style guide
 - [ ] Sudah run `npm run test:all`
 - [ ] Semua test pass
-- [ ] Dokumentasi sudah diupdate
+- [ ] Dokumentasi sudah diupdate (termasuk `src/config/helpTopics.ts` bila alur pengguna berubah)
+- [ ] Langkah SQL production ditulis (bila ada perubahan database)
 - [ ] Tidak ada TypeScript errors
 ```
 
@@ -148,10 +158,10 @@ Jika menemukan security vulnerability:
 
 ## 📝 Code Review Process
 
-1. **Automated checks** - CI/CD harus pass
+1. **Cek otomatis lokal** - `npm run test:all` harus lulus (belum ada CI di repo ini)
 2. **Code review** - Minimal 1 approval
-3. **Testing** - Manual test di staging
-4. **Merge** - Squash & merge ke main
+3. **Testing** - Coba manual di preview deployment Vercel dari branch `Development`
+4. **Merge** - `Development` → `main` untuk rilis production
 
 ## 💡 Tips
 

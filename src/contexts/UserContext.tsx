@@ -9,7 +9,6 @@ export type UserCreateInput = {
   name: string;
   role?: string;
   storeId?: string;
-  canGiveDiscount?: boolean;
 };
 
 /**
@@ -40,7 +39,6 @@ const fetchUsers = async (): Promise<User[]> => {
     role: p.role,
     storeId: p.store_id ?? undefined,
     isActive: p.isActive ?? true,
-    canGiveDiscount: p.canGiveDiscount ?? false,
     createdAt: p.created_at ? new Date(p.created_at) : undefined,
   })) as unknown as User[];
 };
@@ -58,8 +56,6 @@ export function useUsers() {
         payload.store_id = data.storeId;
       if ('isActive' in data && typeof data.isActive === 'boolean')
         payload.isActive = data.isActive;
-      if ('canGiveDiscount' in data && typeof data.canGiveDiscount === 'boolean')
-        payload.canGiveDiscount = data.canGiveDiscount;
       const { error } = await supabase.from('profiles').update(payload).eq('id', id);
       if (error) throw error;
       return id;
@@ -71,7 +67,7 @@ export function useUsers() {
   // di server; peran, cabang, dan izin pemanggil diperiksa di sana).
   const createUser = useMutation({
     mutationFn: async (newUser: UserCreateInput) => {
-      const { email, password, name, role, storeId, canGiveDiscount } = newUser;
+      const { email, password, name, role, storeId } = newUser;
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
           email,
@@ -79,7 +75,6 @@ export function useUsers() {
           name,
           role: role || 'Kasir',
           storeId,
-          canGiveDiscount: canGiveDiscount === true,
         },
       });
       if (error) throw new Error(await getFunctionErrorMessage(error));

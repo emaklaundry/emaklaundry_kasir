@@ -4,6 +4,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useStores } from '../../contexts/StoreContext';
 import useToasts from '../../contexts/useToasts';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
+import SupervisorPinSettings from '../../components/SupervisorPinSettings';
 import { KeyIcon, MapIcon } from '../../components/icons';
 import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
@@ -60,17 +61,12 @@ const SettingsPage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     const { name, value, type } = e.target;
     const isCheckbox = type === 'checkbox';
-    const isNumber = ['taxRate', 'discountRate'].includes(name);
 
     setFormData((prev) =>
       prev
         ? {
             ...prev,
-            [name]: isCheckbox
-              ? (e.target as HTMLInputElement).checked
-              : isNumber
-                ? parseFloat(value) || 0
-                : value,
+            [name]: isCheckbox ? (e.target as HTMLInputElement).checked : value,
           }
         : null,
     );
@@ -423,43 +419,6 @@ const SettingsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label
-              htmlFor="taxRate"
-              className="block mb-2 text-lg font-medium text-slate-900 dark:text-white"
-            >
-              Pajak (%)
-            </label>
-            <input
-              type="number"
-              id="taxRate"
-              name="taxRate"
-              value={formData.taxRate}
-              onChange={handleChange}
-              disabled={isSaving}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="discountRate"
-              className="block mb-2 text-lg font-medium text-slate-900 dark:text-white"
-            >
-              Diskon (%)
-            </label>
-            <input
-              type="number"
-              id="discountRate"
-              name="discountRate"
-              value={formData.discountRate}
-              onChange={handleChange}
-              disabled={isSaving}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-          </div>
-        </div>
-
         <button
           type="submit"
           disabled={isSaving}
@@ -491,6 +450,8 @@ const SettingsPage: React.FC = () => {
           <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
         </button>
       </form>
+
+      <SupervisorPinSettings />
 
       <ChangePasswordModal
         isOpen={isPasswordModalOpen}

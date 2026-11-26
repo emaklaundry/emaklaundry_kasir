@@ -162,16 +162,15 @@ npm run test MaintenanceMode.test.tsx
 ### New Files:
 
 - `src/components/MaintenanceMode.tsx` - Komponen UI maintenance mode
-- `src/components/MaintenanceMode.test.tsx` - Unit tests
-- `database/setup/4.add_maintenance_mode.sql` - Database migration
-- `docs/MAINTENANCE_MODE.md` - Dokumentasi ini
+- `src/__tests__/components/MaintenanceMode.test.tsx` - Unit tests
+- `supabase/setup/0.complete_setup.sql` (Section 4) - Kolom `isMaintenanceMode` & `maintenanceMessage`
+- `docs/features/MAINTENANCE_MODE.md` - Dokumentasi ini
 
 ### Modified Files:
 
 - `src/types/index.ts` - Tambah `isMaintenanceMode` & `maintenanceMessage` di Settings
 - `src/App.tsx` - Logic untuk check & tampilkan maintenance mode
 - `src/pages/management/SettingsPage.tsx` - UI toggle maintenance mode
-- `database/README.md` - Update struktur file
 
 ---
 

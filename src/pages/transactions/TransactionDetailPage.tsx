@@ -16,7 +16,7 @@ import {
 import EmptyState from '../../components/EmptyState';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
-import { savePaymentWithRoundingCredit } from '../../utils/paymentUpdate';
+import { savePayment } from '../../utils/paymentUpdate';
 import PaymentModal from '../../components/PaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
@@ -341,19 +341,18 @@ const TransactionDetailPage: React.FC = () => {
         </div>
 
         <div className="w-full md:w-1/2 lg:w-1/3 ml-auto mt-6 space-y-2">
-          <DetailItem label="Subtotal" value={`Rp ${formatRupiah(transaction.subtotal)}`} />
-          {transaction.discount > 0 && (
-            <DetailItem
-              label="Diskon"
-              value={`- Rp ${formatRupiah(transaction.discount)}`}
-              className="!text-red-600 dark:!text-red-400"
-            />
-          )}
-          {transaction.tax > 0 && (
-            <DetailItem label="Pajak" value={`+ Rp ${formatRupiah(transaction.tax)}`} />
+          {/* Transaksi lama (sebelum diskon/pajak dihapus) bisa punya total ≠ subtotal. */}
+          {transaction.total !== transaction.subtotal && (
+            <>
+              <DetailItem label="Subtotal" value={`Rp ${formatRupiah(transaction.subtotal)}`} />
+              <DetailItem
+                label="Penyesuaian"
+                value={`${transaction.total < transaction.subtotal ? '- ' : '+ '}Rp ${formatRupiah(Math.abs(transaction.total - transaction.subtotal))}`}
+              />
+            </>
           )}
           <DetailItem
-            label="Grand Total"
+            label="Total"
             value={`Rp ${formatRupiah(transaction.total)}`}
             className="text-xl font-bold border-t dark:border-slate-700 pt-3 !text-slate-900 dark:!text-white"
           />
@@ -421,36 +420,13 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       (updatedTransaction.orderStatus === OrderStatus.Completed ||
         updatedTransaction.orderStatus === OrderStatus.Ready);
     try {
-      const { creditSaved, creditError } = await savePaymentWithRoundingCredit(updateTransaction, {
-        ...updatedTransaction,
-        id: transaction.id,
-      });
+      await savePayment(updateTransaction, { ...updatedTransaction, id: transaction.id });
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${transaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         transaction.storeId,
       );
-      if (creditSaved > 0) {
-        addAuditLog(
-          `Pembulatan tunai Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan (transaksi ${transaction.invoiceCode ?? transaction.id}).`,
-          transaction.storeId,
-        );
-      }
       await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
-      if (creditError) {
-        updateToast(
-          toastId,
-          `Pembayaran tersimpan, tetapi saldo pembulatan gagal dicatat: ${creditError}`,
-          'warning',
-        );
-      } else if (creditSaved > 0) {
-        updateToast(
-          toastId,
-          `Pembayaran berhasil! Rp ${creditSaved.toLocaleString('id-ID')} masuk saldo diskon pelanggan.`,
-          'success',
-        );
-      } else {
-        updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
-      }
+      updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
       if (shouldShowWhatsAppModal) {
         setIsWhatsAppOpen(true);
       }

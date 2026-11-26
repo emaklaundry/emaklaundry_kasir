@@ -13,13 +13,13 @@ Disallow: /
 
 Block semua bot: Google, Bing, DuckDuckGo, Yandex, Baidu
 
-### 2. **HTML Meta Tags** - Multiple Layers
+### 2. **HTML Meta Tag** (`index.html`)
 
 ```html
-<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
-<meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
-<meta name="referrer" content="no-referrer" />
+<meta name="robots" content="noindex, nofollow" />
 ```
+
+Larangan `noarchive` dan `nosnippet` dikirim lewat header HTTP di bagian 3.
 
 **Apa artinya:**
 

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Customer, UserRole } from '@/types';
+import { Customer } from '@/types';
 import Modal from './Modal';
 import useToasts from '@/contexts/useToasts';
-import useAppContext from '@/contexts/useAppContext';
-import { formatRupiah } from '@/utils/formatting';
 
 interface CustomerFormModalProps {
   customer: Customer | null;
@@ -19,25 +17,16 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   disabled,
 }) => {
   const { addToast } = useToasts();
-  const { currentUser } = useAppContext();
-  // Saldo diskon hanya boleh diubah Admin; database juga menolak perubahan dari Kasir.
-  const canEditBalance =
-    currentUser?.role === UserRole.Admin || currentUser?.role === UserRole.SuperAdmin;
   const [formData, setFormData] = useState<Omit<Customer, 'id' | 'storeId' | 'createdAt'>>({
     name: customer?.name || '',
     phone: customer?.phone || '',
     address: customer?.address || '',
     notes: customer?.notes || '',
-    defaultDiscount: customer?.defaultDiscount ?? 0,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    if (type === 'number') {
-      setFormData((prev) => ({ ...prev, [name]: Math.max(0, Math.floor(Number(value) || 0)) }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
@@ -145,44 +134,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           />
         </div>
-        {canEditBalance ? (
-          <div>
-            <label
-              htmlFor="customer-discount"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
-              Saldo Diskon (Rp)
-            </label>
-            <input
-              type="number"
-              name="defaultDiscount"
-              id="customer-discount"
-              min={0}
-              step={1}
-              inputMode="numeric"
-              value={formData.defaultDiscount}
-              onChange={handleChange}
-              aria-describedby="customer-discount-help"
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            />
-            <p
-              id="customer-discount-help"
-              className="mt-1 text-sm text-slate-500 dark:text-slate-400"
-            >
-              Bertambah otomatis dari pembulatan tunai dan terpakai maks. 10% subtotal per
-              transaksi. Perubahan manual tercatat di riwayat saldo.
-            </p>
-          </div>
-        ) : (
-          customer && (
-            <div className="rounded-lg bg-slate-50 dark:bg-slate-700/50 p-3 text-base">
-              <span className="text-slate-600 dark:text-slate-300">Saldo Diskon: </span>
-              <span className="font-semibold text-slate-900 dark:text-white">
-                Rp {formatRupiah(customer.defaultDiscount ?? 0)}
-              </span>
-            </div>
-          )
-        )}
         <div>
           <label
             htmlFor="customer-notes"

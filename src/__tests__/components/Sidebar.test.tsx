@@ -1,41 +1,89 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
 
+const mockUser = vi.hoisted(() => ({ role: 'Admin' }));
 vi.mock('@/contexts/useAppContext', () => ({
-  default: () => ({ currentUser: { role: 'Admin' } }),
+  default: () => ({ currentUser: { role: mockUser.role } }),
 }));
 
-vi.mock('@/hooks/useTutorial', () => ({
-  useTutorial: () => ({ startTour: vi.fn() }),
-}));
+const renderSidebar = (isOpen = true) =>
+  render(
+    <MemoryRouter>
+      <Sidebar isOpen={isOpen} onToggle={vi.fn()} />
+    </MemoryRouter>,
+  );
+
+const linksIn = (section: string) =>
+  within(screen.getByRole('list', { name: section }))
+    .getAllByRole('link')
+    .map((l) => l.textContent);
 
 describe('Sidebar', () => {
-  it('removes a closed sidebar from keyboard and assistive-technology navigation', () => {
-    render(
-      <MemoryRouter>
-        <Sidebar isOpen={false} onToggle={vi.fn()} />
-      </MemoryRouter>,
-    );
+  beforeEach(() => {
+    mockUser.role = 'Admin';
+  });
 
+  it('removes a closed sidebar from keyboard and assistive-technology navigation', () => {
+    renderSidebar(false);
     const sidebar = document.getElementById('logo-sidebar');
     expect(sidebar).not.toBeNull();
     expect(sidebar).toHaveAttribute('aria-hidden', 'true');
     expect(sidebar).toHaveProperty('inert', true);
   });
 
-  it('exposes and updates the expanded state of the management menu', () => {
-    render(
-      <MemoryRouter>
-        <Sidebar isOpen onToggle={vi.fn()} />
-      </MemoryRouter>,
-    );
+  it('Admin: enam kelompok menu dengan urutan tetap', () => {
+    renderSidebar();
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(headings).toEqual([
+      'Operasional Utama',
+      'Layanan & Pelanggan',
+      'SDM & Aset',
+      'Laporan & Analisis',
+      'Sistem & Keamanan',
+      'Bantuan & Panduan',
+    ]);
+    expect(linksIn('Layanan & Pelanggan')).toEqual([
+      'Pelanggan',
+      'Layanan',
+      'Inventaris',
+      'Pengeluaran',
+    ]);
+    expect(linksIn('SDM & Aset')).toEqual(['Karyawan', 'Absensi', 'Aset & Pemeliharaan']);
+    expect(linksIn('Sistem & Keamanan')).toEqual([
+      'Pengguna',
+      'Pengaturan',
+      'Log Audit',
+      'Backup & Restore',
+    ]);
+    expect(linksIn('Bantuan & Panduan')).toEqual([
+      'SOP (Prosedur)',
+      'Panduan Bisnis',
+      'Dokumentasi',
+      'Bantuan / Tutorial',
+    ]);
+    // Cabang khusus Super Admin
+    expect(screen.queryByRole('link', { name: 'Cabang' })).toBeNull();
+  });
 
-    const managementButton = screen.getByRole('button', { name: 'Manajemen' });
-    expect(managementButton).toHaveAttribute('aria-expanded', 'true');
+  it('Kasir: hanya menu yang boleh diakses kasir', () => {
+    mockUser.role = 'Kasir';
+    renderSidebar();
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(headings).toEqual(['Operasional Utama', 'Laporan & Analisis', 'Bantuan & Panduan']);
+    expect(linksIn('Operasional Utama')).toEqual(['Dashboard', 'Transaksi']);
+    expect(linksIn('Laporan & Analisis')).toEqual(['Kalkulator Bisnis']);
+    expect(linksIn('Bantuan & Panduan')).toEqual([
+      'Panduan Bisnis',
+      'Dokumentasi',
+      'Bantuan / Tutorial',
+    ]);
+    expect(screen.queryByRole('link', { name: 'Karyawan' })).toBeNull();
+  });
 
-    fireEvent.click(managementButton);
-
-    expect(managementButton).toHaveAttribute('aria-expanded', 'false');
+  it('Super Admin melihat menu Cabang', () => {
+    mockUser.role = 'Super Admin';
+    renderSidebar();
+    expect(linksIn('Sistem & Keamanan')[0]).toBe('Cabang');
   });
 });

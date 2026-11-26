@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   BookOpenIcon,
   ChevronRightIcon,
@@ -14,6 +15,7 @@ import {
   SettingsIcon,
   CommandIcon,
   HistoryIcon,
+  UserIcon,
 } from '../components/icons';
 
 const DocumentationPage: React.FC = () => {
@@ -41,12 +43,24 @@ const DocumentationPage: React.FC = () => {
             </h3>
             <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
               <li>Pencatatan Transaksi & Struk Digital (WhatsApp)</li>
-              <li>Manajemen Pelanggan & Riwayat Order</li>
-              <li>Manajemen Stok & Inventaris</li>
+              <li>Pelanggan & Riwayat Order</li>
+              <li>Stok & Inventaris, termasuk resep pemakaian bahan</li>
+              <li>Karyawan, jadwal kerja, absensi, dan login PIN</li>
               <li>Laporan Keuangan & Statistik</li>
-              <li>Manajemen Banyak Cabang (Multi-Store)</li>
+              <li>Banyak Cabang (Multi-Store)</li>
             </ul>
           </div>
+          <p className="text-slate-600 dark:text-slate-300">
+            Halaman ini merangkum cara kerja tiap fitur. Untuk langkah demi langkah dan tur
+            interaktif, buka{' '}
+            <Link
+              to="/help"
+              className="font-medium text-blue-700 hover:underline dark:text-blue-300"
+            >
+              Bantuan / Tutorial
+            </Link>
+            .
+          </p>
         </div>
       ),
     },
@@ -65,16 +79,21 @@ const DocumentationPage: React.FC = () => {
               </h3>
               <p className="text-slate-600 dark:text-slate-300 mb-2">
                 Masuk ke menu <strong>Transaksi</strong> &gt; klik tombol{' '}
-                <strong>Buat Transaksi Baru</strong>.
+                <strong>Transaksi Baru</strong>.
               </p>
               <ol className="list-decimal list-inside space-y-2 text-slate-600 dark:text-slate-300 ml-2">
                 <li>
                   Pilih <strong>Pelanggan</strong> atau buat pelanggan baru.
                 </li>
                 <li>
-                  Pilih <strong>Layanan</strong> (Kiloan/Satuan) dan masukkan jumlah.
+                  Pilih <strong>Layanan</strong> (Kiloan, Satuan, Sepatu, atau Karpet) dan masukkan
+                  jumlah, berat, atau ukurannya.
                 </li>
                 <li>Tambahkan catatan jika ada (misal: "Baju luntur jangan dicampur").</li>
+                <li>
+                  Pilih <strong>Bayar Nanti</strong> atau <strong>Bayar Sekarang</strong> (Tunai,
+                  QRIS, Transfer Bank). Total adalah jumlah harga layanan, tanpa diskon atau pajak.
+                </li>
                 <li>
                   Klik <strong>Simpan Transaksi</strong>.
                 </li>
@@ -164,18 +183,20 @@ const DocumentationPage: React.FC = () => {
           <ul className="space-y-3">
             <li className="flex items-start gap-2">
               <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300 mt-1">
-                Stok Masuk
+                Update Stok
               </span>
               <span className="text-slate-700 dark:text-slate-300">
-                Catat setiap pembelian inventory baru untuk menambah stok.
+                Tambah stok setelah belanja lewat <strong>Aksi Cepat &gt; Update Stok</strong>, atau
+                edit barangnya di halaman Inventaris.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-0.5 rounded dark:bg-red-900 dark:text-red-300 mt-1">
-                Stok Keluar
+                Resep & Opname
               </span>
               <span className="text-slate-700 dark:text-slate-300">
-                Catat pemakaian harian atau barang rusak/hilang.
+                <strong>Resep</strong> memotong stok bahan otomatis setiap transaksi.{' '}
+                <strong>Opname</strong> mencocokkan stok sistem dengan hitungan fisik.
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -213,10 +234,52 @@ const DocumentationPage: React.FC = () => {
                 Buat <strong>Jadwal Perawatan</strong> (Contoh: "Bersihkan Filter" setiap 7 hari).
               </li>
               <li>
-                Dashboard akan menampilkan notifikasi saat jadwal perawatan sudah jatuh tempo.
+                Dashboard menampilkan kartu <strong>Perawatan Terjadwal</strong> saat ada perawatan
+                yang jatuh tempo; klik kartunya untuk membuka daftar di halaman Aset.
               </li>
-              <li>Klik "Tandai Selesai" di Dashboard setelah perawatan dilakukan.</li>
+              <li>
+                Buka jadwal perawatannya lalu klik <strong>Tandai Selesai</strong>; jadwal
+                berikutnya terhitung otomatis.
+              </li>
             </ol>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'employees',
+      title: 'Karyawan & Absensi',
+      icon: UserIcon,
+      content: (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Karyawan & Absensi</h2>
+          <p className="text-slate-600 dark:text-slate-300">
+            (Khusus Admin) Semua data karyawan diatur dari menu <strong>SDM &amp; Aset</strong>.
+            Kasir tidak bisa membuka halaman ini.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">
+              <h3 className="font-bold text-slate-900 dark:text-white">Data karyawan</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Profil, cabang, jadwal shift &amp; hari kerja, toleransi terlambat, gaji pokok,
+                komisi, dan insentif. Karyawan yang berhenti cukup <strong>dinonaktifkan</strong>;
+                datanya tetap tersimpan.
+              </p>
+            </div>
+            <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">
+              <h3 className="font-bold text-slate-900 dark:text-white">Login PIN</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Isi PIN 6 angka di form karyawan agar karyawan bisa masuk sebagai Kasir dengan
+                memilih namanya di halaman login. PIN bisa direset atau aksesnya dicabut kapan saja.
+              </p>
+            </div>
+            <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700 sm:col-span-2">
+              <h3 className="font-bold text-slate-900 dark:text-white">Absensi</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Di menu <strong>Absensi</strong>, pilih tanggal lalu catat jam Masuk dan Pulang
+                setiap karyawan.
+              </p>
+            </div>
           </div>
         </div>
       ),
@@ -268,14 +331,14 @@ const DocumentationPage: React.FC = () => {
             </h3>
             <ol className="list-decimal list-inside space-y-2 text-slate-600 dark:text-slate-300">
               <li>
-                Masuk ke menu <strong>Manajemen &gt; Layanan</strong>.
+                Masuk ke menu <strong>Layanan &amp; Pelanggan &gt; Layanan</strong>.
               </li>
               <li>
                 Klik tombol <strong>+ Tambah Layanan</strong>.
               </li>
               <li>Isi Nama Layanan (misal: "Cuci Setrika Reguler").</li>
               <li>
-                Pilih <strong>Kategori</strong> (Kiloan/Satuan).
+                Pilih <strong>Kategori</strong> (Kiloan, Satuan, Sepatu, Karpet).
               </li>
               <li>
                 Tentukan <strong>Harga</strong> per unit.
@@ -299,14 +362,16 @@ const DocumentationPage: React.FC = () => {
             Catat semua operasional toko agar Laporan Laba Rugi akurat.
           </p>
           <ul className="list-disc list-inside space-y-2 text-slate-600 dark:text-slate-300">
-            <li>Catat pembayaran Listrik, Air, dan Sewa Ruko.</li>
+            <li>
+              Catat pembayaran Listrik, Air, dan Sewa Ruko. Biaya yang rutin tiap bulan bisa
+              didaftarkan di <strong>Daftar tagihan</strong>.
+            </li>
             <li>Catat gaji karyawan.</li>
             <li>Catat pembelian konsumsi atau kebutuhan mendadak lainnya.</li>
           </ul>
           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded text-sm text-yellow-800 dark:text-yellow-200 mt-2">
             💡 <strong>Tips:</strong> Pengeluaran untuk pembelian stok (deterjen, dll) sebaiknya
-            dicatat di menu <strong>Inventaris &gt; Stok Masuk</strong> agar stok otomatis
-            bertambah. Menu Pengeluaran ini untuk biaya non-stok.
+            disertai <strong>Update Stok</strong> di Inventaris agar stok ikut bertambah.
           </div>
         </div>
       ),
@@ -356,8 +421,16 @@ const DocumentationPage: React.FC = () => {
                 <SettingsIcon className="w-4 h-4" /> Pengaturan Toko
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Ubah Footer WhatsApp, Pesan Struk, dan Tarif Pajak/Diskon Global di menu{' '}
-                <strong>Pengaturan</strong>.
+                Ubah Footer WhatsApp dan Pesan Struk di menu <strong>Pengaturan</strong>.
+              </p>
+            </div>
+            <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">
+              <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <SettingsIcon className="w-4 h-4" /> PIN Supervisor
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                (Khusus Admin) PIN 6 angka untuk menyetujui aksi sensitif Kasir. Atur di menu{' '}
+                <strong>Pengaturan</strong> dengan konfirmasi password akun.
               </p>
             </div>
             <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">

@@ -12,8 +12,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
 import { supabase } from '../../utils/supabaseClient';
-import { formatRupiah } from '../../utils/formatting';
-import { savePaymentWithRoundingCredit } from '../../utils/paymentUpdate';
+import { savePayment } from '../../utils/paymentUpdate';
 
 import {
   PlusCircleIcon,
@@ -211,37 +210,13 @@ const TransactionPage: React.FC = () => {
     setIsSavingPayment(true);
     const toastId = addToast('Menyimpan pembayaran...', 'info');
     try {
-      const { creditSaved, creditError } = await savePaymentWithRoundingCredit(
-        updateTransaction,
-        updatedTransaction,
-      );
+      await savePayment(updateTransaction, updatedTransaction);
 
       addAuditLog(
         `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
         updatedTransaction.storeId,
       );
-      if (creditSaved > 0) {
-        addAuditLog(
-          `Pembulatan tunai Rp ${formatRupiah(creditSaved)} masuk saldo diskon pelanggan (transaksi ${updatedTransaction.invoiceCode ?? updatedTransaction.id}).`,
-          updatedTransaction.storeId,
-        );
-      }
-
-      if (creditError) {
-        updateToast(
-          toastId,
-          `Pembayaran tersimpan, tetapi saldo pembulatan gagal dicatat: ${creditError}`,
-          'warning',
-        );
-      } else if (creditSaved > 0) {
-        updateToast(
-          toastId,
-          `Pembayaran berhasil! Rp ${formatRupiah(creditSaved)} masuk saldo diskon pelanggan.`,
-          'success',
-        );
-      } else {
-        updateToast(toastId, 'Pembayaran berhasil disimpan.', 'success');
-      }
+      updateToast(toastId, 'Pembayaran berhasil disimpan.', 'success');
 
       setIsPaymentModalOpen(false);
       setSelectedTransaction(null);

@@ -1,5 +1,9 @@
 # 🔧 PERBAIKAN & OPTIMASI - Audit Final
 
+> **Dokumen historis.** Isinya menggambarkan kondisi saat ditulis dan tidak diperbarui. Sejak itu
+> folder `database/` dipindah ke `supabase/` (skema terkini: `supabase/setup/0.complete_setup.sql`) dan
+> fitur diskon, pajak, serta saldo diskon sudah dihapus. Kondisi terkini: [00-INDEX.md](../00-INDEX.md).
+
 ## 📅 Tanggal: 13 Desember 2025
 
 ---

@@ -35,6 +35,7 @@ const EmployeesPage = lazy(() => import('./pages/management/EmployeesPage'));
 const AttendancePage = lazy(() => import('./pages/management/AttendancePage'));
 const SOPPage = lazy(() => import('./pages/management/SOPPage'));
 const DocumentationPage = lazy(() => import('./pages/DocumentationPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
 const BusinessGuidePage = lazy(() => import('./pages/BusinessGuidePage'));
 const BusinessCalculatorPage = lazy(() => import('./pages/business/BusinessCalculatorPage'));
 
@@ -245,6 +246,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/business-guide" element={<BusinessGuidePage />} />
             <Route path="/business/calculator" element={<BusinessCalculatorPage />} />
             <Route path="/docs" element={<DocumentationPage />} />
+            <Route path="/help" element={<HelpPage />} />
             {/* Tambahkan catch-all route di bawah ini */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -92,6 +92,15 @@ export type Database = {
           commission_rate: number;
           is_active: boolean;
           login_enabled: boolean;
+          address: string | null;
+          start_date: string | null;
+          shift_start: string | null;
+          shift_end: string | null;
+          work_days: number[];
+          late_tolerance_minutes: number;
+          monthly_incentive: number;
+          photo_url: string | null;
+          photo_path: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -105,6 +114,15 @@ export type Database = {
           commission_rate?: number;
           is_active?: boolean;
           login_enabled?: boolean;
+          address?: string | null;
+          start_date?: string | null;
+          shift_start?: string | null;
+          shift_end?: string | null;
+          work_days?: number[];
+          late_tolerance_minutes?: number;
+          monthly_incentive?: number;
+          photo_url?: string | null;
+          photo_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -118,6 +136,15 @@ export type Database = {
           commission_rate?: number;
           is_active?: boolean;
           login_enabled?: boolean;
+          address?: string | null;
+          start_date?: string | null;
+          shift_start?: string | null;
+          shift_end?: string | null;
+          work_days?: number[];
+          late_tolerance_minutes?: number;
+          monthly_incentive?: number;
+          photo_url?: string | null;
+          photo_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -257,65 +284,10 @@ export type Database = {
           },
         ];
       };
-      customer_discount_ledger: {
-        Row: {
-          amount: number;
-          balance_after: number;
-          created_at: string;
-          created_by: string | null;
-          customer_id: string;
-          id: string;
-          kind: string;
-          note: string | null;
-          store_id: string | null;
-          transaction_id: string | null;
-        };
-        Insert: {
-          amount: number;
-          balance_after: number;
-          created_at?: string;
-          created_by?: string | null;
-          customer_id: string;
-          id?: string;
-          kind: string;
-          note?: string | null;
-          store_id?: string | null;
-          transaction_id?: string | null;
-        };
-        Update: {
-          amount?: number;
-          balance_after?: number;
-          created_at?: string;
-          created_by?: string | null;
-          customer_id?: string;
-          id?: string;
-          kind?: string;
-          note?: string | null;
-          store_id?: string | null;
-          transaction_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'customer_discount_ledger_customer_id_fkey';
-            columns: ['customer_id'];
-            isOneToOne: false;
-            referencedRelation: 'customers';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'customer_discount_ledger_transaction_id_fkey';
-            columns: ['transaction_id'];
-            isOneToOne: false;
-            referencedRelation: 'transactions';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       customers: {
         Row: {
           address: string | null;
           createdAt: string | null;
-          defaultDiscount: number;
           id: string;
           name: string;
           notes: string | null;
@@ -325,7 +297,6 @@ export type Database = {
         Insert: {
           address?: string | null;
           createdAt?: string | null;
-          defaultDiscount?: number;
           id?: string;
           name: string;
           notes?: string | null;
@@ -335,7 +306,6 @@ export type Database = {
         Update: {
           address?: string | null;
           createdAt?: string | null;
-          defaultDiscount?: number;
           id?: string;
           name?: string;
           notes?: string | null;
@@ -572,7 +542,6 @@ export type Database = {
       };
       profiles: {
         Row: {
-          canGiveDiscount: boolean | null;
           created_at: string | null;
           employee_id: string | null;
           id: string;
@@ -582,7 +551,6 @@ export type Database = {
           store_id: string | null;
         };
         Insert: {
-          canGiveDiscount?: boolean | null;
           created_at?: string | null;
           employee_id?: string | null;
           id: string;
@@ -592,7 +560,6 @@ export type Database = {
           store_id?: string | null;
         };
         Update: {
-          canGiveDiscount?: boolean | null;
           created_at?: string | null;
           employee_id?: string | null;
           id?: string;
@@ -702,22 +669,16 @@ export type Database = {
       };
       settings: {
         Row: {
-          discountRate: number | null;
           id: number;
           receiptMessage: string | null;
-          taxRate: number | null;
         };
         Insert: {
-          discountRate?: number | null;
           id?: never;
           receiptMessage?: string | null;
-          taxRate?: number | null;
         };
         Update: {
-          discountRate?: number | null;
           id?: never;
           receiptMessage?: string | null;
-          taxRate?: number | null;
         };
         Relationships: [];
       };
@@ -834,7 +795,6 @@ export type Database = {
           createdByUserId: string | null;
           customerId: string | null;
           discount: number;
-          discountBalanceUsed: number;
           estimatedCompletionDate: string | null;
           id: string;
           idempotencyKey: string | null;
@@ -844,8 +804,8 @@ export type Database = {
           orderStatus: string;
           paymentMethod: string | null;
           paymentStatus: string;
-          roundingCredit: number;
           storeId: string | null;
+          supervisorApprovalId: string | null;
           subtotal: number;
           tax: number;
           total: number;
@@ -857,7 +817,6 @@ export type Database = {
           createdByUserId?: string | null;
           customerId?: string | null;
           discount: number;
-          discountBalanceUsed?: number;
           estimatedCompletionDate?: string | null;
           id?: string;
           idempotencyKey?: string | null;
@@ -867,8 +826,8 @@ export type Database = {
           orderStatus: string;
           paymentMethod?: string | null;
           paymentStatus: string;
-          roundingCredit?: number;
           storeId?: string | null;
+          supervisorApprovalId?: string | null;
           subtotal: number;
           tax: number;
           total: number;
@@ -880,7 +839,6 @@ export type Database = {
           createdByUserId?: string | null;
           customerId?: string | null;
           discount?: number;
-          discountBalanceUsed?: number;
           estimatedCompletionDate?: string | null;
           id?: string;
           idempotencyKey?: string | null;
@@ -890,8 +848,8 @@ export type Database = {
           orderStatus?: string;
           paymentMethod?: string | null;
           paymentStatus?: string;
-          roundingCredit?: number;
           storeId?: string | null;
+          supervisorApprovalId?: string | null;
           subtotal?: number;
           tax?: number;
           total?: number;
@@ -982,15 +940,16 @@ export type Database = {
         };
         Returns: undefined;
       };
-      set_customer_discount_balance: {
+      has_my_supervisor_pin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      request_supervisor_approval: {
         Args: {
-          p_customer_id: string;
-          p_expected_balance: number;
-          p_new_balance: number;
-          p_note?: string;
+          p_action: string;
+          p_pin: string;
+          p_transaction_id?: string;
         };
-        Returns: number;
+        Returns: Json;
       };
+      set_my_supervisor_pin: { Args: { p_pin: string }; Returns: undefined };
       update_transaction_progress: {
         Args: {
           p_amount_paid?: number;
@@ -1007,7 +966,6 @@ export type Database = {
           createdByUserId: string | null;
           customerId: string | null;
           discount: number;
-          discountBalanceUsed: number;
           estimatedCompletionDate: string | null;
           id: string;
           idempotencyKey: string | null;
@@ -1017,8 +975,8 @@ export type Database = {
           orderStatus: string;
           paymentMethod: string | null;
           paymentStatus: string;
-          roundingCredit: number;
           storeId: string | null;
+          supervisorApprovalId: string | null;
           subtotal: number;
           tax: number;
           total: number;
