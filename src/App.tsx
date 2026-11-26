@@ -6,6 +6,7 @@ import Layout from './components/layout/Layout';
 import MaintenanceMode from './components/MaintenanceMode';
 import { useSettings } from './contexts/SettingsContext';
 import PWAUpdatePrompt from './components/widgets/PWAUpdatePrompt';
+import OfflineNotice from './components/widgets/OfflineNotice';
 
 import useTheme from './hooks/useTheme';
 import { AppProviders } from './contexts/AppProviders';
@@ -284,6 +285,7 @@ const AppRoutes: React.FC = () => {
         </div>
       </Layout>
       <PWAUpdatePrompt />
+      <OfflineNotice />
     </>
   );
 };

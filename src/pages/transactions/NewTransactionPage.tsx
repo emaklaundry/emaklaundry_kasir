@@ -8,7 +8,8 @@ import { can } from '../../config/permissions';
 import SuccessModal from '../../components/SuccessModal';
 import { useTransactions } from '../../contexts/TransactionContext';
 import {
-  fetchCustomers,
+  ALL_CUSTOMERS_QUERY_KEY,
+  fetchAllCustomers,
   findCustomerByPhone,
   useCustomerMutations,
 } from '../../contexts/CustomerContext';
@@ -43,8 +44,8 @@ const NewTransactionPage: React.FC = () => {
   const { addTransaction } = useTransactions();
   const queryClient = useQueryClient();
   const { data: customersData } = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
     // PENTING: nonaktifkan auto-refetch saat user sedang input data
     refetchOnWindowFocus: false,
     staleTime: 10 * 60 * 1000, // 10 menit - data customer jarang berubah
@@ -541,7 +542,9 @@ const NewTransactionPage: React.FC = () => {
         // setIsSuccessModalOpen(true); // Tetap biarkan di handleCloseWhatsAppModal
       } else {
         let msg = 'Unknown error';
-        if (
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          msg = 'Tidak ada koneksi internet. Transaksi BELUM tersimpan, coba lagi setelah online.';
+        } else if (
           error &&
           typeof error === 'object' &&
           'message' in error &&
@@ -598,8 +601,8 @@ const NewTransactionPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+            <div className="card p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pilih Layanan
               </h2>
               <ServiceSelector
@@ -609,8 +612,8 @@ const NewTransactionPage: React.FC = () => {
               />
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
+            <div className="card p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Item Transaksi
               </h2>
               <TransactionItemsTable
@@ -630,7 +633,7 @@ const NewTransactionPage: React.FC = () => {
               id="payment-section"
               className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible"
             >
-              <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-slate-900 dark:text-white">
                 Detail & Total
               </h2>
               <div className="space-y-4">

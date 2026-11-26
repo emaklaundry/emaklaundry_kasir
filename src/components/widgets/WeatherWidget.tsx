@@ -160,7 +160,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude, loca
     return () => clearInterval(interval);
   }, [latitude, longitude, locationName]);
 
-  const getWeatherIcon = (code: number, isDay: boolean, sizeClass: string = 'w-10 h-10') => {
+  const getWeatherIcon = (code: number, isDay: boolean, sizeClass: string = 'w-8 h-8') => {
     if (code >= 95) return <CloudLightningIcon className={`${sizeClass} text-amber-500`} />;
     if (code >= 51) return <CloudRainIcon className={`${sizeClass} text-blue-600`} />;
     if (code >= 45) return <WindIcon className={`${sizeClass} text-slate-400`} />;
@@ -205,14 +205,14 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude, loca
         </p>
       )}
 
-      <div className="space-y-4 p-5">
+      <div className="space-y-3 p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h3 className="font-semibold text-slate-700 dark:text-slate-200">{location?.name}</h3>
             <div className="mt-2 flex items-center gap-3">
               {getWeatherIcon(weather.weatherCode, weather.isDay)}
               <div>
-                <p className="text-3xl font-bold tabular-nums text-slate-900 dark:text-white">
+                <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
                   {weather.temperature}°C
                 </p>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-300">

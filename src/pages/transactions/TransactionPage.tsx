@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
-import { useSortableData } from '../../hooks/useSortableData';
+import { useServerSort } from '../../hooks/useServerSort';
 import { useDebounce } from '../../hooks/useDebounce';
 
-import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { useTransactions, TransactionSortKey } from '../../contexts/TransactionContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import { useServices } from '../../contexts/ServiceContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
@@ -46,6 +46,24 @@ import {
 // Tipe kustom untuk transaksi dengan nama pelanggan
 type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
 
+const waButtonTitle = (t: Transaction) =>
+  t.whatsappSentAt
+    ? `Struk sudah dikirim via WhatsApp (${new Date(t.whatsappSentAt).toLocaleString('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })}). Klik untuk kirim ulang.`
+    : 'Kirim Struk via WhatsApp (belum dikirim)';
+
+/** Titik centang kecil di pojok ikon kirim: struk sudah pernah dikirim. */
+const WaSentDot: React.FC = () => (
+  <span
+    aria-hidden="true"
+    className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold leading-none text-white"
+  >
+    ✓
+  </span>
+);
+
 const TransactionPage: React.FC = () => {
   const { currentUser } = useAppContext();
   const canCreateTransaction = can(currentUser?.role, 'transaction.create');
@@ -83,8 +101,8 @@ const TransactionPage: React.FC = () => {
 
   // Pagination and data
   const customersQuery = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
 
   const customers = useMemo(() => {
@@ -110,13 +128,23 @@ const TransactionPage: React.FC = () => {
     };
   }, [selectedDate]);
 
-  // Ambil data transaksi dengan server-side filtering dan pagination
+  // Urutan dikerjakan server agar berlaku untuk semua halaman; ganti urutan → kembali ke halaman 1
+  const { sortConfig, requestSort } = useServerSort<TransactionSortKey>(
+    { key: 'createdAt', direction: 'descending' },
+    () => setCurrentPage(1),
+  );
+
+  // Ambil data transaksi dengan server-side filtering, sorting dan pagination
   const { transactions, totalCount, updateTransaction, addTransaction } = useTransactions({
     page: currentPage,
     pageSize: pageSize,
+    sortBy: sortConfig.key,
+    sortAscending: sortConfig.direction === 'ascending',
     dateRange: dateRange,
     orderStatus: statusFilter !== 'all' ? statusFilter : undefined,
     paymentStatus: paymentFilter !== 'all' ? paymentFilter : undefined,
+    customerId: customerFilter !== 'all' ? customerFilter : undefined,
+    searchTerm: debouncedSearchTerm || undefined,
   });
 
   const transactionsWithCustomer = useMemo(() => {
@@ -130,40 +158,18 @@ const TransactionPage: React.FC = () => {
     });
   }, [transactions, customers]);
 
-  // Filter hanya untuk customer filter dan search (server sudah handle date, status, payment)
-  const filteredTransactions = useMemo(() => {
-    return transactionsWithCustomer.filter((t: TransactionWithCustomer) => {
-      // Customer filter
-      if (customerFilter !== 'all' && t.customerId !== customerFilter) return false;
+  // Semua filter (tanggal, status, pembayaran, pelanggan, pencarian) dikerjakan server
+  const filteredTransactions = transactionsWithCustomer;
 
-      // Search term (client-side untuk invoice, customer name, phone)
-      if (!debouncedSearchTerm) return true;
-      const term = debouncedSearchTerm.toLowerCase();
-      return (
-        t.id.toLowerCase().includes(term) ||
-        (t.invoiceCode && t.invoiceCode.toLowerCase().includes(term)) ||
-        t.customerName.toLowerCase().includes(term) ||
-        t.customerPhone.includes(term)
-      );
-    });
-  }, [transactionsWithCustomer, debouncedSearchTerm, customerFilter]);
-
-  // Client-side sorting untuk hasil yang sudah di-filter
-  const {
-    items: sortedTransactions,
-    requestSort,
-    sortConfig,
-  } = useSortableData<TransactionWithCustomer>(filteredTransactions, {
-    key: 'createdAt',
-    direction: 'descending',
-  });
+  // Data sudah diurutkan oleh server (lihat useServerSort di atas)
+  const sortedTransactions = filteredTransactions;
 
   // Total pages dari server
   const totalPages = Math.ceil(totalCount / pageSize);
   const paginatedTransactions = sortedTransactions;
 
-  const getSortIcon = (key: keyof TransactionWithCustomer) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
+  const getSortIcon = (key: TransactionSortKey) => {
+    if (sortConfig.key !== key) return null;
     if (sortConfig.direction === 'ascending')
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
@@ -519,7 +525,7 @@ const TransactionPage: React.FC = () => {
 
   return (
     <>
-      <div className="relative bg-slate-50 dark:bg-slate-800 p-3 sm:p-6 rounded-lg shadow-md">
+      <div className="card relative p-3 sm:p-6">
         {(isSavingPayment || isBulkProcessing) && (
           <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
             <div className="flex items-center gap-3">
@@ -549,10 +555,9 @@ const TransactionPage: React.FC = () => {
         )}
         <div
           id="transaction-actions"
-          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+          className="flex justify-end mb-6"
         >
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Daftar Transaksi</h1>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {isAdminRole(currentUser?.role) && (
               <>
                 <button
@@ -727,7 +732,7 @@ const TransactionPage: React.FC = () => {
         {/* Transactions Table */}
         <div
           id="transaction-table"
-          className="hidden md:block bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden"
+          className="card hidden md:block overflow-hidden"
         >
           <div className="overflow-x-auto">
             <table className="w-full text-sm sm:text-base text-left text-slate-500 dark:text-slate-400">
@@ -918,10 +923,16 @@ const TransactionPage: React.FC = () => {
                               addToast('Data pelanggan tidak ditemukan.', 'error');
                             }
                           }}
-                          title="Kirim Struk via WhatsApp"
-                          className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700"
+                          title={waButtonTitle(t)}
+                          aria-label={waButtonTitle(t)}
+                          className={`relative p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${
+                            t.whatsappSentAt
+                              ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
+                              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                          }`}
                         >
                           <SendIcon className="w-5 h-5" />
+                          {t.whatsappSentAt && <WaSentDot />}
                         </button>
                       </td>
                     </tr>
@@ -1054,10 +1065,16 @@ const TransactionPage: React.FC = () => {
                           addToast('Data pelanggan tidak ditemukan.', 'error');
                         }
                       }}
-                      title="Kirim Struk via WhatsApp"
-                      className="hover:text-slate-900 dark:hover:text-white"
+                      title={waButtonTitle(t)}
+                      aria-label={waButtonTitle(t)}
+                      className={`relative ${
+                        t.whatsappSentAt
+                          ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
+                          : 'hover:text-slate-900 dark:hover:text-white'
+                      }`}
                     >
                       <SendIcon className="w-6 h-6" />
+                      {t.whatsappSentAt && <WaSentDot />}
                     </button>
                   </div>
                 </div>

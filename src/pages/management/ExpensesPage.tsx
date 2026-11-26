@@ -368,9 +368,8 @@ const ExpensesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pengeluaran</h1>
-        <div className="flex gap-2">
+      <div className="flex justify-end">
+        <div className="flex gap-2 flex-wrap justify-end">
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
@@ -418,7 +417,7 @@ const ExpensesPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
+      <div className="card p-6">
         <h3 className="text-slate-500 dark:text-slate-400 font-medium mb-2">Total Pengeluaran</h3>
         <p className="text-3xl font-bold text-slate-900 dark:text-white">
           Rp {formatRupiah(totalExpense)}
@@ -455,7 +454,7 @@ const ExpensesPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-x-auto">
+      <div className="card overflow-x-auto">
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>

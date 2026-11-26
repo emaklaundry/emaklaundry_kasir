@@ -115,6 +115,8 @@ export interface Transaction {
   idempotencyKey?: string;
   /** Izin PIN supervisor sekali pakai untuk aksi sensitif Kasir (ubah nota lunas, pembatalan). */
   supervisorApprovalId?: string | null;
+  /** Kapan struk/notifikasi terakhir dikirim via WhatsApp (ISO). Kosong = belum pernah. */
+  whatsappSentAt?: string | null;
 }
 
 export interface InventoryItem {
@@ -208,6 +210,18 @@ export interface AuditLog {
   user: string;
   action: string;
   storeId?: string;
+  /** data | aktivitas | navigasi | klik | sesi | error */
+  category?: 'data' | 'aktivitas' | 'navigasi' | 'klik' | 'sesi' | 'error';
+  /** Untuk kategori data: tabel, id baris, dan INSERT/UPDATE/DELETE */
+  tableName?: string;
+  recordId?: string;
+  operation?: string;
+  changedFields?: string[];
+  oldData?: Record<string, unknown>;
+  newData?: Record<string, unknown>;
+  /** Halaman tempat aksi terjadi (path + query) */
+  page?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Settings {
@@ -216,6 +230,10 @@ export interface Settings {
   isMaintenanceMode?: boolean;
   maintenanceMessage?: string;
   whatsappFooter?: string;
+  /** Nama usaha di pesan WhatsApp ("Tim <nama>"). Kosong = "Emak Laundry". */
+  businessName?: string | null;
+  /** Link cek status cucian; nomor invoice ditambahkan sebagai ?invoice=. */
+  trackingUrl?: string | null;
   /** Kode QRIS statis toko (EMVCo). Kosong = pembayaran QRIS tanpa QR dinamis. */
   qrisStaticCode?: string | null;
 }

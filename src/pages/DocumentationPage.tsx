@@ -28,7 +28,7 @@ const DocumentationPage: React.FC = () => {
       icon: HomeIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
             Selamat Datang di Emak Laundry POS
           </h2>
           <p className="text-slate-600 dark:text-slate-300">
@@ -70,10 +70,10 @@ const DocumentationPage: React.FC = () => {
       icon: ShoppingCartIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Panduan Transaksi</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Panduan Transaksi</h2>
 
           <div className="space-y-4">
-            <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <section className="card p-4">
               <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
                 1. Membuat Transaksi Baru
               </h3>
@@ -100,7 +100,7 @@ const DocumentationPage: React.FC = () => {
               </ol>
             </section>
 
-            <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <section className="card p-4">
               <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
                 2. Mengirim Struk WhatsApp
               </h3>
@@ -111,7 +111,7 @@ const DocumentationPage: React.FC = () => {
               </p>
             </section>
 
-            <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <section className="card p-4">
               <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
                 3. Menyelesaikan Pesanan
               </h3>
@@ -142,13 +142,13 @@ const DocumentationPage: React.FC = () => {
       icon: UserGroupIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h2>
           <p className="text-slate-600 dark:text-slate-300">
             Kelola data pelanggan untuk memudahkan pemesanan berulang dan loyalitas.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="card p-4">
               <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
                 Tambah Pelanggan
               </h3>
@@ -156,7 +156,7 @@ const DocumentationPage: React.FC = () => {
                 Input data: Nama, No. HP (WA), dan Alamat. No. HP penting untuk notifikasi otomatis.
               </p>
             </div>
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="card p-4">
               <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
                 Riwayat Transaksi
               </h3>
@@ -175,7 +175,7 @@ const DocumentationPage: React.FC = () => {
       icon: ArchiveBoxIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stok & Inventaris</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Stok & Inventaris</h2>
           <p className="text-slate-600 dark:text-slate-300">
             Pantau penggunaan bahan baku seperti Deterjen, Pewangi, dan Plastik Packing.
           </p>
@@ -218,7 +218,7 @@ const DocumentationPage: React.FC = () => {
       icon: WrenchIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
             Aset & Jadwal Perawatan
           </h2>
           <p className="text-slate-600 dark:text-slate-300">
@@ -226,7 +226,7 @@ const DocumentationPage: React.FC = () => {
             perawatan rutin.
           </p>
 
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="card p-4">
             <h3 className="font-semibold text-slate-800 dark:text-white mb-2">Cara Kerja</h3>
             <ol className="list-decimal list-inside space-y-2 text-slate-600 dark:text-slate-300">
               <li>Daftarkan Aset (Contoh: "Mesin Cuci LG 1").</li>
@@ -252,7 +252,7 @@ const DocumentationPage: React.FC = () => {
       icon: UserIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Karyawan & Absensi</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Karyawan & Absensi</h2>
           <p className="text-slate-600 dark:text-slate-300">
             (Khusus Admin) Semua data karyawan diatur dari menu <strong>SDM &amp; Aset</strong>.
             Kasir tidak bisa membuka halaman ini.
@@ -292,7 +292,7 @@ const DocumentationPage: React.FC = () => {
       icon: ChartBarIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Laporan & Analisis</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Laporan & Analisis</h2>
           <p className="text-slate-600 dark:text-slate-300">
             Dapatkan wawasan mendalam tentang performa bisnis Anda.
           </p>
@@ -322,12 +322,12 @@ const DocumentationPage: React.FC = () => {
       icon: PackageIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Layanan</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Manajemen Layanan</h2>
           <p className="text-slate-600 dark:text-slate-300">
             Atur jenis layanan laundry yang Anda tawarkan (Kiloan, Satuan, Karpet, dll).
           </p>
 
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="card p-4">
             <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
               Menambah Layanan Baru
             </h3>
@@ -357,7 +357,7 @@ const DocumentationPage: React.FC = () => {
       icon: DollarSignIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
             Pencatatan Pengeluaran
           </h2>
           <p className="text-slate-600 dark:text-slate-300">
@@ -384,7 +384,7 @@ const DocumentationPage: React.FC = () => {
       icon: CommandIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
             Command Palette (Tindakan Cepat)
           </h2>
           <p className="text-slate-600 dark:text-slate-300">
@@ -415,7 +415,7 @@ const DocumentationPage: React.FC = () => {
       icon: SettingsIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Pengaturan Sistem</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Pengaturan Sistem</h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">
@@ -454,7 +454,7 @@ const DocumentationPage: React.FC = () => {
       icon: BoltIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
             Integrasi API (Landing Page)
           </h2>
           <p className="text-slate-600 dark:text-slate-300">
@@ -462,32 +462,46 @@ const DocumentationPage: React.FC = () => {
           </p>
 
           <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-            <h3 className="font-semibold text-slate-800 dark:text-white mb-2">Endpoint</h3>
-            <code className="block bg-slate-800 text-white p-3 rounded text-sm overflow-x-auto mb-4">
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
+              Endpoint publik (disarankan)
+            </h3>
+            <code className="block bg-slate-800 text-white p-3 rounded text-sm overflow-x-auto mb-2">
+              GET https://emaklaundry.my.id/api/cek-status?invoice=[NO-INVOICE]
+            </code>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Dipanggil dari domain landing page sendiri, tanpa API key. Endpoint ini meneruskan
+              permintaan ke fungsi <code>check-order</code> di server.
+            </p>
+
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
+              Endpoint Supabase (langsung)
+            </h3>
+            <code className="block bg-slate-800 text-white p-3 rounded text-sm overflow-x-auto mb-2">
               GET https://[PROJECT-REF].supabase.co/functions/v1/check-order?invoice=[NO-INVOICE]
             </code>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Wajib mengirim header <code>Authorization: Bearer [ANON-KEY]</code>. Dari browser, domain
+              pemanggil harus terdaftar di secret <code>ALLOWED_ORIGIN</code> (pisahkan dengan koma).
+            </p>
 
             <h3 className="font-semibold text-slate-800 dark:text-white mb-2">
               Contoh Request (Javascript)
             </h3>
             <pre className="bg-slate-800 text-slate-300 p-4 rounded text-sm overflow-x-auto font-mono">
               {`async function checkOrderStatus(invoiceNumber) {
-  const API_URL = 'https://[PROJECT_REF].supabase.co/functions/v1/check-order';
-  
-  try {
-    const response = await fetch(\`\${API_URL}?invoice=\${invoiceNumber}\`);
-    const data = await response.json();
-    
-    if (response.ok) {
-      console.log('Status:', data.status);
-      console.log('Total:', data.total);
-      return data;
-    } else {
-      console.error('Error:', data.error);
-    }
-  } catch (error) {
-    console.error('Network Error:', error);
+  const response = await fetch(
+    \`/api/cek-status?invoice=\${encodeURIComponent(invoiceNumber)}\`,
+  );
+  const data = await response.json();
+
+  if (!response.ok) {
+    // 400 format salah, 404 tidak ditemukan, 429 terlalu sering, 5xx server
+    throw new Error(data.error);
   }
+
+  // data: { invoice, customerName (disamarkan), status, paymentStatus,
+  //         total, amountPaid, estimatedCompletion, items }
+  return data;
 }`}
             </pre>
           </div>
@@ -500,7 +514,7 @@ const DocumentationPage: React.FC = () => {
       icon: BoltIcon,
       content: (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
             Wiring & Infrastruktur Listrik
           </h2>
           <p className="text-slate-600 dark:text-slate-300">
@@ -511,7 +525,7 @@ const DocumentationPage: React.FC = () => {
           </p>
 
           {/* Ringkasan Teknis */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               1. Ringkasan Teknis
             </h3>
@@ -599,7 +613,7 @@ const DocumentationPage: React.FC = () => {
           </section>
 
           {/* BoM - Komponen Panel Utama */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               2. Rencana Anggaran Biaya (BoM)
             </h3>
@@ -885,7 +899,7 @@ const DocumentationPage: React.FC = () => {
           </section>
 
           {/* Wiring Diagram */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               3. Wiring Diagram & Layout Panel
             </h3>
@@ -917,7 +931,7 @@ v           v
           </section>
 
           {/* Catatan Instalasi */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               4. Catatan Kritis Instalasi (SOP)
             </h3>
@@ -982,7 +996,7 @@ v           v
           </section>
 
           {/* Scalability Roadmap */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               5. Skema Pengembangan (Scalability Roadmap)
             </h3>
@@ -1067,7 +1081,7 @@ v           v
 
       {/* Content Area */}
       <div className="flex-1">
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 sm:p-8 min-h-full animate-fadeIn transition-all">
+        <div className="card p-6 sm:p-8 min-h-full animate-fadeIn transition-all">
           {activeContent}
         </div>
       </div>

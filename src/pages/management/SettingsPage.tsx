@@ -3,13 +3,13 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useStores } from '../../contexts/StoreContext';
 import useToasts from '../../contexts/useToasts';
-import ChangePasswordModal from '../../components/ChangePasswordModal';
 import SupervisorPinSettings from '../../components/SupervisorPinSettings';
 import { isStaticQRIS, validateQRIS } from '../../utils/qrisUtils';
-import { KeyIcon, MapIcon, SpinnerIcon } from '../../components/icons';
+import { MapIcon, SpinnerIcon } from '../../components/icons';
 import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
 import { UserRole } from '../../types';
+import { DEFAULT_BUSINESS_NAME, DEFAULT_TRACKING_URL } from '@/utils/whatsappReceipt';
 
 // Template default untuk WhatsApp footer
 const DEFAULT_WHATSAPP_FOOTER = `🔍 Cek status cucian Anda:
@@ -30,7 +30,6 @@ const SettingsPage: React.FC = () => {
     latitude: 0,
     longitude: 0,
   });
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Only Super Admin can toggle maintenance mode
   const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
@@ -98,12 +97,19 @@ const SettingsPage: React.FC = () => {
       return;
     }
 
+    const businessName = formData.businessName?.trim() || null;
+    const trackingUrl = formData.trackingUrl?.trim() || null;
+    if (trackingUrl && !/^https?:\/\/\S+$/i.test(trackingUrl)) {
+      addToast('Link cek status harus diawali http:// atau https:// tanpa spasi.', 'error');
+      return;
+    }
+
     setIsSaving(true);
     // Create a replaceable toast and keep its id so we can update it later
     const toastId = addToast('Menyimpan perubahan...', 'info');
     try {
       // 1. Update Layout/General Settings
-      await updateSettings({ ...formData, qrisStaticCode });
+      await updateSettings({ ...formData, qrisStaticCode, businessName, trackingUrl });
 
       // 2. Update Store Location (if valid store selected)
       if (currentStore && currentStore.id !== 'all') {
@@ -136,7 +142,7 @@ const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md max-w-2xl mx-auto relative">
+    <div className="card p-6 max-w-2xl mx-auto relative">
       {isSaving && (
         <div className="absolute inset-0 z-50 bg-white/60 dark:bg-black/50 rounded-lg flex items-center justify-center">
           <div className="flex items-center gap-3">
@@ -168,20 +174,6 @@ const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-          Pengaturan Aplikasi
-        </h1>
-        <button
-          type="button"
-          onClick={() => setIsPasswordModalOpen(true)}
-          className="btn btn-secondary btn-sm"
-        >
-          <KeyIcon className="w-5 h-5" />
-          <span className="hidden sm:inline">Ubah Password</span>
-          <span className="sm:hidden">Password</span>
-        </button>
-      </div>
       <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isSaving}>
         {/* Location Settings - Visible only for Store Admins/Specific Branch */}
         {currentStore && (
@@ -336,6 +328,46 @@ const SettingsPage: React.FC = () => {
           </div>
         )}
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="businessName" className="form-label">
+              Nama Usaha (pesan WhatsApp)
+            </label>
+            <input
+              id="businessName"
+              name="businessName"
+              type="text"
+              value={formData.businessName ?? ''}
+              onChange={handleChange}
+              disabled={isSaving}
+              placeholder={DEFAULT_BUSINESS_NAME}
+              className="form-input"
+            />
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Dipakai untuk salam penutup "Tim …" dan nama cabang. Kosong = {DEFAULT_BUSINESS_NAME}.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="trackingUrl" className="form-label">
+              Link Cek Status Cucian
+            </label>
+            <input
+              id="trackingUrl"
+              name="trackingUrl"
+              type="url"
+              inputMode="url"
+              value={formData.trackingUrl ?? ''}
+              onChange={handleChange}
+              disabled={isSaving}
+              placeholder={DEFAULT_TRACKING_URL}
+              className="form-input"
+            />
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Nomor invoice ditambahkan otomatis (?invoice=…). Kosong = {DEFAULT_TRACKING_URL}.
+            </p>
+          </div>
+        </div>
+
         <div>
           <label htmlFor="receiptMessage" className="form-label">
             Pesan di Struk
@@ -467,10 +499,6 @@ const SettingsPage: React.FC = () => {
 
       <SupervisorPinSettings />
 
-      <ChangePasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setIsPasswordModalOpen(false)}
-      />
     </div>
   );
 };

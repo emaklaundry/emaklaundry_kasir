@@ -283,9 +283,7 @@ export async function exportBackup(
       if (spec.name === 'stores') filter = { column: 'id', value: storeId };
       else if (spec.storeColumn) filter = { column: spec.storeColumn, value: storeId };
       else if (spec.parent) {
-        const parentIds = ((data[spec.parent.table] ?? []) as BackupRow[]).map((r) =>
-          String(r.id),
-        );
+        const parentIds = ((data[spec.parent.table] ?? []) as BackupRow[]).map((r) => String(r.id));
         filter = { column: spec.parent.column, values: parentIds };
       }
     }

@@ -25,7 +25,8 @@ export async function fetchCustomers(
   }
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-  query = query.range(from, to);
+  // Urutan tetap wajib untuk paginasi: tanpa ORDER BY, halaman bisa tumpang-tindih.
+  query = query.order('name').order('id').range(from, to);
   const { data, error, count } = await query;
   if (error) throw error;
   // Convert null to undefined for optional fields
@@ -37,6 +38,104 @@ export async function fetchCustomers(
     storeId: c.storeId ?? undefined,
   })) as unknown as Customer[];
   return { data: customers, count: count || 0 };
+}
+
+export type CustomerSortKey =
+  | 'name'
+  | 'storeName'
+  | 'createdAt'
+  | 'transactionCount'
+  | 'totalSpent';
+
+export type CustomerActivity = 'all' | 'active' | 'inactive';
+
+export interface CustomerWithStats extends Customer {
+  transactionCount: number;
+  totalSpent: number;
+  storeName: string;
+}
+
+export interface CustomerStatsFilter extends CustomerFilter {
+  /** Kolom urutan (berlaku untuk seluruh data sebelum paginasi). Default: name. */
+  sortBy?: CustomerSortKey;
+  /** Default: true. */
+  sortAscending?: boolean;
+  /** active = punya transaksi, inactive = belum pernah transaksi. */
+  activity?: CustomerActivity;
+}
+
+/**
+ * Pelanggan + statistik transaksi dari view `customers_with_stats`.
+ * Urutan, filter aktivitas, dan paginasi dikerjakan server sehingga berlaku
+ * untuk SEMUA pelanggan, bukan hanya halaman yang sedang tampil.
+ */
+export async function fetchCustomersWithStats(
+  filter: CustomerStatsFilter = {},
+): Promise<{ data: CustomerWithStats[]; count: number }> {
+  const {
+    page = 1,
+    pageSize = 50,
+    searchTerm,
+    storeId,
+    sortBy = 'name',
+    sortAscending = true,
+    activity = 'all',
+  } = filter;
+  // View belum ada di types/supabase.ts yang di-generate, jadi pakai nama tabel bertipe longgar.
+  const view = 'customers_with_stats' as 'customers';
+  let query = supabase.from(view).select('*', { count: 'exact' });
+  if (storeId && storeId !== 'all') {
+    query = query.eq('storeId', storeId);
+  }
+  if (searchTerm && searchTerm.trim()) {
+    const sanitized = escapeLikePattern(searchTerm.trim());
+    query = query.ilike('name', `%${sanitized}%`);
+  }
+  if (activity === 'active') {
+    query = query.filter('transactionCount', 'gt', 0);
+  } else if (activity === 'inactive') {
+    query = query.filter('transactionCount', 'eq', 0);
+  }
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.order(sortBy as 'name', { ascending: sortAscending, nullsFirst: false });
+  if (sortBy !== 'name') query = query.order('name');
+  query = query.order('id').range(from, to);
+  const { data, error, count } = await query;
+  if (error) throw error;
+  const rows = (data || []) as unknown as Record<string, unknown>[];
+  const customers = rows.map((c) => ({
+    ...c,
+    address: c.address ?? undefined,
+    notes: c.notes ?? undefined,
+    phone: c.phone ?? undefined,
+    storeId: c.storeId ?? undefined,
+    transactionCount: Number(c.transactionCount ?? 0),
+    totalSpent: Number(c.totalSpent ?? 0),
+    storeName: (c.storeName as string | null) ?? 'N/A',
+  })) as unknown as CustomerWithStats[];
+  return { data: customers, count: count || 0 };
+}
+
+/** Kunci cache bersama untuk daftar lengkap pelanggan. */
+export const ALL_CUSTOMERS_QUERY_KEY = ['customers', 'all'] as const;
+
+// Supabase membatasi satu respons ke 1.000 baris, jadi ambil per halaman.
+const ALL_CUSTOMERS_CHUNK = 1000;
+
+/**
+ * Ambil SEMUA pelanggan yang boleh dilihat pengguna (per 1.000 baris).
+ * Dipakai untuk mencocokkan nama pelanggan di transaksi; memakai satu
+ * halaman 1.000 saja membuat pelanggan ke-1.001 dst tampil "N/A".
+ */
+export async function fetchAllCustomers(): Promise<{ data: Customer[]; count: number }> {
+  const all: Customer[] = [];
+  for (let page = 1; ; page++) {
+    const { data, count } = await fetchCustomers({ page, pageSize: ALL_CUSTOMERS_CHUNK });
+    all.push(...data);
+    if (data.length < ALL_CUSTOMERS_CHUNK || all.length >= count) break;
+  }
+  return { data: all, count: all.length };
 }
 
 // Kode Postgres untuk pelanggaran indeks unik (phone, storeId).

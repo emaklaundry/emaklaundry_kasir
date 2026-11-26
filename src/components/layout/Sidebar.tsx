@@ -1,7 +1,7 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import useAppContext from '../../contexts/useAppContext';
-import { ChevronLeftIcon } from '../icons';
+import { XIcon } from '../icons';
 import { NavItem, canSeeNavItem, navSections } from '../../config/navigation';
 
 interface SidebarProps {
@@ -16,6 +16,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   useLayoutEffect(() => {
     if (sidebarRef.current) sidebarRef.current.inert = !isOpen;
   }, [isOpen]);
+
+  // Laci (mobile/tablet) bisa ditutup dengan Escape; di desktop sidebar menempel dan dikendalikan tombol menu header.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !window.matchMedia('(min-width: 1024px)').matches) onToggle();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isOpen, onToggle]);
 
   const canSee = (item: NavItem) => canSeeNavItem(item, currentUser?.role);
 
@@ -63,21 +73,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         aria-hidden={!isOpen}
       >
         <div className="h-full px-3 py-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
-          {/* Header dengan toggle button */}
-          <div className="flex items-center justify-between mb-6">
-            <NavLink to="/" className="flex items-center group">
+          {/* Tombol tutup hanya untuk mode laci; di desktop cukup tombol menu di header */}
+          <div className="flex items-center justify-between mb-6 min-h-[2.75rem]">
+            <NavLink to="/" className="flex items-center group px-1">
               <span className="self-center text-2xl font-bold text-brand-blue-600 dark:text-brand-blue-400">
                 Laundry POS
               </span>
             </NavLink>
             <button
               id="sidebar-close"
+              type="button"
               onClick={onToggle}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors touch-target"
+              className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue-600 touch-target"
               aria-label="Tutup navigasi"
               title="Tutup navigasi"
             >
-              <ChevronLeftIcon className="w-5 h-5" />
+              <XIcon className="w-5 h-5" />
             </button>
           </div>
 

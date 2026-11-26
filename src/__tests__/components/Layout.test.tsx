@@ -4,11 +4,12 @@ import { MemoryRouter } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 
 const mocks = vi.hoisted(() => ({
-  fetchCustomers: vi.fn().mockResolvedValue([]),
+  fetchAllCustomers: vi.fn().mockResolvedValue({ data: [], count: 0 }),
 }));
 
 vi.mock('@/contexts/CustomerContext', () => ({
-  fetchCustomers: mocks.fetchCustomers,
+  ALL_CUSTOMERS_QUERY_KEY: ['customers', 'all'],
+  fetchAllCustomers: mocks.fetchAllCustomers,
 }));
 
 vi.mock('@/components/features/Tutorial', () => ({ default: () => null }));

@@ -12,7 +12,7 @@ import useToasts from '../../contexts/useToasts';
 import EmptyState from '../../components/EmptyState';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 import { supabase } from '../../utils/supabaseClient';
@@ -73,8 +73,8 @@ const ReceiptPage: React.FC = () => {
   };
 
   const { data: customersRaw = [] } = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
 
   // Normalize customers to always be an array
@@ -193,7 +193,7 @@ const ReceiptPage: React.FC = () => {
       className="max-w-md mx-auto rounded-lg border border-slate-200 bg-white p-8 dark:border-slate-700 dark:bg-slate-800 receipt-print"
     >
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h1>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h2>
         <p className="text-base text-slate-500 dark:text-slate-400">Struk Transaksi</p>
       </div>
 

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChartIcon, DollarSignIcon, PackageIcon, UsersIcon } from '../components/icons';
-import { fetchCustomers } from '../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../contexts/CustomerContext';
 import useAppContext from '../contexts/useAppContext';
 import { useUsers } from '../contexts/UserContext';
 import { useServices } from '../contexts/ServiceContext';
@@ -255,8 +255,8 @@ interface RawExpense {
 
 const ReportsPage: React.FC = () => {
   const customersRaw = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { services } = useServices();
@@ -953,8 +953,8 @@ const ReportsPage: React.FC = () => {
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+            <div className="card p-6 report-section">
+              <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
                 Layanan Terlaris
               </h2>
               <div className="overflow-x-auto">
@@ -981,8 +981,8 @@ const ReportsPage: React.FC = () => {
                 </table>
               </div>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+            <div className="card p-6 report-section">
+              <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
                 Pelanggan Teratas
               </h2>
               <div className="overflow-x-auto">
@@ -1009,8 +1009,8 @@ const ReportsPage: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-6 report-section">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <BarChartIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Pendapatan per Kategori Layanan
             </h2>
@@ -1064,8 +1064,8 @@ const ReportsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-6 report-section">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <PackageIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Rincian Pendapatan per Layanan
             </h2>
@@ -1109,8 +1109,8 @@ const ReportsPage: React.FC = () => {
               </table>
             </div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-6 report-section">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Performa Kasir
             </h2>
@@ -1150,8 +1150,8 @@ const ReportsPage: React.FC = () => {
               </table>
             </div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-6 report-section">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Rincian Pengeluaran (Termasuk Aset & Pemeliharaan)
             </h2>
@@ -1230,8 +1230,8 @@ const ReportsPage: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md report-section">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+        <div className="card p-6 report-section">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
             Ringkasan Bulanan {new Date().getFullYear()}
           </h2>
           <YearlySummaryChart data={monthlySummary} />

@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { ClockIcon, UserIcon, CheckCircleIcon, SpinnerIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import { getLocalDateString } from '../../utils/dateHelpers';
+import { isFlexibleSchedule } from '../../utils/employeeSchedule';
 import {
   AttendanceSummary,
   ClockOutKind,
@@ -121,14 +122,11 @@ const AttendancePage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6">
+    <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Absensi Karyawan</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Tercatat otomatis dari login karyawan
-          </p>
-        </div>
+        <p className="text-slate-500 dark:text-slate-400 text-sm">
+          Tercatat otomatis dari login karyawan
+        </p>
         <div className="flex items-center gap-2">
           <label htmlFor="attendance-date" className="text-sm text-slate-500 dark:text-slate-400">
             Tanggal:
@@ -196,7 +194,7 @@ const AttendancePage: React.FC = () => {
             return (
               <div
                 key={employee.id}
-                className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center gap-4"
+                className="card p-4 flex flex-col sm:flex-row sm:items-center gap-4"
               >
                 {/* Employee Info */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -209,11 +207,13 @@ const AttendancePage: React.FC = () => {
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       <span className="capitalize">{employee.role}</span>
-                      {employee.shiftStart && employee.shiftEnd && (
+                      {employee.shiftStart && employee.shiftEnd ? (
                         <>
                           {' '}
                           · shift {employee.shiftStart}–{employee.shiftEnd}
                         </>
+                      ) : (
+                        isFlexibleSchedule(employee) && <> · jadwal fleksibel</>
                       )}
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1 text-xs">

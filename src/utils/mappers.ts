@@ -40,6 +40,7 @@ export interface RawDBTransaction {
   items?: TransactionItem[] | unknown[];
   notes?: string;
   idempotencyKey?: string;
+  whatsappSentAt?: string | null;
 }
 
 /**
@@ -87,5 +88,6 @@ export function mapDBtoTransaction(raw: RawDBTransaction): Transaction {
     storeId: (raw.store_id ?? raw.storeId ?? '') as string,
     notes: raw.notes ?? undefined,
     idempotencyKey: raw.idempotencyKey ?? undefined,
+    whatsappSentAt: raw.whatsappSentAt ?? null,
   };
 }

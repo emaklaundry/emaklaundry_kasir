@@ -5,13 +5,13 @@ import { AlertCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { supabase } from '../../utils/supabaseClient';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import {
   ChevronLeftIcon,
   PrinterIcon,
   UsersIcon,
   ShoppingCartIcon,
-  // SendIcon, // Import icon Send (unused)
+  SendIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import useAppContext from '../../contexts/useAppContext';
@@ -42,6 +42,7 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
 
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false);
 
   // Mengambil fungsi updateTransaction dari context
   const { updateTransaction } = useTransactions({ enabled: false });
@@ -85,8 +86,8 @@ const TransactionDetailPage: React.FC = () => {
   });
 
   const customersQuery = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
 
   const customers = useMemo(() => {
@@ -155,22 +156,23 @@ const TransactionDetailPage: React.FC = () => {
         Kembali ke Daftar Transaksi
       </Link>
 
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-        <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
-          </div>
+      <div className="card p-6">
+        <div className="flex justify-end mb-6">
           <div className="flex gap-2">
             {/* Tombol Kirim WA Manual */}
-            {/*
-            <button aria-label="Kirim struk via WhatsApp"
+            <button
+              type="button"
               onClick={() => setIsHeaderWAOpen(true)}
-              className="btn btn-primary"
-              title="Kirim Struk WhatsApp"
+              className="btn btn-secondary"
+              title={
+                transaction.whatsappSentAt
+                  ? 'Struk sudah pernah dikirim via WhatsApp. Klik untuk kirim ulang.'
+                  : 'Kirim struk via WhatsApp'
+              }
             >
               <SendIcon className="h-5 w-5" />
+              {transaction.whatsappSentAt ? 'Kirim Ulang WA' : 'Kirim WA'}
             </button>
-            */}
             <Link to={`/transactions/${transaction.id}/receipt`} className="btn btn-secondary">
               <PrinterIcon className="h-5 w-5" />
               Cetak Struk
@@ -180,7 +182,7 @@ const TransactionDetailPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Pelanggan
             </h2>
@@ -189,7 +191,7 @@ const TransactionDetailPage: React.FC = () => {
             <DetailItem label="Alamat" value={customer.address || '-'} />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <ShoppingCartIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Transaksi
             </h2>
@@ -218,6 +220,24 @@ const TransactionDetailPage: React.FC = () => {
               }
             />
             <DetailItem label="Metode Bayar" value={transaction.paymentMethod || '-'} />
+            <DetailItem
+              label="Struk WhatsApp"
+              value={
+                transaction.whatsappSentAt ? (
+                  <span className="badge badge-success">
+                    ✓ Terkirim{' '}
+                    {new Date(transaction.whatsappSentAt).toLocaleString('id-ID', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </span>
+                ) : (
+                  <span className="badge badge-neutral">
+                    Belum dikirim
+                  </span>
+                )
+              }
+            />
           </div>
         </div>
         {transaction.notes && (
@@ -237,8 +257,8 @@ const TransactionDetailPage: React.FC = () => {
         />
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
+      <div className="card p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
         {/* Tampilan Tabel Desktop */}
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
@@ -358,7 +378,6 @@ const TransactionDetailPage: React.FC = () => {
       </div>
 
       {/* WhatsApp Modal untuk tombol manual di header */}
-      {/*
       {isHeaderWAOpen && (
         <WhatsAppModal
           isOpen={isHeaderWAOpen}
@@ -367,7 +386,6 @@ const TransactionDetailPage: React.FC = () => {
           customer={customer}
         />
       )}
-      */}
     </div>
   );
 };

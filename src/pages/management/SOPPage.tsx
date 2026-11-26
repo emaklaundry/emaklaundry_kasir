@@ -140,15 +140,10 @@ const SOPPage = () => {
       {/* Header - No Print */}
       <div className="border-b border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800 print:hidden">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white">
-              <BookOpenIcon className="h-6 w-6 text-brand-blue-600 dark:text-brand-blue-400" />
-              SOP (Standard Operating Procedures)
-            </h1>
-            <p className="mt-1 text-slate-500 dark:text-slate-400">
-              Dokumen standar operasional laundry.
-            </p>
-          </div>
+          <p className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <BookOpenIcon className="h-5 w-5 text-brand-blue-600 dark:text-brand-blue-400" />
+            Dokumen standar operasional laundry.
+          </p>
           <div className="flex gap-2">
             {isAdmin && (
               <button onClick={handleCreate} className="btn btn-primary btn-sm">

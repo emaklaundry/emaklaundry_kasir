@@ -2566,14 +2566,7 @@ export function parseBackupDate(value: unknown): Date | undefined {
   );
   if (legacy) {
     const [, d, m, y, hh = '0', mm = '0', ss = '0'] = legacy;
-    const date = new Date(
-      Number(y),
-      Number(m) - 1,
-      Number(d),
-      Number(hh),
-      Number(mm),
-      Number(ss),
-    );
+    const date = new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm), Number(ss));
     return Number.isNaN(date.getTime()) ? undefined : date;
   }
 

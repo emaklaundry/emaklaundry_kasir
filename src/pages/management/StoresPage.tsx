@@ -13,7 +13,7 @@ import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import useAppContext from '../../contexts/useAppContext';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchInventory } from '../../contexts/InventoryContext';
 import { useAssets } from '../../contexts/AssetContext';
@@ -28,8 +28,8 @@ const StoresPage: React.FC = () => {
   const { stores, addStore, updateStore, deleteStore } = useStores();
   const { selectedStoreId } = useAppContext();
   const { data: customers = [] } = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
   const { transactions } = useTransactions();
   const { data: result = { data: [] } } = useQuery({
@@ -177,7 +177,7 @@ const StoresPage: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
+    <div className="card relative p-6">
       {isSavingStore && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">
@@ -205,8 +205,7 @@ const StoresPage: React.FC = () => {
           </div>
         </div>
       )}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Cabang</h1>
+      <div className="flex justify-end mb-4">
         <button onClick={() => handleOpenFormModal()} className="btn btn-primary">
           <PlusCircleIcon className="h-5 w-5" />
           Tambah Cabang

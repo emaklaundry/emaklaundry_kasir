@@ -14,6 +14,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // vite-plugin-pwa's virtual module only exists in Vite builds; point tests at a stub.
+      'virtual:pwa-register/react': path.resolve(
+        __dirname,
+        './src/__tests__/stubs/pwa-register-react.ts',
+      ),
     },
   },
 });
