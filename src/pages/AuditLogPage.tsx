@@ -131,9 +131,7 @@ const AuditLogPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      <h1 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Log Audit</h1>
-
+    <div className="card p-6">
       <div className="flex flex-col md:flex-row items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700 flex-wrap">
         <div className="relative w-full md:w-64">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />

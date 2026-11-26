@@ -193,7 +193,7 @@ const ReceiptPage: React.FC = () => {
       className="max-w-md mx-auto rounded-lg border border-slate-200 bg-white p-8 dark:border-slate-700 dark:bg-slate-800 receipt-print"
     >
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h1>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h2>
         <p className="text-base text-slate-500 dark:text-slate-400">Struk Transaksi</p>
       </div>
 

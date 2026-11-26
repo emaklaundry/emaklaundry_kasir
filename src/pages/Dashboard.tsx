@@ -362,9 +362,9 @@ const Dashboard: React.FC = () => {
         />
 
         <div
-          className={`bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md ${isStaff ? 'hidden sm:block' : 'block'}`}
+          className={`card p-4 sm:p-6 ${isStaff ? 'hidden sm:block' : 'block'}`}
         >
-          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
             Aksi Cepat
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
@@ -430,10 +430,10 @@ const Dashboard: React.FC = () => {
 
         <div
           id="dashboard-recent"
-          className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-md"
+          className="card p-3 sm:p-4 md:p-6"
         >
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">
               Progres Pesanan Aktif
             </h2>
           </div>
@@ -628,8 +628,8 @@ const Dashboard: React.FC = () => {
         </div>
 
         {!isStaff && (
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+          <div className="card p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
               Jadwal Perawatan Jatuh Tempo
             </h2>
             <div className="overflow-x-auto">

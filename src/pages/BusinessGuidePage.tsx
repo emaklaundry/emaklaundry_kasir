@@ -4,12 +4,12 @@ import { ArrowTrendingUpIcon } from '../components/icons';
 const BusinessGuidePage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 sm:p-8">
+      <div className="card p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
           <ArrowTrendingUpIcon className="w-8 h-8 text-brand-blue-600 dark:text-brand-blue-400" />
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
             Panduan Bisnis Laundry
-          </h1>
+          </h2>
         </div>
         <p className="text-slate-600 dark:text-slate-300 mb-6">
           Kumpulan alat perhitungan, metrik bisnis, dan strategi untuk memaksimalkan keuntungan
@@ -18,7 +18,7 @@ const BusinessGuidePage: React.FC = () => {
 
         <div className="space-y-6">
           {/* Kalkulator Bisnis */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               1. Kalkulator Bisnis Laundry
             </h3>
@@ -75,7 +75,7 @@ const BusinessGuidePage: React.FC = () => {
           </section>
 
           {/* Analisis Biaya */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               2. Analisis Biaya Operasional
             </h3>
@@ -115,7 +115,7 @@ const BusinessGuidePage: React.FC = () => {
           </section>
 
           {/* KPI */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               3. KPI & Metrik Penting
             </h3>
@@ -197,7 +197,7 @@ const BusinessGuidePage: React.FC = () => {
           </section>
 
           {/* Strategi Bisnis */}
-          <section className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <section className="card p-4">
             <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">
               4. Strategi Bisnis
             </h3>

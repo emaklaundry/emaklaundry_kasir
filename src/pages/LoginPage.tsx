@@ -106,7 +106,7 @@ const LoginPage: React.FC = () => {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 dark:bg-zinc-950">
       <div className="w-full max-w-md">
-        <section className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <section className="card p-6 sm:p-8">
           <h1
             id="login-heading"
             className="text-xl sm:text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white"

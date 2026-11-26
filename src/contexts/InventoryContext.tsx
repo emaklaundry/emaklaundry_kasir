@@ -7,13 +7,29 @@ export interface InventoryFilter {
   pageSize?: number;
   searchTerm?: string;
   storeId?: string;
+  /** Kolom urutan (berlaku untuk seluruh data sebelum paginasi). Default: name. */
+  sortBy?: InventorySortKey;
+  /** Default: true. */
+  sortAscending?: boolean;
 }
+
+export type InventorySortKey = 'name' | 'stock' | 'storeName';
 
 export async function fetchInventory(
   filter: InventoryFilter = {},
 ): Promise<{ data: InventoryItem[]; count: number }> {
-  const { page = 1, pageSize = 50, searchTerm, storeId } = filter;
-  let query = supabase.from('inventory_items').select('*', { count: 'exact' });
+  const {
+    page = 1,
+    pageSize = 50,
+    searchTerm,
+    storeId,
+    sortBy = 'name',
+    sortAscending = true,
+  } = filter;
+  // Urut berdasarkan nama cabang butuh relasi stores di-embed.
+  const sortByStore = sortBy === 'storeName';
+  const columns: string = sortByStore ? '*, stores(name)' : '*';
+  let query = supabase.from('inventory_items').select(columns, { count: 'exact' });
   if (storeId && storeId !== 'all') {
     query = query.eq('storeId', storeId);
   }
@@ -22,13 +38,20 @@ export async function fetchInventory(
   }
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-  query = query.range(from, to);
+  // Urutan dikerjakan di server agar berlaku untuk semua halaman; id sebagai kunci stabil.
+  query = query
+    .order(sortByStore ? 'stores(name)' : sortBy, { ascending: sortAscending, nullsFirst: false })
+    .order('name')
+    .order('id')
+    .range(from, to);
   const { data, error, count } = await query;
   if (error) throw error;
-  const items = (data || []).map((i) => ({
+  const rows = (data || []) as unknown as Record<string, unknown>[];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const items = rows.map(({ stores: _stores, ...i }) => ({
     ...i,
-    storeId: i.storeId ?? undefined,
-  })) as InventoryItem[];
+    storeId: (i.storeId as string | null) ?? undefined,
+  })) as unknown as InventoryItem[];
   return { data: items, count: count || 0 };
 }
 

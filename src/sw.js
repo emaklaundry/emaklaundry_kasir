@@ -60,16 +60,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Don't cache Supabase REST API calls (but let them pass through with headers intact)
-  if (url.hostname.includes('supabase.co') && url.pathname.includes('/rest/')) {
-    // Let it pass through without caching, but DON'T modify headers
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Don't cache other API calls
-  if (url.pathname.includes('/api/') || url.pathname.includes('/rest/')) {
-    event.respondWith(fetch(event.request));
+  // Data/API requests are never cached. Returning without respondWith lets the browser
+  // handle them directly (headers intact, no extra hop through the service worker).
+  if (
+    (url.hostname.includes('supabase.co') && url.pathname.includes('/rest/')) ||
+    url.pathname.includes('/api/') ||
+    url.pathname.includes('/rest/')
+  ) {
     return;
   }
 

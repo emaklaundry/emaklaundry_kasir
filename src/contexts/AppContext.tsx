@@ -38,6 +38,33 @@ const removeSessionStorageItem = (key: string): void => {
   }
 };
 
+// Last verified profile of this tab's session. Lets a reload while offline keep the user
+// signed in (data comes from the offline cache); sessionStorage dies with the tab.
+const OFFLINE_PROFILE_KEY = 'offline-profile';
+
+const saveOfflineProfile = (user: User) => {
+  setSessionStorageItem(
+    OFFLINE_PROFILE_KEY,
+    JSON.stringify({ ...user, createdAt: user.createdAt?.toISOString() }),
+  );
+};
+
+const loadOfflineProfile = (userId: string): User | null => {
+  const raw = getSessionStorageItem(OFFLINE_PROFILE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Omit<User, 'createdAt'> & { createdAt?: string };
+    if (parsed.id !== userId) return null;
+    return { ...parsed, createdAt: parsed.createdAt ? new Date(parsed.createdAt) : undefined };
+  } catch {
+    return null;
+  }
+};
+
+const isNetworkFailure = (error: { message?: string } | null) =>
+  (typeof navigator !== 'undefined' && navigator.onLine === false) ||
+  /failed to fetch|network|load failed/i.test(error?.message ?? '');
+
 export interface AppContextType {
   loading: boolean;
   currentUser: User | null;
@@ -73,6 +100,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (error) {
             console.error('Error fetching profile:', error);
           }
+          // Offline: the profile could not be verified, so reuse the one this tab already
+          // verified for the same account instead of sending the cashier to the login page.
+          const offlineProfile =
+            !data && isNetworkFailure(error) ? loadOfflineProfile(session.user.id) : null;
+          if (offlineProfile) {
+            setCurrentUser(offlineProfile);
+            if (offlineProfile.storeId) setSelectedStoreId(offlineProfile.storeId);
+            prevLoggedInRef.current = true;
+            return;
+          }
           if (data) {
             if (data.isActive === false) {
               addToast('Akun Anda tidak aktif. Silakan hubungi administrator.', 'error');
@@ -100,7 +137,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 };
                 supabase.from('audit_logs').insert([newLog]).then();
               }
-              setCurrentUser({
+              const verifiedUser: User = {
                 id: data.id,
                 name: data.name,
                 role: data.role as import('../types').UserRole,
@@ -108,7 +145,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 createdAt: data.created_at ? new Date(data.created_at) : undefined,
                 isActive: data.isActive ?? false,
                 employeeId: data.employee_id ?? undefined,
-              });
+              };
+              setCurrentUser(verifiedUser);
+              saveOfflineProfile(verifiedUser);
 
               // Automatically select the store if the user is bound to one
               if (data.store_id) {
@@ -126,6 +165,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             prevLoggedInRef.current = false;
           }
         } else {
+          removeSessionStorageItem(OFFLINE_PROFILE_KEY);
           setCurrentUser(null);
           prevLoggedInRef.current = false;
         }
@@ -165,6 +205,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           await recordAttendance('logout');
         }
       }
+      removeSessionStorageItem(OFFLINE_PROFILE_KEY);
       await supabase.auth.signOut();
       setCurrentUser(null);
     },

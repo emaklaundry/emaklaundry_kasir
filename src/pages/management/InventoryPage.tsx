@@ -22,12 +22,16 @@ import {
 import { supabase } from '../../utils/supabaseClient';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import { fetchInventory, useInventoryMutations } from '../../contexts/InventoryContext';
+import {
+  fetchInventory,
+  useInventoryMutations,
+  InventorySortKey,
+} from '../../contexts/InventoryContext';
 import useAppContext from '../../contexts/useAppContext';
 import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
-import { useSortableData } from '../../hooks/useSortableData';
+import { useServerSort } from '../../hooks/useServerSort';
 import { useDebounce } from '../../hooks/useDebounce';
 
 import Pagination from '../../components/Pagination';
@@ -42,13 +46,35 @@ const InventoryPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
+  // Urutan dikerjakan server agar berlaku untuk semua halaman; ganti urutan → kembali ke halaman 1
+  const { sortConfig, requestSort } = useServerSort<InventorySortKey>(
+    { key: 'name', direction: 'ascending' },
+    () => setPage(1),
+  );
+  const sortBy = sortConfig.key;
+  const sortAscending = sortConfig.direction === 'ascending';
+
   const { data: result = { data: [], count: 0 } } = useQuery({
     queryKey: [
       'inventory',
-      { page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId },
+      {
+        page,
+        pageSize,
+        searchTerm: debouncedSearchTerm,
+        storeId: selectedStoreId,
+        sortBy,
+        sortAscending,
+      },
     ],
     queryFn: () =>
-      fetchInventory({ page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId }),
+      fetchInventory({
+        page,
+        pageSize,
+        searchTerm: debouncedSearchTerm,
+        storeId: selectedStoreId,
+        sortBy,
+        sortAscending,
+      }),
     placeholderData: (previousData) => previousData,
   });
   const inventory = result.data;
@@ -169,8 +195,6 @@ const InventoryPage: React.FC = () => {
     [inventory, stores],
   );
 
-  type InventoryWithStore = (typeof inventoryWithStore)[0];
-
   const filteredInventory = useMemo(
     () =>
       inventoryWithStore.filter((item) => {
@@ -183,15 +207,11 @@ const InventoryPage: React.FC = () => {
     [inventoryWithStore, filter],
   );
 
-  const {
-    items: sortedInventory,
-    requestSort,
-    sortConfig,
-  } = useSortableData<InventoryWithStore>(filteredInventory);
-  // Pagination handled by server, so just use sortedInventory
+  // Data sudah diurutkan oleh server (lihat useServerSort di atas)
+  const sortedInventory = filteredInventory;
 
-  const getSortIcon = (key: keyof InventoryWithStore) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
+  const getSortIcon = (key: InventorySortKey) => {
+    if (sortConfig.key !== key) return null;
     if (sortConfig.direction === 'ascending')
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
@@ -378,9 +398,8 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Inventaris</h1>
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex justify-end">
+        <div className="flex gap-2 flex-wrap justify-end">
           {/* Recipe Config & Stock Opname Buttons */}
           <button
             onClick={() => setIsRecipeModalOpen(true)}
@@ -483,7 +502,7 @@ const InventoryPage: React.FC = () => {
         </p>
       )}
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-x-auto hidden md:block">
+      <div className="card overflow-x-auto hidden md:block">
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>

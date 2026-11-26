@@ -385,11 +385,8 @@ const AssetsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Manajemen Aset & Pemeliharaan
-        </h1>
-        <div className="flex gap-2">
+      <div className="flex justify-end">
+        <div className="flex gap-2 flex-wrap justify-end">
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
@@ -470,7 +467,7 @@ const AssetsPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
+      <div className="card p-6">
         {/* Desktop Table View */}
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">

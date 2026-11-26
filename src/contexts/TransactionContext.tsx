@@ -4,6 +4,7 @@ import { retrySupabaseOperation, verifyDataSaved } from '../utils/retryUtils';
 import { Transaction } from '@/types';
 import { autoDeductInventory } from './InventoryRecipeContext';
 import { mapDBtoTransaction, RawDBTransaction } from '../utils/mappers';
+import { escapeLikePattern } from '../utils/sanitize';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
 
 // Pagination-aware fetchTransactions
@@ -15,14 +16,41 @@ export interface TransactionFilter {
   storeId?: string;
   paymentStatus?: string;
   orderStatus?: string;
+  /** Hanya transaksi milik pelanggan ini. */
+  customerId?: string;
+  /** Cari di kode invoice, nama pelanggan, atau nomor HP pelanggan (seluruh data). */
+  searchTerm?: string;
+  /** Kolom urutan (berlaku untuk seluruh data sebelum paginasi). Default: createdAt. */
+  sortBy?: TransactionSortKey;
+  /** Default: false (terbaru dulu). */
+  sortAscending?: boolean;
   enabled?: boolean; // Untuk optimasi query
 }
+
+export type TransactionSortKey =
+  | 'id'
+  | 'customerName'
+  | 'createdAt'
+  | 'total'
+  | 'paymentStatus'
+  | 'orderStatus';
 
 const fetchTransactions = async (
   filter: TransactionFilter = {},
 ): Promise<{ data: Transaction[]; count: number }> => {
   try {
-    const { page = 1, pageSize = 50, dateRange, storeId, paymentStatus, orderStatus } = filter;
+    const {
+      page = 1,
+      pageSize = 50,
+      dateRange,
+      storeId,
+      paymentStatus,
+      orderStatus,
+      customerId,
+      searchTerm,
+      sortBy = 'createdAt',
+      sortAscending = false,
+    } = filter;
 
     // Validasi input
     if (page < 1) {
@@ -32,7 +60,11 @@ const fetchTransactions = async (
       throw new Error('Page size must be between 1 and 1000');
     }
 
-    let query = supabase.from('transactions').select('*', { count: 'exact' });
+    // Urut berdasarkan nama pelanggan butuh relasi customers di-embed.
+    const sortByCustomer = sortBy === 'customerName';
+    let query = supabase
+      .from('transactions')
+      .select(sortByCustomer ? '*, customers(name)' : '*', { count: 'exact' });
 
     if (dateRange) {
       // Validasi date range
@@ -70,9 +102,41 @@ const fetchTransactions = async (
       query = query.eq('orderStatus', orderStatus);
     }
 
+    if (customerId) {
+      query = query.eq('customerId', customerId);
+    }
+
+    // Pencarian di server agar mencakup semua halaman, bukan hanya halaman aktif.
+    // Karakter , ( ) " dibuang karena memecah sintaks filter or() PostgREST.
+    const term = searchTerm?.trim().replace(/[,()"\\]/g, ' ').trim();
+    if (term) {
+      const pattern = `%${escapeLikePattern(term)}%`;
+      const { data: matchedCustomers, error: customerError } = await supabase
+        .from('customers')
+        .select('id')
+        .or(`name.ilike.${pattern},phone.ilike.${pattern}`)
+        .limit(500);
+      if (customerError) throw customerError;
+      const ids = (matchedCustomers || []).map((c) => c.id);
+      const conditions = [`invoiceCode.ilike.${pattern}`];
+      if (ids.length > 0) conditions.push(`customerId.in.(${ids.join(',')})`);
+      query = query.or(conditions.join(','));
+    }
+
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
-    query = query.range(from, to).order('createdAt', { ascending: false });
+    // Urutan dikerjakan di server agar berlaku untuk semua halaman, bukan hanya halaman aktif.
+    const ascending = sortAscending;
+    if (sortByCustomer) {
+      query = query.order('customers(name)', { ascending, nullsFirst: false });
+    } else if (sortBy === 'id') {
+      query = query.order('invoiceCode', { ascending, nullsFirst: false });
+    } else {
+      query = query.order(sortBy, { ascending, nullsFirst: false });
+    }
+    // Kunci kedua yang stabil supaya baris tidak tumpang-tindih antar halaman.
+    if (sortBy !== 'createdAt') query = query.order('createdAt', { ascending: false });
+    query = query.order('id', { ascending: true }).range(from, to);
 
     const { data, error, count } = await query;
     if (error) throw error;

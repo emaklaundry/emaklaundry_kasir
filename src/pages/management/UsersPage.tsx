@@ -228,12 +228,9 @@ const UsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Akun Login</h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Akun email &amp; password, khusus Super Admin.
-          </p>
-        </div>
+        <p className="text-slate-600 dark:text-slate-400">
+          Akun email &amp; password, khusus Super Admin.
+        </p>
         <button onClick={handleAddUser} className="btn btn-primary btn-sm self-start">
           Tambah Super Admin
         </button>
@@ -272,7 +269,7 @@ const UsersPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border dark:border-slate-700">
+      <div className="card p-6">
         {/* Desktop Table View */}
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">

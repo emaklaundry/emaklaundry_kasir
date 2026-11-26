@@ -60,13 +60,13 @@ const CustomerDetailPage: React.FC = () => {
         Kembali ke Daftar Pelanggan
       </Link>
 
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
+      <div className="card p-6">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="flex-shrink-0 w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
             <UsersIcon className="w-10 h-10 text-slate-500 dark:text-slate-400" />
           </div>
           <div className="flex-grow">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{customer.name}</h1>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{customer.name}</h2>
             <p className="text-lg text-slate-600 dark:text-slate-400">
               {customer.phone || 'Tidak ada nomor telepon'}
             </p>
@@ -82,7 +82,7 @@ const CustomerDetailPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
+        <div className="card p-4 flex items-center space-x-3">
           <DollarSignIcon className="w-8 h-8 text-green-500" />
           <div>
             <p className="text-base text-slate-500 dark:text-slate-400">Total Belanja</p>
@@ -91,7 +91,7 @@ const CustomerDetailPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
+        <div className="card p-4 flex items-center space-x-3">
           <ShoppingCartIcon className="w-8 h-8 text-blue-500" />
           <div>
             <p className="text-base text-slate-500 dark:text-slate-400">Jumlah Transaksi</p>
@@ -100,7 +100,7 @@ const CustomerDetailPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-3">
+        <div className="card p-4 flex items-center space-x-3">
           <DollarSignIcon className="w-8 h-8 text-yellow-500" />
           <div>
             <p className="text-base text-slate-500 dark:text-slate-400">Rata-rata Transaksi</p>
@@ -112,8 +112,8 @@ const CustomerDetailPage: React.FC = () => {
       </div>
 
       {mostRecentTransaction && (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+        <div className="card p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
             <HistoryIcon className="w-6 h-6 mr-3 text-slate-500" />
             Transaksi Terakhir
           </h2>
@@ -143,8 +143,8 @@ const CustomerDetailPage: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+      <div className="card p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
           Riwayat Transaksi
         </h2>
         <div className="overflow-x-auto">

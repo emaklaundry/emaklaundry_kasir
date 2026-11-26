@@ -102,10 +102,7 @@ const QuickActionsPage: React.FC = () => {
   );
 
   return (
-    <div className="p-3 sm:p-4">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-slate-900 dark:text-white">
-        Aksi Cepat
-      </h1>
+    <div>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {actions.map((action) =>
           action.onClick ? (

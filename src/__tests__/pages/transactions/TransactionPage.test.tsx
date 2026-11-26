@@ -147,8 +147,8 @@ describe('TransactionPage', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    // Should find the header
-    expect(await screen.findByText('Daftar Transaksi')).toBeInTheDocument();
+    // Judul halaman ada di Header (Layout); di sini cukup pastikan kontrol halaman tampil
+    expect(await screen.findByPlaceholderText(/Cari ID, Invoice|Search/i)).toBeInTheDocument();
   });
 
   it.skip('shows pagination controls if more than 10 transactions', async () => {

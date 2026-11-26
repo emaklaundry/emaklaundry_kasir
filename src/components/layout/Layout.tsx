@@ -1,18 +1,11 @@
 import * as React from 'react';
-import { useLocation, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
+import { useLocation } from 'react-router-dom';
 import ToastContainer from '../ToastContainer';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import BottomNavBar from './BottomNavBar';
-import { Customer } from '@/types';
 
-const getPageTitle = (
-  pathname: string,
-  params: Record<string, string | undefined>,
-  customers: Customer[],
-): string => {
+const getPageTitle = (pathname: string): string => {
   const staticTitles: { [key: string]: string } = {
     '/': 'Dashboard',
     '/transactions': 'Transaksi',
@@ -28,7 +21,11 @@ const getPageTitle = (
     '/management/attendance': 'Absensi',
     '/reports': 'Laporan',
     '/audit-log': 'Log Audit',
-    '/settings': 'Pengaturan',
+    '/quick-actions': 'Aksi Cepat',
+    '/management/settings': 'Pengaturan',
+    '/management/backup': 'Backup & Restore',
+    '/management/sop': 'SOP Operasional',
+    '/business/calculator': 'Kalkulator Bisnis',
     '/help': 'Bantuan & Tutorial',
     '/business': 'Pusat Bisnis',
   };
@@ -37,18 +34,16 @@ const getPageTitle = (
     return staticTitles[pathname];
   }
 
-  // Perbaikan: Tangani route detail transaksi dengan lebih robust
+  if (/^\/transactions\/[^/]+\/receipt$/.test(pathname)) {
+    return 'Struk Transaksi';
+  }
+
   if (pathname.startsWith('/transactions/') && pathname !== '/transactions/new') {
-    // Coba ambil ID dari params, jika tidak ada (undefined), ambil dari split URL
-    // Asumsi format URL: /transactions/:id atau /transactions/:id/details
     return 'Detail Transaksi';
   }
 
   if (pathname.startsWith('/management/customers/')) {
-    // Sama, fallback ke URL jika params.id undefined
-    const customerId = params.id || pathname.split('/').pop();
-    const customer = customers.find((c) => c.id === customerId);
-    return customer ? `Detail Pelanggan: ${customer.name}` : 'Detail Pelanggan';
+    return 'Detail Pelanggan';
   }
 
   return 'Laundry POS';
@@ -61,7 +56,6 @@ const SIDEBAR_PINNED_MIN_WIDTH = 1024;
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const params = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(() => {
     return typeof window === 'undefined' ? true : window.innerWidth >= SIDEBAR_PINNED_MIN_WIDTH;
   });
@@ -98,13 +92,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setIsSidebarOpen((open) => !open);
   };
 
-  const { data: customersRaw = [] } = useQuery({
-    queryKey: ALL_CUSTOMERS_QUERY_KEY,
-    queryFn: fetchAllCustomers,
-  });
-  // Normalize customers to always be an array
-  const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);
-  const pageTitle = getPageTitle(location.pathname, params, customers);
+  const pageTitle = getPageTitle(location.pathname);
 
   React.useEffect(() => {
     document.title = `${pageTitle} | Laundry POS`;

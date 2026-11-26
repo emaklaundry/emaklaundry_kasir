@@ -155,11 +155,8 @@ const TransactionDetailPage: React.FC = () => {
         Kembali ke Daftar Transaksi
       </Link>
 
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-        <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Detail Transaksi</h1>
-          </div>
+      <div className="card p-6">
+        <div className="flex justify-end mb-6">
           <div className="flex gap-2">
             {/* Tombol Kirim WA Manual */}
             {/*
@@ -180,7 +177,7 @@ const TransactionDetailPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Pelanggan
             </h2>
@@ -189,7 +186,7 @@ const TransactionDetailPage: React.FC = () => {
             <DetailItem label="Alamat" value={customer.address || '-'} />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <ShoppingCartIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Transaksi
             </h2>
@@ -237,8 +234,8 @@ const TransactionDetailPage: React.FC = () => {
         />
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
+      <div className="card p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
         {/* Tampilan Tabel Desktop */}
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">

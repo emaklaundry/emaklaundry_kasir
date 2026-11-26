@@ -335,7 +335,7 @@ const EmployeesPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg bg-white p-3 shadow-sm dark:bg-slate-800 md:flex-row md:items-center">
+      <div className="card flex flex-col gap-3 p-3 md:flex-row md:items-center">
         <div className="relative flex-1">
           <label htmlFor="employee-search" className="sr-only">
             Cari karyawan
@@ -421,7 +421,7 @@ const EmployeesPage: React.FC = () => {
         ) : (
           <>
             {/* Desktop: tabel */}
-            <div className="hidden overflow-x-auto rounded-lg bg-white shadow-sm dark:bg-slate-800 md:block">
+            <div className="card hidden overflow-x-auto md:block">
               <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
                 <thead className="bg-slate-50 text-xs uppercase text-slate-700 dark:bg-slate-700 dark:text-slate-300">
                   <tr>
@@ -470,7 +470,7 @@ const EmployeesPage: React.FC = () => {
               {visibleEmployees.map((e) => (
                 <li
                   key={e.id}
-                  className="rounded-lg bg-white p-4 shadow-sm dark:bg-slate-800"
+                  className="card p-4"
                   aria-label={e.name}
                 >
                   <div className="flex items-start justify-between gap-3">

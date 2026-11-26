@@ -2,10 +2,11 @@ import React from 'react';
 import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { SendIcon } from './icons';
-import { Transaction, Customer, OrderStatus } from '@/types';
+import { Transaction, Customer, OrderStatus, PaymentStatus } from '@/types';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { formatTransactionId } from '@/utils/uiHelpers';
+import { normalizeWhatsAppPhone } from '@/utils/whatsappPhone';
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -26,94 +27,112 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
   const message = React.useMemo(() => {
     if (!transaction || !customer) return '';
-    let defaultMessage = '';
+    const rp = (n: number) => `Rp${n.toLocaleString('id-ID')}`;
+    const line = '─────────────────────────────';
     const itemsList = transaction.items
       .map(
         (item) =>
-          `- ${item.quantity} ${item.unit} ${item.serviceName} @ Rp${item.price.toLocaleString('id-ID')} = Rp${item.subtotal.toLocaleString('id-ID')}`,
+          `- ${item.quantity} ${item.unit} ${item.serviceName} @ ${rp(item.price)} = ${rp(item.subtotal)}`,
       )
       .join('\n');
     const subtotal =
       transaction.subtotal ||
       transaction.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const discount = transaction.discount || 0;
+    const tax = transaction.tax || 0;
     const total = transaction.total || subtotal;
     const amountPaid = transaction.amountPaid || 0;
-    const rawRemaining = total - amountPaid;
-    const remainingBalance = rawRemaining > 0 ? rawRemaining : 0;
+    const remainingBalance = Math.max(total - amountPaid, 0);
+    const isPaid = transaction.paymentStatus === PaymentStatus.Paid || remainingBalance === 0;
     const invoiceNumber = formatTransactionId(transaction);
     const trackingUrl = `https://emaklaundry.my.id/?invoice=${encodeURIComponent(invoiceNumber)}`;
 
     // Footer custom dari settings atau default
     const defaultFooter = `🔍 Cek status cucian Anda:\nhttps://emaklaundry.my.id/\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\nhttps://forms.gle/8JnjZZ4cu5oTXGYr9`;
     const footer = settings?.whatsappFooter || defaultFooter;
+    const closingMessage =
+      settings?.receiptMessage?.trim() || 'Terima kasih telah menggunakan layanan kami.';
+
+    // Rincian biaya: subtotal/diskon/pajak hanya muncul bila ada potongan atau pajak,
+    // supaya jumlah item tetap cocok dengan total yang ditagih.
+    const costLines: string[] = [];
+    if (discount > 0 || tax > 0) {
+      costLines.push(`Subtotal: ${rp(subtotal)}`);
+      if (discount > 0) costLines.push(`Diskon: -${rp(discount)}`);
+      if (tax > 0) costLines.push(`Pajak: ${rp(tax)}`);
+    }
+    costLines.push(`Total: ${rp(total)}`);
+    costLines.push(`Dibayar: ${rp(amountPaid)}`);
+    if (remainingBalance > 0) costLines.push(`Sisa Tagihan: ${rp(remainingBalance)}`);
+    costLines.push(`💳 *Status Bayar*: ${isPaid ? PaymentStatus.Paid : PaymentStatus.Unpaid}`);
+    const costBlock = costLines.join('\n');
+
+    const estimated = transaction.estimatedCompletionDate
+      ? new Date(transaction.estimatedCompletionDate)
+      : null;
+    const estimatedText =
+      estimated && !Number.isNaN(estimated.getTime())
+        ? estimated.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+        : null;
 
     if (transaction.orderStatus === OrderStatus.Processing) {
-      defaultMessage =
+      return (
         `Halo ${customer.name},\n\n` +
         `Terima kasih telah mempercayakan laundry Anda kepada kami. Berikut adalah detail pesanan Anda:\n` +
-        `─────────────────────────────\n` +
+        `${line}\n` +
         `🧾 *No. Invoice*: ${invoiceNumber}\n` +
         `🔗 *Cek Status*: ${trackingUrl}\n` +
         `📅 *Tanggal*: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n` +
-        `─────────────────────────────\n` +
+        `${line}\n` +
         `*Daftar Item:*\n${itemsList}\n` +
-        `─────────────────────────────\n` +
-        `Total: Rp${total.toLocaleString('id-ID')}\n` +
-        `Dibayar: Rp${amountPaid.toLocaleString('id-ID')}\n` +
-        `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
-        `💳 *Status Bayar*: ${transaction.paymentStatus}\n` +
-        `⏳ *Estimasi Selesai*: ${new Date(transaction.estimatedCompletionDate).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}\n` +
-        `─────────────────────────────\n` +
+        `${line}\n` +
+        `${costBlock}\n` +
+        (estimatedText ? `⏳ *Estimasi Selesai*: ${estimatedText}\n` : '') +
+        `${line}\n` +
         `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
         `${footer}\n\n` +
-        `Salam hangat,\nTim Emak Laundry`;
-    } else if (transaction.orderStatus === OrderStatus.Ready) {
-      defaultMessage =
+        `Salam hangat,\nTim Emak Laundry`
+      );
+    }
+    if (transaction.orderStatus === OrderStatus.Ready) {
+      return (
         `Halo ${customer.name},\n\n` +
         `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
         `🔗 *Cek Status*: ${trackingUrl}\n` +
-        `─────────────────────────────\n` +
+        `${line}\n` +
         `*Daftar Item:*\n${itemsList}\n` +
-        `─────────────────────────────\n` +
-        `Total Tagihan: Rp${total.toLocaleString('id-ID')}\n` +
-        `Sisa Tagihan: Rp${remainingBalance.toLocaleString('id-ID')}\n` +
-        `─────────────────────────────\n` +
+        `${line}\n` +
+        `${costBlock}\n` +
+        `${line}\n` +
         `Silakan datang ke toko kami untuk pengambilan.\n\n` +
         `${footer}\n\n` +
-        `Terima kasih,\nTim Emak Laundry`;
-    } else {
-      defaultMessage =
-        `Halo ${customer.name},\n\n` +
-        `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
-        `🔗 *Cek Status*: ${trackingUrl}\n` +
-        `─────────────────────────────\n` +
-        `*Daftar Item:*\n${itemsList}\n` +
-        `─────────────────────────────\n` +
-        `Total: Rp${total.toLocaleString('id-ID')}\n` +
-        `Status: LUNAS\n` +
-        `─────────────────────────────\n` +
-        `Terima kasih telah menggunakan layanan kami.\n\n` +
-        `Tim Emak Laundry`;
+        `Terima kasih,\nTim Emak Laundry`
+      );
     }
-    return defaultMessage;
+    return (
+      `Halo ${customer.name},\n\n` +
+      `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
+      `🔗 *Cek Status*: ${trackingUrl}\n` +
+      `${line}\n` +
+      `*Daftar Item:*\n${itemsList}\n` +
+      `${line}\n` +
+      `${costBlock}\n` +
+      `${line}\n` +
+      `${closingMessage}\n\n` +
+      `${footer}\n\n` +
+      `Tim Emak Laundry`
+    );
   }, [transaction, customer, settings]);
 
   const handleSend = () => {
-    if (!customer?.phone) {
-      addToast('Nomor telepon pelanggan tidak ditemukan.', 'error');
+    const phone = normalizeWhatsAppPhone(customer?.phone);
+    if (!customer || !phone) {
+      addToast('Nomor telepon pelanggan tidak ditemukan atau tidak valid.', 'error');
       return;
     }
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent,
-    );
-    let phone = customer.phone.replace(/\D/g, '');
-    if (phone.startsWith('0')) {
-      phone = '62' + phone.substring(1);
-    }
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = isMobile
-      ? `https://wa.me/${phone}?text=${encodedMessage}`
-      : `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+    // wa.me berlaku di HP maupun laptop: membuka aplikasi WhatsApp (Desktop/HP)
+    // bila terpasang, atau menawarkan WhatsApp Web bila tidak.
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
     if (transaction) {
       const invoiceNumber = formatTransactionId(transaction);

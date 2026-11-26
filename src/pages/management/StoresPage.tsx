@@ -177,7 +177,7 @@ const StoresPage: React.FC = () => {
   };
 
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md">
+    <div className="card relative p-6">
       {isSavingStore && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">
@@ -205,8 +205,7 @@ const StoresPage: React.FC = () => {
           </div>
         </div>
       )}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Cabang</h1>
+      <div className="flex justify-end mb-4">
         <button onClick={() => handleOpenFormModal()} className="btn btn-primary">
           <PlusCircleIcon className="h-5 w-5" />
           Tambah Cabang

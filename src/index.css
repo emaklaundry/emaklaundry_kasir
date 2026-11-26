@@ -244,6 +244,16 @@
   .btn-icon.btn-sm {
     width: 40px;
   }
+
+  /* Panel konten standar di semua halaman. Padding & layout tetap diatur per pemakaian. */
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
+  /* Remap `[class*=slate-…]` tidak menangkap kelas ini, jadi token gelap ditulis langsung. */
+  html.dark .card {
+    background-color: rgb(var(--surface-raised-dark));
+    border-color: rgb(var(--surface-border-dark));
+  }
 }
 
 /* --- MOBILE OPTIMIZATIONS --- */

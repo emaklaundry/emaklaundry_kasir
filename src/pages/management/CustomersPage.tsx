@@ -8,6 +8,7 @@ import {
   SearchIcon,
   UsersIcon,
   ArrowUpIcon,
+  ArrowDownIcon,
   DownloadIcon,
   UploadIcon,
   RefreshCwIcon,
@@ -15,19 +16,20 @@ import {
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import {
-  fetchCustomers,
+  fetchCustomersWithStats,
+  CustomerActivity,
+  CustomerSortKey,
   findCustomerByPhone,
   useCustomerMutations,
 } from '../../contexts/CustomerContext';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { can } from '../../config/permissions';
-import { useTransactions } from '../../contexts/TransactionContext';
 import useAppContext from '../../contexts/useAppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
 import { normalizePhone } from '../../utils/phone';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
-import { useSortableData } from '../../hooks/useSortableData';
+import { useServerSort } from '../../hooks/useServerSort';
 import { useDebounce } from '../../hooks/useDebounce';
 // import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
@@ -42,7 +44,7 @@ import GoogleContactsImportModal from '../../components/GoogleContactsImportModa
 import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts';
 
 const CustomersPage: React.FC = () => {
-  const { currentUser, selectedStoreId, stores } = useAppContext();
+  const { currentUser, selectedStoreId } = useAppContext();
   // Kasir boleh membuka halaman ini untuk tambah & ubah pelanggan;
   // hapus, import, export, dan sinkron Google tetap khusus Admin.
   const canManageCustomers = can(currentUser?.role, 'branch.manage');
@@ -57,13 +59,40 @@ const CustomersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
+  const [activityFilter, setActivityFilter] = useState<CustomerActivity>('all');
+
+  // Urutan, filter aktivitas & paginasi dikerjakan server (view customers_with_stats)
+  // agar berlaku untuk semua pelanggan, bukan hanya halaman aktif.
+  const { sortConfig, requestSort } = useServerSort<CustomerSortKey>(
+    { key: 'createdAt', direction: 'descending' },
+    () => setPage(1),
+  );
+  const sortBy = sortConfig.key;
+  const sortAscending = sortConfig.direction === 'ascending';
+
   const { data: result = { data: [], count: 0 } } = useQuery({
     queryKey: [
       'customers',
-      { page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId },
+      {
+        page,
+        pageSize,
+        searchTerm: debouncedSearchTerm,
+        storeId: selectedStoreId,
+        sortBy,
+        sortAscending,
+        activity: activityFilter,
+      },
     ],
     queryFn: () =>
-      fetchCustomers({ page, pageSize, searchTerm: debouncedSearchTerm, storeId: selectedStoreId }),
+      fetchCustomersWithStats({
+        page,
+        pageSize,
+        searchTerm: debouncedSearchTerm,
+        storeId: selectedStoreId,
+        sortBy,
+        sortAscending,
+        activity: activityFilter,
+      }),
     placeholderData: (previousData) => previousData,
   });
   const customers = result.data;
@@ -71,7 +100,6 @@ const CustomersPage: React.FC = () => {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   const { addCustomer, updateCustomer, deleteCustomer } = useCustomerMutations();
-  const { transactions } = useTransactions();
   const { addAuditLog } = useAuditLogs();
   const { addToast, updateToast } = useToasts();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -80,44 +108,9 @@ const CustomersPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-  const [activityFilter, setActivityFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isGoogleImportModalOpen, setIsGoogleImportModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-
-  const customerStats = useMemo(() => {
-    const stats: { [key: string]: { transactionCount: number; totalSpent: number } } = {};
-    customers.forEach((customer) => {
-      stats[customer.id] = { transactionCount: 0, totalSpent: 0 };
-    });
-    transactions.forEach((transaction) => {
-      if (stats[transaction.customerId]) {
-        stats[transaction.customerId].transactionCount += 1;
-        stats[transaction.customerId].totalSpent += transaction.total;
-      }
-    });
-    return customers.map((customer) => {
-      const store = stores.find((s) => s.id === customer.storeId);
-      return {
-        ...customer,
-        transactionCount: stats[customer.id]?.transactionCount || 0,
-        totalSpent: stats[customer.id]?.totalSpent || 0,
-        storeName: store ? store.name : 'N/A',
-      };
-    });
-  }, [customers, transactions, stores]);
-
-  type CustomerWithStats = (typeof customerStats)[0];
-
-  // Apply activity filter
-  const filteredCustomers = useMemo(() => {
-    if (activityFilter === 'active') {
-      return customerStats.filter((c) => c.transactionCount > 0);
-    } else if (activityFilter === 'inactive') {
-      return customerStats.filter((c) => c.transactionCount === 0);
-    }
-    return customerStats;
-  }, [customerStats, activityFilter]);
 
   // type CustomerInput = Omit<Customer, 'id'>;
   // const addCustomerMutation = useMutation({
@@ -128,23 +121,15 @@ const CustomersPage: React.FC = () => {
   //     updateCustomer(id, data),
   // });
 
-  const {
-    items: sortedCustomers,
-    requestSort,
-    sortConfig,
-  } = useSortableData(filteredCustomers, {
-    key: 'createdAt',
-    direction: 'descending',
-  });
-  // Pagination handled by server, so just use sortedCustomers
-  const paginatedCustomers = sortedCustomers;
+  // Data sudah diurutkan & difilter server
+  const paginatedCustomers = customers;
 
-  const getSortIcon = (key: keyof CustomerWithStats) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
+  const getSortIcon = (key: CustomerSortKey) => {
+    if (sortConfig.key !== key) return null;
     if (sortConfig.direction === 'ascending') {
       return <ArrowUpIcon className="w-4 h-4 inline ml-1" />;
     }
-    return null;
+    return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
   const handleOpenFormModal = (customer?: Customer | null) => {
@@ -231,7 +216,8 @@ const CustomersPage: React.FC = () => {
 
   const handleDelete = (customer: Customer) => {
     // Prevent deleting a customer that is referenced by transactions
-    const hasTransactions = transactions.some((t) => t.customerId === customer.id);
+    const hasTransactions =
+      (customers.find((c) => c.id === customer.id)?.transactionCount ?? 0) > 0;
     if (hasTransactions) {
       addToast(
         `Pelanggan "${customer.name}" tidak dapat dihapus karena masih memiliki transaksi.`,
@@ -584,9 +570,8 @@ const CustomersPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex justify-end">
+        <div className="flex gap-2 flex-wrap justify-end">
           {/* Import/Export/Sync: khusus Admin. Kasir hanya tambah & ubah pelanggan. */}
           {canManageCustomers && (
             <>
@@ -689,7 +674,10 @@ const CustomersPage: React.FC = () => {
           id="customer-activity-filter"
           name="customer-activity-filter"
           value={activityFilter}
-          onChange={(e) => setActivityFilter(e.target.value as 'all' | 'active' | 'inactive')}
+          onChange={(e) => {
+            setActivityFilter(e.target.value as CustomerActivity);
+            setPage(1);
+          }}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
         >
           <option value="all">Semua Pelanggan</option>
@@ -703,7 +691,7 @@ const CustomersPage: React.FC = () => {
         </p>
       )}
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-x-auto hidden md:block">
+      <div className="card overflow-x-auto hidden md:block">
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>

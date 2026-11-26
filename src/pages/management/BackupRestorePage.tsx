@@ -564,7 +564,7 @@ const BackupRestorePage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Store Info Header */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+      <div className="card p-4">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
           Data Backup & Restore:{' '}
           <span className="text-blue-600 dark:text-blue-400">{getStoreName(scopeStoreId)}</span>
@@ -576,14 +576,9 @@ const BackupRestorePage: React.FC = () => {
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Backup & Restore</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Backup semua data aplikasi atau restore dari backup sebelumnya
-          </p>
-        </div>
-      </div>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Backup semua data aplikasi atau restore dari backup sebelumnya
+      </p>
 
       {!canBackup && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -660,7 +655,7 @@ const BackupRestorePage: React.FC = () => {
 
       {/* Detailed Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-4">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Pelanggan</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{customers.length}</p>
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
@@ -671,7 +666,7 @@ const BackupRestorePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-4">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Layanan</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{services.length}</p>
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
@@ -682,7 +677,7 @@ const BackupRestorePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-4">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Inventori</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{inventory.length}</p>
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
@@ -693,7 +688,7 @@ const BackupRestorePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-4">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Aset</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{assets.length}</p>
           <div className="mt-2 h-1 bg-orange-200 dark:bg-orange-900 rounded-full overflow-hidden">
@@ -704,7 +699,7 @@ const BackupRestorePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-4">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Pengeluaran</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{expenses.length}</p>
           <div className="mt-2 h-1 bg-red-200 dark:bg-red-900 rounded-full overflow-hidden">
@@ -715,7 +710,7 @@ const BackupRestorePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-4">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Transaksi</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{transactions.length}</p>
           <div className="mt-2 h-1 bg-cyan-200 dark:bg-cyan-900 rounded-full overflow-hidden">
@@ -730,7 +725,7 @@ const BackupRestorePage: React.FC = () => {
       {/* Main Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Export Full Backup */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-6">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
               <DownloadIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -779,7 +774,7 @@ const BackupRestorePage: React.FC = () => {
         </div>
 
         {/* Import Full Backup */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+        <div className="card p-6">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg flex-shrink-0">
               <UploadIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
