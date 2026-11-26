@@ -203,14 +203,16 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
                       Tandai Selesai
                     </button>
                     <button
+                      aria-label="Edit jadwal"
                       onClick={() => handleOpenForm(schedule)}
-                      className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="btn btn-ghost btn-icon"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
+                      aria-label="Hapus jadwal"
                       onClick={() => handleDelete(schedule)}
-                      className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
                     >
                       <Trash2Icon className="w-5 h-5" />
                     </button>

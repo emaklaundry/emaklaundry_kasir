@@ -51,7 +51,7 @@ describe('LoginPage', () => {
     });
 
     const { container } = render(<LoginPage />);
-    fireEvent.click(screen.getByRole('button', { name: 'Masuk sebagai admin' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Masuk sebagai Super Admin' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Email' }), {
       target: { value: 'user@example.com' },
     });

@@ -163,7 +163,7 @@ const TransactionDetailPage: React.FC = () => {
           <div className="flex gap-2">
             {/* Tombol Kirim WA Manual */}
             {/*
-            <button
+            <button aria-label="Kirim struk via WhatsApp"
               onClick={() => setIsHeaderWAOpen(true)}
               className="btn btn-primary"
               title="Kirim Struk WhatsApp"

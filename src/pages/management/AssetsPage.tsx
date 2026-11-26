@@ -553,37 +553,42 @@ const AssetsPage: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <button
+                          aria-label={`Edit ${asset.name}`}
                           onClick={() => handleOpenAssetForm(asset)}
                           title="Edit Aset"
-                          className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="btn btn-ghost btn-icon"
                         >
                           <EditIcon className="w-5 h-5" />
                         </button>
                         <button
+                          aria-label={`Hapus ${asset.name}`}
                           onClick={() => handleDelete(asset)}
                           title="Hapus Aset"
-                          className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
                         >
                           <Trash2Icon className="w-5 h-5" />
                         </button>
                         <button
+                          aria-label={`Catat pemeliharaan ${asset.name}`}
                           onClick={() => handleOpenMaintenanceForm(asset)}
                           title="Tambah Log Pemeliharaan"
-                          className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="btn btn-ghost btn-icon"
                         >
                           <PlusCircleIcon className="w-5 h-5" />
                         </button>
                         <button
+                          aria-label={`Jadwal perawatan ${asset.name}`}
                           onClick={() => handleOpenSchedule(asset)}
                           title="Jadwal Perawatan"
-                          className="p-2 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="btn btn-ghost btn-icon"
                         >
                           <CalendarIcon className="w-5 h-5" />
                         </button>
                         <button
+                          aria-label={`Riwayat pemeliharaan ${asset.name}`}
                           onClick={() => handleOpenHistory(asset)}
                           title="Lihat Riwayat Pemeliharaan"
-                          className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="btn btn-ghost btn-icon"
                         >
                           <HistoryIcon className="w-5 h-5" />
                         </button>
@@ -635,16 +640,18 @@ const AssetsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-0">
                     <button
+                      aria-label={`Edit ${asset.name}`}
                       onClick={() => handleOpenAssetForm(asset)}
                       title="Edit Aset"
-                      className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="btn btn-ghost btn-icon"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
+                      aria-label={`Hapus ${asset.name}`}
                       onClick={() => handleDelete(asset)}
                       title="Hapus Aset"
-                      className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
                     >
                       <Trash2Icon className="w-5 h-5" />
                     </button>

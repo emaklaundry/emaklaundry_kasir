@@ -262,23 +262,26 @@ const StoresPage: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 flex items-center space-x-2">
                     <button
+                      aria-label={`Edit ${store.name}`}
                       onClick={() => handleOpenFormModal(store)}
                       title="Edit"
-                      className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="btn btn-ghost btn-icon"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
+                      aria-label={`${store.isActive ? 'Nonaktifkan' : 'Aktifkan'} ${store.name}`}
                       onClick={() => handleToggleStatus(store)}
                       title={store.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                      className={`p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${store.isActive ? 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-500 dark:hover:text-yellow-400' : 'text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400'}`}
+                      className={`btn btn-ghost btn-icon ${store.isActive ? 'text-amber-600 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}
                     >
                       <PowerIcon className="w-5 h-5" />
                     </button>
                     <button
+                      aria-label={`Hapus ${store.name}`}
                       onClick={() => handleDelete(store)}
                       title="Hapus"
-                      className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
                     >
                       <Trash2Icon className="w-5 h-5" />
                     </button>
@@ -321,23 +324,26 @@ const StoresPage: React.FC = () => {
               </div>
               <div className="mt-3 flex items-center justify-end gap-2 border-t dark:border-slate-600 pt-2">
                 <button
+                  aria-label={`Edit ${store.name}`}
                   onClick={() => handleOpenFormModal(store)}
                   title="Edit"
-                  className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="btn btn-ghost btn-icon"
                 >
                   <EditIcon className="w-5 h-5" />
                 </button>
                 <button
+                  aria-label={`${store.isActive ? 'Nonaktifkan' : 'Aktifkan'} ${store.name}`}
                   onClick={() => handleToggleStatus(store)}
                   title={store.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                  className={`p-2.5 rounded-md ${store.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-100 dark:hover:bg-slate-700`}
+                  className={`btn btn-ghost btn-icon ${store.isActive ? 'text-amber-600 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}
                 >
                   <PowerIcon className="w-5 h-5" />
                 </button>
                 <button
+                  aria-label={`Hapus ${store.name}`}
                   onClick={() => handleDelete(store)}
                   title="Hapus"
-                  className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
                 >
                   <Trash2Icon className="w-5 h-5" />
                 </button>

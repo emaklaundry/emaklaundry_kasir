@@ -280,7 +280,7 @@ const LoginPage: React.FC = () => {
             }}
             className="mt-4 w-full text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
           >
-            {isAdminLogin ? 'Kembali ke login karyawan' : 'Masuk sebagai admin'}
+            {isAdminLogin ? 'Kembali ke login karyawan' : 'Masuk sebagai Super Admin'}
           </button>
           <p className="mt-4 text-xs text-center text-slate-500 dark:text-slate-400">
             Sistem login aman dengan enkripsi end-to-end

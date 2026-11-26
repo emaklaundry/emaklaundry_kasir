@@ -829,7 +829,7 @@ const BackupRestorePage: React.FC = () => {
 
       updateToast(
         toastId,
-        `✅ Berhasil restore ${insertedCount} data! Halaman akan di-refresh...`,
+        `Berhasil restore ${insertedCount} data! Halaman akan di-refresh...`,
         'success',
       );
 
@@ -839,7 +839,7 @@ const BackupRestorePage: React.FC = () => {
       }, 2000);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      updateToast(toastId, `❌ Gagal restore: ${errMsg}`, 'error');
+      updateToast(toastId, `Gagal restore: ${errMsg}`, 'error');
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -943,7 +943,7 @@ const BackupRestorePage: React.FC = () => {
         </h2>
         {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
           <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
-            ⚠️ Mode gabungan - Data dari semua cabang akan di-backup/restore
+            Mode gabungan - Data dari semua cabang akan di-backup/restore
           </p>
         )}
       </div>
@@ -1303,7 +1303,7 @@ const BackupRestorePage: React.FC = () => {
           <DatabaseIcon className="w-6 h-6 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">
-              📋 Tentang Backup & Restore
+              Tentang Backup & Restore
             </h3>
             <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-400">
               <li className="flex items-start gap-2">

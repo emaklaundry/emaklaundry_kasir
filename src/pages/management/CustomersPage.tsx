@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   PlusCircleIcon,
@@ -14,7 +14,13 @@ import {
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerContext';
+import {
+  fetchCustomers,
+  findCustomerByPhone,
+  useCustomerMutations,
+} from '../../contexts/CustomerContext';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import { can } from '../../config/permissions';
 import { useTransactions } from '../../contexts/TransactionContext';
 import useAppContext from '../../contexts/useAppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
@@ -37,6 +43,9 @@ import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts'
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
+  // Kasir boleh membuka halaman ini untuk tambah & ubah pelanggan;
+  // hapus, import, export, dan sinkron Google tetap khusus Admin.
+  const canManageCustomers = can(currentUser?.role, 'branch.manage');
   const {
     createContact,
     signIn,
@@ -67,6 +76,8 @@ const CustomersPage: React.FC = () => {
   const { addToast, updateToast } = useToasts();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
+  const [confirm, confirmDialog] = useConfirmDialog();
+  const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [activityFilter, setActivityFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -161,16 +172,25 @@ const CustomersPage: React.FC = () => {
     // Format 08xxx sama dengan data yang sudah tersimpan, agar cek duplikat akurat.
     const phone = normalizePhone(customerData.phone);
     if (phone) {
-      // Check for duplicate phone number hanya jika phone diisi
-      const existingCustomers = customers.filter(
-        (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
-      );
-      if (existingCustomers.length > 0) {
-        addToast(`Nomor telepon ${phone} sudah terdaftar untuk pelanggan lain.`, 'error');
+      // Cek langsung ke database: daftar di layar hanya berisi satu halaman hasil.
+      // Kalau pengecekan gagal (mis. koneksi), lanjut simpan; database tetap menolak nomor ganda.
+      const owner = await findCustomerByPhone(phone, storeId).catch(() => null);
+      if (owner && owner.id !== currentCustomer?.id) {
         addAuditLog(
-          `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${existingCustomers[0].name}".`,
+          `Gagal menyimpan pelanggan "${customerData.name}" - nomor telepon ${phone} sudah digunakan oleh "${owner.name}".`,
           storeId,
         );
+        const openOwner = await confirm({
+          title: 'Nomor Sudah Terdaftar',
+          message: `Nomor ${phone} sudah terdaftar atas nama "${owner.name}". Buka data pelanggan tersebut?`,
+          confirmText: 'Lihat Pelanggan',
+          confirmVariant: 'primary',
+        });
+        if (openOwner) {
+          handleCloseFormModal();
+          navigate(`/management/customers/${owner.id}`);
+        }
+        // Batal: form tetap terbuka agar nomor bisa dibetulkan.
         return;
       }
     }
@@ -567,75 +587,79 @@ const CustomersPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h1>
         <div className="flex gap-2 flex-wrap">
-          {/* Excel Import/Export Buttons */}
-          <button
-            onClick={handleDownloadTemplate}
-            className="btn btn-secondary btn-sm"
-            title="Download Template Excel"
-          >
-            <DownloadIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Template</span>
-          </button>
+          {/* Import/Export/Sync: khusus Admin. Kasir hanya tambah & ubah pelanggan. */}
+          {canManageCustomers && (
+            <>
+              <button
+                onClick={handleDownloadTemplate}
+                className="btn btn-secondary btn-sm"
+                title="Download Template Excel"
+              >
+                <DownloadIcon className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">Template</span>
+              </button>
 
-          <input
-            ref={fileInputRef}
-            id="customer-import-file"
-            name="customer-import-file"
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleImportFromExcel}
-            className="hidden"
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={!canAddNewCustomer || isSaving}
-            className="btn btn-secondary btn-sm"
-            title="Import dari Excel"
-          >
-            <UploadIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Excel</span>
-          </button>
+              <input
+                ref={fileInputRef}
+                id="customer-import-file"
+                name="customer-import-file"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportFromExcel}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!canAddNewCustomer || isSaving}
+                className="btn btn-secondary btn-sm"
+                title="Import dari Excel"
+              >
+                <UploadIcon className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">Excel</span>
+              </button>
 
-          <button
-            onClick={() => setIsGoogleImportModalOpen(true)}
-            disabled={!canAddNewCustomer || isSaving}
-            className="btn btn-secondary btn-sm"
-            title="Import dari Google Contacts"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
-            <span className="hidden sm:inline text-sm">Import Google</span>
-          </button>
+              <button
+                onClick={() => setIsGoogleImportModalOpen(true)}
+                disabled={!canAddNewCustomer || isSaving}
+                className="btn btn-secondary btn-sm"
+                title="Import dari Google Contacts"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                <span className="hidden sm:inline text-sm">Import Google</span>
+              </button>
 
-          <button
-            onClick={handleSyncToGoogle}
-            disabled={customers.length === 0 || isSyncing || isGoogleLoading}
-            className="btn btn-secondary btn-sm"
-            title="Sinkronisasi ke Google Contacts"
-          >
-            {isSyncing ? (
-              <RefreshCwIcon className="w-4 h-4 animate-spin" />
-            ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
-              </svg>
-            )}
-            <span className="hidden sm:inline text-sm">Sync to Google</span>
-          </button>
+              <button
+                onClick={handleSyncToGoogle}
+                disabled={customers.length === 0 || isSyncing || isGoogleLoading}
+                className="btn btn-secondary btn-sm"
+                title="Sinkronisasi ke Google Contacts"
+              >
+                {isSyncing ? (
+                  <RefreshCwIcon className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline text-sm">Sync to Google</span>
+              </button>
 
-          <button
-            onClick={handleExportToExcel}
-            disabled={customers.length === 0}
-            className="btn btn-primary btn-sm"
-            title="Export ke Excel"
-          >
-            <DownloadIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Export</span>
-          </button>
+              <button
+                onClick={handleExportToExcel}
+                disabled={customers.length === 0}
+                className="btn btn-primary btn-sm"
+                title="Export ke Excel"
+              >
+                <DownloadIcon className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">Export</span>
+              </button>
+            </>
+          )}
 
           <button
             onClick={() => handleOpenFormModal()}
@@ -751,17 +775,21 @@ const CustomersPage: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
                       <button
+                        aria-label={`Edit ${customer.name}`}
                         onClick={() => handleOpenFormModal(customer)}
-                        className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        className="btn btn-ghost btn-icon"
                       >
                         <EditIcon className="w-5 h-5" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(customer)}
-                        className="p-2.5 rounded-md text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        <Trash2Icon className="w-5 h-5" />
-                      </button>
+                      {canManageCustomers && (
+                        <button
+                          aria-label={`Hapus ${customer.name}`}
+                          onClick={() => handleDelete(customer)}
+                          className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
+                        >
+                          <Trash2Icon className="w-5 h-5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -805,17 +833,21 @@ const CustomersPage: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-1 flex-shrink-0">
                   <button
+                    aria-label={`Edit ${customer.name}`}
                     onClick={() => handleOpenFormModal(customer)}
-                    className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    className="btn btn-ghost btn-icon"
                   >
                     <EditIcon className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(customer)}
-                    className="p-2.5 rounded-md text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
-                  >
-                    <Trash2Icon className="w-5 h-5" />
-                  </button>
+                  {canManageCustomers && (
+                    <button
+                      aria-label={`Hapus ${customer.name}`}
+                      onClick={() => handleDelete(customer)}
+                      className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
+                    >
+                      <Trash2Icon className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
@@ -848,6 +880,8 @@ const CustomersPage: React.FC = () => {
           disabled={isSaving}
         />
       )}
+
+      {confirmDialog}
 
       {customerToDelete && (
         <ConfirmationModal

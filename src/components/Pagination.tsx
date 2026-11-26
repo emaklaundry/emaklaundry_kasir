@@ -130,6 +130,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
         </div>
 
         <button
+          aria-label="Halaman berikutnya"
           onClick={handleNext}
           disabled={currentPage === totalPages}
           className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

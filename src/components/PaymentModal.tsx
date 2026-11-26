@@ -170,14 +170,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
 
         <div>
-          <label className="form-label">Metode Pembayaran</label>
-          <div className="grid grid-cols-3 gap-2">
+          <p id="payment-method-label" className="form-label">
+            Metode Pembayaran
+          </p>
+          <div
+            role="group"
+            aria-labelledby="payment-method-label"
+            className="grid grid-cols-3 gap-2"
+          >
             {Object.values(PaymentMethod).map((m) => (
               <button
                 key={m}
                 type="button"
                 disabled={isSaving}
                 onClick={() => setMethod(m)}
+                aria-pressed={method === m}
                 className={`flex items-center justify-center p-3 border rounded-lg gap-2 transition-all duration-200
                   ${
                     method === m
@@ -209,7 +216,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         {method === PaymentMethod.QRIS && !settings?.qrisStaticCode && (
           <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
             <p className="text-yellow-800 dark:text-yellow-200 text-sm text-center">
-              ⚠️ QRIS belum dikonfigurasi
+              QRIS belum dikonfigurasi
             </p>
             <p className="text-yellow-600 dark:text-yellow-400 text-xs text-center mt-1">
               Tambahkan kode QRIS statis di menu Pengaturan untuk mengaktifkan Dynamic QRIS

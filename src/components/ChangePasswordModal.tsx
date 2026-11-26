@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import Modal from './Modal';
 import { supabase } from '../utils/supabaseClient';
 import useToasts from '../contexts/useToasts';
@@ -190,9 +191,11 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             <button
               type="button"
               onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              aria-label={showCurrentPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              aria-pressed={showCurrentPassword}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             >
-              {showCurrentPassword ? '🙈' : '👁️'}
+              {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -217,9 +220,11 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
+              aria-label={showNewPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              aria-pressed={showNewPassword}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             >
-              {showNewPassword ? '🙈' : '👁️'}
+              {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Minimal 6 karakter</p>
@@ -245,9 +250,11 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              aria-pressed={showConfirmPassword}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             >
-              {showConfirmPassword ? '🙈' : '👁️'}
+              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
         </div>

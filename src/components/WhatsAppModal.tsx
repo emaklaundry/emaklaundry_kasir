@@ -151,8 +151,11 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           </p>
         </div>
         <div>
-          <label className="form-label">Isi Pesan</label>
+          <p id="wa-message-label" className="form-label">
+            Isi Pesan
+          </p>
           <div
+            aria-labelledby="wa-message-label"
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             style={{ whiteSpace: 'pre-wrap' }}
           >

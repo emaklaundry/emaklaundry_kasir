@@ -2053,6 +2053,7 @@ export async function exportAllData(
     { header: 'Alamat', key: 'address', width: 40 },
     { header: 'Catatan', key: 'notes', width: 30 },
     { header: 'Store ID', key: 'storeId', width: 40 },
+    { header: 'Tanggal Daftar', key: 'createdAt', width: 26 },
   ];
   customerSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
   customerSheet.getRow(1).fill = {
@@ -2070,6 +2071,7 @@ export async function exportAllData(
       address: customer.address || '',
       notes: customer.notes || '',
       storeId: customer.storeId || '',
+      createdAt: toIsoOrEmpty(customer.createdAt),
     });
   });
 
@@ -2224,6 +2226,9 @@ export async function exportAllData(
     { header: 'Est. Selesai', key: 'estimatedCompletionDate', width: 18 },
     { header: 'Store ID', key: 'storeId', width: 40 },
     { header: 'Catatan', key: 'notes', width: 30 },
+    // Kolom mesin untuk restore tanpa kehilangan data (jangan diedit manual).
+    { header: 'Items JSON', key: 'itemsJson', width: 60 },
+    { header: 'Dibuat Oleh (User ID)', key: 'createdByUserId', width: 40 },
   ];
   transactionSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
   transactionSheet.getRow(1).fill = {
@@ -2244,8 +2249,9 @@ export async function exportAllData(
 
     transactionSheet.addRow({
       id: transaction.id,
-      invoiceCode: transaction.invoiceCode || '-',
-      createdAt: new Date(transaction.createdAt).toLocaleString('id-ID'),
+      invoiceCode: transaction.invoiceCode || '',
+      // ISO 8601 (UTC) supaya restore mendapat waktu yang persis sama.
+      createdAt: toIsoOrEmpty(transaction.createdAt),
       customerId: transaction.customerId,
       services: services,
       subtotal: transaction.subtotal,
@@ -2256,7 +2262,7 @@ export async function exportAllData(
       paymentStatus: transaction.paymentStatus,
       amountPaid: transaction.amountPaid,
       change: transaction.change,
-      paymentMethod: transaction.paymentMethod || '-',
+      paymentMethod: transaction.paymentMethod || '',
       estimatedCompletionDate: transaction.estimatedCompletionDate
         ? typeof transaction.estimatedCompletionDate === 'object' &&
           transaction.estimatedCompletionDate !== null &&
@@ -2265,7 +2271,9 @@ export async function exportAllData(
           : String(transaction.estimatedCompletionDate)
         : '',
       storeId: transaction.storeId || '',
-      notes: transaction.notes || '-',
+      notes: transaction.notes || '',
+      itemsJson: JSON.stringify(transaction.items || []),
+      createdByUserId: transaction.createdByUserId || '',
     });
   });
 
@@ -2279,7 +2287,11 @@ export async function exportAllData(
 }
 
 /**
- * Import all data from full backup Excel file
+ * Import all data from full backup Excel file.
+ *
+ * Kolom dibaca berdasarkan judul header (dengan posisi lama sebagai cadangan), supaya file
+ * backup lama maupun baru sama-sama bisa dipulihkan. Baris yang valid tidak dibuang hanya
+ * karena kolom opsional kosong (misalnya transaksi tanpa pelanggan).
  */
 export async function importAllData(file: File): Promise<{
   customers: Customer[];
@@ -2297,37 +2309,22 @@ export async function importAllData(file: File): Promise<{
   const customerSheet = workbook.getWorksheet('👥 Pelanggan');
   const customers: Customer[] = [];
   if (customerSheet) {
-    // Baca kolom berdasarkan nama header, supaya backup lama (masih punya kolom
-    // "Saldo Diskon") dan backup baru sama-sama bisa dipulihkan.
-    const customerColumns = new Map<string, number>();
-    customerSheet.getRow(1).eachCell((cell, colNumber) => {
-      customerColumns.set(String(cell.value ?? '').trim(), colNumber);
-    });
-    const customerCell = (row: ExcelJS.Row, header: string, fallback: number) =>
-      row.getCell(customerColumns.get(header) ?? fallback).value as string;
-
-    customerSheet.eachRow((row, _rowNumber) => {
-      if (_rowNumber > 1) {
-        // Skip header
-        const id = customerCell(row, 'ID', 1);
-        const name = customerCell(row, 'Nama', 2);
-        const phone = customerCell(row, 'Nomor HP', 3);
-        const address = customerCell(row, 'Alamat', 4);
-        const notes = customerCell(row, 'Catatan', 5);
-        const storeId = customerCell(row, 'Store ID', 6);
-
-        if (id && name) {
-          // @ts-expect-error - Partial customer from Excel, missing createdAt
-          customers.push({
-            id,
-            name,
-            phone: phone || undefined,
-            address: address || undefined,
-            notes: notes || undefined,
-            storeId: storeId || '',
-          });
-        }
-      }
+    const col = headerReader(customerSheet);
+    customerSheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const id = col.text(row, 'ID', 1);
+      const name = col.text(row, 'Nama', 2);
+      if (!id || !name) return;
+      customers.push({
+        id,
+        name,
+        phone: col.text(row, 'Nomor HP', 3) || undefined,
+        address: col.text(row, 'Alamat', 4) || undefined,
+        notes: col.text(row, 'Catatan', 5) || undefined,
+        storeId: col.text(row, 'Store ID', 6),
+        // Backup lama tidak punya kolom tanggal daftar (undefined).
+        createdAt: parseBackupDate(col.value(row, 'Tanggal Daftar')) as Date,
+      });
     });
   }
 
@@ -2335,33 +2332,24 @@ export async function importAllData(file: File): Promise<{
   const serviceSheet = workbook.getWorksheet('🧺 Layanan');
   const services: Service[] = [];
   if (serviceSheet) {
-    serviceSheet.eachRow((row, _rowNumber) => {
-      if (_rowNumber > 1) {
-        const id = row.getCell(1).value as string;
-        const name = row.getCell(2).value as string;
-        const category = row.getCell(3).value as ServiceCategory;
-        const washType = (row.getCell(4).value as WashType) || 'Pakaian';
-        const price = Number(row.getCell(5).value) || 0;
-        const unit = row.getCell(6).value as string;
-        const durationDays = Number(row.getCell(7).value) || 0;
-        const description = row.getCell(8).value as string;
-        const storeId = row.getCell(9).value as string;
-
-        if (id && name && category && unit) {
-          services.push({
-            id,
-            name,
-            category,
-            washType,
-            price,
-            unit,
-            durationDays,
-            storeId: storeId || '',
-            // @ts-expect-error - isActive may not exist on Service
-            isActive: true,
-          });
-        }
-      }
+    const col = headerReader(serviceSheet);
+    serviceSheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const id = col.text(row, 'ID', 1);
+      const name = col.text(row, 'Nama Layanan', 2);
+      const category = col.text(row, 'Kategori', 3) as ServiceCategory;
+      const unit = col.text(row, 'Unit', 6);
+      if (!id || !name || !category || !unit) return;
+      services.push({
+        id,
+        name,
+        category,
+        washType: (col.text(row, 'Jenis Cucian', 4) || 'Pakaian') as WashType,
+        price: Number(col.value(row, 'Harga', 5)) || 0,
+        unit,
+        durationDays: Number(col.value(row, 'Durasi (hari)', 7)) || 0,
+        storeId: col.text(row, 'Store ID', 9),
+      });
     });
   }
 
@@ -2369,27 +2357,21 @@ export async function importAllData(file: File): Promise<{
   const inventorySheet = workbook.getWorksheet('📦 Inventaris');
   const inventory: InventoryItem[] = [];
   if (inventorySheet) {
-    inventorySheet.eachRow((row, _rowNumber) => {
-      if (_rowNumber > 1) {
-        const id = row.getCell(1).value as string;
-        const name = row.getCell(2).value as string;
-        const stock = Number(row.getCell(3).value) || 0;
-        const lowStockThreshold = Number(row.getCell(4).value) || 0;
-        const unit = row.getCell(5).value as string;
-        const category = row.getCell(6).value as string; // Read category but dont use it yet as it is not in interface
-        const storeId = row.getCell(7).value as string;
-
-        if (id && name && unit && storeId) {
-          inventory.push({
-            id,
-            name,
-            stock,
-            unit,
-            lowStockThreshold,
-            storeId,
-          });
-        }
-      }
+    const col = headerReader(inventorySheet);
+    inventorySheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const id = col.text(row, 'ID', 1);
+      const name = col.text(row, 'Nama Item', 2);
+      const unit = col.text(row, 'Unit', 5);
+      if (!id || !name || !unit) return;
+      inventory.push({
+        id,
+        name,
+        stock: Number(col.value(row, 'Stok', 3)) || 0,
+        lowStockThreshold: Number(col.value(row, 'Min Stok Alert', 4)) || 0,
+        unit,
+        storeId: col.text(row, 'Store ID', 7),
+      });
     });
   }
 
@@ -2397,43 +2379,41 @@ export async function importAllData(file: File): Promise<{
   const assetSheet = workbook.getWorksheet('🏢 Aset');
   const assets: Asset[] = [];
   if (assetSheet) {
-    assetSheet.eachRow((row, _rowNumber) => {
-      if (_rowNumber > 1) {
-        const id = row.getCell(1).value as string;
-        const name = row.getCell(2).value as string;
-        const serialNumber = row.getCell(3).value as string;
-        const purchaseDate = row.getCell(4).value as string;
-        const purchaseCost = Number(row.getCell(5).value) || 0;
-        const status = row.getCell(6).value as AssetStatus;
-        const storeId = row.getCell(7).value as string;
-        const maintenanceHistoryStr = row.getCell(8).value as string;
+    const col = headerReader(assetSheet);
+    assetSheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const id = col.text(row, 'ID', 1);
+      const name = col.text(row, 'Nama Aset', 2);
+      const status = col.text(row, 'Status', 6) as AssetStatus;
+      if (!id || !name || !status) return;
 
-        let maintenanceHistory: MaintenanceLog[] = [];
-        if (maintenanceHistoryStr) {
-          try {
-            const parsed = JSON.parse(maintenanceHistoryStr);
-            if (Array.isArray(parsed)) {
-              maintenanceHistory = parsed;
-            }
-          } catch (e) {
-            console.warn('Failed to parse maintenance history', e);
-          }
-        }
-
-        if (id && name && status && purchaseDate) {
-          assets.push({
-            id,
-            name,
-            serialNumber: serialNumber || undefined,
-            status,
-            // @ts-expect-error - purchaseDate type mismatch
-            purchaseDate,
-            purchaseCost,
-            storeId: storeId || '',
-            maintenanceHistory,
-          });
+      let maintenanceHistory: MaintenanceLog[] = [];
+      const maintenanceHistoryStr = col.text(row, 'Riwayat Perawatan', 8);
+      if (maintenanceHistoryStr) {
+        try {
+          const parsed = JSON.parse(maintenanceHistoryStr);
+          if (Array.isArray(parsed)) maintenanceHistory = parsed;
+        } catch (e) {
+          console.warn('Failed to parse maintenance history', e);
         }
       }
+
+      const purchaseDate = parseBackupDate(col.value(row, 'Tanggal Beli', 4));
+      const purchaseCost = col.value(row, 'Harga Beli', 5);
+      assets.push({
+        id,
+        name,
+        serialNumber: col.text(row, 'Serial Number', 3) || undefined,
+        status,
+        // Kolom DB bertipe date: simpan tanggal UTC dari nilai ISO yang diekspor.
+        purchaseDate: purchaseDate ? purchaseDate.toISOString().split('T')[0] : undefined,
+        purchaseCost:
+          purchaseCost === null || purchaseCost === undefined || purchaseCost === ''
+            ? undefined
+            : Number(purchaseCost) || 0,
+        storeId: col.text(row, 'Store ID', 7),
+        maintenanceHistory,
+      } as unknown as Asset);
     });
   }
 
@@ -2441,36 +2421,22 @@ export async function importAllData(file: File): Promise<{
   const expenseSheet = workbook.getWorksheet('💰 Pengeluaran');
   const expenses: Expense[] = [];
   if (expenseSheet) {
-    expenseSheet.eachRow((row, _rowNumber) => {
-      if (_rowNumber > 1) {
-        const id = row.getCell(1).value as string;
-        const dateValue = row.getCell(2).value;
-        const category = row.getCell(3).value as string;
-        const amount = Number(row.getCell(4).value) || 0;
-        const description = row.getCell(5).value as string;
-        const storeId = row.getCell(6).value as string;
-
-        if (id && description && category && dateValue) {
-          // Convert date to Date object
-          let dateObj: Date;
-          if (dateValue instanceof Date) {
-            dateObj = dateValue;
-          } else if (typeof dateValue === 'string') {
-            dateObj = new Date(dateValue);
-          } else {
-            dateObj = new Date();
-          }
-
-          expenses.push({
-            id,
-            description,
-            amount,
-            category,
-            date: dateObj,
-            storeId: storeId || '',
-          });
-        }
-      }
+    const col = headerReader(expenseSheet);
+    expenseSheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const id = col.text(row, 'ID', 1);
+      const category = col.text(row, 'Kategori', 3);
+      const description = col.text(row, 'Deskripsi', 5);
+      const date = parseBackupDate(col.value(row, 'Tanggal', 2));
+      if (!id || !description || !category || !date) return;
+      expenses.push({
+        id,
+        description,
+        amount: Number(col.value(row, 'Jumlah', 4)) || 0,
+        category,
+        date,
+        storeId: col.text(row, 'Store ID', 6),
+      });
     });
   }
 
@@ -2478,99 +2444,52 @@ export async function importAllData(file: File): Promise<{
   const transactionSheet = workbook.getWorksheet('🧾 Transaksi');
   const transactions: Transaction[] = [];
   if (transactionSheet) {
-    // Create a map of service names to IDs for quick lookup
     const serviceNameToIdMap = new Map<string, string>();
     services.forEach((service) => {
       serviceNameToIdMap.set(service.name.toLowerCase().trim(), service.id);
     });
 
-    transactionSheet.eachRow((row, _rowNumber) => {
-      if (_rowNumber > 1) {
-        const id = row.getCell(1).value as string;
-        const invoiceCode = row.getCell(2).value as string;
-        const createdAt = row.getCell(3).value as string;
-        const customerId = row.getCell(4).value as string;
-        const servicesStr = row.getCell(5).value as string;
-        const subtotal = Number(row.getCell(6).value) || 0;
-        const discount = Number(row.getCell(7).value) || 0;
-        const tax = Number(row.getCell(8).value) || 0;
-        const total = Number(row.getCell(9).value) || 0;
-        const orderStatus = row.getCell(10).value as string;
-        const paymentStatus = row.getCell(11).value as string;
-        const amountPaid = Number(row.getCell(12).value) || 0;
-        const change = Number(row.getCell(13).value) || 0;
-        const paymentMethod = row.getCell(14).value as string;
-        const estimatedDateStr = row.getCell(15).value?.toString();
-        const storeId = row.getCell(16).value as string;
-        const notesStr = row.getCell(17).value?.toString();
+    const col = headerReader(transactionSheet);
+    transactionSheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const id = col.text(row, 'ID Transaksi', 1);
+      const orderStatus = col.text(row, 'Status Pesanan', 10);
+      const paymentStatus = col.text(row, 'Status Bayar', 11);
+      if (!id || !orderStatus || !paymentStatus) return;
 
-        // Simple parsing for services string if needed, or fallback to empty array
-        // "Service Name (qty unit × Rp price), ..."
-        const items: TransactionItem[] = [];
-        if (servicesStr) {
-          const parts = servicesStr.split('), ');
-          parts.forEach((part) => {
-            const cleanPart = part.endsWith(')') ? part : part + ')';
-            const match = cleanPart.match(
-              /^(.+?)\s*\((\d+(?:\.\d+)?)\s*(.+?)\s*×\s*Rp\s*([\d,.]+)\)$/,
-            );
-            if (match) {
-              const [_, name, qty, unit, priceStr] = match;
-              const price = parseFloat(priceStr.replace(/\./g, '').replace(/,/g, ''));
-              const serviceName = name.trim();
-              const serviceNameLower = serviceName.toLowerCase();
+      // Backup baru menyimpan item utuh sebagai JSON; backup lama hanya teks ringkas.
+      const items =
+        parseItemsJson(col.text(row, 'Items JSON')) ??
+        parseLegacyItemsText(col.text(row, 'Layanan', 5), serviceNameToIdMap);
 
-              // Try to find service ID by name
-              let serviceId = serviceNameToIdMap.get(serviceNameLower);
+      const invoiceCode = col.text(row, 'Kode Invoice', 2);
+      const paymentMethod = col.text(row, 'Metode Bayar', 14);
+      const notes = col.text(row, 'Catatan', 17);
+      const estimated = parseBackupDate(col.value(row, 'Est. Selesai', 15));
 
-              // If not found, generate a new UUID for this service
-              // This allows historical data with deleted services to still be imported
-              if (!serviceId) {
-                serviceId = crypto.randomUUID();
-                // Add to map to ensure consistency within this import
-                serviceNameToIdMap.set(serviceNameLower, serviceId);
-                console.warn(
-                  `Service "${serviceName}" not found in database, generated new UUID: ${serviceId}`,
-                );
-              }
-
-              items.push({
-                serviceId: serviceId,
-                serviceName: serviceName,
-                quantity: parseFloat(qty),
-                unit: unit.trim(),
-                price: price,
-                subtotal: parseFloat(qty) * price,
-              });
-            }
-          });
-        }
-
-        if (id && customerId && orderStatus && paymentStatus) {
-          transactions.push({
-            id,
-            invoiceCode: invoiceCode || undefined,
-            createdAt: new Date(createdAt),
-            customerId,
-            items,
-            subtotal,
-            discount,
-            tax,
-            total,
-            orderStatus: orderStatus as OrderStatus,
-            paymentStatus: paymentStatus as PaymentStatus,
-            amountPaid,
-            change,
-            paymentMethod: (paymentMethod !== '-' ? paymentMethod : undefined) as
-              | PaymentMethod
-              | undefined,
-            estimatedCompletionDate: estimatedDateStr || '',
-            notes: notesStr || '',
-            storeId: storeId || '',
-            createdByUserId: '', // Cannot restore easily
-          });
-        }
-      }
+      transactions.push({
+        id,
+        invoiceCode: invoiceCode && invoiceCode !== '-' ? invoiceCode : undefined,
+        // Tanggal yang tidak bisa dibaca dibiarkan Invalid Date agar pemanggil bisa melaporkannya.
+        createdAt: parseBackupDate(col.value(row, 'Tanggal', 3)) ?? new Date(NaN),
+        customerId: col.text(row, 'Customer ID', 4),
+        items,
+        subtotal: Number(col.value(row, 'Subtotal', 6)) || 0,
+        discount: Number(col.value(row, 'Diskon', 7)) || 0,
+        tax: Number(col.value(row, 'Pajak', 8)) || 0,
+        total: Number(col.value(row, 'Total', 9)) || 0,
+        orderStatus: orderStatus as OrderStatus,
+        paymentStatus: paymentStatus as PaymentStatus,
+        amountPaid: Number(col.value(row, 'Dibayar', 12)) || 0,
+        change: Number(col.value(row, 'Kembalian', 13)) || 0,
+        paymentMethod: (paymentMethod && paymentMethod !== '-' ? paymentMethod : undefined) as
+          | PaymentMethod
+          | undefined,
+        estimatedCompletionDate: estimated ? estimated.toISOString() : '',
+        notes: notes && notes !== '-' ? notes : '',
+        storeId: col.text(row, 'Store ID', 16),
+        createdByUserId: col.text(row, 'Dibuat Oleh (User ID)'),
+      });
     });
   }
 
@@ -2582,4 +2501,131 @@ export async function importAllData(file: File): Promise<{
     expenses,
     transactions,
   };
+}
+
+// ============================================
+// FULL BACKUP HELPERS
+// ============================================
+
+function toIsoOrEmpty(value: unknown): string {
+  const date = parseBackupDate(value);
+  return date ? date.toISOString() : '';
+}
+
+/** Ambil nilai mentah sebuah sel (rich text, hyperlink, dan formula ikut diurai). */
+function cellRawValue(value: ExcelJS.CellValue): unknown {
+  if (value === null || value === undefined) return undefined;
+  if (value instanceof Date) return value;
+  if (typeof value === 'object') {
+    if ('richText' in value) return value.richText.map((part) => part.text).join('');
+    if ('text' in value) return value.text;
+    if ('result' in value) return value.result;
+    return undefined;
+  }
+  return value;
+}
+
+/** Baca kolom sheet berdasarkan judul header, dengan posisi kolom lama sebagai cadangan. */
+function headerReader(sheet: ExcelJS.Worksheet) {
+  const columns = new Map<string, number>();
+  sheet.getRow(1).eachCell((cell, colNumber) => {
+    columns.set(String(cellRawValue(cell.value) ?? '').trim(), colNumber);
+  });
+  const value = (row: ExcelJS.Row, header: string, fallback?: number): unknown => {
+    const index = columns.get(header) ?? fallback;
+    return index ? cellRawValue(row.getCell(index).value) : undefined;
+  };
+  const text = (row: ExcelJS.Row, header: string, fallback?: number): string => {
+    const raw = value(row, header, fallback);
+    if (raw === undefined || raw === null) return '';
+    return (raw instanceof Date ? raw.toISOString() : String(raw)).trim();
+  };
+  return { value, text };
+}
+
+/**
+ * Ubah nilai tanggal dari file backup menjadi Date.
+ * Mendukung Date dari Excel, ISO 8601, tanggal saja (YYYY-MM-DD, dianggap UTC seperti
+ * `new Date('YYYY-MM-DD')`), dan format lama `toLocaleString('id-ID')` seperti
+ * "26/11/2026, 14.30.00" (dibaca sebagai waktu lokal perangkat).
+ * Mengembalikan undefined bila kosong atau tidak bisa dibaca.
+ */
+export function parseBackupDate(value: unknown): Date | undefined {
+  if (value === null || value === undefined || value === '') return undefined;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? undefined : value;
+  if (typeof value === 'number') {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  }
+
+  const str = String(value).trim();
+  if (!str || str === '-') return undefined;
+
+  const legacy = str.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,?\s+(\d{1,2})[.:](\d{1,2})(?:[.:](\d{1,2}))?)?$/,
+  );
+  if (legacy) {
+    const [, d, m, y, hh = '0', mm = '0', ss = '0'] = legacy;
+    const date = new Date(
+      Number(y),
+      Number(m) - 1,
+      Number(d),
+      Number(hh),
+      Number(mm),
+      Number(ss),
+    );
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  }
+
+  const parsed = new Date(str);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function parseItemsJson(json: string): TransactionItem[] | undefined {
+  if (!json) return undefined;
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? (parsed as TransactionItem[]) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Format lama: "Nama (qty unit × Rp harga), ..." — hanya dipakai untuk file backup lama. */
+function parseLegacyItemsText(
+  servicesStr: string,
+  serviceNameToIdMap: Map<string, string>,
+): TransactionItem[] {
+  const items: TransactionItem[] = [];
+  if (!servicesStr) return items;
+
+  servicesStr.split('), ').forEach((part) => {
+    const cleanPart = part.endsWith(')') ? part : part + ')';
+    const match = cleanPart.match(/^(.+?)\s*\((\d+(?:[.,]\d+)?)\s*(.+?)\s*×\s*Rp\s*([\d,.]+)\)$/);
+    if (!match) return;
+
+    const [, name, qty, unit, priceStr] = match;
+    const price = parseFloat(priceStr.replace(/\./g, '').replace(/,/g, '.'));
+    const quantity = parseFloat(qty.replace(',', '.'));
+    const serviceName = name.trim();
+    const key = serviceName.toLowerCase();
+
+    let serviceId = serviceNameToIdMap.get(key);
+    if (!serviceId) {
+      // Layanan yang sudah dihapus tetap bisa dipulihkan di riwayat transaksi.
+      serviceId = crypto.randomUUID();
+      serviceNameToIdMap.set(key, serviceId);
+    }
+
+    items.push({
+      serviceId,
+      serviceName,
+      quantity,
+      unit: unit.trim(),
+      price,
+      subtotal: quantity * price,
+    });
+  });
+
+  return items;
 }

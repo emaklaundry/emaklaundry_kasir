@@ -140,10 +140,11 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                         </button>
                       )}
                       <button
+                        aria-label="Hapus item"
                         type="button"
                         onClick={() => handleRemoveItem(index)}
                         title="Hapus Item"
-                        className="p-2 text-red-600 hover:text-red-900 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                        className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
                       >
                         <Trash2Icon className="w-6 h-6" />
                       </button>

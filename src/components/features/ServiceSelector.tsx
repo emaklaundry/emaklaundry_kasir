@@ -26,6 +26,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
       <div className="relative">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
         <input
+          aria-label="Cari layanan"
           type="text"
           name="serviceSearch"
           value={searchTerm}

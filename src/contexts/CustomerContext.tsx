@@ -120,7 +120,11 @@ export function useCustomerMutations() {
         .eq('id', id)
         .select();
       if (error) throw toFriendlyCustomerError(error, (dbData.phone as string | null) ?? null);
-      return updated?.[0] || null;
+      // RLS menolak update tanpa error: hasilnya hanya 0 baris. Jangan laporkan sebagai berhasil.
+      if (!updated || updated.length === 0) {
+        throw new Error('Anda tidak memiliki izin untuk mengubah data pelanggan ini.');
+      }
+      return updated[0];
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customers'] }),
   });
