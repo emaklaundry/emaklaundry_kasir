@@ -24,6 +24,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     notes: customer?.notes || '',
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -50,7 +52,15 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       }
     }
 
-    await onSave(formData);
+    // Cegah ketukan ganda: tanpa ini, tap kedua mengirim insert yang sama dan
+    // ditolak database karena nomor HP sudah tersimpan oleh tap pertama.
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onSave(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -60,18 +70,14 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       title={customer ? 'Edit Pelanggan' : 'Tambah Pelanggan Baru'}
       footer={
         <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button type="button" onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={disabled}
-            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 w-32 disabled:bg-blue-400"
+            disabled={disabled || isSubmitting}
+            className="btn btn-primary w-32"
           >
             Simpan
           </button>
@@ -81,10 +87,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       <div role="form" className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="customer-name"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="customer-name" className="form-label">
               Nama Pelanggan
             </label>
             <input
@@ -94,15 +97,12 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               autoComplete="name"
               value={formData.name}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
           <div>
-            <label
-              htmlFor="customer-phone"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="customer-phone" className="form-label">
               Nomor Telepon (Opsional)
             </label>
             <input
@@ -113,15 +113,12 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               value={formData.phone}
               onChange={handleChange}
               placeholder="Contoh: 081234567890"
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             />
           </div>
         </div>
         <div>
-          <label
-            htmlFor="customer-address"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="customer-address" className="form-label">
             Alamat (Opsional)
           </label>
           <input
@@ -131,14 +128,11 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             autoComplete="street-address"
             value={formData.address}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           />
         </div>
         <div>
-          <label
-            htmlFor="customer-notes"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="customer-notes" className="form-label">
             Catatan (Opsional)
           </label>
           <textarea
@@ -148,7 +142,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             value={formData.notes}
             onChange={handleChange}
             rows={3}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           ></textarea>
         </div>
       </div>

@@ -1,7 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import useAppContext from '../contexts/useAppContext';
-import { HistoryIcon, SearchIcon, ArrowUpIcon, ArrowDownIcon } from '../components/icons';
+import {
+  HistoryIcon,
+  SearchIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  SpinnerIcon,
+} from '../components/icons';
+import EmptyState from '../components/EmptyState';
 import useSortableData from '../hooks/useSortableData';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/Pagination';
@@ -94,7 +101,7 @@ const AuditLogPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <SpinnerIcon className="h-12 w-12 text-brand-blue-600 dark:text-brand-blue-400" />
           <span className="text-lg text-slate-600 dark:text-slate-300">Memuat log audit...</span>
         </div>
       </div>
@@ -118,7 +125,7 @@ const AuditLogPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-brand-blue-500" />
+        <SpinnerIcon className="h-16 w-16 text-brand-blue-600 dark:text-brand-blue-400" />
       </div>
     );
   }
@@ -137,7 +144,7 @@ const AuditLogPage: React.FC = () => {
             placeholder="Cari pengguna atau aksi..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full pl-10 p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input pl-10"
             autoComplete="off"
           />
         </div>
@@ -155,7 +162,7 @@ const AuditLogPage: React.FC = () => {
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             max={endDate || undefined}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input p-2.5"
             autoComplete="off"
           />
         </div>
@@ -173,7 +180,7 @@ const AuditLogPage: React.FC = () => {
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             min={startDate || undefined}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input p-2.5"
             autoComplete="off"
           />
         </div>
@@ -243,17 +250,16 @@ const AuditLogPage: React.FC = () => {
                   colSpan={
                     currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 4 : 3
                   }
-                  className="text-center py-12"
                 >
-                  <HistoryIcon className="mx-auto w-12 h-12 text-slate-400" />
-                  <h3 className="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-200">
-                    Tidak Ada Log Ditemukan
-                  </h3>
-                  <p className="mt-1 text-base text-slate-500">
-                    {filtersApplied
-                      ? 'Tidak ada log yang cocok dengan kriteria filter Anda.'
-                      : 'Belum ada aktivitas yang tercatat.'}
-                  </p>
+                  <EmptyState
+                    icon={<HistoryIcon className="h-12 w-12" />}
+                    title="Tidak Ada Log Ditemukan"
+                    description={
+                      filtersApplied
+                        ? 'Tidak ada log yang cocok dengan kriteria filter Anda.'
+                        : 'Belum ada aktivitas yang tercatat.'
+                    }
+                  />
                 </td>
               </tr>
             )}

@@ -3,6 +3,7 @@ import { XIcon, CheckCircleIcon, AlertTriangleIcon } from './icons';
 import { InventoryItem } from '../types';
 import { useStockOpnameMutations } from '../contexts/InventoryRecipeContext';
 import useAppContext from '../contexts/useAppContext';
+import useToasts from '../contexts/useToasts';
 
 interface StockOpnameModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
 }) => {
   const { currentUser } = useAppContext();
   const { recordOpname, isLoading } = useStockOpnameMutations();
+  const { addToast } = useToasts();
   const [physicalStocks, setPhysicalStocks] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -34,11 +36,12 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
     setNotes((prev) => ({ ...prev, [itemId]: value }));
   };
 
-  const handleSaveItem = async (item: InventoryItem) => {
+  /** Mengembalikan `true` bila opname item berhasil dicatat. */
+  const handleSaveItem = async (item: InventoryItem): Promise<boolean> => {
     const physicalStock = parseFloat(physicalStocks[item.id] || '0');
     if (isNaN(physicalStock) || physicalStock < 0) {
-      alert('Masukkan stok fisik yang valid');
-      return;
+      addToast(`Stok fisik ${item.name} harus berupa angka 0 atau lebih.`, 'error');
+      return false;
     }
 
     try {
@@ -51,21 +54,28 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
         storeId,
       });
       setSavedItems((prev) => [...prev, item.id]);
+      return true;
     } catch (error) {
       console.error('Error recording opname:', error);
-      alert('Gagal menyimpan stock opname');
+      addToast(`Gagal menyimpan opname ${item.name}. Coba lagi.`, 'error');
+      return false;
     }
   };
 
   const handleSaveAll = async () => {
     setSaving(true);
+    let allSaved = true;
     for (const item of inventoryItems) {
       if (!savedItems.includes(item.id) && physicalStocks[item.id]) {
-        await handleSaveItem(item);
+        allSaved = (await handleSaveItem(item)) && allSaved;
       }
     }
     setSaving(false);
-    onClose();
+    // Modal tetap terbuka bila ada yang gagal, supaya isian bisa diperbaiki.
+    if (allSaved) {
+      addToast('Stock opname tersimpan.', 'success');
+      onClose();
+    }
   };
 
   return (
@@ -163,7 +173,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
                         <button
                           onClick={() => handleSaveItem(item)}
                           disabled={!physicalStocks[item.id] || isLoading}
-                          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                          className="btn btn-primary btn-sm"
                         >
                           Simpan
                         </button>
@@ -194,7 +204,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
           <button
             onClick={handleSaveAll}
             disabled={saving || Object.keys(physicalStocks).length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-blue-600 text-white rounded-lg hover:bg-brand-blue-700 disabled:opacity-50"
+            className="btn btn-primary btn-sm"
           >
             <CheckCircleIcon className="w-4 h-4" />
             {saving ? 'Menyimpan...' : 'Simpan Semua'}

@@ -37,36 +37,34 @@ const PWAUpdatePrompt: React.FC = () => {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-20 sm:bottom-4 right-4 z-[60] max-w-md">
-      <div className="bg-blue-600 text-white rounded-lg shadow-lg p-4 flex items-start gap-3">
-        <RefreshCwIcon className="w-6 h-6 flex-shrink-0 mt-0.5" />
-        <div className="flex-1">
-          <h3 className="font-semibold mb-1">Update Tersedia</h3>
-          <p className="text-sm text-blue-100 mb-3">
-            Versi baru aplikasi telah tersedia. Klik "Perbarui" untuk mendapatkan fitur dan
-            perbaikan terbaru.
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-20 right-4 left-4 z-[60] sm:bottom-4 sm:left-auto sm:max-w-sm"
+    >
+      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+        <RefreshCwIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-blue-600 dark:text-brand-blue-400" />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-slate-900 dark:text-white">Update Tersedia</h3>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            Versi baru aplikasi telah tersedia. Perbarui untuk mendapatkan fitur dan perbaikan
+            terbaru.
           </p>
-          <div className="flex gap-2">
-            <button
-              onClick={handleUpdate}
-              className="flex-1 bg-white text-blue-600 hover:bg-blue-50 font-medium rounded px-4 py-2 text-sm transition-colors"
-            >
+          <div className="mt-3 flex gap-2">
+            <button onClick={handleUpdate} className="btn btn-primary btn-sm">
               Perbarui Sekarang
             </button>
-            <button
-              onClick={handleDismiss}
-              className="bg-blue-700 hover:bg-blue-800 text-white rounded px-4 py-2 text-sm transition-colors"
-            >
+            <button onClick={handleDismiss} className="btn btn-secondary btn-sm">
               Nanti
             </button>
           </div>
         </div>
         <button
           onClick={handleDismiss}
-          className="text-blue-200 hover:text-white transition-colors"
+          className="btn btn-ghost btn-icon btn-sm -mr-2 -mt-2"
           aria-label="Tutup"
         >
-          <XIcon className="w-5 h-5" />
+          <XIcon className="h-5 w-5" />
         </button>
       </div>
     </div>

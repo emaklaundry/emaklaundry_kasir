@@ -165,6 +165,9 @@ export type Database = {
           date: string;
           clock_in: string | null;
           clock_out: string | null;
+          last_seen_at: string | null;
+          clock_in_source: string | null;
+          clock_out_source: string | null;
           notes: string | null;
           created_at: string;
         };
@@ -174,6 +177,9 @@ export type Database = {
           date: string;
           clock_in?: string | null;
           clock_out?: string | null;
+          last_seen_at?: string | null;
+          clock_in_source?: string | null;
+          clock_out_source?: string | null;
           notes?: string | null;
           created_at?: string;
         };
@@ -183,6 +189,9 @@ export type Database = {
           date?: string;
           clock_in?: string | null;
           clock_out?: string | null;
+          last_seen_at?: string | null;
+          clock_in_source?: string | null;
+          clock_out_source?: string | null;
           notes?: string | null;
           created_at?: string;
         };
@@ -965,6 +974,10 @@ export type Database = {
         Returns: Json;
       };
       set_my_supervisor_pin: { Args: { p_pin: string }; Returns: undefined };
+      record_attendance: {
+        Args: { p_event?: string };
+        Returns: undefined;
+      };
       update_transaction_progress: {
         Args: {
           p_amount_paid?: number;

@@ -61,16 +61,10 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
       title={service ? 'Edit Layanan' : 'Tambah Layanan Baru'}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 focus:outline-none hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 dark:hover:text-white"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
-          <button
-            onClick={handleSubmit}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-          >
+          <button onClick={handleSubmit} className="btn btn-primary">
             Simpan
           </button>
         </>
@@ -78,10 +72,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     >
       <form className="space-y-4">
         <div>
-          <label
-            htmlFor="name"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="name" className="form-label">
             Nama Layanan
           </label>
           <input
@@ -90,15 +81,12 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="name"
             value={formData.name}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
         <div>
-          <label
-            htmlFor="category"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="category" className="form-label">
             Kategori
           </label>
           <select
@@ -106,7 +94,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="category"
             value={formData.category}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           >
             {Object.values(ServiceCategory).map((cat) => (
               <option key={cat} value={cat}>
@@ -116,10 +104,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
           </select>
         </div>
         <div>
-          <label
-            htmlFor="washType"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="washType" className="form-label">
             Jenis Yang Dicuci
           </label>
           <select
@@ -127,7 +112,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="washType"
             value={formData.washType}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           >
             {Object.values(WashType).map((type) => (
               <option key={type} value={type}>
@@ -138,10 +123,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="price"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="price" className="form-label">
               Harga
             </label>
             <input
@@ -150,15 +132,12 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
               id="price"
               value={formatRupiah(formData.price)}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
           <div>
-            <label
-              htmlFor="unit"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="unit" className="form-label">
               Satuan
             </label>
             <input
@@ -167,16 +146,13 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
               id="unit"
               value={formData.unit}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
         </div>
         <div>
-          <label
-            htmlFor="durationDays"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="durationDays" className="form-label">
             Durasi (hari)
           </label>
           <input
@@ -186,7 +162,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             id="durationDays"
             value={formData.durationDays}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>

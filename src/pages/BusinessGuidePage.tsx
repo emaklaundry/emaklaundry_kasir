@@ -60,14 +60,14 @@ const BusinessGuidePage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded border border-purple-200 dark:border-purple-800">
-                <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">
+              <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded border border-sky-200 dark:border-sky-800">
+                <h4 className="font-semibold text-sky-900 dark:text-sky-100 mb-2">
                   🎯 Estimasi Pendapatan Bulanan
                 </h4>
                 <code className="block bg-slate-800 text-green-400 p-3 rounded text-sm font-mono mb-2">
                   Pendapatan = Rata-rata Kg/Hari × Harga/Kg × 30 Hari
                 </code>
-                <p className="text-sm text-purple-800 dark:text-purple-200">
+                <p className="text-sm text-sky-800 dark:text-sky-200">
                   <strong>Contoh:</strong> 50 Kg × Rp 7.500 × 30 = Rp 11.250.000/bulan
                 </p>
               </div>
@@ -247,11 +247,9 @@ const BusinessGuidePage: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800">
-                <h4 className="font-bold text-purple-900 dark:text-purple-100 mb-2">
-                  🚀 Ekspansi Usaha
-                </h4>
-                <ul className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+              <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded border border-sky-200 dark:border-sky-800">
+                <h4 className="font-bold text-sky-900 dark:text-sky-100 mb-2">🚀 Ekspansi Usaha</h4>
+                <ul className="text-sm text-sky-800 dark:text-sky-200 space-y-1">
                   <li>• Tambah layanan: Dry cleaning, laundry sepatu</li>
                   <li>• Pickup & delivery service</li>
                   <li>• Franchise atau buka cabang</li>

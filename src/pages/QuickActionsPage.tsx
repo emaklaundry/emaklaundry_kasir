@@ -9,6 +9,7 @@ import { useExpenses } from '../contexts/ExpenseContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
 import { UserRole, Expense } from '@/types';
+import { can, type Permission } from '@/config/permissions';
 import {
   PlusIcon,
   ReceiptIcon,
@@ -17,6 +18,14 @@ import {
   PlusCircleIcon,
   BookOpenIcon,
 } from '@/components/icons';
+
+// Kelas ditulis lengkap agar terbaca Tailwind.
+const tileClass = (primary?: boolean) =>
+  `rounded-xl p-5 sm:p-6 flex flex-col items-center justify-center text-center transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed min-h-[140px] sm:min-h-[160px] touch-target ${
+    primary
+      ? 'bg-blue-600 text-white hover:bg-blue-700'
+      : 'border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/60'
+  }`;
 
 const QuickActionsPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();
@@ -44,49 +53,53 @@ const QuickActionsPage: React.FC = () => {
     setIsExpenseModalOpen(false);
   };
 
-  const actions = [
-    {
-      label: 'Update Stok',
-      icon: WrenchIcon,
-      color: 'bg-teal-500 hover:bg-teal-600',
-      onClick: () => setIsStockModalOpen(true),
-      modal: null,
-    },
-    {
-      label: 'Catat Pengeluaran',
-      icon: DollarSignIcon,
-      color: 'bg-purple-500 hover:bg-purple-600',
-      onClick: () => setIsExpenseModalOpen(true),
-      modal: null,
-    },
-    {
-      label: 'Lapor Kerusakan',
-      icon: PlusCircleIcon,
-      color: 'bg-orange-500 hover:bg-orange-600',
-      onClick: () => setIsMaintenanceModalOpen(true),
-      modal: null,
-    },
-    {
-      label: 'Panduan Mesin Cuci',
-      icon: BookOpenIcon,
-      color: 'bg-indigo-500 hover:bg-indigo-600',
-      onClick: () => setIsWashSettingsModalOpen(true),
-      modal: null,
-    },
-    // ...existing actions for navigation
+  const allActions: {
+    label: string;
+    icon: React.FC<{ className?: string }>;
+    primary?: boolean;
+    onClick?: () => void;
+    to?: string;
+    permission?: Permission;
+  }[] = [
     {
       label: 'Transaksi Baru',
+      permission: 'transaction.create',
       to: '/transactions/new',
       icon: PlusIcon,
-      color: 'bg-blue-600 hover:bg-blue-700',
+      primary: true,
     },
     {
       label: 'Daftar Transaksi',
       to: '/transactions',
       icon: ReceiptIcon,
-      color: 'bg-green-600 hover:bg-green-700',
+    },
+    {
+      label: 'Update Stok',
+      permission: 'inventory.quickUpdate',
+      icon: WrenchIcon,
+      onClick: () => setIsStockModalOpen(true),
+    },
+    {
+      label: 'Catat Pengeluaran',
+      permission: 'expense.create',
+      icon: DollarSignIcon,
+      onClick: () => setIsExpenseModalOpen(true),
+    },
+    {
+      label: 'Lapor Kerusakan',
+      permission: 'maintenance.report',
+      icon: PlusCircleIcon,
+      onClick: () => setIsMaintenanceModalOpen(true),
+    },
+    {
+      label: 'Panduan Mesin Cuci',
+      icon: BookOpenIcon,
+      onClick: () => setIsWashSettingsModalOpen(true),
     },
   ];
+  const actions = allActions.filter(
+    (action) => !action.permission || can(currentUser?.role, action.permission),
+  );
 
   return (
     <div className="p-3 sm:p-4">
@@ -100,20 +113,20 @@ const QuickActionsPage: React.FC = () => {
               key={action.label}
               onClick={action.onClick}
               disabled={action.label !== 'Panduan Mesin Cuci' && isActionDisabled}
-              className={`${action.color} text-white rounded-xl p-5 sm:p-6 flex flex-col items-center justify-center text-center shadow-lg transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[140px] sm:min-h-[160px] touch-target`}
+              className={tileClass(action.primary)}
             >
-              <action.icon className="w-12 h-12 sm:w-14 sm:h-14 mb-3" />
+              <action.icon
+                className={`mb-3 h-12 w-12 sm:h-14 sm:w-14 ${action.primary ? '' : 'text-brand-blue-600 dark:text-brand-blue-400'}`}
+              />
               <span className="text-base sm:text-lg font-semibold leading-tight">
                 {action.label}
               </span>
             </button>
           ) : (
-            <Link
-              key={action.to}
-              to={action.to!}
-              className={`${action.color} text-white rounded-xl p-5 sm:p-6 flex flex-col items-center justify-center text-center shadow-lg transition-all transform active:scale-95 min-h-[140px] sm:min-h-[160px] touch-target`}
-            >
-              <action.icon className="w-12 h-12 sm:w-14 sm:h-14 mb-3" />
+            <Link key={action.to} to={action.to!} className={tileClass(action.primary)}>
+              <action.icon
+                className={`mb-3 h-12 w-12 sm:h-14 sm:w-14 ${action.primary ? '' : 'text-brand-blue-600 dark:text-brand-blue-400'}`}
+              />
               <span className="text-base sm:text-lg font-semibold leading-tight">
                 {action.label}
               </span>

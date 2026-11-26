@@ -67,10 +67,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
 
   return (
     <div className="relative" id={id}>
-      <label
-        htmlFor="customerName"
-        className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-      >
+      <label htmlFor="customerName" className="form-label">
         Pelanggan
       </label>
       <div className="flex gap-2">
@@ -84,7 +81,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             onChange={handleInputChange}
             onFocus={() => setIsDropdownOpen(true)}
             onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 pl-10 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input pl-10"
             placeholder="Cari nama atau no. HP"
             required
             autoComplete="off"
@@ -108,11 +105,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             </div>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onAddNewCustomer}
-          className="flex-shrink-0 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3"
-        >
+        <button type="button" onClick={onAddNewCustomer} className="btn btn-success">
           <PlusCircleIcon className="w-5 h-5" />
         </button>
       </div>

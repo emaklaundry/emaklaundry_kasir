@@ -6,8 +6,10 @@ import {
   DatabaseIcon,
   AlertTriangleIcon,
   CheckCircleIcon,
+  SpinnerIcon,
 } from '../../components/icons';
 import useToasts from '../../contexts/useToasts';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import useAppContext from '../../contexts/useAppContext';
 import { exportAllData, importAllData } from '../../utils/excelUtils';
 import {
@@ -33,6 +35,7 @@ import type { Json } from '@/types/supabase';
 const BackupRestorePage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
   const { addToast, updateToast } = useToasts();
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -430,13 +433,13 @@ const BackupRestorePage: React.FC = () => {
     const file = fileInputRef.current.files[0];
 
     // Confirmation
-    const confirmed = window.confirm(
-      `⚠️ PERINGATAN PENTING ⚠️\n\n` +
-        `Restore data akan MENIMPA semua data yang ada saat ini!\n\n` +
-        `Data yang akan direstore dari file: ${file.name}\n\n` +
-        `Apakah Anda yakin ingin melanjutkan?\n\n` +
-        `Disarankan untuk melakukan backup terlebih dahulu sebelum restore.`,
-    );
+    const confirmed = await confirm({
+      title: 'Restore data dari backup?',
+      message:
+        `Semua data saat ini akan DITIMPA oleh isi file ${file.name}. Tindakan ini tidak bisa dibatalkan.\n\n` +
+        `Sebaiknya lakukan backup terlebih dahulu sebelum restore.`,
+      confirmText: 'Timpa & restore',
+    });
 
     if (!confirmed) {
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -969,19 +972,21 @@ const BackupRestorePage: React.FC = () => {
       )}
 
       {/* Statistics Overview */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 p-6 rounded-lg shadow-lg text-white">
-        <div className="flex items-center justify-between">
+      <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-blue-100 mb-1">Total Data Aplikasi</p>
-            <p className="text-4xl font-bold">{totalRecords.toLocaleString('id-ID')}</p>
-            <p className="text-sm text-blue-100 mt-2">
+            <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Data Aplikasi</p>
+            <p className="text-4xl font-bold tabular-nums text-slate-900 dark:text-white">
+              {totalRecords.toLocaleString('id-ID')}
+            </p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               {lastBackupDate
                 ? `Backup terakhir: ${new Date(lastBackupDate).toLocaleDateString('id-ID')} ${new Date(lastBackupDate).toLocaleTimeString('id-ID')}`
                 : 'Belum pernah backup'}
             </p>
           </div>
-          <div className="p-4 bg-white/20 rounded-lg">
-            <DatabaseIcon className="w-12 h-12 text-white" />
+          <div className="rounded-lg bg-slate-100 p-4 dark:bg-slate-700">
+            <DatabaseIcon className="h-10 w-10 text-slate-500 dark:text-slate-300" />
           </div>
         </div>
       </div>
@@ -991,9 +996,9 @@ const BackupRestorePage: React.FC = () => {
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Pelanggan</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{customers.length}</p>
-          <div className="mt-2 h-1 bg-green-200 dark:bg-green-900 rounded-full overflow-hidden">
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
-              className="h-full bg-green-600 dark:bg-green-400"
+              className="h-full bg-brand-blue-600 dark:bg-brand-blue-400"
               style={{ width: `${(customers.length / totalRecords) * 100}%` }}
             />
           </div>
@@ -1002,9 +1007,9 @@ const BackupRestorePage: React.FC = () => {
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Layanan</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{services.length}</p>
-          <div className="mt-2 h-1 bg-blue-200 dark:bg-blue-900 rounded-full overflow-hidden">
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
-              className="h-full bg-blue-600 dark:bg-blue-400"
+              className="h-full bg-brand-blue-600 dark:bg-brand-blue-400"
               style={{ width: `${(services.length / totalRecords) * 100}%` }}
             />
           </div>
@@ -1013,9 +1018,9 @@ const BackupRestorePage: React.FC = () => {
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Inventori</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{inventory.length}</p>
-          <div className="mt-2 h-1 bg-purple-200 dark:bg-purple-900 rounded-full overflow-hidden">
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
-              className="h-full bg-purple-600 dark:bg-purple-400"
+              className="h-full bg-brand-blue-600 dark:bg-brand-blue-400"
               style={{ width: `${(inventory.length / totalRecords) * 100}%` }}
             />
           </div>
@@ -1088,7 +1093,7 @@ const BackupRestorePage: React.FC = () => {
               <button
                 onClick={handleFullExport}
                 disabled={!canBackup || isExporting}
-                className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed font-medium transition-colors"
+                className="btn btn-primary mt-6 w-full"
               >
                 {isExporting ? (
                   <>
@@ -1165,11 +1170,11 @@ const BackupRestorePage: React.FC = () => {
               <button
                 onClick={handleImport}
                 disabled={!canBackup || isImporting}
-                className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                className="btn btn-success mt-6 w-full"
               >
                 {isImporting ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <SpinnerIcon className="w-5 h-5 text-white" />
                     <span>Memproses...</span>
                   </>
                 ) : (
@@ -1202,7 +1207,7 @@ const BackupRestorePage: React.FC = () => {
             className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition-colors"
           >
             {isExportingJson ? (
-              <div className="w-5 h-5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+              <SpinnerIcon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
             ) : (
               <DownloadIcon className="w-5 h-5" />
             )}
@@ -1261,11 +1266,11 @@ const BackupRestorePage: React.FC = () => {
                   <button
                     onClick={handleImportJson}
                     disabled={isImportingJson}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                    className="btn btn-primary btn-sm"
                   >
                     {isImportingJson ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <SpinnerIcon className="w-4 h-4 text-white" />
                         <span>Processing {importJsonProgress}%...</span>
                       </>
                     ) : (
@@ -1333,6 +1338,7 @@ const BackupRestorePage: React.FC = () => {
           </div>
         </div>
       </div>
+      {confirmDialog}
     </div>
   );
 };

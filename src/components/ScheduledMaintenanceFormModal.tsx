@@ -75,16 +75,10 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
       title={schedule ? 'Edit Jadwal Perawatan' : 'Tambah Jadwal Perawatan'}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
-          <button
-            onClick={handleSubmit}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-          >
+          <button onClick={handleSubmit} className="btn btn-primary">
             Simpan
           </button>
         </>
@@ -92,10 +86,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="description" className="form-label">
             Deskripsi Tugas
           </label>
           <input
@@ -104,17 +95,14 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
             id="description"
             value={formData.description}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
             placeholder="Contoh: Ganti oli mesin"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="frequencyValue"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="frequencyValue" className="form-label">
               Ulangi Setiap
             </label>
             <input
@@ -124,15 +112,12 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
               min="1"
               value={formData.frequencyValue}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
           <div>
-            <label
-              htmlFor="frequencyUnit"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="frequencyUnit" className="form-label">
               Satuan
             </label>
             <select
@@ -140,7 +125,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
               id="frequencyUnit"
               value={formData.frequencyUnit}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             >
               <option value="days">Hari</option>
               <option value="weeks">Minggu</option>
@@ -150,10 +135,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
           </div>
         </div>
         <div>
-          <label
-            htmlFor="estimatedCost"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="estimatedCost" className="form-label">
             Estimasi Biaya (Rp)
           </label>
           <input
@@ -164,7 +146,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
             step="1000"
             value={formData.estimatedCost || 0}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             placeholder="0"
           />
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -172,10 +154,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
           </p>
         </div>
         <div>
-          <label
-            htmlFor="estimatedCost"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="estimatedCost" className="form-label">
             Estimasi Biaya (Rp)
           </label>
           <input
@@ -186,7 +165,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
             step="1000"
             value={formData.estimatedCost || 0}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             placeholder="0"
           />
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -194,10 +173,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
           </p>
         </div>
         <div>
-          <label
-            htmlFor="nextDueDate"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="nextDueDate" className="form-label">
             Tanggal Jatuh Tempo Berikutnya
           </label>
           <input
@@ -206,7 +182,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
             id="nextDueDate"
             value={formData.nextDueDate}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

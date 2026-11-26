@@ -20,13 +20,13 @@ import WhatsAppModal from '../components/WhatsAppModal';
 import { savePayment } from '../utils/paymentUpdate';
 import PaymentModal from '../components/PaymentModal';
 import WashSettingsModal from '../components/WashSettingsModal';
+import DashboardStats from '../components/widgets/DashboardStats';
+import { can, isAdminRole } from '../config/permissions';
 import {
   WrenchIcon,
   PlusCircleIcon,
   DollarSignIcon,
   ChevronRightIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
   BookOpenIcon,
 } from '../components/icons';
 
@@ -43,149 +43,8 @@ import {
 import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
 import { calculateNextDueDate } from '../utils/formatting';
 
-type Trend = 'up' | 'down' | 'neutral';
-
-interface TrendData {
-  trend: Trend;
-  percentage: string;
-}
-
-// WeeklyRevenueChart component - currently unused but kept for future use
-/* const WeeklyRevenueChart: React.FC<{ data: { day: string; revenue: number }[] }> = ({ data }) => {
-  const [tooltip, setTooltip] = useState<{
-    visible: boolean;
-    content: string;
-    x: number;
-    y: number;
-  }>({ visible: false, content: '', x: 0, y: 0 });
-
-  const maxValue = useMemo(() => {
-    const maxVal = Math.max(...data.map((d) => d.revenue), 0); // FIXED: Ensure minimum of 0
-    return maxVal === 0 ? 100000 : Math.ceil(maxVal / 10000) * 10000;
-  }, [data]);
-
-  const chartHeight = 200;
-
-  const showTooltip = (content: string, event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltip({
-      visible: true,
-      content,
-      x: rect.left + window.scrollX + rect.width / 2,
-      y: rect.top + window.scrollY - 10,
-    });
-  };
-
-  const hideTooltip = () => setTooltip({ ...tooltip, visible: false });
-
-  return (
-    <div className="relative">
-      {tooltip.visible && (
-        <div
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: 'translateX(-50%) translateY(-100%)',
-          }}
-          className="absolute z-10 p-2 text-xs text-white bg-slate-900 dark:bg-slate-700 rounded-md shadow-lg whitespace-nowrap"
-        >
-          {tooltip.content}
-        </div>
-      )}
-      <div
-        className="flex justify-between items-end h-full pt-4"
-        style={{ height: `${chartHeight}px` }}
-      >
-        {data.map((d, i) => {
-          const barHeight = Math.max((d.revenue / maxValue) * (chartHeight - 30), 0);
-          const tooltipContent = `${d.day}: Rp ${d.revenue.toLocaleString('id-ID')}`;
-          return (
-            <div key={i} className="flex flex-col items-center w-full">
-              <div
-                className="w-4/5 bg-brand-blue-500 rounded-t-md hover:bg-brand-blue-400 transition-colors"
-                style={{ height: `${barHeight}px`, minHeight: '2px' }}
-                onMouseMove={(e) => showTooltip(tooltipContent, e)}
-                onMouseLeave={hideTooltip}
-              ></div>
-              <span className="text-xs mt-2 text-slate-500 dark:text-slate-400">{d.day}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}; */
-
-/* function TrendIndicator({ trendData }: { trendData?: TrendData }) {
-  if (!trendData || trendData.trend === 'neutral') return null;
-  const isUp = trendData.trend === 'up';
-  const trendColor = isUp ? 'text-green-500' : 'text-red-500';
-  const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
-  return (
-    <div className={`flex items-center text-sm font-semibold mt-1 ${trendColor}`}>
-      <TrendIcon className="w-4 h-4 mr-1" />
-      <span>{trendData.percentage} vs 30 hari lalu</span>
-    </div>
-  );
-} */
-
-// StatCard component - currently unused but kept for future use
-/* const StatCard: React.FC<{
-  icon: React.FC<{ className?: string }>;
-  title: string;
-  value: string | number;
-  color: string;
-  to?: string;
-  trendData?: TrendData;
-  subtitle?: string;
-}> = ({ icon: Icon, title, value, color, to, trendData, subtitle }) => {
-  const content = (
-    <div
-      className={`bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-xl shadow-md border-l-4 ${color} ${to ? 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-[0.98]' : ''}`}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 truncate mb-1">
-            {title}
-          </p>
-          <p className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 dark:text-white break-all">
-            {value}
-          </p>
-          {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-              {subtitle}
-            </p>
-          )}
-        </div>
-        <div
-          className={`p-3 sm:p-3 rounded-full flex-shrink-0 ${color.replace('border-', 'bg-').replace('-500', '-100')} dark:${color.replace('border-', 'bg-').replace('-500', '-900/50')}`}
-        >
-          <Icon
-            className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 ${color.replace('border-', 'text-')}`}
-          />
-        </div>
-      </div>
-      <TrendIndicator trendData={trendData} />
-    </div>
-  );
-  return to ? <Link to={to}>{content}</Link> : <div>{content}</div>;
-}; */
-
 // Tipe kustom untuk order aktif
 type ActiveOrder = Transaction & { customerName: string };
-
-// Helper function to calculate stats for a given period
-const calculateStats = (transactions: Transaction[], startDate: Date, endDate: Date) => {
-  const filtered = transactions.filter((t: Transaction) => {
-    const createdAt = new Date(t.createdAt);
-    return createdAt >= startDate && createdAt <= endDate;
-  });
-  return {
-    completed: filtered.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed).length,
-    processing: filtered.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
-      .length,
-  };
-};
 
 const Dashboard: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -198,7 +57,10 @@ const Dashboard: React.FC = () => {
       ? inventoryQuery.data
       : (inventoryQuery.data?.data ?? []);
   }, [inventoryQuery.data]);
-  const { transactions, updateTransaction } = useTransactions({ pageSize: 1000 });
+  const { transactions, updateTransaction } = useTransactions({
+    pageSize: 1000,
+    storeId: selectedStoreId,
+  });
   const customersQuery = useQuery({
     queryKey: ['customers', { page: 1, pageSize: 1000 }],
     queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
@@ -239,117 +101,11 @@ const Dashboard: React.FC = () => {
   const [transactionForPayment, setTransactionForPayment] = useState<Transaction | null>(null);
   const [isWashSettingsModalOpen, setIsWashSettingsModalOpen] = useState(false);
 
-  const isCashier = currentUser?.role === UserRole.Cashier;
-
-  const weeklyRevenueData = useMemo(() => {
-    const data = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      return {
-        day: date.toLocaleDateString('id-ID', { weekday: 'short' }),
-        revenue: 0,
-        date,
-        transactionCount: 0,
-      };
-    });
-
-    transactions.forEach((t: Transaction) => {
-      const transactionDate = new Date(t.createdAt);
-      const dayData = data.find(
-        (d) =>
-          d.date.getDate() === transactionDate.getDate() &&
-          d.date.getMonth() === transactionDate.getMonth() &&
-          d.date.getFullYear() === transactionDate.getFullYear(),
-      );
-      if (dayData) {
-        dayData.revenue += t.amountPaid;
-        dayData.transactionCount += 1;
-      }
-    });
-    return data;
-  }, [transactions]);
-
-  // Statistik untuk revenue 7 hari terakhir
-  const weeklyStats = useMemo(() => {
-    const currentWeekTotal = weeklyRevenueData.reduce((sum, d) => sum + d.revenue, 0);
-    const currentWeekTransactions = weeklyRevenueData.reduce(
-      (sum, d) => sum + d.transactionCount,
-      0,
-    );
-    const average = currentWeekTotal / 7;
-
-    const sortedByRevenue = weeklyRevenueData.toSorted((a, b) => b.revenue - a.revenue);
-    const highest = sortedByRevenue[0];
-    const lowest = sortedByRevenue[sortedByRevenue.length - 1];
-
-    // Hitung revenue minggu sebelumnya (hari ke 8-14)
-    const previousWeekData = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (i + 7));
-      return { date, revenue: 0 };
-    });
-
-    transactions.forEach((t: Transaction) => {
-      const transactionDate = new Date(t.createdAt);
-      const dayData = previousWeekData.find(
-        (d) =>
-          d.date.getDate() === transactionDate.getDate() &&
-          d.date.getMonth() === transactionDate.getMonth() &&
-          d.date.getFullYear() === transactionDate.getFullYear(),
-      );
-      if (dayData) {
-        dayData.revenue += t.amountPaid;
-      }
-    });
-
-    const previousWeekTotal = previousWeekData.reduce((sum, d) => sum + d.revenue, 0);
-    const weekComparison =
-      previousWeekTotal > 0
-        ? ((currentWeekTotal - previousWeekTotal) / previousWeekTotal) * 100
-        : currentWeekTotal > 0
-          ? 100
-          : 0;
-
-    return {
-      total: currentWeekTotal,
-      average,
-      highest,
-      lowest,
-      weekComparison,
-      transactionCount: currentWeekTransactions,
-    };
-  }, [weeklyRevenueData, transactions]);
-
-  const trendStats = useMemo(() => {
-    const now = new Date();
-    const currentPeriodEnd = new Date(now);
-    const currentPeriodStart = new Date(new Date(now).setDate(now.getDate() - 30));
-
-    const prevPeriodEnd = new Date(currentPeriodStart);
-    prevPeriodEnd.setDate(prevPeriodEnd.getDate() - 1);
-    const prevPeriodStart = new Date(new Date(prevPeriodEnd).setDate(prevPeriodEnd.getDate() - 30));
-
-    const currentStats = calculateStats(transactions, currentPeriodStart, currentPeriodEnd);
-    const prevStats = calculateStats(transactions, prevPeriodStart, prevPeriodEnd);
-
-    const getTrend = (current: number, previous: number): TrendData => {
-      if (previous === 0) {
-        return current > 0
-          ? { trend: 'up', percentage: '100%' }
-          : { trend: 'neutral', percentage: '0%' };
-      }
-      const change = ((current - previous) / previous) * 100;
-      return {
-        trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
-        percentage: `${Math.abs(change).toFixed(0)}%`,
-      };
-    };
-
-    return {
-      completed: getTrend(currentStats.completed, prevStats.completed),
-      processing: getTrend(currentStats.processing, prevStats.processing),
-    };
-  }, [transactions]);
+  // Kasir & Operator: tampilan ringkas operasional; angka keuangan hanya untuk Admin.
+  const isStaff = !isAdminRole(currentUser?.role);
+  const canViewFinance = can(currentUser?.role, 'finance.view');
+  const canTakePayment = can(currentUser?.role, 'transaction.payment');
+  const canRecordExpense = can(currentUser?.role, 'expense.create');
 
   const lowStockStats = useMemo(() => {
     const lowItems = inventory.filter((i) => i.stock <= i.lowStockThreshold);
@@ -365,8 +121,6 @@ const Dashboard: React.FC = () => {
       items: lowItems,
     };
   }, [inventory]);
-
-  const lowStockItems = lowStockStats.total;
 
   const maintenanceDue = useMemo(() => {
     const now = new Date();
@@ -410,8 +164,6 @@ const Dashboard: React.FC = () => {
       upcoming: upcoming.length,
     };
   }, [maintenanceDue, scheduledMaintenances, assets]);
-
-  const maintenanceDueCount = maintenanceStats.total;
 
   const customerMap = useMemo(() => {
     return customers.reduce(
@@ -599,184 +351,18 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
-        {/* Trend Stats - Admin View */}
-        <div
-          id="dashboard-stats"
-          className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 ${isCashier ? 'hidden sm:grid' : 'grid'}`}
-        >
-          <Link to={`/transactions?status=${OrderStatus.Completed}`}>
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 sm:p-5 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors">
-              <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium mb-1">
-                Pesanan Selesai (30 hari)
-              </p>
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900 dark:text-green-100">
-                {
-                  transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Completed)
-                    .length
-                }
-              </p>
-              {trendStats.completed.trend !== 'neutral' && (
-                <div className="flex items-center gap-1 mt-1">
-                  {trendStats.completed.trend === 'up' ? (
-                    <ArrowTrendingUpIcon className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  ) : (
-                    <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
-                  )}
-                  <span
-                    className={`text-xs sm:text-sm font-semibold ${trendStats.completed.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                  >
-                    {trendStats.completed.percentage} vs 30 hari lalu
-                  </span>
-                </div>
-              )}
-            </div>
-          </Link>
-
-          <Link to={`/transactions?status=${OrderStatus.Processing}`}>
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-              <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
-                Pesanan Diproses
-              </p>
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100">
-                {
-                  transactions.filter((t: Transaction) => t.orderStatus === OrderStatus.Processing)
-                    .length
-                }
-              </p>
-              {trendStats.processing.trend !== 'neutral' && (
-                <div className="flex items-center gap-1 mt-1">
-                  {trendStats.processing.trend === 'up' ? (
-                    <ArrowTrendingUpIcon className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  ) : (
-                    <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
-                  )}
-                  <span
-                    className={`text-xs sm:text-sm font-semibold ${trendStats.processing.trend === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                  >
-                    {trendStats.processing.percentage} vs 30 hari lalu
-                  </span>
-                </div>
-              )}
-            </div>
-          </Link>
-
-          <Link to="/management/inventory?filter=low_stock">
-            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 sm:p-5 rounded-lg border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
-              <p className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 font-medium mb-1">
-                Stok Menipis
-              </p>
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-orange-900 dark:text-orange-100">
-                {lowStockItems}
-              </p>
-              {(lowStockStats.critical > 0 ||
-                lowStockStats.nearEmpty > 0 ||
-                lowStockStats.total > 0) && (
-                <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1">
-                  {lowStockStats.critical > 0
-                    ? `${lowStockStats.critical} item habis, ${lowStockStats.nearEmpty} kritis`
-                    : lowStockStats.nearEmpty > 0
-                      ? `${lowStockStats.nearEmpty} item mendekati habis`
-                      : `${lowStockStats.total} item perlu restock`}
-                </p>
-              )}
-            </div>
-          </Link>
-
-          <Link to="/management/assets?filter=maintenance_due">
-            <div className="bg-red-50 dark:bg-red-900/20 p-4 sm:p-5 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-              <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 font-medium mb-1">
-                Perawatan Terjadwal
-              </p>
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-900 dark:text-red-100">
-                {maintenanceDueCount}
-              </p>
-              {(maintenanceStats.overdue > 0 ||
-                maintenanceStats.dueToday > 0 ||
-                maintenanceStats.upcoming > 0) && (
-                <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mt-1">
-                  {maintenanceStats.overdue > 0
-                    ? `${maintenanceStats.overdue} terlambat, ${maintenanceStats.dueToday} hari ini`
-                    : maintenanceStats.dueToday > 0
-                      ? `${maintenanceStats.dueToday} jatuh tempo hari ini`
-                      : `${maintenanceStats.upcoming} dalam 7 hari ke depan`}
-                </p>
-              )}
-            </div>
-          </Link>
-
-          {/* Pendapatan 7 Hari Terakhir Stats - Hidden for Cashier */}
-          {!isCashier && (
-            <>
-              <div
-                id="dashboard-chart"
-                className="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-5 rounded-lg border border-blue-200 dark:border-blue-800"
-              >
-                <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
-                  Total Pendapatan (7 hari)
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100">
-                  Rp {weeklyStats.total.toLocaleString('id-ID')}
-                </p>
-                <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  {weeklyStats.transactionCount} transaksi
-                </p>
-              </div>
-
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 sm:p-5 rounded-lg border border-green-200 dark:border-green-800">
-                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium mb-1">
-                  Rata-rata/Hari
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900 dark:text-green-100">
-                  Rp {Math.round(weeklyStats.average).toLocaleString('id-ID')}
-                </p>
-                <div className="flex items-center gap-1 mt-1">
-                  {weeklyStats.weekComparison >= 0 ? (
-                    <ArrowTrendingUpIcon className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  ) : (
-                    <ArrowTrendingDownIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
-                  )}
-                  <span
-                    className={`text-xs sm:text-sm font-semibold ${
-                      weeklyStats.weekComparison >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }`}
-                  >
-                    {weeklyStats.weekComparison >= 0 ? '+' : ''}
-                    {weeklyStats.weekComparison.toFixed(1)}% vs minggu lalu
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 sm:p-5 rounded-lg border border-purple-200 dark:border-purple-800">
-                <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">
-                  Hari Tertinggi
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-900 dark:text-purple-100">
-                  Rp {weeklyStats.highest.revenue.toLocaleString('id-ID')}
-                </p>
-                <p className="text-xs sm:text-sm text-purple-700 dark:text-purple-300 mt-1">
-                  {weeklyStats.highest.day} ({weeklyStats.highest.transactionCount} transaksi)
-                </p>
-              </div>
-
-              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 sm:p-5 rounded-lg border border-orange-200 dark:border-orange-800">
-                <p className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 font-medium mb-1">
-                  Hari Terendah
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-orange-900 dark:text-orange-100">
-                  Rp {weeklyStats.lowest.revenue.toLocaleString('id-ID')}
-                </p>
-                <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mt-1">
-                  {weeklyStats.lowest.day} ({weeklyStats.lowest.transactionCount} transaksi)
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+        <DashboardStats
+          storeId={selectedStoreId}
+          activeOrders={activeOrders}
+          showFinance={canViewFinance}
+          showMoney={canTakePayment}
+          canManage={canViewFinance}
+          lowStock={lowStockStats}
+          maintenance={maintenanceStats}
+        />
 
         <div
-          className={`bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md ${isCashier ? 'hidden sm:block' : 'block'}`}
+          className={`bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-md ${isStaff ? 'hidden sm:block' : 'block'}`}
         >
           <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
             Aksi Cepat
@@ -787,34 +373,36 @@ const Dashboard: React.FC = () => {
               disabled={isActionDisabled}
               className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-teal-100 dark:bg-teal-900/50 flex-shrink-0">
-                <WrenchIcon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 dark:text-teal-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <WrenchIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
               </div>
               <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Update Stok
               </span>
             </button>
 
-            <button
-              onClick={() => setIsExpenseModalOpen(true)}
-              disabled={isActionDisabled}
-              className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
-            >
-              <div className="p-2 sm:p-3 rounded-full bg-purple-100 dark:bg-purple-900/50 flex-shrink-0">
-                <DollarSignIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
-                Catat Pengeluaran
-              </span>
-            </button>
+            {canRecordExpense && (
+              <button
+                onClick={() => setIsExpenseModalOpen(true)}
+                disabled={isActionDisabled}
+                className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
+              >
+                <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                  <DollarSignIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
+                </div>
+                <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
+                  Catat Pengeluaran
+                </span>
+              </button>
+            )}
 
             <button
               onClick={() => setIsMaintenanceModalOpen(true)}
               disabled={isActionDisabled}
               className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-800"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-orange-100 dark:bg-orange-900/50 flex-shrink-0">
-                <PlusCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <PlusCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
               </div>
               <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Lapor Kerusakan
@@ -825,8 +413,8 @@ const Dashboard: React.FC = () => {
               onClick={() => setIsWashSettingsModalOpen(true)}
               className="p-3 sm:p-4 rounded-lg border dark:border-slate-700 flex items-center gap-3 sm:gap-4 transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50"
             >
-              <div className="p-2 sm:p-3 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex-shrink-0">
-                <BookOpenIcon className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-2 sm:p-3 rounded-full bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                <BookOpenIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-300" />
               </div>
               <span className="font-semibold text-base sm:text-lg text-slate-700 dark:text-slate-200">
                 Panduan Mesin Cuci
@@ -886,25 +474,21 @@ const Dashboard: React.FC = () => {
                           {new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(t.orderStatus)}`}
-                          >
+                          <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                             {t.orderStatus}
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}
-                          >
+                          <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                             {t.paymentStatus}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            {t.paymentStatus !== PaymentStatus.Paid && (
+                            {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                               <button
                                 onClick={() => handleOpenPaymentModal(t)}
-                                className="inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 bg-green-600 hover:bg-green-700"
+                                className="btn btn-success btn-sm"
                                 title="Proses Pembayaran"
                               >
                                 <DollarSignIcon className="w-4 h-4" />
@@ -976,18 +560,14 @@ const Dashboard: React.FC = () => {
                           {formatTransactionId(t)}
                         </Link>
                       </div>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}
-                      >
+                      <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                         {t.paymentStatus}
                       </span>
                     </div>
                     <div className="mt-3 space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Status:</span>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(t.orderStatus)}`}
-                        >
+                        <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                           {t.orderStatus}
                         </span>
                       </div>
@@ -1002,10 +582,10 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
                       <div className="flex items-center justify-center gap-2">
-                        {t.paymentStatus !== PaymentStatus.Paid && (
+                        {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                           <button
                             onClick={() => handleOpenPaymentModal(t)}
-                            className="flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 bg-green-600 hover:bg-green-700"
+                            className="btn btn-success btn-sm flex-1"
                             title="Proses Pembayaran"
                           >
                             <DollarSignIcon className="w-4 h-4" />
@@ -1047,7 +627,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {!isCashier && (
+        {!isStaff && (
           <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
               Jadwal Perawatan Jatuh Tempo
@@ -1077,7 +657,7 @@ const Dashboard: React.FC = () => {
                           <button
                             onClick={() => handleMarkMaintenanceAsComplete(m)}
                             disabled={isActionDisabled}
-                            className="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-4 py-2 disabled:bg-green-400 disabled:cursor-not-allowed"
+                            className="btn btn-secondary btn-sm"
                             title={
                               isActionDisabled
                                 ? 'Pilih cabang spesifik untuk melakukan aksi ini.'

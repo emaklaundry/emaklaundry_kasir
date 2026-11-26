@@ -74,16 +74,10 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
       title={asset ? 'Edit Aset' : 'Tambah Aset Baru'}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
-          <button
-            onClick={handleSubmit}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-          >
+          <button onClick={handleSubmit} className="btn btn-primary">
             Simpan
           </button>
         </>
@@ -92,10 +86,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="name"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="name" className="form-label">
               Nama Aset
             </label>
             <input
@@ -104,15 +95,12 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="name"
               value={formData.name}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
           <div>
-            <label
-              htmlFor="serialNumber"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="serialNumber" className="form-label">
               Nomor Serial
             </label>
             <input
@@ -121,16 +109,13 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="serialNumber"
               value={formData.serialNumber}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="purchaseDate"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="purchaseDate" className="form-label">
               Tanggal Beli
             </label>
             <input
@@ -139,15 +124,12 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="purchaseDate"
               value={formData.purchaseDate}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
           <div>
-            <label
-              htmlFor="purchaseCost"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="purchaseCost" className="form-label">
               Biaya Beli (Rp)
             </label>
             <input
@@ -156,16 +138,13 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
               id="purchaseCost"
               value={formatRupiah(formData.purchaseCost)}
               onChange={handleChange}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               required
             />
           </div>
         </div>
         <div>
-          <label
-            htmlFor="status"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="status" className="form-label">
             Status
           </label>
           <select
@@ -173,7 +152,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
             id="status"
             value={formData.status}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           >
             <option value="Active">Aktif</option>
             <option value="Under Maintenance">Dalam Perbaikan</option>

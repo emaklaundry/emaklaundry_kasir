@@ -47,17 +47,14 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
         <div className="space-y-4">
           {/* Wash Type Selector */}
           <div>
-            <label
-              htmlFor="wash-type-select"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
+            <label htmlFor="wash-type-select" className="form-label">
               Pilih Jenis Cucian
             </label>
             <select
               id="wash-type-select"
               value={selectedWashType}
               onChange={(e) => setSelectedWashType(e.target.value as WashType)}
-              className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             >
               {washTypes.map((type) => (
                 <option key={type} value={type}>
@@ -76,17 +73,14 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
         <div className="space-y-4">
           {/* Machine Selector */}
           <div>
-            <label
-              htmlFor="machine-select"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
+            <label htmlFor="machine-select" className="form-label">
               Pilih Mesin Cuci
             </label>
             <select
               id="machine-select"
               value={selectedMachineId}
               onChange={(e) => setSelectedMachineId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
             >
               {washingMachines.map((machine) => (
                 <option key={machine.id} value={machine.id}>

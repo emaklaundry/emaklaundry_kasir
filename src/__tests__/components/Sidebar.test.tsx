@@ -50,35 +50,27 @@ describe('Sidebar', () => {
       'Pengeluaran',
     ]);
     expect(linksIn('SDM & Aset')).toEqual(['Karyawan', 'Absensi', 'Aset & Pemeliharaan']);
+    expect(linksIn('Laporan & Analisis')).toEqual(['Laporan', 'Pusat Bisnis']);
     expect(linksIn('Sistem & Keamanan')).toEqual([
-      'Pengguna',
+      'Akun Login',
       'Pengaturan',
       'Log Audit',
       'Backup & Restore',
     ]);
-    expect(linksIn('Bantuan & Panduan')).toEqual([
-      'SOP (Prosedur)',
-      'Panduan Bisnis',
-      'Dokumentasi',
-      'Bantuan / Tutorial',
-    ]);
+    expect(linksIn('Bantuan & Panduan')).toEqual(['SOP (Prosedur)', 'Bantuan / Tutorial']);
     // Cabang khusus Super Admin
     expect(screen.queryByRole('link', { name: 'Cabang' })).toBeNull();
   });
 
-  it('Kasir: hanya menu yang boleh diakses kasir', () => {
-    mockUser.role = 'Kasir';
+  it.each(['Kasir', 'Operator'])('%s: hanya menu operasional & bantuan', (role) => {
+    mockUser.role = role;
     renderSidebar();
     const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
-    expect(headings).toEqual(['Operasional Utama', 'Laporan & Analisis', 'Bantuan & Panduan']);
+    expect(headings).toEqual(['Operasional Utama', 'Bantuan & Panduan']);
     expect(linksIn('Operasional Utama')).toEqual(['Dashboard', 'Transaksi']);
-    expect(linksIn('Laporan & Analisis')).toEqual(['Kalkulator Bisnis']);
-    expect(linksIn('Bantuan & Panduan')).toEqual([
-      'Panduan Bisnis',
-      'Dokumentasi',
-      'Bantuan / Tutorial',
-    ]);
+    expect(linksIn('Bantuan & Panduan')).toEqual(['Bantuan / Tutorial']);
     expect(screen.queryByRole('link', { name: 'Karyawan' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Pusat Bisnis' })).toBeNull();
   });
 
   it('Super Admin melihat menu Cabang', () => {

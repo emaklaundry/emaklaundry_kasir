@@ -118,15 +118,12 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
       title="Laporkan Kerusakan Aset"
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
           <button
             onClick={handleSave}
-            className={`text-white font-medium rounded-lg text-lg px-6 py-3 ${!selectedAssetId || !formData.description ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-800'}`}
+            className="btn btn-primary"
             disabled={!selectedAssetId || !formData.description}
           >
             Simpan Laporan
@@ -136,10 +133,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     >
       <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
         <div>
-          <label
-            htmlFor="asset"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="asset" className="form-label">
             Pilih Aset
           </label>
           <select
@@ -147,7 +141,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             id="asset"
             value={selectedAssetId}
             onChange={handleAssetChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
           >
             {assets.map((asset) => (
               <option key={asset.id} value={asset.id}>
@@ -157,10 +151,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
           </select>
         </div>
         <div>
-          <label
-            htmlFor="date"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="date" className="form-label">
             Tanggal
           </label>
           <input
@@ -169,15 +160,12 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             id="date"
             value={formData.date.toISOString().split('T')[0]}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
         <div>
-          <label
-            htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="description" className="form-label">
             Deskripsi Kerusakan
           </label>
           <input
@@ -186,16 +174,13 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             id="description"
             value={formData.description}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             placeholder="Contoh: Mesin cuci bocor"
             required
           />
         </div>
         <div>
-          <label
-            htmlFor="cost"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="cost" className="form-label">
             Biaya Perbaikan (Rp)
           </label>
           <input
@@ -204,7 +189,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
             id="cost"
             value={formatRupiah(formData.cost)}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             placeholder="Opsional"
           />
         </div>

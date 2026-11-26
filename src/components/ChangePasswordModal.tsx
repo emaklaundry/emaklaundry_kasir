@@ -128,7 +128,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             type="button"
             onClick={handleClose}
             disabled={isChanging}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-base sm:text-lg px-5 py-3.5 sm:px-6 sm:py-3.5 touch-target dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50"
+            className="btn btn-secondary"
           >
             Batal
           </button>
@@ -136,7 +136,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             type="button"
             onClick={handleSubmit}
             disabled={isChanging}
-            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-base sm:text-lg px-5 py-3.5 sm:px-6 sm:py-3.5 touch-target disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary"
           >
             {isChanging ? (
               <>
@@ -172,10 +172,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Password Lama */}
         <div>
-          <label
-            htmlFor="currentPassword"
-            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="currentPassword" className="form-label">
             Password Lama <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -186,7 +183,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               value={formData.currentPassword}
               onChange={handleChange}
               disabled={isChanging}
-              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 input-mobile disabled:opacity-50"
+              className="form-input input-mobile"
               placeholder="Masukkan password lama"
               autoComplete="current-password"
             />
@@ -202,10 +199,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
         {/* Password Baru */}
         <div>
-          <label
-            htmlFor="newPassword"
-            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="newPassword" className="form-label">
             Password Baru <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -216,7 +210,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               value={formData.newPassword}
               onChange={handleChange}
               disabled={isChanging}
-              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 input-mobile disabled:opacity-50"
+              className="form-input input-mobile"
               placeholder="Minimal 6 karakter"
               autoComplete="new-password"
             />
@@ -233,10 +227,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
         {/* Konfirmasi Password Baru */}
         <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="confirmPassword" className="form-label">
             Konfirmasi Password Baru <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -247,7 +238,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               value={formData.confirmPassword}
               onChange={handleChange}
               disabled={isChanging}
-              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-base rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 input-mobile disabled:opacity-50"
+              className="form-input input-mobile"
               placeholder="Ketik ulang password baru"
               autoComplete="new-password"
             />

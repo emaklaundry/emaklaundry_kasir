@@ -41,19 +41,26 @@ function isTransaction(obj: unknown): obj is Transaction {
   );
 }
 
+// Nama kelas ditulis lengkap agar tidak terbuang oleh Tailwind.
+const STAT_TONE = {
+  positive: 'text-green-600 dark:text-green-400',
+  negative: 'text-red-600 dark:text-red-400',
+  neutral: 'text-slate-500 dark:text-slate-400',
+} as const;
+
 const StatCard: React.FC<{
   icon: React.FC<{ className?: string }>;
   title: string;
   value: string | number;
-  color: string;
-}> = ({ icon: Icon, title, value, color }) => (
-  <div
-    className={`bg-slate-50 dark:bg-slate-800 p-6 rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color} print-stat-card`}
-  >
-    <Icon className="w-10 h-10 text-slate-500 print-hide" />
-    <div>
+  tone?: keyof typeof STAT_TONE;
+}> = ({ icon: Icon, title, value, tone = 'neutral' }) => (
+  <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800 print-stat-card">
+    <Icon className={`h-10 w-10 flex-shrink-0 print-hide ${STAT_TONE[tone]}`} />
+    <div className="min-w-0">
       <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
-      <p className="text-3xl font-semibold text-slate-900 dark:text-white">{value}</p>
+      <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white xl:text-3xl">
+        {value}
+      </p>
     </div>
   </div>
 );
@@ -913,7 +920,7 @@ const ReportsPage: React.FC = () => {
             );
             window.print();
           }}
-          className="print-hide flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3"
+          className="btn btn-primary print-hide"
         >
           Cetak Laporan
         </button>
@@ -925,25 +932,24 @@ const ReportsPage: React.FC = () => {
               icon={DollarSignIcon}
               title="Total Pendapatan"
               value={`Rp ${formatRupiah(totalRevenue)}`}
-              color="border-green-500"
+              tone="positive"
             />
             <StatCard
               icon={DollarSignIcon}
               title="Total Pengeluaran"
               value={`Rp ${formatRupiah(totalExpenses)}`}
-              color="border-red-500"
+              tone="negative"
             />
             <StatCard
               icon={BarChartIcon}
               title="Laba Bersih"
               value={`Rp ${formatRupiah(netProfit)}`}
-              color="border-blue-500"
+              tone={netProfit >= 0 ? 'positive' : 'negative'}
             />
             <StatCard
               icon={PackageIcon}
               title="Total Transaksi"
               value={filteredData.transactions.length}
-              color="border-yellow-500"
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1174,13 +1180,7 @@ const ReportsPage: React.FC = () => {
                         </td>
                         <td className="px-4 py-2">
                           <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              e.category === 'Pembelian Aset'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                                : e.category === 'Pemeliharaan Aset'
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                  : 'bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200'
-                            }`}
+                            className={`badge ${e.category === 'Pembelian Aset' ? 'badge-info' : e.category === 'Pemeliharaan Aset' ? 'badge-warning' : 'badge-neutral'}`}
                           >
                             {e.category}
                           </span>

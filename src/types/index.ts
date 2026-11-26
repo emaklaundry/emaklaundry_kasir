@@ -37,6 +37,8 @@ export enum UserRole {
   SuperAdmin = 'Super Admin',
   Admin = 'Admin',
   Cashier = 'Kasir',
+  /** Petugas cuci/setrika: hanya mengerjakan progres pesanan, tanpa akses uang. */
+  Operator = 'Operator',
 }
 
 export type AssetStatus = 'Active' | 'Under Maintenance' | 'Decommissioned';
@@ -196,6 +198,8 @@ export interface User {
   storeId?: string;
   createdAt?: Date;
   isActive: boolean;
+  /** Diisi bila akun ini adalah login PIN milik karyawan (dipakai untuk absensi otomatis). */
+  employeeId?: string;
 }
 
 export interface AuditLog {

@@ -106,7 +106,7 @@ const CommandPalette: React.FC = () => {
         path: '/management/expenses',
       },
       {
-        title: 'Manajemen Pengguna',
+        title: 'Akun Login',
         icon: UsersIcon,
         section: 'Navigasi',
         keywords: 'user',
@@ -243,7 +243,7 @@ const CommandPalette: React.FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ketik perintah atau cari..."
-            className="w-full bg-transparent border-none focus:ring-0 text-lg text-slate-800 dark:text-slate-200 placeholder-slate-400"
+            className="w-full bg-transparent border-none text-lg text-slate-800 dark:text-slate-200 focus-visible:shadow-none"
             autoComplete="off"
           />
         </div>

@@ -42,16 +42,10 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({
       title={`Catatan untuk ${item.serviceName}`}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
-          <button
-            onClick={handleSave}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-          >
+          <button onClick={handleSave} className="btn btn-primary">
             Simpan Catatan
           </button>
         </>
@@ -66,10 +60,7 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({
       >
         {notes.map((n, i) => (
           <div key={i}>
-            <label
-              htmlFor={`note-${i}`}
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor={`note-${i}`} className="form-label">
               {`Item #${i + 1}`}
             </label>
             <input
@@ -79,7 +70,7 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({
               value={n.note}
               placeholder="Noda di kerah, sobek, dsb."
               onChange={(e) => handleNoteChange(i, e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input"
               aria-label={`Item #${i + 1}`}
               autoComplete="off"
             />

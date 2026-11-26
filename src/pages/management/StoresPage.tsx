@@ -207,11 +207,8 @@ const StoresPage: React.FC = () => {
       )}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Cabang</h1>
-        <button
-          onClick={() => handleOpenFormModal()}
-          className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-        >
-          <PlusCircleIcon className="h-5 w-5 mr-2" />
+        <button onClick={() => handleOpenFormModal()} className="btn btn-primary">
+          <PlusCircleIcon className="h-5 w-5" />
           Tambah Cabang
         </button>
       </div>
@@ -259,9 +256,7 @@ const StoresPage: React.FC = () => {
                   </td>
                   <td className="px-4 py-3">{store.address}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 text-sm font-medium rounded-full ${store.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
-                    >
+                    <span className={`badge ${store.isActive ? 'badge-success' : 'badge-neutral'}`}>
                       {store.isActive ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                   </td>
@@ -320,9 +315,7 @@ const StoresPage: React.FC = () => {
                   </p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">{store.address}</p>
                 </div>
-                <span
-                  className={`px-2 py-0.5 text-xs font-medium rounded-full ${store.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
-                >
+                <span className={`badge ${store.isActive ? 'badge-success' : 'badge-neutral'}`}>
                   {store.isActive ? 'Aktif' : 'Tidak Aktif'}
                 </span>
               </div>
@@ -376,11 +369,7 @@ const StoresPage: React.FC = () => {
           title={`${storeToToggle.isActive ? 'Nonaktifkan' : 'Aktifkan'} Cabang`}
           message={`Apakah Anda yakin ingin ${storeToToggle.isActive ? 'menonaktifkan' : 'mengaktifkan'} cabang "${storeToToggle.name}"?`}
           confirmText={storeToToggle.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-          confirmColor={
-            storeToToggle.isActive
-              ? 'bg-yellow-500 hover:bg-yellow-600'
-              : 'bg-green-500 hover:bg-green-600'
-          }
+          confirmVariant={storeToToggle.isActive ? 'danger' : 'primary'}
         />
       )}
 

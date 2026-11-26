@@ -64,6 +64,188 @@
   overscroll-behavior: contain;
 }
 
+/* --- ISIAN FORM & PERMUKAAN BROWSER ----------------------------------------
+ * Satu gaya fokus untuk semua isian (sebelumnya mayoritas memakai outline
+ * bawaan browser). `:where` menjaga spesifisitas nol, jadi kelas fokus khusus
+ * di komponen tetap bisa menimpa.
+ * ------------------------------------------------------------------------ */
+@layer base {
+  :where(
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+    select,
+    textarea
+  ) {
+    caret-color: rgb(var(--color-action-500));
+    transition:
+      border-color 120ms ease-out,
+      box-shadow 120ms ease-out;
+  }
+  :where(
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+    select,
+    textarea
+  ):focus-visible {
+    outline: none;
+    /* Garis 1px menutupi border apa pun dari kelas utilitas + halo lembut. */
+    box-shadow:
+      0 0 0 1px rgb(var(--color-action-500)),
+      0 0 0 4px rgb(var(--color-action-500) / 0.28);
+  }
+  html.dark
+    :where(
+      input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+      select,
+      textarea
+    ):focus-visible {
+    box-shadow:
+      0 0 0 1px rgb(var(--color-action-400)),
+      0 0 0 4px rgb(var(--color-action-400) / 0.35);
+  }
+  :where(input, select, textarea):disabled {
+    cursor: not-allowed;
+  }
+  :where(input, textarea)::placeholder {
+    /* slate-500: kontras ≥4.5:1 di atas putih & slate-50 */
+    color: rgb(100 116 139);
+    opacity: 1;
+  }
+  html.dark :where(input, textarea)::placeholder {
+    color: rgb(var(--text-secondary-dark));
+  }
+  :where(input[type='checkbox'], input[type='radio']):focus-visible {
+    outline: 2px solid rgb(var(--color-action-500));
+    outline-offset: 2px;
+  }
+
+  /* Angka rata di tabel (nominal Rupiah, jumlah) agar kolom mudah dibaca. */
+  :where(table) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Scrollbar mengikuti tema gelap aplikasi. */
+  html.dark {
+    scrollbar-color: rgb(var(--surface-border-strong-dark)) rgb(var(--surface-page-dark));
+  }
+}
+
+/* --- TOMBOL ---------------------------------------------------------------
+ * Satu sistem tombol untuk seluruh aplikasi. Pakai: `btn btn-primary`,
+ * `btn btn-secondary`, `btn btn-danger`, `btn btn-success`, `btn btn-ghost`,
+ * ditambah `btn-sm` untuk toolbar/baris tabel. Warna `blue-*` di proyek ini
+ * adalah oranye merek (lihat --color-action).
+ * ------------------------------------------------------------------------ */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-5 text-base font-semibold transition-colors duration-150;
+    min-height: 44px;
+  }
+  .btn:focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+  html.dark .btn:focus-visible {
+    --tw-ring-offset-color: rgb(var(--surface-raised-dark));
+  }
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    @apply cursor-not-allowed opacity-50;
+  }
+  .btn-lg {
+    @apply px-6 text-lg;
+    min-height: 52px;
+  }
+  .btn-sm {
+    @apply px-3.5 text-sm;
+    min-height: 40px;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 disabled:hover:bg-blue-600;
+  }
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 active:bg-slate-100 disabled:hover:bg-white;
+  }
+  /* Mode gelap memakai token permukaan aplikasi (abu netral), bukan slate kebiruan. */
+  html.dark .btn-secondary {
+    background-color: rgb(var(--surface-muted-dark));
+    border-color: rgb(var(--surface-border-control-dark));
+    color: rgb(var(--text-primary-dark));
+  }
+  html.dark .btn-secondary:hover:not(:disabled) {
+    background-color: rgb(var(--surface-border-dark));
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800 disabled:hover:bg-red-600;
+  }
+  .btn-success {
+    @apply bg-green-700 text-white hover:bg-green-800 active:bg-green-900 disabled:hover:bg-green-700;
+  }
+  .btn-ghost {
+    @apply text-slate-700 hover:bg-slate-100 active:bg-slate-200;
+  }
+  html.dark .btn-ghost {
+    color: rgb(var(--text-secondary-strong-dark));
+  }
+  html.dark .btn-ghost:hover:not(:disabled) {
+    background-color: rgb(var(--surface-muted-dark));
+  }
+  /* --- LABEL FORM ------------------------------------------------------- */
+  .form-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-800;
+  }
+  /* Kolom teks/angka/select/textarea standar. Fokus & caret diatur di @layer base. */
+  .form-input {
+    @apply block w-full rounded-lg border border-slate-300 bg-slate-50 p-3 text-base text-slate-900;
+  }
+  /* Remap `[class*=slate-…]` di layer utilities tidak menangkap kelas ini, jadi token gelap ditulis langsung. */
+  html.dark .form-label {
+    color: rgb(var(--text-primary-dark));
+  }
+  html.dark .form-input {
+    background-color: rgb(var(--surface-muted-dark));
+    border-color: rgb(var(--surface-border-control-dark));
+    color: rgb(var(--text-primary-dark));
+  }
+  .form-input:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  /* --- BADGE STATUS ------------------------------------------------------
+   * info = sedang berjalan, warning = perlu perhatian (siap diambil, sebagian),
+   * success = selesai/lunas, danger = belum lunas/rusak, neutral = lainnya.
+   * Pakai palet `sky` untuk info: `blue-*` di proyek ini adalah oranye merek.
+   * -------------------------------------------------------------------- */
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .badge-info {
+    @apply bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200;
+  }
+  .badge-warning {
+    @apply bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200;
+  }
+  .badge-success {
+    @apply bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200;
+  }
+  .badge-danger {
+    @apply bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200;
+  }
+  .badge-neutral {
+    @apply bg-slate-100 text-slate-700;
+  }
+  html.dark .badge-neutral {
+    background-color: rgb(var(--surface-border-strong-dark));
+    color: rgb(var(--text-secondary-strong-dark));
+  }
+
+  .btn-icon {
+    @apply px-0;
+    width: 44px;
+  }
+  .btn-icon.btn-sm {
+    width: 40px;
+  }
+}
+
 /* --- MOBILE OPTIMIZATIONS --- */
 @layer utilities {
   /* Improve touch targets for mobile */

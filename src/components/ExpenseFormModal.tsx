@@ -81,17 +81,13 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       title={expense ? 'Edit Pengeluaran' : 'Tambah Pengeluaran Baru'}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-            disabled={isSaving}
-          >
+          <button onClick={onClose} className="btn btn-secondary" disabled={isSaving}>
             Batal
           </button>
           <button
             type="submit"
             form="expense-form"
-            className="ml-2 text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-lg px-6 py-3 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="btn btn-primary ml-2"
             disabled={isSaving}
           >
             {isSaving ? 'Menyimpan...' : 'Simpan'}
@@ -101,10 +97,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     >
       <form id="expense-form" onSubmit={handleSubmit} className="space-y-6">
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="date"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="date" className="form-label">
             Tanggal
           </label>
           <input
@@ -113,15 +106,12 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
+            className="form-input"
             required
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="description"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="description" className="form-label">
             Deskripsi Pengeluaran
           </label>
           <input
@@ -131,15 +121,12 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             value={formData.description}
             onChange={handleChange}
             placeholder="Contoh: Beli deterjen, bayar listrik, dll."
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
+            className="form-input"
             required
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="category"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="category" className="form-label">
             Kategori
           </label>
           <select
@@ -147,7 +134,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             name="category"
             value={formData.category}
             onChange={handleChange}
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
+            className="form-input"
             required
           >
             {categoryOptions.map((cat) => (
@@ -158,10 +145,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           </select>
         </div>
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="amount"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="amount" className="form-label">
             Jumlah (Rp)
           </label>
           <input
@@ -171,7 +155,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             value={formatRupiah(formData.amount)}
             onChange={handleChange}
             placeholder="Contoh: 10000"
-            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg px-4 py-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500"
+            className="form-input"
             required
           />
         </div>

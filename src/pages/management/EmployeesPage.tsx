@@ -1,8 +1,10 @@
+import { Link } from 'react-router-dom';
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useEmployees } from '../../contexts/useEmployees';
 import { useUsers } from '../../contexts/UserContext';
 import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import Modal from '../../components/Modal';
 import EmployeeFormModal from '../../components/employees/EmployeeFormModal';
 import { Employee, EmployeeFormData, EmployeeRole } from '../../types/hrm';
@@ -14,6 +16,7 @@ import {
   UserIcon,
   ArrowDownIcon,
   SearchIcon,
+  SpinnerIcon,
 } from '../../components/icons';
 import { formatRupiah } from '../../utils/formatting';
 import { EMPLOYEE_ROLE_LABELS, formatSchedule } from '../../utils/employeeSchedule';
@@ -34,6 +37,7 @@ const mapUserRoleToEmployeeRole = (userRole: UserRole): EmployeeRole => {
     case UserRole.Admin:
     case UserRole.SuperAdmin:
       return 'admin';
+    case UserRole.Operator:
     default:
       return 'operator';
   }
@@ -43,13 +47,7 @@ const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
 
 const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => (
-  <span
-    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-      active
-        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-        : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
-    }`}
-  >
+  <span className={`badge ${active ? 'badge-success' : 'badge-neutral'}`}>
     {active ? 'Aktif' : 'Nonaktif'}
   </span>
 );
@@ -67,6 +65,7 @@ const EmployeesPage: React.FC = () => {
   const { users } = useUsers();
   const { currentUser, stores, selectedStoreId } = useAppContext();
   const { addToast } = useToasts();
+  const [confirm, confirmDialog] = useConfirmDialog();
 
   const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
   const ownStoreId = currentUser?.storeId ?? '';
@@ -179,9 +178,11 @@ const EmployeesPage: React.FC = () => {
     const nextActive = !employee.isActive;
     if (
       !nextActive &&
-      !window.confirm(
-        `Nonaktifkan ${employee.name}? Login-nya ditutup, data dan riwayatnya tetap tersimpan.`,
-      )
+      !(await confirm({
+        title: 'Nonaktifkan karyawan',
+        message: `Nonaktifkan ${employee.name}? Login-nya ditutup, data dan riwayatnya tetap tersimpan.`,
+        confirmText: 'Nonaktifkan',
+      }))
     )
       return;
     try {
@@ -201,8 +202,12 @@ const EmployeesPage: React.FC = () => {
   };
 
   const handleRevokeLogin = async (employee: Employee) => {
-    if (!window.confirm(`Cabut akses login ${employee.name}? PIN-nya tidak bisa dipakai lagi.`))
-      return;
+    const ok = await confirm({
+      title: 'Cabut akses login',
+      message: `Cabut akses login ${employee.name}? PIN-nya tidak bisa dipakai lagi.`,
+      confirmText: 'Cabut akses',
+    });
+    if (!ok) return;
     setIsSaving(true);
     try {
       await revokeEmployeeLogin(employee.id);
@@ -219,9 +224,11 @@ const EmployeesPage: React.FC = () => {
 
   const handleDelete = async (employee: Employee) => {
     if (
-      !window.confirm(
-        `Hapus permanen ${employee.name}? Riwayat absensi, kasbon, dan gaji karyawan ini ikut terhapus.\n\nUntuk karyawan yang berhenti, gunakan Nonaktifkan.`,
-      )
+      !(await confirm({
+        title: 'Hapus karyawan',
+        message: `Hapus permanen ${employee.name}? Riwayat absensi, kasbon, dan gaji karyawan ini ikut terhapus.\n\nUntuk karyawan yang berhenti, gunakan Nonaktifkan.`,
+        confirmText: 'Hapus permanen',
+      }))
     )
       return;
     try {
@@ -290,9 +297,22 @@ const EmployeesPage: React.FC = () => {
         id="employees-header"
         className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
-        <p className="text-slate-600 dark:text-slate-400">
-          {counts.active} aktif · {counts.inactive} nonaktif · {counts.canLogin} bisa login
-        </p>
+        <div>
+          <p className="text-slate-600 dark:text-slate-400">
+            {counts.active} aktif · {counts.inactive} nonaktif · {counts.canLogin} bisa login
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Data SDM (gaji, jadwal, absensi). Beri PIN agar karyawan bisa login — hak aksesnya
+            mengikuti posisi. Akun email dikelola di{' '}
+            <Link
+              to="/management/users"
+              className="font-medium text-blue-700 underline dark:text-blue-300"
+            >
+              Akun Login
+            </Link>
+            .
+          </p>
+        </div>
         <div className="flex gap-2">
           <button
             id="employees-import-btn"
@@ -301,13 +321,13 @@ const EmployeesPage: React.FC = () => {
             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2.5 font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 sm:flex-none touch-target"
           >
             <ArrowDownIcon className="h-5 w-5" />
-            Import dari Pengguna
+            Import dari Akun Login
           </button>
           <button
             id="employees-add-btn"
             type="button"
             onClick={() => openForm(null)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-blue-600 px-4 py-2.5 font-medium text-white hover:bg-brand-blue-700 sm:flex-none touch-target"
+            className="btn btn-primary flex-1 sm:flex-none"
           >
             <PlusCircleIcon className="h-5 w-5" />
             Tambah Karyawan
@@ -327,7 +347,7 @@ const EmployeesPage: React.FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari nama atau nomor HP"
-            className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="form-input py-2.5 pl-10 pr-3"
           />
         </div>
         {isSuperAdmin && (
@@ -339,7 +359,7 @@ const EmployeesPage: React.FC = () => {
               id="employee-store-filter"
               value={storeFilter}
               onChange={(e) => setStoreFilter(e.target.value)}
-              className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white md:w-48"
+              className="form-input px-3 py-2.5 md:w-48"
             >
               <option value="all">Semua cabang</option>
               {stores.map((store) => (
@@ -377,7 +397,7 @@ const EmployeesPage: React.FC = () => {
       <div id="employees-list">
         {isLoading ? (
           <div className="py-12 text-center" role="status">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-blue-500 border-t-transparent" />
+            <SpinnerIcon className="h-8 w-8 mx-auto block text-brand-blue-600 dark:text-brand-blue-400" />
             <p className="mt-3 text-slate-500">Memuat data karyawan…</p>
           </div>
         ) : visibleEmployees.length === 0 ? (
@@ -392,7 +412,7 @@ const EmployeesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => openForm(null)}
-                className="mt-4 rounded-lg bg-brand-blue-600 px-4 py-2 font-medium text-white hover:bg-brand-blue-700 touch-target"
+                className="btn btn-primary btn-sm mt-4"
               >
                 Tambah karyawan pertama
               </button>
@@ -520,7 +540,7 @@ const EmployeesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsImportOpen(false)}
-            className="rounded-lg bg-slate-100 px-4 py-2 font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
+            className="btn btn-secondary"
           >
             Tutup
           </button>
@@ -561,6 +581,7 @@ const EmployeesPage: React.FC = () => {
           )}
         </div>
       </Modal>
+      {confirmDialog}
     </div>
   );
 };

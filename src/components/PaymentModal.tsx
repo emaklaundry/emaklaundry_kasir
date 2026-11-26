@@ -136,7 +136,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-secondary"
             aria-label="Batalkan pembayaran"
           >
             Batal
@@ -144,10 +144,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={handleSave}
             disabled={disabled || isSaving || amountToPay <= 0 || amountToPay > remainingBalance}
-            className="flex justify-center items-center gap-2 text-white bg-blue-700 hover:bg-blue-800 active:bg-blue-900 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="btn btn-primary"
             type="button"
           >
-            {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin" />}
+            {isSaving && <SpinnerIcon className="w-5 h-5" />}
             <span>{isSaving ? 'Menyimpan...' : 'Simpan Pembayaran'}</span>
           </button>
         </>
@@ -170,9 +170,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
 
         <div>
-          <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
-            Metode Pembayaran
-          </label>
+          <label className="form-label">Metode Pembayaran</label>
           <div className="grid grid-cols-3 gap-2">
             {Object.values(PaymentMethod).map((m) => (
               <button
@@ -197,7 +195,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
         {/* Dynamic QRIS Display */}
         {method === PaymentMethod.QRIS && settings?.qrisStaticCode && (
-          <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
             <DynamicQRIS
               staticQRIS={settings.qrisStaticCode}
               amount={amountToPay}
@@ -220,10 +218,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         )}
 
         <div>
-          <label
-            htmlFor="amountToPay"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="amountToPay" className="form-label">
             Jumlah Bayar (Rp)
           </label>
           <input
@@ -232,17 +227,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             name="amountToPay"
             value={formatRupiah(amountToPay)}
             readOnly
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white opacity-70 cursor-not-allowed"
+            className="form-input text-lg opacity-70 cursor-not-allowed"
             autoComplete="off"
           />
         </div>
 
         {method === PaymentMethod.Cash && (
           <div>
-            <label
-              htmlFor="tenderedAmount"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="tenderedAmount" className="form-label">
               Uang Diterima (Rp)
             </label>
             <input
@@ -252,7 +244,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               disabled={isSaving}
               value={tenderedAmountStr}
               onChange={(e) => setTenderedAmountStr(formatRupiah(parseRupiah(e.target.value)))}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input text-lg"
               placeholder="Masukkan jumlah uang tunai"
               autoComplete="off"
             />

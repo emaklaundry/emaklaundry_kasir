@@ -131,7 +131,7 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                           type="button"
                           onClick={() => handleOpenKiloanTaggingModal(index)}
                           title="Tag Item Kiloan"
-                          className="p-2 text-purple-600 hover:text-purple-900 relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white relative rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
                           <TagIcon className="w-6 h-6" />
                           {item.taggedItems && (

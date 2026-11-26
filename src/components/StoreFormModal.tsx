@@ -31,16 +31,10 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
       title={store ? 'Edit Cabang' : 'Tambah Cabang Baru'}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 focus:outline-none hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 dark:hover:text-white"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
-          <button
-            onClick={handleSubmit}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-          >
+          <button onClick={handleSubmit} className="btn btn-primary">
             Simpan
           </button>
         </>
@@ -48,10 +42,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="name"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="name" className="form-label">
             Nama Cabang
           </label>
           <input
@@ -60,15 +51,12 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
             id="name"
             value={formData.name}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>
         <div>
-          <label
-            htmlFor="address"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="address" className="form-label">
             Alamat
           </label>
           <input
@@ -77,7 +65,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
             id="address"
             value={formData.address}
             onChange={handleChange}
-            className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="form-input"
             required
           />
         </div>

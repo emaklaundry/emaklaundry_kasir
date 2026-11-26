@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { NavLink } from 'react-router-dom';
 import useAppContext from '../../contexts/useAppContext';
-import { UserRole } from '../../types';
+import { isAdminRole } from '../../config/permissions';
 import { HomeIcon, UsersIcon, ShoppingCartIcon, BarChartIcon, BoltIcon } from '../icons';
 
 const NavItem: React.FC<{
@@ -30,11 +30,8 @@ const NavItem: React.FC<{
 
 const BottomNavBar: React.FC = () => {
   const { currentUser } = useAppContext();
-  // Robust role check (case-insensitive)
-  const isCashier = currentUser && currentUser.role === UserRole.Cashier;
-
-  // Hanya menu yang boleh diakses kasir
-  if (isCashier) {
+  // Kasir & Operator: hanya menu operasional
+  if (currentUser && !isAdminRole(currentUser.role)) {
     return (
       <nav
         aria-label="Navigasi utama"

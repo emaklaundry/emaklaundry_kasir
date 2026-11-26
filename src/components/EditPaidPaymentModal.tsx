@@ -78,21 +78,16 @@ const EditPaidPaymentModal: React.FC<EditPaidPaymentModalProps> = ({
       title={`Ubah Pembayaran: ${formatTransactionId(transaction)}`}
       footer={
         <>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button type="button" onClick={onClose} disabled={isSaving} className="btn btn-secondary">
             Batal
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={isSaving || isUnchanged}
-            className="flex justify-center items-center gap-2 text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary"
           >
-            {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin" />}
+            {isSaving && <SpinnerIcon className="w-5 h-5" />}
             <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
           </button>
         </>
@@ -151,10 +146,7 @@ const EditPaidPaymentModal: React.FC<EditPaidPaymentModalProps> = ({
 
         {method === PaymentMethod.Cash && (
           <div>
-            <label
-              htmlFor="editPaidTendered"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="editPaidTendered" className="form-label">
               Uang Diterima (Rp)
             </label>
             <input
@@ -168,7 +160,7 @@ const EditPaidPaymentModal: React.FC<EditPaidPaymentModalProps> = ({
                 setTenderedStr(formatRupiah(parseRupiah(e.target.value)));
                 setError(null);
               }}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="form-input text-lg"
             />
           </div>
         )}

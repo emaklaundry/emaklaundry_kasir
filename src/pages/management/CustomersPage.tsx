@@ -18,6 +18,7 @@ import { fetchCustomers, useCustomerMutations } from '../../contexts/CustomerCon
 import { useTransactions } from '../../contexts/TransactionContext';
 import useAppContext from '../../contexts/useAppContext';
 import CustomerFormModal from '../../components/CustomerFormModal';
+import { normalizePhone } from '../../utils/phone';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import { useSortableData } from '../../hooks/useSortableData';
@@ -157,16 +158,9 @@ const CustomersPage: React.FC = () => {
       return;
     }
     // Normalisasi nomor telepon hanya jika diisi
-    let phone = customerData.phone?.replace(/\D/g, '') || '';
+    // Format 08xxx sama dengan data yang sudah tersimpan, agar cek duplikat akurat.
+    const phone = normalizePhone(customerData.phone);
     if (phone) {
-      if (phone.startsWith('0')) {
-        phone = '62' + phone.substring(1);
-      } else if (phone.startsWith('62')) {
-        // sudah benar
-      } else if (phone.startsWith('8')) {
-        phone = '62' + phone;
-      }
-
       // Check for duplicate phone number hanya jika phone diisi
       const existingCustomers = customers.filter(
         (c) => c.storeId === storeId && c.phone === phone && c.id !== currentCustomer?.id,
@@ -560,9 +554,9 @@ const CustomersPage: React.FC = () => {
       <button
         onClick={() => handleOpenFormModal()}
         disabled={!canAddNewCustomer}
-        className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3.5 mx-auto disabled:bg-blue-400 disabled:cursor-not-allowed"
+        className="btn btn-primary mx-auto"
       >
-        <PlusCircleIcon className="h-5 w-5 mr-2" />
+        <PlusCircleIcon className="h-5 w-5" />
         Tambah Pelanggan
       </button>
     </EmptyState>
@@ -576,7 +570,7 @@ const CustomersPage: React.FC = () => {
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
-            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+            className="btn btn-secondary btn-sm"
             title="Download Template Excel"
           >
             <DownloadIcon className="w-4 h-4" />
@@ -595,7 +589,7 @@ const CustomersPage: React.FC = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={!canAddNewCustomer || isSaving}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            className="btn btn-secondary btn-sm"
             title="Import dari Excel"
           >
             <UploadIcon className="w-4 h-4" />
@@ -605,7 +599,7 @@ const CustomersPage: React.FC = () => {
           <button
             onClick={() => setIsGoogleImportModalOpen(true)}
             disabled={!canAddNewCustomer || isSaving}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed"
+            className="btn btn-secondary btn-sm"
             title="Import dari Google Contacts"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -620,7 +614,7 @@ const CustomersPage: React.FC = () => {
           <button
             onClick={handleSyncToGoogle}
             disabled={customers.length === 0 || isSyncing || isGoogleLoading}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 disabled:bg-indigo-300 disabled:cursor-not-allowed"
+            className="btn btn-secondary btn-sm"
             title="Sinkronisasi ke Google Contacts"
           >
             {isSyncing ? (
@@ -636,7 +630,7 @@ const CustomersPage: React.FC = () => {
           <button
             onClick={handleExportToExcel}
             disabled={customers.length === 0}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary btn-sm"
             title="Export ke Excel"
           >
             <DownloadIcon className="w-4 h-4" />
@@ -646,7 +640,7 @@ const CustomersPage: React.FC = () => {
           <button
             onClick={() => handleOpenFormModal()}
             disabled={!canAddNewCustomer}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary btn-sm"
           >
             Tambah Pelanggan
           </button>

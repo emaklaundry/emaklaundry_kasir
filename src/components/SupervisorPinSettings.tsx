@@ -8,8 +8,7 @@ import {
   setMySupervisorPin,
 } from '../utils/supervisorApproval';
 
-const inputClass =
-  'block w-full rounded-lg border border-slate-300 bg-white p-3 text-base text-slate-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white';
+const inputClass = 'form-input';
 
 /**
  * Admin / Super Admin mengatur PIN supervisor miliknya.
@@ -107,10 +106,7 @@ const SupervisorPinSettings: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isSaving}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label
-              htmlFor={pinId}
-              className="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor={pinId} className="form-label">
               {hasPin ? 'PIN baru' : 'PIN'} (6 angka)
             </label>
             <input
@@ -126,10 +122,7 @@ const SupervisorPinSettings: React.FC = () => {
             />
           </div>
           <div>
-            <label
-              htmlFor={confirmId}
-              className="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor={confirmId} className="form-label">
               Ulangi PIN
             </label>
             <input
@@ -146,10 +139,7 @@ const SupervisorPinSettings: React.FC = () => {
           </div>
         </div>
         <div>
-          <label
-            htmlFor={passwordId}
-            className="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor={passwordId} className="form-label">
             Password akun Anda
           </label>
           <input
@@ -167,11 +157,7 @@ const SupervisorPinSettings: React.FC = () => {
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="w-full rounded-lg bg-amber-600 px-5 py-3 font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto touch-target"
-        >
+        <button type="submit" disabled={isSaving} className="btn btn-primary w-full sm:w-auto">
           {isSaving ? 'Menyimpan…' : hasPin ? 'Ganti PIN' : 'Simpan PIN'}
         </button>
       </form>

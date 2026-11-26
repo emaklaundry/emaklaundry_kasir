@@ -9,9 +9,13 @@ interface ConfirmationModalProps {
   title: string;
   message: string;
   confirmText?: string;
-  confirmColor?: string;
+  /** `danger` untuk hapus/nonaktifkan, `primary` untuk aksi positif. */
+  confirmVariant?: 'danger' | 'primary';
   isConfirming?: boolean;
 }
+
+// Nama kelas ditulis lengkap agar terbaca Tailwind (kelas dinamis tidak ikut ter-build).
+const CONFIRM_CLASS = { danger: 'btn btn-danger', primary: 'btn btn-primary' } as const;
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   isOpen,
@@ -20,7 +24,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title,
   message,
   confirmText = 'Hapus',
-  confirmColor = 'bg-red-600 hover:bg-red-700',
+  confirmVariant = 'danger',
   isConfirming = false,
 }) => {
   return (
@@ -30,23 +34,22 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       title={title}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 dark:hover:text-white dark:focus-visible:ring-offset-slate-800"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
           <button
             onClick={onConfirm}
             disabled={isConfirming}
-            className={`flex justify-center items-center text-white ${confirmColor} font-medium rounded-lg text-lg px-6 py-3 disabled:opacity-75 disabled:cursor-wait`}
+            className={CONFIRM_CLASS[confirmVariant]}
           >
             {isConfirming ? <SpinnerIcon className="w-6 h-6" /> : confirmText}
           </button>
         </>
       }
     >
-      <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-300">{message}</p>
+      <p className="whitespace-pre-line text-lg leading-relaxed text-slate-500 dark:text-slate-300">
+        {message}
+      </p>
     </Modal>
   );
 };

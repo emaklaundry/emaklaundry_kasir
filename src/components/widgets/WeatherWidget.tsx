@@ -7,6 +7,7 @@ import {
   CloudLightningIcon,
   WindIcon,
   DropletsIcon,
+  AlertTriangleIcon,
 } from '../icons';
 
 interface WeatherData {
@@ -160,12 +161,12 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude, loca
   }, [latitude, longitude, locationName]);
 
   const getWeatherIcon = (code: number, isDay: boolean, sizeClass: string = 'w-10 h-10') => {
-    if (code >= 95) return <CloudLightningIcon className={`${sizeClass} text-purple-600`} />;
+    if (code >= 95) return <CloudLightningIcon className={`${sizeClass} text-amber-500`} />;
     if (code >= 51) return <CloudRainIcon className={`${sizeClass} text-blue-600`} />;
     if (code >= 45) return <WindIcon className={`${sizeClass} text-slate-400`} />;
     if (code <= 1)
       return isDay ? (
-        <SunIcon className={`${sizeClass} text-yellow-500`} />
+        <SunIcon className={`${sizeClass} text-amber-500`} />
       ) : (
         <SunIcon className={`${sizeClass} text-slate-400`} />
       );
@@ -188,84 +189,84 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude, loca
 
   if (loading)
     return (
-      <div className="p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm animate-pulse h-32"></div>
+      <div className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" />
     );
   if (error || !weather) return null;
 
   return (
-    <div className="bg-gradient-to-r from-blue-500 to-cyan-400 dark:from-blue-900 dark:to-cyan-900 rounded-xl shadow-lg p-5 text-white relative overflow-hidden">
+    <section
+      aria-label="Cuaca"
+      className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+    >
       {!isLocationSet && (
-        <div className="absolute top-0 left-0 right-0 bg-yellow-500/90 text-white text-xs font-bold px-4 py-1 text-center z-20 backdrop-blur-sm">
-          ⚠️ Lokasi belum diatur. Menampilkan cuaca default.
-        </div>
+        <p className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900 dark:border-amber-800/60 dark:bg-amber-900/30 dark:text-amber-200">
+          <AlertTriangleIcon className="h-4 w-4 flex-shrink-0" />
+          Lokasi belum diatur. Menampilkan cuaca default.
+        </p>
       )}
-      <div className="absolute top-0 right-0 -mr-4 -mt-4 opacity-20">
-        {getWeatherIcon(weather.weatherCode, weather.isDay, 'w-32 h-32')}
-      </div>
 
-      <div className="flex justify-between items-start z-10 relative mb-4">
-        <div>
-          <h3 className="font-semibold text-lg opacity-90 mb-1 flex items-center gap-2">
-            📍 {location?.name}
-          </h3>
-          <div className="flex items-center gap-3 my-2">
-            {getWeatherIcon(weather.weatherCode, weather.isDay)}
-            <div>
-              <p className="text-3xl font-bold">{weather.temperature}°C</p>
-              <p className="text-sm font-medium opacity-90">
-                {getWeatherDescription(weather.weatherCode)}
-              </p>
+      <div className="space-y-4 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-slate-700 dark:text-slate-200">{location?.name}</h3>
+            <div className="mt-2 flex items-center gap-3">
+              {getWeatherIcon(weather.weatherCode, weather.isDay)}
+              <div>
+                <p className="text-3xl font-bold tabular-nums text-slate-900 dark:text-white">
+                  {weather.temperature}°C
+                </p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {getWeatherDescription(weather.weatherCode)}
+                </p>
+              </div>
             </div>
           </div>
+
+          <div className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+            <p className="flex items-center gap-1.5">
+              <DropletsIcon className="h-4 w-4 text-slate-400" />
+              {weather.humidity}% Lembab
+            </p>
+            <p className="flex items-center gap-1.5">
+              <WindIcon className="h-4 w-4 text-slate-400" />
+              {weather.windSpeed} km/h Angin
+            </p>
+          </div>
         </div>
 
-        <div className="text-right text-sm space-y-1 opacity-90">
-          <div className="flex items-center justify-end gap-1">
-            <DropletsIcon className="w-4 h-4" />
-            <span>{weather.humidity}% Lembab</span>
-          </div>
-          <div className="flex items-center justify-end gap-1">
-            <WindIcon className="w-4 h-4" />
-            <span>{weather.windSpeed} km/h Angin</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Recommendation */}
-      <div className="mb-4">
-        <p className="text-sm font-bold bg-white/20 inline-block px-3 py-1 rounded-full backdrop-blur-sm">
-          💡 Saran: {dryingRecommendation}
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
+          <span className="font-semibold">Saran:</span> {dryingRecommendation}
         </p>
-      </div>
 
-      {/* Hourly Forecast Timeline */}
-      {hourlyForecast.length > 0 && (
-        <div className="pt-3 border-t border-white/20">
-          <p className="text-xs font-semibold opacity-80 mb-2 uppercase tracking-wider">
-            📅 Prakiraan Cuaca Buruk (24 Jam ke Depan)
+        <div className="border-t border-slate-200 pt-3 dark:border-slate-700">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Prakiraan Cuaca Buruk (24 Jam ke Depan)
           </p>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {hourlyForecast.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col items-center bg-black/20 rounded-lg p-2 min-w-[70px] backdrop-blur-sm"
-              >
-                <span className="text-xs font-bold mb-1">{item.time}</span>
-                {getWeatherIcon(item.code, true, 'w-6 h-6')}
-                <span className="text-[10px] mt-1 text-center leading-tight opacity-90">
-                  {getWeatherDescription(item.code)}
-                </span>
-              </div>
-            ))}
-          </div>
-          {hourlyForecast.length === 0 && (
-            <p className="text-sm opacity-90 italic">
-              ✅ Tidak ada prediksi hujan/mendung dalam 24 jam ke depan.
+          {hourlyForecast.length > 0 ? (
+            <ul className="flex gap-2 overflow-x-auto pb-1">
+              {hourlyForecast.map((item) => (
+                <li
+                  key={item.time}
+                  className="flex min-w-[72px] flex-col items-center rounded-lg border border-slate-200 p-2 dark:border-slate-700"
+                >
+                  <span className="mb-1 text-xs font-bold tabular-nums text-slate-700 dark:text-slate-200">
+                    {item.time}
+                  </span>
+                  {getWeatherIcon(item.code, true, 'h-6 w-6')}
+                  <span className="mt-1 text-center text-xs leading-tight text-slate-600 dark:text-slate-400">
+                    {getWeatherDescription(item.code)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Tidak ada prediksi hujan/mendung dalam 24 jam ke depan.
             </p>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </section>
   );
 };
 
