@@ -136,7 +136,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-secondary"
             aria-label="Batalkan pembayaran"
           >
             Batal
@@ -144,7 +144,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={handleSave}
             disabled={disabled || isSaving || amountToPay <= 0 || amountToPay > remainingBalance}
-            className="flex justify-center items-center gap-2 text-white bg-blue-700 hover:bg-blue-800 active:bg-blue-900 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="btn btn-primary"
             type="button"
           >
             {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin" />}
@@ -197,7 +197,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
         {/* Dynamic QRIS Display */}
         {method === PaymentMethod.QRIS && settings?.qrisStaticCode && (
-          <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
             <DynamicQRIS
               staticQRIS={settings.qrisStaticCode}
               amount={amountToPay}

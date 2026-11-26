@@ -44,7 +44,7 @@ Folder `supabase/` harus tetap di root proyek dengan nama itu: Supabase CLI hany
 | 8 | Biaya bulanan berulang (Listrik, Air, Wi-Fi) |
 | 9 | Profil karyawan & login PIN |
 | 10 | Kunci akses fungsi SECURITY DEFINER (cabut akses `anon`/client dari fungsi admin & trigger) |
-| 11 | PIN supervisor: tabel, RPC `set_my_supervisor_pin` / `request_supervisor_approval`. Trigger `enforce_supervisor_approval` masih dikomentari sampai UI PIN Kasir siap |
+| 11 | PIN supervisor: tabel, RPC `set_my_supervisor_pin` / `request_supervisor_approval`, trigger `enforce_supervisor_approval` (Kasir yang mengubah pembayaran nota Lunas wajib izin PIN; dikirim lewat `p_supervisor_approval_id` di `update_transaction_progress`) |
 | 12 | Karyawan: alamat, tanggal mulai, jam shift & hari kerja, toleransi terlambat, insentif bulanan. Aman dijalankan ulang |
 | 13 | QRIS statis toko: kolom `settings."qrisStaticCode"` + cek format. Aman dijalankan ulang |
 
@@ -117,7 +117,7 @@ Urutan saat rilis tergantung jenis perubahan:
   folder ini, lalu hapus file itu setelah dijalankan di production.
 
 Tidak ada perubahan yang menunggu. Production sama dengan `0.complete_setup.sql` versi 3.6.0
-(per 26 Nov 2026), kecuali trigger `enforce_supervisor_approval` yang memang belum diaktifkan.
+(per 26 Nov 2026).
 
 ---
 

@@ -108,11 +108,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             </div>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onAddNewCustomer}
-          className="flex-shrink-0 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3"
-        >
+        <button type="button" onClick={onAddNewCustomer} className="btn btn-success">
           <PlusCircleIcon className="w-5 h-5" />
         </button>
       </div>

@@ -1,3 +1,4 @@
+import { ROLE_DESCRIPTIONS, EMPLOYEE_TO_USER_ROLE } from '../../config/permissions';
 import React, { useState } from 'react';
 import Modal from '../Modal';
 import { Employee, EmployeeFormData, EmployeeRole, WorkDay } from '../../types/hrm';
@@ -10,7 +11,7 @@ import {
 } from '../../utils/employeeSchedule';
 
 const inputClass =
-  'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 focus:border-brand-blue-500 focus:ring-brand-blue-500 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white';
+  'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-white';
 const labelClass = 'mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300';
 
 interface EmployeeFormModalProps {
@@ -122,7 +123,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             type="submit"
             form="employee-form"
             disabled={isSaving}
-            className="rounded-lg bg-brand-blue-600 px-4 py-2.5 font-medium text-white hover:bg-brand-blue-700 disabled:opacity-60 touch-target"
+            className="btn btn-primary"
           >
             {isSaving ? 'Menyimpan…' : 'Simpan'}
           </button>
@@ -388,8 +389,12 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
         <Section title="Akun login">
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Karyawan masuk dengan memilih namanya di halaman login lalu mengetik PIN. Akses
-            sistemnya sebagai <strong>Kasir</strong> di cabang penempatan.
+            Karyawan masuk dengan memilih namanya di halaman login lalu mengetik PIN. Hak aksesnya
+            mengikuti posisi: <strong>{EMPLOYEE_ROLE_LABELS[form.role]}</strong> di cabang
+            penempatan.
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {ROLE_DESCRIPTIONS[EMPLOYEE_TO_USER_ROLE[form.role]].summary}
           </p>
           <p className="text-sm font-medium">
             Status:{' '}

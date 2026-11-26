@@ -53,10 +53,7 @@ const PWAUpdatePrompt: React.FC = () => {
             >
               Perbarui Sekarang
             </button>
-            <button
-              onClick={handleDismiss}
-              className="bg-blue-700 hover:bg-blue-800 text-white rounded px-4 py-2 text-sm transition-colors"
-            >
+            <button onClick={handleDismiss} className="btn btn-primary btn-sm">
               Nanti
             </button>
           </div>

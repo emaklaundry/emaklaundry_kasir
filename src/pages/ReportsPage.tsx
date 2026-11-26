@@ -913,7 +913,7 @@ const ReportsPage: React.FC = () => {
             );
             window.print();
           }}
-          className="print-hide flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3"
+          className="btn btn-primary print-hide"
         >
           Cetak Laporan
         </button>

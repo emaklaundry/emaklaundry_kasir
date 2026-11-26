@@ -60,18 +60,14 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       title={customer ? 'Edit Pelanggan' : 'Tambah Pelanggan Baru'}
       footer={
         <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button type="button" onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
           <button
             type="button"
             onClick={handleSubmit}
             disabled={disabled}
-            className="flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 w-32 disabled:bg-blue-400"
+            className="btn btn-primary w-32"
           >
             Simpan
           </button>

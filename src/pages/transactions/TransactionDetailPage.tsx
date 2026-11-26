@@ -15,6 +15,7 @@ import {
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import useAppContext from '../../contexts/useAppContext';
+import { can } from '../../config/permissions';
 import useToasts from '../../contexts/useToasts';
 import { savePayment } from '../../utils/paymentUpdate';
 import PaymentModal from '../../components/PaymentModal';
@@ -164,17 +165,14 @@ const TransactionDetailPage: React.FC = () => {
             {/*
             <button
               onClick={() => setIsHeaderWAOpen(true)}
-              className="flex items-center justify-center text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-4 py-3"
+              className="btn btn-primary"
               title="Kirim Struk WhatsApp"
             >
               <SendIcon className="h-5 w-5" />
             </button>
             */}
-            <Link
-              to={`/transactions/${transaction.id}/receipt`}
-              className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-            >
-              <PrinterIcon className="h-5 w-5 mr-2" />
+            <Link to={`/transactions/${transaction.id}/receipt`} className="btn btn-secondary">
+              <PrinterIcon className="h-5 w-5" />
               Cetak Struk
             </Link>
           </div>
@@ -409,9 +407,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
 
   const isKasir = currentUser?.role === 'Kasir';
-  const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
+  const canTakePayment = can(currentUser?.role, 'transaction.payment');
 
-  if (!isKasir && !isAdmin) return null;
+  if (!can(currentUser?.role, 'transaction.updateStatus')) return null;
 
   function handleOpenPaymentModal() {
     setIsPaymentOpen(true);
@@ -557,11 +555,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       )}
 
       {/* Tombol Bayar HANYA muncul jika BELUM Lunas */}
-      {transaction.paymentStatus !== PaymentStatus.Paid && (
+      {canTakePayment && transaction.paymentStatus !== PaymentStatus.Paid && (
         <button
           disabled={loading}
           onClick={handleOpenPaymentModal}
-          className="bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-green-400 disabled:cursor-not-allowed"
+          className="btn btn-success"
           title="Input Pembayaran"
         >
           Bayar
@@ -569,11 +567,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       )}
 
       {/* Koreksi pembayaran nota Lunas (Kasir butuh PIN supervisor) */}
-      {transaction.paymentStatus === PaymentStatus.Paid && (
+      {canTakePayment && transaction.paymentStatus === PaymentStatus.Paid && (
         <button
           disabled={loading}
           onClick={handleOpenEditPaid}
-          className="bg-white border border-slate-300 hover:bg-slate-100 text-slate-900 font-medium rounded-lg px-6 py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:text-white dark:border-slate-500 dark:hover:bg-slate-600"
+          className="btn btn-secondary"
           title={
             isKasir ? 'Ubah pembayaran (perlu PIN supervisor)' : 'Ubah metode atau uang diterima'
           }
@@ -589,7 +587,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           transaction.orderStatus === OrderStatus.Completed
         }
         onClick={handleMarkReady}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-yellow-300 disabled:cursor-not-allowed"
+        className="btn btn-secondary"
       >
         Tandai Siap Ambil
       </button>
@@ -601,7 +599,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           transaction.paymentStatus !== PaymentStatus.Paid
         }
         onClick={handleMarkCompleted}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-6 py-3 text-lg disabled:bg-blue-400 disabled:cursor-not-allowed"
+        className="btn btn-primary"
         title={
           transaction.paymentStatus !== PaymentStatus.Paid
             ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'

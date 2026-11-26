@@ -78,19 +78,14 @@ const EditPaidPaymentModal: React.FC<EditPaidPaymentModalProps> = ({
       title={`Ubah Pembayaran: ${formatTransactionId(transaction)}`}
       footer={
         <>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button type="button" onClick={onClose} disabled={isSaving} className="btn btn-secondary">
             Batal
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={isSaving || isUnchanged}
-            className="flex justify-center items-center gap-2 text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary"
           >
             {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin" />}
             <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>

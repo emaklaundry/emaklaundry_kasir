@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { User, UserRole, Store } from '@/types';
+import { ROLE_DESCRIPTIONS, ROLE_ORDER } from '../config/permissions';
 
 export interface NewUserCredentials {
   email: string;
@@ -45,7 +46,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
   const [credentials, setCredentials] = useState<NewUserCredentials>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const { addToast } = useToasts();
-  const availableRoles = Object.values(UserRole).filter(
+  const availableRoles = ROLE_ORDER.filter(
     (role) => !(isNew && isCreatorAdmin && role === UserRole.SuperAdmin),
   );
 
@@ -94,26 +95,20 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
     onSave({ ...finalData, name });
   };
 
-  const showStoreSelector = formData.role === UserRole.Admin || formData.role === UserRole.Cashier;
+  const showStoreSelector = formData.role !== UserRole.SuperAdmin;
+  const roleInfo = ROLE_DESCRIPTIONS[formData.role as UserRole];
 
   return (
     <Modal
       isOpen={true}
       onClose={onClose}
-      title={user ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}
+      title={user ? 'Edit Akun Login' : 'Tambah Akun Login'}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 focus:outline-none hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 dark:hover:text-white"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={disabled}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 disabled:bg-blue-400 disabled:cursor-not-allowed"
-          >
+          <button onClick={handleSubmit} disabled={disabled} className="btn btn-primary">
             {isNew ? 'Buat Akun' : 'Simpan'}
           </button>
         </>
@@ -205,7 +200,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             htmlFor="role"
             className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
           >
-            Peran
+            Peran (hak akses)
           </label>
           <select
             name="role"
@@ -214,6 +209,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             onChange={handleChange}
             className="bg-slate-50 border border-slate-300 text-slate-900 text-base rounded-lg block w-full p-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:bg-slate-200 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
             disabled={isEditingSuperAdmin}
+            aria-describedby="role-help"
           >
             {availableRoles.map((role) => (
               <option key={role} value={role}>
@@ -221,6 +217,19 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
               </option>
             ))}
           </select>
+          {roleInfo && (
+            <div
+              id="role-help"
+              className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-700/50 dark:text-slate-300"
+            >
+              <p className="font-medium text-slate-800 dark:text-slate-100">{roleInfo.summary}</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {roleInfo.can.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         {showStoreSelector && (
           <div>

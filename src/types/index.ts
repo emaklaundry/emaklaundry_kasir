@@ -37,6 +37,8 @@ export enum UserRole {
   SuperAdmin = 'Super Admin',
   Admin = 'Admin',
   Cashier = 'Kasir',
+  /** Petugas cuci/setrika: hanya mengerjakan progres pesanan, tanpa akses uang. */
+  Operator = 'Operator',
 }
 
 export type AssetStatus = 'Active' | 'Under Maintenance' | 'Decommissioned';

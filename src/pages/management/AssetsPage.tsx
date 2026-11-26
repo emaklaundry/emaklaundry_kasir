@@ -393,7 +393,7 @@ const AssetsPage: React.FC = () => {
           {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
-            className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+            className="btn btn-secondary btn-sm"
             title="Download Template Excel"
           >
             <DownloadIcon className="w-4 h-4" />
@@ -412,7 +412,7 @@ const AssetsPage: React.FC = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={!canAddNewAsset}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            className="btn btn-secondary btn-sm"
             title="Import dari Excel"
           >
             <UploadIcon className="w-4 h-4" />
@@ -422,7 +422,7 @@ const AssetsPage: React.FC = () => {
           <button
             onClick={handleExportToExcel}
             disabled={assets.length === 0}
-            className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary btn-sm"
             title="Export ke Excel"
           >
             <DownloadIcon className="w-4 h-4" />
@@ -431,7 +431,7 @@ const AssetsPage: React.FC = () => {
 
           <button
             onClick={() => handleOpenAssetForm()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary btn-sm"
             disabled={!canAddNewAsset}
           >
             Tambah Aset

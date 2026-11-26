@@ -86,7 +86,7 @@ const SupervisorPinModal: React.FC<SupervisorPinModalProps> = ({
             type="button"
             onClick={handleClose}
             disabled={isChecking}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-base px-5 py-3 touch-target dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600 disabled:opacity-50"
+            className="btn btn-secondary"
           >
             Batal
           </button>
@@ -94,7 +94,7 @@ const SupervisorPinModal: React.FC<SupervisorPinModalProps> = ({
             type="button"
             onClick={() => handleSubmit()}
             disabled={isChecking || pin.length !== 6}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-base px-5 py-3 touch-target disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="btn btn-primary"
           >
             {isChecking ? 'Memeriksa…' : 'Setujui'}
           </button>
@@ -134,7 +134,7 @@ const SupervisorPinModal: React.FC<SupervisorPinModalProps> = ({
             }}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className="block w-full rounded-lg border border-slate-300 bg-white p-3 text-center font-mono text-2xl tracking-[0.5em] text-slate-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="block w-full rounded-lg border border-slate-300 bg-white p-3 text-center font-mono text-2xl tracking-[0.5em] text-slate-900 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
           />
           {error && (
             <p id={errorId} role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">

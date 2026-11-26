@@ -9,7 +9,7 @@ import {
 } from '../utils/supervisorApproval';
 
 const inputClass =
-  'block w-full rounded-lg border border-slate-300 bg-white p-3 text-base text-slate-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white';
+  'block w-full rounded-lg border border-slate-300 bg-white p-3 text-base text-slate-900 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white';
 
 /**
  * Admin / Super Admin mengatur PIN supervisor miliknya.
@@ -167,11 +167,7 @@ const SupervisorPinSettings: React.FC = () => {
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="w-full rounded-lg bg-amber-600 px-5 py-3 font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto touch-target"
-        >
+        <button type="submit" disabled={isSaving} className="btn btn-primary w-full sm:w-auto">
           {isSaving ? 'Menyimpan…' : hasPin ? 'Ganti PIN' : 'Simpan PIN'}
         </button>
       </form>

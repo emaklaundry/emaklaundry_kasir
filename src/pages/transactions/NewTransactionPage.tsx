@@ -684,9 +684,9 @@ const NewTransactionPage: React.FC = () => {
                       ? true
                       : undefined
                   }
-                  className="w-full flex justify-center items-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-xl px-8 py-4 text-center transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                  className="btn btn-primary btn-lg w-full"
                 >
-                  {isSaving ? <SpinnerIcon className="w-7 h-7" /> : 'Simpan Transaksi'}
+                  {isSaving ? <SpinnerIcon className="w-6 h-6" /> : 'Simpan Transaksi'}
                 </button>
                 {currentUser &&
                   currentUser.role === UserRole.SuperAdmin &&

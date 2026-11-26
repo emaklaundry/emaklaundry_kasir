@@ -36,6 +36,16 @@ const jsonResponse = (
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
+// Peran akun login PIN mengikuti posisi karyawan (sama dengan
+// EMPLOYEE_TO_USER_ROLE di src/config/permissions.ts).
+const EMPLOYEE_LOGIN_ROLES: Record<string, string> = {
+  operator: 'Operator',
+  kasir: 'Kasir',
+  admin: 'Admin',
+};
+const loginRoleFor = (employeeRole: unknown) =>
+  (typeof employeeRole === 'string' && EMPLOYEE_LOGIN_ROLES[employeeRole]) || 'Operator';
+
 const isUuid = (value: unknown): value is string =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -84,7 +94,7 @@ serve(async (req) => {
 
     const { data: employee, error: employeeError } = await admin
       .from('employees')
-      .select('id, name, store_id, is_active')
+      .select('id, name, role, store_id, is_active')
       .eq('id', body.employeeId)
       .maybeSingle();
 
@@ -108,7 +118,7 @@ serve(async (req) => {
       const { error: authError } = await admin.auth.admin.updateUserById(account.auth_user_id, {
         user_metadata: {
           full_name: employee.name,
-          role: 'Kasir',
+          role: loginRoleFor(employee.role),
           store_id: employee.store_id,
         },
       });
@@ -118,7 +128,7 @@ serve(async (req) => {
         id: account.auth_user_id,
         employee_id: employee.id,
         name: employee.name,
-        role: 'Kasir',
+        role: loginRoleFor(employee.role),
         store_id: employee.store_id,
         isActive: employee.is_active,
       });
@@ -169,7 +179,7 @@ serve(async (req) => {
 
     const userMetadata = {
       full_name: employee.name,
-      role: 'Kasir',
+      role: loginRoleFor(employee.role),
       store_id: employee.store_id,
     };
     let authUserId = account?.auth_user_id;
@@ -207,7 +217,7 @@ serve(async (req) => {
       id: authUserId,
       employee_id: employee.id,
       name: employee.name,
-      role: 'Kasir',
+      role: loginRoleFor(employee.role),
       store_id: employee.store_id,
       isActive: true,
     });

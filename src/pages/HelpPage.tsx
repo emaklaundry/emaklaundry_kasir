@@ -88,7 +88,7 @@ const HelpPage: React.FC = () => {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari: bayar, struk, stok, PIN, karyawan…"
             autoComplete="off"
-            className="block w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-brand-blue-500 focus:ring-brand-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            className="block w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
           />
         </div>
 
@@ -167,7 +167,7 @@ const HelpPage: React.FC = () => {
               setQuery('');
               setActiveSection(ALL);
             }}
-            className="mt-4 rounded-lg bg-brand-blue-600 px-4 py-2 font-medium text-white hover:bg-brand-blue-700 touch-target"
+            className="btn btn-primary btn-sm mt-4"
           >
             Tampilkan semua topik
           </button>

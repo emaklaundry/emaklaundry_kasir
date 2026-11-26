@@ -136,11 +136,8 @@ const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       title="Kirim Notifikasi WhatsApp"
       footer={
         <>
-          <button
-            onClick={handleSend}
-            className="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-lg px-6 py-3 flex items-center"
-          >
-            <SendIcon className="w-5 h-5 mr-2" />
+          <button onClick={handleSend} className="btn btn-success">
+            <SendIcon className="w-5 h-5" />
             Kirim
           </button>
         </>

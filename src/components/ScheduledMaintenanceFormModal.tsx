@@ -75,16 +75,10 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
       title={schedule ? 'Edit Jadwal Perawatan' : 'Tambah Jadwal Perawatan'}
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
-          <button
-            onClick={handleSubmit}
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-          >
+          <button onClick={handleSubmit} className="btn btn-primary">
             Simpan
           </button>
         </>

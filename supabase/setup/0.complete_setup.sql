@@ -2430,5 +2430,77 @@ COMMENT ON COLUMN public.settings."qrisStaticCode" IS
   'Kode QRIS statis toko (EMVCo, diawali 000201). NULL = pembayaran QRIS tanpa QR dinamis.';
 
 -- ============================================
+-- SECTION 14: PERAN OPERATOR & HAK AKSES PER PERAN (Added Nov 2026)
+-- ============================================
+-- Peran akun: Operator < Kasir < Admin < Super Admin.
+--   Operator : kerjakan pesanan (ubah progres), update stok, lapor kerusakan.
+--              Tidak boleh membuat transaksi atau mengubah pembayaran.
+--   Kasir    : + transaksi baru, pembayaran, pelanggan, pengeluaran kecil.
+--   Admin    : + kelola cabang (laporan, pengeluaran bulanan, karyawan, dst).
+--   Super Admin : semua cabang.
+-- Akun login PIN karyawan kini mendapat peran sesuai posisi karyawan
+-- (operator/kasir/admin) lewat edge function manage-employee-login.
+-- Aman dijalankan ulang.
+
+-- 1. Admin boleh membuat/mengubah akun Operator di cabangnya.
+DROP POLICY IF EXISTS "Admins can manage profiles in their store" ON public.profiles;
+CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
+  FOR ALL
+  USING (
+    public.get_my_role() = 'Admin'
+    AND store_id = public.get_my_store_id()
+  )
+  WITH CHECK (
+    public.get_my_role() = 'Admin'
+    AND store_id = public.get_my_store_id()
+    AND role IN ('Admin', 'Kasir', 'Operator')
+  );
+
+-- 2. Operator: tidak boleh membuat nota dan tidak boleh menyentuh data pembayaran.
+--    Berlaku juga untuk RPC SECURITY DEFINER (update_transaction_progress,
+--    bulk_update_order_status) karena dicek di trigger, bukan di RLS.
+CREATE OR REPLACE FUNCTION public.guard_operator_transactions()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF public.get_my_role() IS DISTINCT FROM 'Operator' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    RAISE EXCEPTION 'Operator tidak dapat membuat transaksi'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW."paymentStatus" IS DISTINCT FROM OLD."paymentStatus"
+     OR NEW."paymentMethod" IS DISTINCT FROM OLD."paymentMethod"
+     OR NEW."amountPaid" IS DISTINCT FROM OLD."amountPaid"
+     OR NEW."change" IS DISTINCT FROM OLD."change"
+     OR NEW.total IS DISTINCT FROM OLD.total
+     OR NEW.discount IS DISTINCT FROM OLD.discount
+  THEN
+    RAISE EXCEPTION 'Operator tidak dapat mengubah pembayaran'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.guard_operator_transactions()
+  FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS guard_operator_transactions ON public.transactions;
+CREATE TRIGGER guard_operator_transactions
+  BEFORE INSERT OR UPDATE ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.guard_operator_transactions();
+
+COMMENT ON COLUMN public.profiles.role IS
+  'Peran akun: Operator, Kasir, Admin, atau Super Admin. Lihat src/config/permissions.ts.';
+
+-- ============================================
 -- END OF SETUP
 -- ============================================

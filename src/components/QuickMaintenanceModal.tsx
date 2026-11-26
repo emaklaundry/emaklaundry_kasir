@@ -118,15 +118,12 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
       title="Laporkan Kerusakan Aset"
       footer={
         <>
-          <button
-            onClick={onClose}
-            className="text-slate-900 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-lg px-6 py-3 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-500 dark:hover:bg-slate-600"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Batal
           </button>
           <button
             onClick={handleSave}
-            className={`text-white font-medium rounded-lg text-lg px-6 py-3 ${!selectedAssetId || !formData.description ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-800'}`}
+            className="btn btn-primary"
             disabled={!selectedAssetId || !formData.description}
           >
             Simpan Laporan

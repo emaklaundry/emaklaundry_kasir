@@ -12,6 +12,7 @@ import { AppProviders } from './contexts/AppProviders';
 import CommandPalette from './components/CommandPalette';
 import QuickActionsPage from './pages/QuickActionsPage';
 import MonthlyExpenseReminder from './components/MonthlyExpenseReminder';
+import { can, isAdminRole, type Permission } from './config/permissions';
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -34,16 +35,23 @@ const StoresPage = lazy(() => import('./pages/management/StoresPage'));
 const EmployeesPage = lazy(() => import('./pages/management/EmployeesPage'));
 const AttendancePage = lazy(() => import('./pages/management/AttendancePage'));
 const SOPPage = lazy(() => import('./pages/management/SOPPage'));
-const DocumentationPage = lazy(() => import('./pages/DocumentationPage'));
 const HelpPage = lazy(() => import('./pages/HelpPage'));
-const BusinessGuidePage = lazy(() => import('./pages/BusinessGuidePage'));
-const BusinessCalculatorPage = lazy(() => import('./pages/business/BusinessCalculatorPage'));
+const BusinessHubPage = lazy(() => import('./pages/business/BusinessHubPage'));
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAppContext();
   if (!currentUser) return <Navigate to="/login" />;
-  const isAdmin = currentUser.role === UserRole.SuperAdmin || currentUser.role === UserRole.Admin;
-  return isAdmin ? <>{children}</> : <Navigate to="/" />;
+  return isAdminRole(currentUser.role) ? <>{children}</> : <Navigate to="/" />;
+};
+
+/** Rute yang butuh hak tertentu (lihat config/permissions.ts). */
+const PermissionRoute: React.FC<{ permission: Permission; children: React.ReactNode }> = ({
+  permission,
+  children,
+}) => {
+  const { currentUser } = useAppContext();
+  if (!currentUser) return <Navigate to="/login" />;
+  return can(currentUser.role, permission) ? <>{children}</> : <Navigate to="/" />;
 };
 
 const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -110,7 +118,8 @@ const AppRoutes: React.FC = () => {
 
   return (
     <>
-      <MonthlyExpenseReminder />
+      {/* Isian pengeluaran bulanan (listrik, air, dll) hanya untuk Admin & Super Admin. */}
+      {can(currentUser.role, 'expense.monthly') && <MonthlyExpenseReminder />}
       <Layout>
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -119,7 +128,14 @@ const AppRoutes: React.FC = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/quick-actions" element={<QuickActionsPage />} />
             <Route path="/transactions" element={<TransactionPage />} />
-            <Route path="/transactions/new" element={<NewTransactionPage />} />
+            <Route
+              path="/transactions/new"
+              element={
+                <PermissionRoute permission="transaction.create">
+                  <NewTransactionPage />
+                </PermissionRoute>
+              }
+            />
             <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
             <Route path="/transactions/:id/details" element={<TransactionDetailPage />} />
             {/* Admin Routes */}
@@ -243,9 +259,21 @@ const AppRoutes: React.FC = () => {
                 </AdminRoute>
               }
             />
-            <Route path="/business-guide" element={<BusinessGuidePage />} />
-            <Route path="/business/calculator" element={<BusinessCalculatorPage />} />
-            <Route path="/docs" element={<DocumentationPage />} />
+            <Route
+              path="/business"
+              element={
+                <PermissionRoute permission="business.hub">
+                  <BusinessHubPage />
+                </PermissionRoute>
+              }
+            />
+            {/* Alamat lama — sekarang menjadi tab di Pusat Bisnis */}
+            <Route path="/business-guide" element={<Navigate to="/business" replace />} />
+            <Route
+              path="/business/calculator"
+              element={<Navigate to="/business?tab=kalkulator" replace />}
+            />
+            <Route path="/docs" element={<Navigate to="/business?tab=dokumentasi" replace />} />
             <Route path="/help" element={<HelpPage />} />
             {/* Tambahkan catch-all route di bawah ini */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -40,7 +40,7 @@ const isUuid = (value: unknown): value is string =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-const VALID_ROLES = ['Kasir', 'Admin', 'Super Admin'] as const;
+const VALID_ROLES = ['Operator', 'Kasir', 'Admin', 'Super Admin'] as const;
 type Role = (typeof VALID_ROLES)[number];
 
 serve(async (req) => {

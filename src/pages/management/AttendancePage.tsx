@@ -99,9 +99,9 @@ const AttendancePage: React.FC = () => {
             {activeEmployees.filter((e) => attendanceMap.get(e.id)?.clockIn).length}
           </p>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-          <p className="text-sm text-purple-600 dark:text-purple-400">Sudah Pulang</p>
-          <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+          <p className="text-sm text-slate-600 dark:text-slate-400">Sudah Pulang</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">
             {activeEmployees.filter((e) => attendanceMap.get(e.id)?.clockOut).length}
           </p>
         </div>
@@ -182,7 +182,7 @@ const AttendancePage: React.FC = () => {
                     {!hasClockedIn ? (
                       <button
                         onClick={() => handleClockIn(employee)}
-                        className="flex items-center gap-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium"
+                        className="btn btn-secondary btn-sm"
                       >
                         <ClockIcon className="w-4 h-4" />
                         Clock In
@@ -190,7 +190,7 @@ const AttendancePage: React.FC = () => {
                     ) : !hasClockedOut ? (
                       <button
                         onClick={() => handleClockOut(employee)}
-                        className="flex items-center gap-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium"
+                        className="btn btn-secondary btn-sm"
                       >
                         <ClockIcon className="w-4 h-4" />
                         Clock Out

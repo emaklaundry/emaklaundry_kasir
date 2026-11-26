@@ -62,7 +62,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
                     <button
                       type="button"
                       onClick={() => onAddService(service)}
-                      className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                      className="btn btn-primary btn-sm ml-4"
                     >
                       Tambah
                     </button>

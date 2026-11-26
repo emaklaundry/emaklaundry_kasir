@@ -151,7 +151,7 @@ const Header: React.FC<{
                     id="store-filter"
                     value={selectedStoreId}
                     onChange={(e) => setSelectedStoreId(e.target.value)}
-                    className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                   >
                     <option value="all">Semua Cabang</option>
                     {activeStores.map((store) => (
@@ -188,7 +188,7 @@ const Header: React.FC<{
                   </button>
                   <button
                     onClick={signOut}
-                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 active:bg-red-800 transition-colors text-sm font-medium touch-target min-w-[90px]"
+                    className="btn btn-secondary btn-sm"
                     aria-label="Logout"
                   >
                     Logout
@@ -216,7 +216,7 @@ const Header: React.FC<{
               id="store-filter-mobile"
               value={selectedStoreId}
               onChange={(e) => setSelectedStoreId(e.target.value)}
-              className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
             >
               <option value="all">Semua Cabang</option>
               {activeStores.map((store) => (

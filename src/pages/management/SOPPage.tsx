@@ -131,18 +131,12 @@ const SOPPage = () => {
           </div>
           <div className="flex gap-2">
             {isAdmin && (
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-              >
+              <button onClick={handleCreate} className="btn btn-success btn-sm">
                 <PlusIcon className="w-4 h-4" />
                 Tambah SOP
               </button>
             )}
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-blue-600 text-white rounded-lg hover:bg-brand-blue-700 transition-colors shadow-sm"
-            >
+            <button onClick={handlePrint} className="btn btn-primary btn-sm">
               <PrinterIcon className="w-4 h-4" />
               Cetak A4
             </button>
@@ -174,7 +168,7 @@ const SOPPage = () => {
                     type="text"
                     value={editForm.title || ''}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-600"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                     placeholder="Contoh: Penerimaan Laundry Kiloan"
                   />
                 </div>
@@ -185,7 +179,7 @@ const SOPPage = () => {
                     list="categories"
                     value={editForm.category || ''}
                     onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue-600"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                     placeholder="Contoh: Kasir, Produksi, Umum"
                   />
                   <datalist id="categories">
@@ -214,7 +208,7 @@ const SOPPage = () => {
                     rows={12}
                     value={editForm.content || ''}
                     onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue-600"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-sans text-sm"
                     placeholder="Tulis langkah-langkah SOP di sini..."
                   ></textarea>
                   <p className="text-xs text-slate-500 mt-1">Tekan Enter untuk baris baru.</p>
@@ -227,10 +221,7 @@ const SOPPage = () => {
                 >
                   Batal
                 </button>
-                <button
-                  onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-2 bg-brand-blue-600 text-white rounded-lg hover:bg-brand-blue-700 shadow-sm"
-                >
+                <button onClick={handleSave} className="btn btn-primary btn-sm">
                   <SaveIcon className="w-4 h-4" />
                   Simpan
                 </button>

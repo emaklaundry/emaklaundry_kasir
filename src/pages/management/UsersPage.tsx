@@ -17,6 +17,58 @@ import UserFormModal, { NewUserCredentials } from '../../components/UserFormModa
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import { User, UserRole } from '@/types';
+import { Link } from 'react-router-dom';
+import { ROLE_DESCRIPTIONS, ROLE_ORDER } from '../../config/permissions';
+
+/** Penjelasan singkat Akun Login vs Karyawan + hak akses tiap peran. */
+const AccessGuide: React.FC = () => (
+  <details className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+    <summary className="cursor-pointer select-none font-semibold text-blue-900 dark:text-blue-200">
+      Akun Login vs Karyawan, dan hak akses tiap peran
+    </summary>
+    <div className="mt-3 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-md bg-white p-3 dark:bg-slate-800">
+          <p className="font-semibold text-slate-900 dark:text-white">Akun Login (halaman ini)</p>
+          <p className="mt-1">
+            Siapa yang bisa masuk ke aplikasi memakai email &amp; password. Peran akun menentukan
+            menu dan tombol yang muncul.
+          </p>
+        </div>
+        <div className="rounded-md bg-white p-3 dark:bg-slate-800">
+          <p className="font-semibold text-slate-900 dark:text-white">Karyawan</p>
+          <p className="mt-1">
+            Data SDM: gaji, jadwal, absensi. Karyawan tidak otomatis bisa login. Untuk staf tanpa
+            email, beri PIN di{' '}
+            <Link
+              to="/management/employees"
+              className="font-medium text-blue-700 underline dark:text-blue-300"
+            >
+              menu Karyawan
+            </Link>
+            ; peran akunnya mengikuti posisi karyawan (Operator/Kasir/Admin). Akun PIN tidak tampil
+            di daftar ini.
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {ROLE_ORDER.map((role) => (
+          <div key={role} className="rounded-md bg-white p-3 dark:bg-slate-800">
+            <p className="font-semibold text-slate-900 dark:text-white">{role}</p>
+            <p className="mt-1 text-slate-600 dark:text-slate-400">
+              {ROLE_DESCRIPTIONS[role].summary}
+            </p>
+            <ul className="mt-2 list-disc space-y-0.5 pl-5">
+              {ROLE_DESCRIPTIONS[role].can.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </details>
+);
 
 const UsersPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();
@@ -32,7 +84,7 @@ const UsersPage: React.FC = () => {
   const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<
-    'all' | 'superadmin' | 'admin' | 'kasir' | 'active' | 'inactive'
+    'all' | 'superadmin' | 'admin' | 'kasir' | 'operator' | 'active' | 'inactive'
   >('all');
 
   const handleOpenFormModal = (user: User | null = null) => {
@@ -159,6 +211,8 @@ const UsersPage: React.FC = () => {
       filtered = filtered.filter((user) => user.role === UserRole.Admin);
     } else if (roleFilter === 'kasir') {
       filtered = filtered.filter((user) => user.role === UserRole.Cashier);
+    } else if (roleFilter === 'operator') {
+      filtered = filtered.filter((user) => user.role === UserRole.Operator);
     } else if (roleFilter === 'active') {
       filtered = filtered.filter((user) => user.isActive === true);
     } else if (roleFilter === 'inactive') {
@@ -184,14 +238,18 @@ const UsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Manajemen Pengguna</h1>
-        <button
-          onClick={handleAddUser}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Tambah Pengguna
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Akun Login</h1>
+          <p className="text-slate-600 dark:text-slate-400">
+            Akun email untuk masuk aplikasi beserta hak aksesnya.
+          </p>
+        </div>
+        <button onClick={handleAddUser} className="btn btn-primary btn-sm self-start">
+          Tambah Akun
         </button>
       </div>
+
+      <AccessGuide />
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -200,7 +258,7 @@ const UsersPage: React.FC = () => {
             type="text"
             id="user-search"
             name="user-search"
-            placeholder="Cari pengguna..."
+            placeholder="Cari akun..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -214,10 +272,11 @@ const UsersPage: React.FC = () => {
           onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
         >
-          <option value="all">Semua Pengguna</option>
+          <option value="all">Semua Akun</option>
           <option value="superadmin">Super Admin</option>
           <option value="admin">Admin</option>
           <option value="kasir">Kasir</option>
+          <option value="operator">Operator</option>
           <option value="active">Aktif</option>
           <option value="inactive">Tidak Aktif</option>
         </select>
@@ -434,11 +493,7 @@ const UsersPage: React.FC = () => {
           title={`${userToToggleStatus.isActive ? 'Nonaktifkan' : 'Aktifkan'} Pengguna`}
           message={`Apakah Anda yakin ingin ${userToToggleStatus.isActive ? 'menonaktifkan' : 'mengaktifkan'} pengguna "${userToToggleStatus.name}"?`}
           confirmText={userToToggleStatus.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-          confirmColor={
-            userToToggleStatus.isActive
-              ? 'bg-yellow-500 hover:bg-yellow-600'
-              : 'bg-green-500 hover:bg-green-600'
-          }
+          confirmVariant={userToToggleStatus.isActive ? 'danger' : 'primary'}
         />
       )}
     </div>

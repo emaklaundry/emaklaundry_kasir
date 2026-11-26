@@ -9,6 +9,7 @@ import { useExpenses } from '../contexts/ExpenseContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
 import { UserRole, Expense } from '@/types';
+import { can, type Permission } from '@/config/permissions';
 import {
   PlusIcon,
   ReceiptIcon,
@@ -44,38 +45,44 @@ const QuickActionsPage: React.FC = () => {
     setIsExpenseModalOpen(false);
   };
 
-  const actions = [
+  const allActions: {
+    label: string;
+    icon: React.FC<{ className?: string }>;
+    color: string;
+    onClick?: () => void;
+    to?: string;
+    permission?: Permission;
+  }[] = [
     {
       label: 'Update Stok',
+      permission: 'inventory.quickUpdate',
       icon: WrenchIcon,
       color: 'bg-teal-500 hover:bg-teal-600',
       onClick: () => setIsStockModalOpen(true),
-      modal: null,
     },
     {
       label: 'Catat Pengeluaran',
+      permission: 'expense.create',
       icon: DollarSignIcon,
       color: 'bg-purple-500 hover:bg-purple-600',
       onClick: () => setIsExpenseModalOpen(true),
-      modal: null,
     },
     {
       label: 'Lapor Kerusakan',
+      permission: 'maintenance.report',
       icon: PlusCircleIcon,
       color: 'bg-orange-500 hover:bg-orange-600',
       onClick: () => setIsMaintenanceModalOpen(true),
-      modal: null,
     },
     {
       label: 'Panduan Mesin Cuci',
       icon: BookOpenIcon,
       color: 'bg-indigo-500 hover:bg-indigo-600',
       onClick: () => setIsWashSettingsModalOpen(true),
-      modal: null,
     },
-    // ...existing actions for navigation
     {
       label: 'Transaksi Baru',
+      permission: 'transaction.create',
       to: '/transactions/new',
       icon: PlusIcon,
       color: 'bg-blue-600 hover:bg-blue-700',
@@ -87,6 +94,9 @@ const QuickActionsPage: React.FC = () => {
       color: 'bg-green-600 hover:bg-green-700',
     },
   ];
+  const actions = allActions.filter(
+    (action) => !action.permission || can(currentUser?.role, action.permission),
+  );
 
   return (
     <div className="p-3 sm:p-4">

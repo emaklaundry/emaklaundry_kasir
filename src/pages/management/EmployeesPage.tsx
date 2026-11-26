@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useEmployees } from '../../contexts/useEmployees';
 import { useUsers } from '../../contexts/UserContext';
@@ -34,6 +35,7 @@ const mapUserRoleToEmployeeRole = (userRole: UserRole): EmployeeRole => {
     case UserRole.Admin:
     case UserRole.SuperAdmin:
       return 'admin';
+    case UserRole.Operator:
     default:
       return 'operator';
   }
@@ -290,9 +292,22 @@ const EmployeesPage: React.FC = () => {
         id="employees-header"
         className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
-        <p className="text-slate-600 dark:text-slate-400">
-          {counts.active} aktif · {counts.inactive} nonaktif · {counts.canLogin} bisa login
-        </p>
+        <div>
+          <p className="text-slate-600 dark:text-slate-400">
+            {counts.active} aktif · {counts.inactive} nonaktif · {counts.canLogin} bisa login
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Data SDM (gaji, jadwal, absensi). Beri PIN agar karyawan bisa login — hak aksesnya
+            mengikuti posisi. Akun email dikelola di{' '}
+            <Link
+              to="/management/users"
+              className="font-medium text-blue-700 underline dark:text-blue-300"
+            >
+              Akun Login
+            </Link>
+            .
+          </p>
+        </div>
         <div className="flex gap-2">
           <button
             id="employees-import-btn"
@@ -301,13 +316,13 @@ const EmployeesPage: React.FC = () => {
             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2.5 font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 sm:flex-none touch-target"
           >
             <ArrowDownIcon className="h-5 w-5" />
-            Import dari Pengguna
+            Import dari Akun Login
           </button>
           <button
             id="employees-add-btn"
             type="button"
             onClick={() => openForm(null)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-blue-600 px-4 py-2.5 font-medium text-white hover:bg-brand-blue-700 sm:flex-none touch-target"
+            className="btn btn-primary flex-1 sm:flex-none"
           >
             <PlusCircleIcon className="h-5 w-5" />
             Tambah Karyawan
@@ -392,7 +407,7 @@ const EmployeesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => openForm(null)}
-                className="mt-4 rounded-lg bg-brand-blue-600 px-4 py-2 font-medium text-white hover:bg-brand-blue-700 touch-target"
+                className="btn btn-primary btn-sm mt-4"
               >
                 Tambah karyawan pertama
               </button>

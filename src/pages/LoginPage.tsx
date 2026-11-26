@@ -136,7 +136,7 @@ const LoginPage: React.FC = () => {
                   placeholder="nama@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/20 transition-all outline-none"
+                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 transition-all outline-none"
                   required
                 />
               </div>
@@ -155,7 +155,7 @@ const LoginPage: React.FC = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/20 transition-all outline-none"
+                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 transition-all outline-none"
                   required
                 />
               </div>
@@ -263,7 +263,7 @@ const LoginPage: React.FC = () => {
                     setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
                     setError(null);
                   }}
-                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all outline-none"
+                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-all outline-none"
                   required
                 />
               </div>
@@ -277,7 +277,7 @@ const LoginPage: React.FC = () => {
               )}
               <button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3.5 rounded-lg shadow-md disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+                className="btn btn-primary btn-lg w-full"
                 disabled={loading || profilesLoading || profiles.length === 0}
               >
                 {loading ? 'Memproses...' : 'Masuk'}

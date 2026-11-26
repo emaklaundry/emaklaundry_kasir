@@ -11,13 +11,12 @@ import {
   HistoryIcon,
   TruckIcon,
   DatabaseIcon,
-  BookOpenIcon,
   HelpCircleIcon,
   ArrowTrendingUpIcon,
-  CalculatorIcon,
   FileTextIcon,
 } from '../components/icons';
 import { UserRole } from '../types';
+import { isAdminRole } from './permissions';
 
 export interface NavItem {
   path: string;
@@ -73,14 +72,19 @@ export const navSections: NavSection[] = [
     title: 'Laporan & Analisis',
     items: [
       { path: '/reports', label: 'Laporan', icon: BarChartIcon, adminOnly: true },
-      { path: '/business/calculator', label: 'Kalkulator Bisnis', icon: CalculatorIcon },
+      {
+        path: '/business',
+        label: 'Pusat Bisnis',
+        icon: ArrowTrendingUpIcon,
+        adminOnly: true,
+      },
     ],
   },
   {
     title: 'Sistem & Keamanan',
     items: [
       { path: '/management/stores', label: 'Cabang', icon: TruckIcon, superAdminOnly: true },
-      { path: '/management/users', label: 'Pengguna', icon: UsersIcon, adminOnly: true },
+      { path: '/management/users', label: 'Akun Login', icon: UsersIcon, adminOnly: true },
       { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
       { path: '/audit-log', label: 'Log Audit', icon: HistoryIcon, adminOnly: true },
       {
@@ -95,18 +99,17 @@ export const navSections: NavSection[] = [
     title: 'Bantuan & Panduan',
     items: [
       { path: '/management/sop', label: 'SOP (Prosedur)', icon: FileTextIcon, adminOnly: true },
-      { path: '/business-guide', label: 'Panduan Bisnis', icon: ArrowTrendingUpIcon },
-      { path: '/docs', label: 'Dokumentasi', icon: BookOpenIcon },
       { path: '/help', label: 'Bantuan / Tutorial', icon: HelpCircleIcon },
     ],
   },
 ];
 
-/** Kasir hanya melihat menu tanpa `adminOnly`; `superAdminOnly` khusus Super Admin. */
+/**
+ * Kasir & Operator hanya melihat menu tanpa `adminOnly`; `superAdminOnly` khusus Super Admin.
+ * Rincian hak per peran ada di `config/permissions.ts`.
+ */
 export function canSeeNavItem(item: NavItem, role: UserRole | string | undefined): boolean {
-  const isSuperAdmin = role === UserRole.SuperAdmin;
-  const isAdmin = isSuperAdmin || role === UserRole.Admin;
-  if (item.superAdminOnly) return isSuperAdmin;
-  if (item.adminOnly) return isAdmin;
+  if (item.superAdminOnly) return role === UserRole.SuperAdmin;
+  if (item.adminOnly) return isAdminRole(role);
   return true;
 }

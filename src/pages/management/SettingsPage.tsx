@@ -170,7 +170,7 @@ const SettingsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsPasswordModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm sm:text-base transition-colors touch-target"
+          className="btn btn-secondary btn-sm"
         >
           <KeyIcon className="w-5 h-5" />
           <span className="hidden sm:inline">Ubah Password</span>
@@ -299,7 +299,7 @@ const SettingsPage: React.FC = () => {
             </div>
 
             {formData?.isMaintenanceMode && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 p-4 rounded-lg">
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
                   <div className="flex-1">
@@ -382,9 +382,9 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {/* QRIS Dynamic Settings */}
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-6 space-y-4">
+        <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/40">
           <div className="flex items-center gap-3 mb-4">
-            <div className="bg-purple-500 rounded-full p-2">
+            <div className="rounded-full bg-blue-600 p-2">
               <svg
                 className="h-6 w-6 text-white"
                 fill="none"
@@ -422,7 +422,7 @@ const SettingsPage: React.FC = () => {
               disabled={isSaving}
               rows={3}
               placeholder="Scan QRIS stiker Anda dan paste kode string di sini (format: 00020101021126...)"
-              className="bg-white dark:bg-slate-700 border border-purple-200 dark:border-purple-700 text-slate-900 dark:text-white text-sm rounded-lg block w-full p-3 font-mono"
+              className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg block w-full p-3 font-mono"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
               💡 Cara mendapatkan kode: Scan QRIS stiker Anda dengan aplikasi scanner QR, lalu copy
@@ -439,11 +439,7 @@ const SettingsPage: React.FC = () => {
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="mt-6 px-6 py-3 bg-blue-700 text-white rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-3"
-        >
+        <button type="submit" disabled={isSaving} className="btn btn-primary mt-6">
           {isSaving && (
             <svg
               className="animate-spin h-5 w-5 text-white"

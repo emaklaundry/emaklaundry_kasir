@@ -176,7 +176,7 @@ const MonthlyExpenseReminderDialog: React.FC<MonthlyExpenseReminderDialogProps> 
             type="submit"
             form="monthly-expense-reminder-form"
             disabled={saveMonthlyExpenses.isPending}
-            className="rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn btn-primary btn-sm"
           >
             {saveMonthlyExpenses.isPending ? 'Menyimpan…' : 'Simpan tagihan'}
           </button>
@@ -216,7 +216,7 @@ const MonthlyExpenseReminderDialog: React.FC<MonthlyExpenseReminderDialogProps> 
                   [template.id]: event.target.value,
                 }))
               }
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
               required
             />
           </div>

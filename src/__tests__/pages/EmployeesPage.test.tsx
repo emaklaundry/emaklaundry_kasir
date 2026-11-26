@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import EmployeesPage from '@/pages/management/EmployeesPage';
 import { Employee } from '@/types/hrm';
@@ -77,7 +78,7 @@ describe('EmployeesPage', () => {
   const table = () => screen.getByRole('table');
 
   it('default hanya menampilkan karyawan aktif, bisa beralih ke Nonaktif/Semua', () => {
-    render(<EmployeesPage />);
+    render(<EmployeesPage />, { wrapper: MemoryRouter });
     expect(within(table()).getByText('Siti Aminah')).toBeInTheDocument();
     expect(within(table()).queryByText('Budi Lama')).not.toBeInTheDocument();
 
@@ -90,7 +91,7 @@ describe('EmployeesPage', () => {
   });
 
   it('pencarian nama menyaring daftar', () => {
-    render(<EmployeesPage />);
+    render(<EmployeesPage />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole('radio', { name: 'Semua' }));
     fireEvent.change(screen.getByLabelText('Cari karyawan'), { target: { value: 'budi' } });
     expect(within(table()).getByText('Budi Lama')).toBeInTheDocument();
@@ -98,7 +99,7 @@ describe('EmployeesPage', () => {
   });
 
   it('menampilkan jadwal, kompensasi, dan status login', () => {
-    render(<EmployeesPage />);
+    render(<EmployeesPage />, { wrapper: MemoryRouter });
     const row = within(table()).getByText('Siti Aminah').closest('tr')!;
     expect(within(row).getByText('Sen–Sab, 08:00–17:00')).toBeInTheDocument();
     expect(within(row).getByText(/Rp 2\.000\.000 \+2% komisi/)).toBeInTheDocument();
@@ -106,7 +107,7 @@ describe('EmployeesPage', () => {
   });
 
   it('Nonaktifkan menyimpan status lalu menutup login karyawan', async () => {
-    render(<EmployeesPage />);
+    render(<EmployeesPage />, { wrapper: MemoryRouter });
     const row = within(table()).getByText('Siti Aminah').closest('tr')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Nonaktifkan' }));
     await waitFor(() => expect(syncEmployeeLogin).toHaveBeenCalledWith('e1'));
@@ -114,7 +115,7 @@ describe('EmployeesPage', () => {
   });
 
   it('Admin tidak melihat pilihan cabang (terkunci ke cabangnya)', () => {
-    render(<EmployeesPage />);
+    render(<EmployeesPage />, { wrapper: MemoryRouter });
     expect(screen.queryByLabelText('Filter cabang')).not.toBeInTheDocument();
     expect(fetchEmployees).toHaveBeenCalledWith('s1');
   });

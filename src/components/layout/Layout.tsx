@@ -23,13 +23,14 @@ const getPageTitle = (
     '/management/inventory': 'Manajemen Inventaris',
     '/management/assets': 'Manajemen Aset & Pemeliharaan',
     '/management/expenses': 'Manajemen Pengeluaran',
-    '/management/users': 'Manajemen Pengguna',
+    '/management/users': 'Akun Login',
     '/management/employees': 'Manajemen Karyawan',
     '/management/attendance': 'Absensi',
     '/reports': 'Laporan',
     '/audit-log': 'Log Audit',
     '/settings': 'Pengaturan',
     '/help': 'Bantuan & Tutorial',
+    '/business': 'Pusat Bisnis',
   };
 
   if (staticTitles[pathname]) {

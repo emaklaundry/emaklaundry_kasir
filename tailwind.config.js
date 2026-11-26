@@ -8,6 +8,8 @@ const palette = (token) =>
 module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
+  // Varian tombol (src/index.css) kadang dipilih lewat variabel; jangan sampai terbuang saat build.
+  safelist: [{ pattern: /^btn(-(primary|secondary|danger|success|ghost|icon|sm|lg))?$/ }],
   theme: {
     extend: {
       colors: {

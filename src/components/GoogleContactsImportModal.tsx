@@ -137,11 +137,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                 Izinkan akses ke Google Contacts Anda untuk mengimport data pelanggan secara
                 otomatis
               </p>
-              <button
-                onClick={signIn}
-                disabled={isLoading}
-                className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
-              >
+              <button onClick={signIn} disabled={isLoading} className="btn btn-secondary">
                 {isLoading ? (
                   <RefreshCwIcon className="w-5 h-5 animate-spin text-slate-600" />
                 ) : (
@@ -189,7 +185,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                   placeholder="Cari kontak..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none"
                 />
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
@@ -278,7 +274,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                   <button
                     onClick={handleImport}
                     disabled={selectedContacts.size === 0 || isImporting}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    className="btn btn-primary btn-sm"
                   >
                     {isImporting && <RefreshCwIcon className="w-4 h-4 animate-spin" />}
                     Import ({selectedContacts.size})

@@ -207,11 +207,8 @@ const StoresPage: React.FC = () => {
       )}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Manajemen Cabang</h1>
-        <button
-          onClick={() => handleOpenFormModal()}
-          className="flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3"
-        >
-          <PlusCircleIcon className="h-5 w-5 mr-2" />
+        <button onClick={() => handleOpenFormModal()} className="btn btn-primary">
+          <PlusCircleIcon className="h-5 w-5" />
           Tambah Cabang
         </button>
       </div>
@@ -376,11 +373,7 @@ const StoresPage: React.FC = () => {
           title={`${storeToToggle.isActive ? 'Nonaktifkan' : 'Aktifkan'} Cabang`}
           message={`Apakah Anda yakin ingin ${storeToToggle.isActive ? 'menonaktifkan' : 'mengaktifkan'} cabang "${storeToToggle.name}"?`}
           confirmText={storeToToggle.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-          confirmColor={
-            storeToToggle.isActive
-              ? 'bg-yellow-500 hover:bg-yellow-600'
-              : 'bg-green-500 hover:bg-green-600'
-          }
+          confirmVariant={storeToToggle.isActive ? 'danger' : 'primary'}
         />
       )}
 

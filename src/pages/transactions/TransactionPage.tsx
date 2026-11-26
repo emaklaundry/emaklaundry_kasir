@@ -11,6 +11,7 @@ import { useServices } from '../../contexts/ServiceContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
+import { can, isAdminRole } from '../../config/permissions';
 import { supabase } from '../../utils/supabaseClient';
 import { savePayment } from '../../utils/paymentUpdate';
 
@@ -34,7 +35,7 @@ import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../components/Pagination';
 
-import { Transaction, OrderStatus, PaymentStatus, Customer, UserRole } from '@/types';
+import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
 import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
 import {
   exportTransactionsToExcel,
@@ -47,6 +48,8 @@ type TransactionWithCustomer = Transaction & { customerName: string; customerPho
 
 const TransactionPage: React.FC = () => {
   const { currentUser } = useAppContext();
+  const canCreateTransaction = can(currentUser?.role, 'transaction.create');
+  const canTakePayment = can(currentUser?.role, 'transaction.payment');
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -58,7 +61,12 @@ const TransactionPage: React.FC = () => {
       ? (status as OrderStatus)
       : 'all';
   });
-  const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all');
+  const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>(() => {
+    const payment = searchParams.get('payment');
+    return payment && Object.values(PaymentStatus).includes(payment as PaymentStatus)
+      ? (payment as PaymentStatus)
+      : 'all';
+  });
   const [customerFilter, setCustomerFilter] = useState<string | 'all'>('all');
 
   // Modal & selection state
@@ -545,11 +553,11 @@ const TransactionPage: React.FC = () => {
         >
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Daftar Transaksi</h1>
           <div className="flex items-center gap-2 flex-wrap">
-            {currentUser?.role !== UserRole.Cashier && (
+            {isAdminRole(currentUser?.role) && (
               <>
                 <button
                   onClick={handleDownloadTemplate}
-                  className="flex items-center gap-2 px-3 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 dark:hover:bg-slate-600"
+                  className="btn btn-secondary btn-sm"
                   title="Download Template Excel"
                 >
                   <DownloadIcon className="w-4 h-4" />
@@ -567,7 +575,7 @@ const TransactionPage: React.FC = () => {
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+                  className="btn btn-secondary btn-sm"
                   title="Import dari Excel"
                 >
                   <UploadIcon className="w-4 h-4" />
@@ -577,7 +585,7 @@ const TransactionPage: React.FC = () => {
                 <button
                   onClick={handleExportTransactions}
                   disabled={transactions.length === 0}
-                  className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                  className="btn btn-primary btn-sm"
                   title="Export ke Excel"
                 >
                   <DownloadIcon className="w-4 h-4" />
@@ -585,13 +593,12 @@ const TransactionPage: React.FC = () => {
                 </button>
               </>
             )}
-            <Link
-              to="/transactions/new"
-              className="flex-shrink-0 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-4 py-2.5"
-            >
-              <PlusCircleIcon className="h-5 w-5 mr-2" />
-              Transaksi Baru
-            </Link>
+            {canCreateTransaction && (
+              <Link to="/transactions/new" className="btn btn-primary btn-sm">
+                <PlusCircleIcon className="h-5 w-5" />
+                Transaksi Baru
+              </Link>
+            )}
           </div>
         </div>
 
@@ -700,7 +707,7 @@ const TransactionPage: React.FC = () => {
                 id="bulk-status-change"
                 name="bulk-status-change"
                 onChange={(e) => handleBulkStatusChange(e.target.value as OrderStatus)}
-                className="pl-3 pr-8 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none appearance-none"
+                className="pl-3 pr-8 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 appearance-none"
                 value=""
               >
                 <option value="" disabled>
@@ -876,7 +883,7 @@ const TransactionPage: React.FC = () => {
                       </td>
 
                       <td className="px-4 py-3 text-center flex items-center justify-center space-x-1">
-                        {t.paymentStatus !== PaymentStatus.Paid && (
+                        {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                           <button
                             onClick={() => handleOpenPaymentModal(t)}
                             title="Proses Pembayaran"
@@ -934,13 +941,12 @@ const TransactionPage: React.FC = () => {
                             : 'Belum ada transaksi yang dibuat.'
                         }
                       >
-                        <Link
-                          to="/transactions/new"
-                          className="flex-shrink-0 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs"
-                        >
-                          <PlusCircleIcon className="h-5 w-5 mr-2" />
-                          Buat Transaksi Baru
-                        </Link>
+                        {canCreateTransaction && (
+                          <Link to="/transactions/new" className="btn btn-primary mx-auto max-w-xs">
+                            <PlusCircleIcon className="h-5 w-5" />
+                            Buat Transaksi Baru
+                          </Link>
+                        )}
                       </EmptyState>
                     </td>
                   </tr>
@@ -1016,7 +1022,7 @@ const TransactionPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center justify-start space-x-4 text-slate-600 dark:text-slate-400">
-                    {t.paymentStatus !== PaymentStatus.Paid && (
+                    {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                       <button
                         onClick={() => handleOpenPaymentModal(t)}
                         title="Proses Pembayaran"
@@ -1073,13 +1079,12 @@ const TransactionPage: React.FC = () => {
                   : 'Belum ada transaksi yang dibuat.'
               }
             >
-              <Link
-                to="/transactions/new"
-                className="flex-shrink-0 flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-lg px-6 py-3 mx-auto max-w-xs"
-              >
-                <PlusCircleIcon className="h-5 w-5 mr-2" />
-                Buat Transaksi Baru
-              </Link>
+              {canCreateTransaction && (
+                <Link to="/transactions/new" className="btn btn-primary mx-auto max-w-xs">
+                  <PlusCircleIcon className="h-5 w-5" />
+                  Buat Transaksi Baru
+                </Link>
+              )}
             </EmptyState>
           )}
         </div>

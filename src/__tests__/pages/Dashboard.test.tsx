@@ -69,6 +69,7 @@ vi.mock('@/contexts/TransactionContext', () => ({
 
 vi.mock('@/contexts/ExpenseContext', () => ({
   useExpenses: vi.fn(() => ({
+    expenses: [],
     addExpense: vi.fn(),
   })),
 }));
