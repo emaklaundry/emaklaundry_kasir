@@ -5,6 +5,7 @@ import {
   getMachineById,
   WashRecommendation,
 } from '@/data/washingMachineData';
+import { Check, WashingMachine } from 'lucide-react';
 import { ChevronDownIcon, ChevronRightIcon } from '../icons';
 
 interface WashSettingsRecommendationProps {
@@ -28,41 +29,42 @@ const WashSettingsRecommendation: React.FC<WashSettingsRecommendationProps> = ({
 
   if (compact) {
     return (
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🧺</span>
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-              Rekomendasi Setting Mesin
-            </span>
-          </div>
+      <div className="rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          className="flex w-full items-center justify-between gap-2 rounded-lg p-3 text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+            <WashingMachine
+              className="h-5 w-5 text-slate-500 dark:text-slate-400"
+              aria-hidden="true"
+            />
+            Rekomendasi Setting Mesin
+          </span>
           {isExpanded ? (
-            <ChevronDownIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <ChevronDownIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           ) : (
-            <ChevronRightIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <ChevronRightIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           )}
-        </div>
+        </button>
 
         {isExpanded && (
-          <div className="mt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+          <div className="px-3 pb-3">
             <RecommendationCard recommendation={primaryRec} machine={machine} />
           </div>
         )}
-      </button>
+      </div>
     );
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">🧺</span>
-        <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
-          Rekomendasi Setting Mesin Cuci
-        </h3>
-      </div>
+      <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-800 dark:text-slate-100">
+        <WashingMachine className="h-6 w-6 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+        Rekomendasi Setting Mesin Cuci
+      </h3>
 
       <div className="space-y-3">
         {recommendations.map((rec, index) => {
@@ -83,7 +85,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
   const [showTips, setShowTips] = useState(false);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="font-semibold text-slate-800 dark:text-slate-200">
@@ -93,29 +95,29 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
             Kapasitas: {machine?.capacity || recommendation.maxLoad}kg
           </p>
         </div>
-        <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-full">
-          Direkomendasikan
-        </span>
+        <span className="badge badge-success">Direkomendasikan</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-        <SettingBadge label="Program" value={recommendation.program} icon="📋" />
-        <SettingBadge label="Suhu" value={recommendation.temperature} icon="🌡️" />
-        <SettingBadge label="Spin" value={`${recommendation.spinSpeed} RPM`} icon="🔄" />
-        <SettingBadge label="Detergen" value={recommendation.detergentAmount} icon="🧴" />
+        <SettingBadge label="Program" value={recommendation.program} />
+        <SettingBadge label="Suhu" value={recommendation.temperature} />
+        <SettingBadge label="Spin" value={`${recommendation.spinSpeed} RPM`} />
+        <SettingBadge label="Detergen" value={recommendation.detergentAmount} />
       </div>
 
       {recommendation.notes && (
         <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 p-2 rounded mb-3">
-          💡 {recommendation.notes}
+          {recommendation.notes}
         </p>
       )}
 
       {recommendation.tips && recommendation.tips.length > 0 && (
         <div>
           <button
+            type="button"
             onClick={() => setShowTips(!showTips)}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            aria-expanded={showTips}
+            className="flex items-center gap-1 text-sm font-medium text-brand-blue-700 hover:underline dark:text-brand-blue-300"
           >
             {showTips ? 'Sembunyikan tips' : 'Lihat tips perawatan'}
             {showTips ? (
@@ -132,7 +134,10 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
                   key={i}
                   className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2"
                 >
-                  <span className="text-green-500">✓</span>
+                  <Check
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400"
+                    aria-hidden="true"
+                  />
                   {tip}
                 </li>
               ))}
@@ -147,14 +152,12 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
 interface SettingBadgeProps {
   label: string;
   value: string;
-  icon: string;
 }
 
-const SettingBadge: React.FC<SettingBadgeProps> = ({ label, value, icon }) => (
+const SettingBadge: React.FC<SettingBadgeProps> = ({ label, value }) => (
   <div className="text-center">
     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{label}</p>
     <div className="bg-slate-100 dark:bg-slate-700 rounded-lg px-2 py-1.5">
-      <span className="mr-1">{icon}</span>
       <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{value}</span>
     </div>
   </div>

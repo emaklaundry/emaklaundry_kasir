@@ -36,12 +36,7 @@ const jsonResponse = (
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
-const isUuid = (value: unknown): value is string =>
-  typeof value === 'string' &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-
-const VALID_ROLES = ['Operator', 'Kasir', 'Admin', 'Super Admin'] as const;
-type Role = (typeof VALID_ROLES)[number];
+type Role = 'Super Admin';
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
@@ -71,19 +66,25 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // 2. Hanya Admin / Super Admin yang aktif
+  // 2. Login email & password khusus Super Admin, jadi hanya Super Admin aktif
+  //    yang boleh membuat akun email. Staf cabang dibuat lewat Karyawan + PIN
+  //    (Edge Function manage-employee-login).
   const { data: callerProfile, error: profileError } = await admin
     .from('profiles')
-    .select('role, store_id, isActive')
+    .select('role, isActive')
     .eq('id', caller.id)
     .maybeSingle();
   if (
     profileError ||
     !callerProfile ||
     callerProfile.isActive === false ||
-    (callerProfile.role !== 'Super Admin' && callerProfile.role !== 'Admin')
+    callerProfile.role !== 'Super Admin'
   ) {
-    return jsonResponse({ error: 'Hanya Admin yang dapat menambah pengguna' }, 403, corsHeaders);
+    return jsonResponse(
+      { error: 'Hanya Super Admin yang dapat menambah akun login' },
+      403,
+      corsHeaders,
+    );
   }
 
   // 3. Validasi input
@@ -98,7 +99,7 @@ serve(async (req) => {
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const password = typeof body.password === 'string' ? body.password : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
-  const role = (typeof body.role === 'string' ? body.role : 'Kasir') as Role;
+  const requestedRole = typeof body.role === 'string' ? body.role : 'Super Admin';
 
   if (!email || !password || !name) {
     return jsonResponse({ error: 'Email, password, dan nama wajib diisi' }, 400, corsHeaders);
@@ -112,43 +113,20 @@ serve(async (req) => {
   if (password.length < 8 || password.length > 72) {
     return jsonResponse({ error: 'Password harus 8 sampai 72 karakter' }, 400, corsHeaders);
   }
-  if (!VALID_ROLES.includes(role)) {
+  if (requestedRole !== 'Super Admin') {
     return jsonResponse(
-      { error: `Peran tidak valid. Pilihan: ${VALID_ROLES.join(', ')}` },
+      {
+        error:
+          'Akun email hanya untuk Super Admin. Admin, Kasir, dan Operator dibuat di menu Karyawan dan login dengan PIN.',
+      },
       400,
       corsHeaders,
     );
   }
 
-  // 4. Cabang: Super Admin tanpa cabang; Admin hanya untuk cabangnya sendiri
-  let storeId: string | null = null;
-  if (role !== 'Super Admin') {
-    storeId = isUuid(body.storeId) ? body.storeId : null;
-    if (callerProfile.role === 'Admin') storeId = storeId ?? callerProfile.store_id;
-    if (!storeId) return jsonResponse({ error: 'Cabang wajib dipilih' }, 400, corsHeaders);
-  }
-  if (callerProfile.role === 'Admin') {
-    if (role === 'Super Admin') {
-      return jsonResponse({ error: 'Admin tidak dapat membuat Super Admin' }, 403, corsHeaders);
-    }
-    if (storeId !== callerProfile.store_id) {
-      return jsonResponse(
-        { error: 'Admin hanya dapat menambah pengguna di cabangnya sendiri' },
-        403,
-        corsHeaders,
-      );
-    }
-  }
-  if (storeId) {
-    const { data: store, error: storeError } = await admin
-      .from('stores')
-      .select('id')
-      .eq('id', storeId)
-      .maybeSingle();
-    if (storeError || !store) {
-      return jsonResponse({ error: 'Cabang tidak ditemukan' }, 400, corsHeaders);
-    }
-  }
+  // 4. Super Admin tidak terikat cabang.
+  const role: Role = 'Super Admin';
+  const storeId: string | null = null;
 
   // 5. Buat akun. Trigger database membuat profil sebagai Kasir (pengaman
   //    pendaftaran mandiri), jadi peran yang benar disetel di langkah 6.

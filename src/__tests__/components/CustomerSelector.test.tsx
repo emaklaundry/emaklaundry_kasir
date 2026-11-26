@@ -35,9 +35,9 @@ describe('CustomerSelector', () => {
         onAddNewCustomer={vi.fn()}
       />,
     );
-    expect(screen.getByLabelText(/pelanggan/i)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /pelanggan/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/cari nama/i)).toBeInTheDocument();
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tambah pelanggan baru' })).toBeInTheDocument();
   });
 
   it('shows dropdown and filters customers by name', () => {
@@ -69,8 +69,46 @@ describe('CustomerSelector', () => {
     const input = screen.getByPlaceholderText(/cari nama/i);
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: 'Budi' } });
-    fireEvent.click(screen.getByText('Budi'));
+    fireEvent.mouseDown(screen.getByRole('option', { name: /Budi/ }));
     expect(onSelectCustomer).toHaveBeenCalledWith(customers[0]);
+  });
+
+  it('lets the cashier pick a customer with the keyboard', () => {
+    const onSelectCustomer = vi.fn();
+    render(
+      <CustomerSelector
+        customers={customers}
+        selectedCustomer={null}
+        onSelectCustomer={onSelectCustomer}
+        onAddNewCustomer={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole('combobox', { name: /pelanggan/i });
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(input).toHaveAttribute('aria-activedescendant', expect.stringContaining('opt-1'));
+    expect(screen.getByRole('option', { name: /Siti/ })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelectCustomer).toHaveBeenCalledWith(customers[1]);
+  });
+
+  it('closes the list with Escape', () => {
+    render(
+      <CustomerSelector
+        customers={customers}
+        selectedCustomer={null}
+        onSelectCustomer={vi.fn()}
+        onAddNewCustomer={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole('combobox', { name: /pelanggan/i });
+    fireEvent.focus(input);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('calls onAddNewCustomer when add button is clicked', () => {

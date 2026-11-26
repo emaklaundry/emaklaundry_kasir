@@ -7,6 +7,8 @@ import type { EmployeeRole } from '../types/hrm';
  * Perbedaan istilah:
  * - **Akun Login** (menu "Akun Login", tabel `profiles`): siapa yang bisa masuk ke
  *   aplikasi dan peran apa yang ia pegang. Peran inilah yang menentukan hak akses.
+ *   Login email & password hanya untuk Super Admin; peran lain login lewat PIN
+ *   karyawan (profil dengan `employee_id`).
  * - **Karyawan** (menu "Karyawan", tabel `employees`): data SDM — gaji, jadwal,
  *   absensi. Karyawan tidak otomatis bisa login. Admin dapat memberi PIN login;
  *   peran akunnya mengikuti posisi karyawan (operator → Operator, dst).
@@ -25,6 +27,8 @@ export type Permission =
   | 'inventory.quickUpdate'
   /** Lapor kerusakan mesin/aset. */
   | 'maintenance.report'
+  /** Membuka halaman Pelanggan, menambah & mengubah data pelanggan (tanpa hapus/import/export). */
+  | 'customer.edit'
   /** Mencatat pengeluaran harian dari Aksi Cepat. */
   | 'expense.create'
   /** Pengingat & isian pengeluaran bulanan (listrik, air, sewa, dll). */
@@ -48,6 +52,7 @@ const CASHIER: Permission[] = [
   ...OPERATOR,
   'transaction.create',
   'transaction.payment',
+  'customer.edit',
   'expense.create',
 ];
 
@@ -107,7 +112,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, { summary: string; can: string[
     can: [
       'Semua hak Operator',
       'Buat transaksi baru & terima pembayaran',
-      'Tambah pelanggan saat transaksi',
+      'Tambah & ubah data pelanggan (nama, nomor HP, alamat, catatan)',
       'Catat pengeluaran kecil harian',
     ],
   },
@@ -118,7 +123,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, { summary: string; can: string[
       'Kelola pelanggan, layanan, inventaris, aset, karyawan & absensi',
       'Pengeluaran bulanan (listrik, air, sewa) & laporan keuangan',
       'Pusat Bisnis: panduan, dokumentasi & kalkulator',
-      'Kelola akun login di cabangnya',
+      'Beri PIN login untuk karyawan di cabangnya',
     ],
   },
   [UserRole.SuperAdmin]: {
@@ -127,6 +132,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, { summary: string; can: string[
       'Semua hak Admin untuk semua cabang',
       'Tambah/ubah cabang',
       'Mode maintenance & pengaturan sistem',
+      'Satu-satunya peran yang login dengan email & password',
     ],
   },
 };

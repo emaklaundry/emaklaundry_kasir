@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
-import { User, UserRole, Store } from '@/types';
-import { ROLE_DESCRIPTIONS, ROLE_ORDER } from '../config/permissions';
+import { User, UserRole } from '@/types';
+import { ROLE_DESCRIPTIONS } from '../config/permissions';
 
 export interface NewUserCredentials {
   email: string;
@@ -12,70 +12,35 @@ export interface NewUserCredentials {
 interface UserFormModalProps {
   user: User | null;
   onClose: () => void;
-  /** `credentials` hanya ada saat menambah pengguna baru. */
+  /** `credentials` hanya ada saat menambah akun baru. */
   onSave: (user: Omit<User, 'id'>, credentials?: NewUserCredentials) => void;
-  stores: Store[];
-  /** Peran pengguna yang sedang login. Admin tidak bisa membuat Super Admin. */
-  creatorRole?: UserRole;
-  /** Cabang Admin yang sedang login; pengguna baru dikunci ke cabang ini. */
-  creatorStoreId?: string;
   disabled?: boolean;
 }
 
 export const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const UserFormModal: React.FC<UserFormModalProps> = ({
-  user,
-  onClose,
-  onSave,
-  stores,
-  creatorRole,
-  creatorStoreId,
-  disabled,
-}) => {
+/**
+ * Form Akun Login (email & password). Login email hanya untuk Super Admin, jadi
+ * akun baru selalu Super Admin tanpa cabang. Staf cabang (Admin/Kasir/Operator)
+ * dibuat di menu Karyawan dan login dengan PIN.
+ */
+const UserFormModal: React.FC<UserFormModalProps> = ({ user, onClose, onSave, disabled }) => {
   const isNew = !user;
-  const isCreatorAdmin = creatorRole === UserRole.Admin;
-  const lockStore = isNew && isCreatorAdmin && Boolean(creatorStoreId);
-  const [formData, setFormData] = useState<Omit<User, 'id'>>({
-    name: user?.name || '',
-    role: user?.role || UserRole.Cashier,
-    storeId: user?.storeId || (lockStore ? creatorStoreId : '') || '',
-    isActive: user?.isActive ?? true,
-  });
+  const [name, setName] = useState(user?.name || '');
+  const [isActive, setIsActive] = useState(user?.isActive ?? true);
   const [credentials, setCredentials] = useState<NewUserCredentials>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const { addToast } = useToasts();
-  const availableRoles = ROLE_ORDER.filter(
-    (role) => !(isNew && isCreatorAdmin && role === UserRole.SuperAdmin),
-  );
 
-  const isEditingSuperAdmin = user?.role === UserRole.SuperAdmin;
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const isCheckbox = type === 'checkbox';
-    const checked = (e.target as HTMLInputElement).checked;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: isCheckbox ? checked : value,
-    }));
-  };
+  const role = user?.role ?? UserRole.SuperAdmin;
+  const isSuperAdmin = role === UserRole.SuperAdmin;
+  const roleInfo = ROLE_DESCRIPTIONS[role as UserRole];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalData = { ...formData };
-    if (finalData.role === UserRole.SuperAdmin) {
-      finalData.storeId = undefined;
-      // Catatan: Properti isActive untuk Super Admin diatur di logic penyimpanan (UsersPage),
-      // bukan di modal ini. Modal hanya menonaktifkan input.
-    } else if (!finalData.storeId) {
-      addToast('Silakan pilih cabang untuk peran ini.', 'warning');
-      return;
-    }
-    const name = finalData.name.trim();
-    if (!name) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       addToast('Nama pengguna wajib diisi.', 'warning');
       return;
     }
@@ -89,20 +54,25 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
         addToast(`Password minimal ${MIN_PASSWORD_LENGTH} karakter.`, 'warning');
         return;
       }
-      onSave({ ...finalData, name }, { email, password: credentials.password });
+      onSave(
+        { name: trimmedName, role: UserRole.SuperAdmin, storeId: undefined, isActive: true },
+        { email, password: credentials.password },
+      );
       return;
     }
-    onSave({ ...finalData, name });
+    onSave({
+      name: trimmedName,
+      role,
+      storeId: user?.storeId,
+      isActive: isSuperAdmin ? true : isActive,
+    });
   };
-
-  const showStoreSelector = formData.role !== UserRole.SuperAdmin;
-  const roleInfo = ROLE_DESCRIPTIONS[formData.role as UserRole];
 
   return (
     <Modal
       isOpen={true}
       onClose={onClose}
-      title={user ? 'Edit Akun Login' : 'Tambah Akun Login'}
+      title={user ? 'Edit Akun Login' : 'Tambah Super Admin'}
       footer={
         <>
           <button onClick={onClose} className="btn btn-secondary">
@@ -124,8 +94,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             name="name"
             id="user-name"
             autoComplete="name"
-            value={formData.name}
-            onChange={handleChange}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="form-input"
             required
           />
@@ -180,89 +150,47 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                 id="user-password-help"
                 className="mt-1 text-sm text-slate-500 dark:text-slate-400"
               >
-                Minimal {MIN_PASSWORD_LENGTH} karakter. Berikan ke pengguna dan minta ia
+                Minimal {MIN_PASSWORD_LENGTH} karakter. Berikan ke pemilik akun dan minta ia
                 menggantinya setelah login pertama.
               </p>
             </div>
           </>
         )}
-        <div>
-          <label htmlFor="role" className="form-label">
-            Peran (hak akses)
-          </label>
-          <select
-            name="role"
-            id="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="form-input"
-            disabled={isEditingSuperAdmin}
-            aria-describedby="role-help"
-          >
-            {availableRoles.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-          {roleInfo && (
-            <div
-              id="role-help"
-              className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-700/50 dark:text-slate-300"
-            >
-              <p className="font-medium text-slate-800 dark:text-slate-100">{roleInfo.summary}</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5">
-                {roleInfo.can.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
+        <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-700/50 dark:text-slate-300">
+          <p className="font-medium text-slate-800 dark:text-slate-100">
+            Peran: {role}
+            {roleInfo ? ` — ${roleInfo.summary}` : ''}
+          </p>
+          {isSuperAdmin ? (
+            <p className="mt-1">
+              Admin, Kasir, dan Operator cabang tidak memakai email. Tambahkan mereka di menu
+              Karyawan dan beri PIN login.
+            </p>
+          ) : (
+            <p className="mt-1 text-amber-700 dark:text-amber-400">
+              Akun lama ini tidak bisa login lagi karena login email hanya untuk Super Admin.
+              Nonaktifkan, lalu buat data karyawan + PIN bila orangnya masih bekerja.
+            </p>
           )}
         </div>
-        {showStoreSelector && (
-          <div>
-            <label htmlFor="storeId" className="form-label">
-              Cabang
-            </label>
-            <select
-              name="storeId"
-              id="storeId"
-              value={formData.storeId}
-              onChange={handleChange}
-              disabled={lockStore}
-              className="form-input"
-              required
+        {!isNew && !isSuperAdmin && (
+          <div className="flex items-center">
+            <input
+              id="user-isActive"
+              name="isActive"
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
+            />
+            <label
+              htmlFor="user-isActive"
+              className="ml-2 text-base font-medium text-slate-900 dark:text-white"
             >
-              <option value="">Pilih Cabang</option>
-              {stores.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name}
-                </option>
-              ))}
-            </select>
+              Aktif
+            </label>
           </div>
         )}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          {!isNew && (
-            <div className="flex items-center">
-              <input
-                id="user-isActive"
-                name="isActive"
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={handleChange}
-                disabled={isEditingSuperAdmin}
-                className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
-              />
-              <label
-                htmlFor="user-isActive"
-                className="ml-2 text-base font-medium text-slate-900 dark:text-white"
-              >
-                Aktif
-              </label>
-            </div>
-          )}
-        </div>
       </form>
     </Modal>
   );

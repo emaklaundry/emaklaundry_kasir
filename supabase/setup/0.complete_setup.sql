@@ -454,7 +454,15 @@ CREATE POLICY "Allow INSERT for store users" ON public.customers
     )
   );
 CREATE POLICY "Allow UPDATE/DELETE for Admins" ON public.customers
-  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+  FOR UPDATE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()))
+  -- Admin cabang tidak boleh memindahkan pelanggan ke cabang lain.
+  WITH CHECK (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
+-- Kasir boleh mengubah data pelanggan (nama, nomor HP, alamat, catatan) di cabangnya sendiri.
+-- WITH CHECK mencegah Kasir memindahkan pelanggan ke cabang lain. Hapus tetap khusus Admin.
+CREATE POLICY "Allow UPDATE for Cashiers in own store" ON public.customers
+  FOR UPDATE TO authenticated
+  USING ((SELECT public.get_my_role()) = 'Kasir' AND "storeId" = (SELECT public.get_my_store_id()))
+  WITH CHECK ((SELECT public.get_my_role()) = 'Kasir' AND "storeId" = (SELECT public.get_my_store_id()));
 CREATE POLICY "Allow DELETE for Admins" ON public.customers
   FOR DELETE USING (public.get_my_role() = 'Super Admin' OR (public.get_my_role() = 'Admin' AND "storeId" = public.get_my_store_id()));
 
@@ -2575,6 +2583,40 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.record_attendance(TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.record_attendance(TEXT) TO authenticated;
+
+-- ============================================
+-- SECTION 16: LOGIN EMAIL KHUSUS SUPER ADMIN (Added Nov 2026)
+-- ============================================
+-- Login email & password hanya untuk Super Admin. Admin/Kasir/Operator login
+-- lewat profil karyawan + PIN (profil dengan employee_id). Akun email lama
+-- dengan peran lain tidak mendapat peran/cabang sama sekali, sehingga semua
+-- policy RLS yang memakai fungsi ini menolaknya walau token masih berlaku.
+-- Profil sendiri tetap bisa dibaca ("Users can see their own profile") agar
+-- aplikasi bisa menampilkan pesan lalu logout.
+
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT role FROM public.profiles
+  WHERE id = auth.uid()
+    AND (role = 'Super Admin' OR employee_id IS NOT NULL)
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_my_store_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT store_id FROM public.profiles
+  WHERE id = auth.uid()
+    AND (role = 'Super Admin' OR employee_id IS NOT NULL)
+$$;
 
 -- ============================================
 -- END OF SETUP

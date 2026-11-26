@@ -31,15 +31,15 @@ const AccessGuide: React.FC = () => (
         <div className="rounded-md bg-white p-3 dark:bg-slate-800">
           <p className="font-semibold text-slate-900 dark:text-white">Akun Login (halaman ini)</p>
           <p className="mt-1">
-            Siapa yang bisa masuk ke aplikasi memakai email &amp; password. Peran akun menentukan
-            menu dan tombol yang muncul.
+            Akun email &amp; password, khusus Super Admin (pemilik usaha). Akun lama dengan peran
+            lain tidak bisa login lagi; nonaktifkan dan pindahkan orangnya ke menu Karyawan.
           </p>
         </div>
         <div className="rounded-md bg-white p-3 dark:bg-slate-800">
           <p className="font-semibold text-slate-900 dark:text-white">Karyawan</p>
           <p className="mt-1">
-            Data SDM: gaji, jadwal, absensi. Karyawan tidak otomatis bisa login. Untuk staf tanpa
-            email, beri PIN di{' '}
+            Data SDM: gaji, jadwal, absensi. Admin, Kasir, dan Operator cabang login dengan profil
+            + PIN yang diberikan di{' '}
             <Link
               to="/management/employees"
               className="font-medium text-blue-700 underline dark:text-blue-300"
@@ -108,13 +108,6 @@ const UsersPage: React.FC = () => {
   const handleSaveUser = async (userData: Omit<User, 'id'>, credentials?: NewUserCredentials) => {
     if (isSaving) return;
     const finalData = { ...userData };
-    if (finalData.role === UserRole.SuperAdmin) {
-      finalData.storeId = undefined;
-      finalData.isActive = true;
-    } else if (!finalData.storeId) {
-      addToast('Silakan pilih cabang untuk peran ini.', 'warning');
-      return;
-    }
 
     const toastId = addToast(
       currentUserToEdit ? 'Menyimpan pengguna...' : 'Membuat akun pengguna...',
@@ -123,10 +116,9 @@ const UsersPage: React.FC = () => {
     setIsSaving(true);
     try {
       if (currentUserToEdit && currentUserToEdit.id) {
+        // Hanya nama & status. Peran/cabang tidak diubah dari sini.
         await updateUser(currentUserToEdit.id, {
           name: finalData.name,
-          role: finalData.role,
-          storeId: finalData.storeId,
           isActive: finalData.isActive,
         });
         addAuditLog(`Memperbarui data pengguna: "${finalData.name}".`);
@@ -141,12 +133,10 @@ const UsersPage: React.FC = () => {
           email: credentials.email,
           password: credentials.password,
           name: finalData.name,
-          role: finalData.role,
-          storeId: finalData.storeId,
+          role: UserRole.SuperAdmin,
         });
         addAuditLog(
-          `Menambahkan pengguna baru "${finalData.name}" (${finalData.role}, ${credentials.email}).`,
-          finalData.storeId,
+          `Menambahkan Super Admin baru "${finalData.name}" (${credentials.email}).`,
         );
         updateToast(
           toastId,
@@ -241,11 +231,11 @@ const UsersPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Akun Login</h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Akun email untuk masuk aplikasi beserta hak aksesnya.
+            Akun email &amp; password, khusus Super Admin.
           </p>
         </div>
         <button onClick={handleAddUser} className="btn btn-primary btn-sm self-start">
-          Tambah Akun
+          Tambah Super Admin
         </button>
       </div>
 
@@ -352,13 +342,15 @@ const UsersPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <button
+                            aria-label={`Edit ${user.name}`}
                             onClick={() => handleOpenFormModal(user)}
                             title="Edit"
-                            className="p-2.5 rounded-md text-blue-600 hover:text-blue-900 dark:text-blue-500 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            className="btn btn-ghost btn-icon"
                           >
                             <EditIcon className="w-5 h-5" />
                           </button>
                           <button
+                            aria-label={`${user.isActive ? 'Nonaktifkan' : 'Aktifkan'} ${user.name}`}
                             onClick={() => handleToggleStatus(user)}
                             title={
                               isSuperAdmin
@@ -368,7 +360,7 @@ const UsersPage: React.FC = () => {
                                   : 'Aktifkan'
                             }
                             disabled={isSuperAdmin}
-                            className={`p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${user.isActive ? 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-500 dark:hover:text-yellow-400' : 'text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                            className={`btn btn-ghost btn-icon ${user.isActive ? 'text-amber-600 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}
                           >
                             <PowerIcon className="w-5 h-5" />
                           </button>
@@ -430,16 +422,18 @@ const UsersPage: React.FC = () => {
                   </div>
                   <div className="mt-3 flex items-center justify-end gap-2 border-t dark:border-slate-600 pt-2">
                     <button
+                      aria-label={`Edit ${user.name}`}
                       onClick={() => {
                         setCurrentUserToEdit(user);
                         setIsFormModalOpen(true);
                       }}
                       title="Edit"
-                      className="p-2.5 rounded-md text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      className="btn btn-ghost btn-icon"
                     >
                       <EditIcon className="w-5 h-5" />
                     </button>
                     <button
+                      aria-label={`${user.isActive ? 'Nonaktifkan' : 'Aktifkan'} ${user.name}`}
                       onClick={() => setUserToToggleStatus(user)}
                       title={
                         isSuperAdmin
@@ -449,7 +443,7 @@ const UsersPage: React.FC = () => {
                             : 'Aktifkan'
                       }
                       disabled={isSuperAdmin}
-                      className={`p-2.5 rounded-md ${user.isActive ? 'text-yellow-600' : 'text-green-600'} hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50`}
+                      className={`btn btn-ghost btn-icon ${user.isActive ? 'text-amber-600 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}
                     >
                       <PowerIcon className="w-5 h-5" />
                     </button>
@@ -476,9 +470,6 @@ const UsersPage: React.FC = () => {
           user={currentUserToEdit}
           onClose={handleCloseFormModal}
           onSave={handleSaveUser}
-          stores={stores.filter((s) => s.isActive)}
-          creatorRole={currentUser?.role}
-          creatorStoreId={currentUser?.storeId}
           disabled={isSaving}
         />
       )}

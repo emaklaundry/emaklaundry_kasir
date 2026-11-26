@@ -508,14 +508,18 @@ html {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    width: 58mm !important; /* Fixed width matching page size */
+    /* Lebar mengikuti pengaturan printer (58/80mm/kustom) via --receipt-width */
+    width: var(--receipt-width, 58mm) !important;
+    max-width: none !important;
     margin: 0 !important;
-    padding: 0 4mm !important; /* Safe horizontal padding */
+    padding: 0 3mm !important; /* Safe horizontal padding */
 
     /* Ensure it sits on top of everything else and has a background */
     z-index: 9999 !important;
     background-color: white !important;
-    min-height: 100vh; /* Cover vertical space */
+    border: 0 !important; /* Kartu layar punya border; jangan ikut tercetak di kertas thermal */
+    border-radius: 0 !important;
+    /* Jangan paksa tinggi 100vh: di kertas roll itu membuang kertas kosong panjang */
 
     /* Typography */
     font-family: 'Courier New', Courier, monospace !important;

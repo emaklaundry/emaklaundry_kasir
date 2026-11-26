@@ -20,6 +20,9 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listboxId = `${id ?? 'customer'}-listbox`;
+  const optionId = (i: number) => `${listboxId}-opt-${i}`;
 
   const filteredCustomers = useMemo(() => {
     // customers is always an array based on the prop type
@@ -57,12 +60,39 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     }
 
     setIsDropdownOpen(true);
+    setActiveIndex(-1);
   };
 
   const handleSelectCustomer = (customer: Customer) => {
     onSelectCustomer(customer);
     setSearchTerm(customer.name);
     setIsDropdownOpen(false);
+    setActiveIndex(-1);
+  };
+
+  const isListOpen = isDropdownOpen && filteredCustomers.length > 0;
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!isDropdownOpen) {
+        setIsDropdownOpen(true);
+        return;
+      }
+      const last = filteredCustomers.length - 1;
+      if (last < 0) return;
+      setActiveIndex((i) =>
+        e.key === 'ArrowDown' ? (i >= last ? 0 : i + 1) : i <= 0 ? last : i - 1,
+      );
+    } else if (e.key === 'Enter' && isListOpen && activeIndex >= 0) {
+      // Pilih pelanggan, jangan submit form transaksi.
+      e.preventDefault();
+      handleSelectCustomer(filteredCustomers[activeIndex]);
+    } else if (e.key === 'Escape' && isDropdownOpen) {
+      e.preventDefault();
+      setIsDropdownOpen(false);
+      setActiveIndex(-1);
+    }
   };
 
   return (
@@ -80,20 +110,48 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             value={searchTerm}
             onChange={handleInputChange}
             onFocus={() => setIsDropdownOpen(true)}
-            onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
+            onBlur={() => {
+              setIsDropdownOpen(false);
+              setActiveIndex(-1);
+            }}
+            onKeyDown={handleKeyDown}
+            role="combobox"
+            aria-expanded={isListOpen}
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            aria-activedescendant={
+              isListOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined
+            }
             className="form-input pl-10"
             placeholder="Cari nama atau no. HP"
             required
             autoComplete="off"
           />
-          {isDropdownOpen && filteredCustomers.length > 0 && (
-            <div className="absolute z-40 w-full mt-1 bg-white rounded-md shadow-lg dark:bg-slate-700 border dark:border-slate-600 max-h-60 overflow-auto">
-              <ul>
-                {filteredCustomers.map((customer: Customer) => (
+          {isListOpen && (
+            <div className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-slate-700">
+              <ul id={listboxId} role="listbox" aria-label="Daftar pelanggan">
+                {filteredCustomers.map((customer: Customer, index) => (
                   <li
                     key={customer.id}
-                    className="px-4 py-2 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
-                    onClick={() => handleSelectCustomer(customer)}
+                    id={optionId(index)}
+                    role="option"
+                    aria-selected={index === activeIndex}
+                    ref={
+                      index === activeIndex
+                        ? (el) => el?.scrollIntoView?.({ block: 'nearest' })
+                        : undefined
+                    }
+                    className={`cursor-pointer px-4 py-2 text-base text-slate-700 dark:text-slate-200 ${
+                      index === activeIndex
+                        ? 'bg-slate-100 dark:bg-slate-600'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-600'
+                    }`}
+                    // mousedown agar pilihan tercatat sebelum input kehilangan fokus
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectCustomer(customer);
+                    }}
+                    onMouseEnter={() => setActiveIndex(index)}
                   >
                     <p className="font-semibold">{customer.name}</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -105,7 +163,12 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             </div>
           )}
         </div>
-        <button type="button" onClick={onAddNewCustomer} className="btn btn-success">
+        <button
+          aria-label="Tambah pelanggan baru"
+          type="button"
+          onClick={onAddNewCustomer}
+          className="btn btn-secondary btn-icon"
+        >
           <PlusCircleIcon className="w-5 h-5" />
         </button>
       </div>

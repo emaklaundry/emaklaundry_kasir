@@ -372,7 +372,7 @@ const DocumentationPage: React.FC = () => {
             <li>Catat pembelian konsumsi atau kebutuhan mendadak lainnya.</li>
           </ul>
           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded text-sm text-yellow-800 dark:text-yellow-200 mt-2">
-            💡 <strong>Tips:</strong> Pengeluaran untuk pembelian stok (deterjen, dll) sebaiknya
+            <strong>Tips:</strong> Pengeluaran untuk pembelian stok (deterjen, dll) sebaiknya
             disertai <strong>Update Stok</strong> di Inventaris agar stok ikut bertambah.
           </div>
         </div>
@@ -875,7 +875,7 @@ const DocumentationPage: React.FC = () => {
 
             <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
               <p className="text-green-800 dark:text-green-200 font-semibold">
-                💰 Grand Total Estimasi: Rp 1.735.000,-
+                Grand Total Estimasi: Rp 1.735.000,-
               </p>
               <p className="text-sm text-green-700 dark:text-green-300 mt-1">
                 Investasi aset jangka panjang untuk keamanan bisnis dan data. Belum termasuk ongkos

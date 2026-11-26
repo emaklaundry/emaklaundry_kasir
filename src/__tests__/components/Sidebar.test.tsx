@@ -51,23 +51,31 @@ describe('Sidebar', () => {
     ]);
     expect(linksIn('SDM & Aset')).toEqual(['Karyawan', 'Absensi', 'Aset & Pemeliharaan']);
     expect(linksIn('Laporan & Analisis')).toEqual(['Laporan', 'Pusat Bisnis']);
-    expect(linksIn('Sistem & Keamanan')).toEqual([
-      'Akun Login',
-      'Pengaturan',
-      'Log Audit',
-      'Backup & Restore',
-    ]);
+    expect(linksIn('Sistem & Keamanan')).toEqual(['Pengaturan', 'Log Audit', 'Backup & Restore']);
     expect(linksIn('Bantuan & Panduan')).toEqual(['SOP (Prosedur)', 'Bantuan / Tutorial']);
-    // Cabang khusus Super Admin
+    // Cabang & Akun Login (email) khusus Super Admin
     expect(screen.queryByRole('link', { name: 'Cabang' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Akun Login' })).toBeNull();
   });
 
-  it.each(['Kasir', 'Operator'])('%s: hanya menu operasional & bantuan', (role) => {
-    mockUser.role = role;
+  it('Operator: hanya menu operasional & bantuan', () => {
+    mockUser.role = 'Operator';
     renderSidebar();
     const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     expect(headings).toEqual(['Operasional Utama', 'Bantuan & Panduan']);
     expect(linksIn('Operasional Utama')).toEqual(['Dashboard', 'Transaksi']);
+    expect(linksIn('Bantuan & Panduan')).toEqual(['Bantuan / Tutorial']);
+    expect(screen.queryByRole('link', { name: 'Pelanggan' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Karyawan' })).toBeNull();
+  });
+
+  it('Kasir: menu operasional, Pelanggan & bantuan', () => {
+    mockUser.role = 'Kasir';
+    renderSidebar();
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(headings).toEqual(['Operasional Utama', 'Layanan & Pelanggan', 'Bantuan & Panduan']);
+    expect(linksIn('Operasional Utama')).toEqual(['Dashboard', 'Transaksi']);
+    expect(linksIn('Layanan & Pelanggan')).toEqual(['Pelanggan']);
     expect(linksIn('Bantuan & Panduan')).toEqual(['Bantuan / Tutorial']);
     expect(screen.queryByRole('link', { name: 'Karyawan' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Pusat Bisnis' })).toBeNull();

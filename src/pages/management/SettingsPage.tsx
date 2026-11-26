@@ -200,8 +200,11 @@ const SettingsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="form-label">Latitude</label>
+                <label htmlFor="store-latitude" className="form-label">
+                  Latitude
+                </label>
                 <input
+                  id="store-latitude"
                   type="number"
                   step="any"
                   value={locationData.latitude}
@@ -215,8 +218,11 @@ const SettingsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="form-label">Longitude</label>
+                <label htmlFor="store-longitude" className="form-label">
+                  Longitude
+                </label>
                 <input
+                  id="store-longitude"
                   type="number"
                   step="any"
                   value={locationData.longitude}
@@ -252,7 +258,7 @@ const SettingsPage: React.FC = () => {
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
               >
-                📍 Ambil Lokasi Saya
+                Ambil Lokasi Saya
               </button>
             </div>
           </div>
@@ -417,7 +423,7 @@ const SettingsPage: React.FC = () => {
               className="form-input text-sm font-mono"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              💡 Cara mendapatkan kode: Scan QRIS stiker Anda dengan aplikasi scanner QR, lalu copy
+              Cara mendapatkan kode: Scan QRIS stiker Anda dengan aplikasi scanner QR, lalu copy
               teks hasilnya.
             </p>
           </div>
@@ -425,7 +431,7 @@ const SettingsPage: React.FC = () => {
           {formData.qrisStaticCode && (
             <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-3">
               <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
-                ✅ QRIS terkonfigurasi - Dynamic QRIS akan muncul saat pembayaran QRIS
+                QRIS terkonfigurasi - Dynamic QRIS akan muncul saat pembayaran QRIS
               </p>
             </div>
           )}

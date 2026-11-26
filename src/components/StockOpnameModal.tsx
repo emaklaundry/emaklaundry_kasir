@@ -89,10 +89,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
               Catat stok fisik untuk perbandingan dengan stok virtual
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
-          >
+          <button aria-label="Tutup" onClick={onClose} className="btn btn-ghost btn-icon">
             <XIcon className="w-5 h-5" />
           </button>
         </div>
@@ -127,6 +124,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
                     <td className="px-3 py-2 text-right font-mono">{virtualStock.toFixed(2)}</td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={`Stok fisik ${item.name}`}
                         type="number"
                         step="0.01"
                         min="0"
@@ -156,6 +154,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={`Catatan ${item.name}`}
                         type="text"
                         value={notes[item.id] || ''}
                         onChange={(e) => handleNotesChange(item.id, e.target.value)}
@@ -167,7 +166,7 @@ const StockOpnameModal: React.FC<StockOpnameModalProps> = ({
                     <td className="px-3 py-2 text-center">
                       {isSaved ? (
                         <span className="text-green-600 dark:text-green-400 text-xs">
-                          ✓ Tersimpan
+                          Tersimpan
                         </span>
                       ) : (
                         <button

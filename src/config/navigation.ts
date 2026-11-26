@@ -16,13 +16,15 @@ import {
   FileTextIcon,
 } from '../components/icons';
 import { UserRole } from '../types';
-import { isAdminRole } from './permissions';
+import { Permission, can, isAdminRole } from './permissions';
 
 export interface NavItem {
   path: string;
   label: string;
   icon: React.FC<{ className?: string }>;
   adminOnly?: boolean;
+  /** Tampil bila peran punya hak ini (mengganti `adminOnly`). */
+  permission?: Permission;
   superAdminOnly?: boolean;
 }
 
@@ -44,7 +46,12 @@ export const navSections: NavSection[] = [
   {
     title: 'Layanan & Pelanggan',
     items: [
-      { path: '/management/customers', label: 'Pelanggan', icon: UsersIcon, adminOnly: true },
+      {
+        path: '/management/customers',
+        label: 'Pelanggan',
+        icon: UsersIcon,
+        permission: 'customer.edit',
+      },
       { path: '/management/services', label: 'Layanan', icon: PackageIcon, adminOnly: true },
       { path: '/management/inventory', label: 'Inventaris', icon: PackageIcon, adminOnly: true },
       {
@@ -84,7 +91,7 @@ export const navSections: NavSection[] = [
     title: 'Sistem & Keamanan',
     items: [
       { path: '/management/stores', label: 'Cabang', icon: TruckIcon, superAdminOnly: true },
-      { path: '/management/users', label: 'Akun Login', icon: UsersIcon, adminOnly: true },
+      { path: '/management/users', label: 'Akun Login', icon: UsersIcon, superAdminOnly: true },
       { path: '/settings', label: 'Pengaturan', icon: SettingsIcon, adminOnly: true },
       { path: '/audit-log', label: 'Log Audit', icon: HistoryIcon, adminOnly: true },
       {
@@ -110,6 +117,7 @@ export const navSections: NavSection[] = [
  */
 export function canSeeNavItem(item: NavItem, role: UserRole | string | undefined): boolean {
   if (item.superAdminOnly) return role === UserRole.SuperAdmin;
+  if (item.permission) return can(role, item.permission);
   if (item.adminOnly) return isAdminRole(role);
   return true;
 }

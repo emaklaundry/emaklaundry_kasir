@@ -135,23 +135,24 @@ const AppRoutes: React.FC = () => {
             />
             <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
             <Route path="/transactions/:id/details" element={<TransactionDetailPage />} />
-            {/* Admin Routes */}
+            {/* Pelanggan: Kasir & Admin (hapus/import/export dibatasi di halaman) */}
             <Route
               path="/management/customers"
               element={
-                <AdminRoute>
+                <PermissionRoute permission="customer.edit">
                   <CustomersPage />
-                </AdminRoute>
+                </PermissionRoute>
               }
             />
             <Route
               path="/management/customers/:id"
               element={
-                <AdminRoute>
+                <PermissionRoute permission="customer.edit">
                   <CustomerDetailPage />
-                </AdminRoute>
+                </PermissionRoute>
               }
             />
+            {/* Admin Routes */}
             <Route
               path="/management/assets"
               element={
@@ -195,9 +196,9 @@ const AppRoutes: React.FC = () => {
             <Route
               path="/management/users"
               element={
-                <AdminRoute>
+                <SuperAdminRoute>
                   <UsersPage />
-                </AdminRoute>
+                </SuperAdminRoute>
               }
             />
             <Route

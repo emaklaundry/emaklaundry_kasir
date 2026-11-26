@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils';
 import { supabase } from '../../utils/supabaseClient';
-import { SpinnerIcon } from '../../components/icons';
+import { EditIcon, SpinnerIcon } from '../../components/icons';
+import { can } from '../../config/permissions';
 import SuccessModal from '../../components/SuccessModal';
 import { useTransactions } from '../../contexts/TransactionContext';
 import {
@@ -51,7 +52,7 @@ const NewTransactionPage: React.FC = () => {
   const customers: Customer[] = Array.isArray(customersData)
     ? customersData
     : (customersData?.data ?? []);
-  const { addCustomer } = useCustomerMutations();
+  const { addCustomer, updateCustomer } = useCustomerMutations();
   const [confirm, confirmDialog] = useConfirmDialog();
   const { services } = useServices();
   const { currentUser, selectedStoreId } = useAppContext();
@@ -62,6 +63,8 @@ const NewTransactionPage: React.FC = () => {
   const [items, setItems] = useState<ExtendedTransactionItem[]>([]);
   const [notes, setNotes] = useState('');
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  // Pelanggan terpilih yang sedang diubah datanya (nama, nomor HP, dll).
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [editingNotes, setEditingNotes] = useState<{ note: string }[]>([]);
@@ -313,6 +316,49 @@ const NewTransactionPage: React.FC = () => {
     }
   };
 
+  const handleUpdateSelectedCustomer = async (
+    data: Omit<Customer, 'id' | 'storeId' | 'createdAt'>,
+  ) => {
+    const target = editingCustomer;
+    if (!target) return;
+    const storeId = target.storeId || currentStoreId;
+
+    // Nomor baru dipakai pelanggan lain? Beri tahu pemiliknya sebelum database menolak.
+    if (storeId && storeId !== 'all') {
+      const owner = await findCustomerByPhone(data.phone, storeId).catch(() => null);
+      if (owner && owner.id !== target.id) {
+        addToast(
+          `Nomor ${owner.phone} sudah terdaftar atas nama "${owner.name}". Gunakan nomor lain.`,
+          'error',
+        );
+        return;
+      }
+    }
+
+    const toastId = addToast('Menyimpan perubahan pelanggan...', 'info');
+    try {
+      const updated = await updateCustomer(target.id, {
+        name: data.name,
+        phone: data.phone || undefined,
+        address: data.address || undefined,
+        notes: data.notes || undefined,
+      });
+      setSelectedCustomer({
+        ...target,
+        name: updated?.name ?? data.name,
+        phone: updated?.phone ?? '',
+        address: updated?.address ?? '',
+        notes: updated?.notes ?? '',
+      });
+      addAuditLog(`Memperbarui data pelanggan: "${data.name}".`, storeId);
+      setEditingCustomer(null);
+      updateToast(toastId, 'Data pelanggan berhasil diperbarui!', 'success');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : (error as { message?: string })?.message;
+      updateToast(toastId, `Gagal menyimpan: ${msg ?? 'Unknown error'}`, 'error');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSaving) {
@@ -441,7 +487,7 @@ const NewTransactionPage: React.FC = () => {
         await queryClient.invalidateQueries({ queryKey: ['transaction', tx.id] });
         setNewlyCreatedTransaction(tx);
         setIsWhatsAppModalOpen(true);
-        updateToast(toastId, '✓ Transaksi berhasil disimpan dan terverifikasi.', 'success');
+        updateToast(toastId, 'Transaksi berhasil disimpan dan terverifikasi.', 'success');
       } else {
         throw new Error('Tidak ada data yang dikembalikan dari server');
       }
@@ -595,6 +641,21 @@ const NewTransactionPage: React.FC = () => {
                   onSelectCustomer={setSelectedCustomer}
                   onAddNewCustomer={() => setIsCustomerModalOpen(true)}
                 />
+                {selectedCustomer && can(currentUser?.role, 'customer.edit') && (
+                  <div className="-mt-2 flex items-center justify-between gap-2 text-sm text-slate-600 dark:text-slate-400">
+                    <span className="truncate">
+                      {selectedCustomer.phone || 'Belum ada nomor HP'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCustomer(selectedCustomer)}
+                      className="btn btn-ghost btn-sm flex-shrink-0"
+                    >
+                      <EditIcon className="w-4 h-4" />
+                      Ubah data
+                    </button>
+                  </div>
+                )}
                 <div id="notes-section">
                   <label htmlFor="notes" className="form-label">
                     Catatan (Opsional)
@@ -615,11 +676,18 @@ const NewTransactionPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="form-label">Opsi Pembayaran</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <p id="payment-option-label" className="form-label">
+                    Opsi Pembayaran
+                  </p>
+                  <div
+                    role="group"
+                    aria-labelledby="payment-option-label"
+                    className="grid grid-cols-2 gap-2"
+                  >
                     <button
                       type="button"
                       onClick={() => handlePaymentOptionChange(false)}
+                      aria-pressed={!isPayingNow}
                       className={`p-3 rounded-lg text-base border-2 ${!isPayingNow ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
                     >
                       Bayar Nanti
@@ -627,6 +695,7 @@ const NewTransactionPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handlePaymentOptionChange(true)}
+                      aria-pressed={isPayingNow}
                       className={`p-3 rounded-lg text-base border-2 ${isPayingNow ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50' : 'border-slate-300 dark:border-slate-600'}`}
                     >
                       Bayar Sekarang
@@ -640,13 +709,20 @@ const NewTransactionPage: React.FC = () => {
                       Pembayaran
                     </h3>
                     <div>
-                      <label className="form-label">Metode Pembayaran</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <p id="new-tx-method-label" className="form-label">
+                        Metode Pembayaran
+                      </p>
+                      <div
+                        role="group"
+                        aria-labelledby="new-tx-method-label"
+                        className="grid grid-cols-2 gap-2"
+                      >
                         {Object.values(PaymentMethod).map((m) => (
                           <button
                             type="button"
                             key={m}
                             onClick={() => setPaymentMethod(m)}
+                            aria-pressed={paymentMethod === m}
                             className={`p-3 rounded-lg text-base border-2 font-semibold transition-colors duration-200
                               ${
                                 paymentMethod === m
@@ -727,6 +803,13 @@ const NewTransactionPage: React.FC = () => {
       </form>
       {/* Di luar <form>: tombol dialog konfirmasi tidak boleh ikut men-submit transaksi. */}
       {confirmDialog}
+      {editingCustomer && (
+        <CustomerFormModal
+          customer={editingCustomer}
+          onClose={() => setEditingCustomer(null)}
+          onSave={handleUpdateSelectedCustomer}
+        />
+      )}
       <SuccessModal
         isOpen={isSuccessModalOpen}
         onClose={handleViewTransactions}

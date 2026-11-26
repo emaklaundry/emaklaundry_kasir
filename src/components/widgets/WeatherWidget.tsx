@@ -57,17 +57,17 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude, loca
       const { weatherCode, humidity } = data;
 
       if (weatherCode >= 51) {
-        setDryingRecommendation('⚠️ JANGAN JEMUR DI LUAR. Gunakan mesin pengering.');
+        setDryingRecommendation('JANGAN JEMUR DI LUAR. Gunakan mesin pengering.');
       } else if (weatherCode === 0 || weatherCode === 1) {
         if (humidity && humidity > 85) {
-          setDryingRecommendation('✅ Cuaca cerah tapi lembab. Keringkan di luar, tapi pantau.');
+          setDryingRecommendation('Cuaca cerah tapi lembab. Keringkan di luar, tapi pantau.');
         } else {
-          setDryingRecommendation('☀️ SANGAT BAIK untuk jemur di luar. Hemat listrik!');
+          setDryingRecommendation('SANGAT BAIK untuk jemur di luar. Hemat listrik!');
         }
       } else if (weatherCode <= 3) {
-        setDryingRecommendation('⛅ Berawan. Aman jemur luar, tapi keringnya mungkin lama.');
+        setDryingRecommendation('Berawan. Aman jemur luar, tapi keringnya mungkin lama.');
       } else {
-        setDryingRecommendation('☁️ Hati-hati cuaca tidak menentu.');
+        setDryingRecommendation('Hati-hati cuaca tidak menentu.');
       }
     };
 

@@ -58,7 +58,7 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
             >
               {washTypes.map((type) => (
                 <option key={type} value={type}>
-                  {getWashTypeEmoji(type)} {type}
+                  {type}
                 </option>
               ))}
             </select>
@@ -95,7 +95,7 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 space-y-4">
               <div>
                 <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                  📋 Informasi Mesin
+                  Informasi Mesin
                 </h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
@@ -127,7 +127,7 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
 
               <div>
                 <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                  🔧 Program yang Tersedia
+                  Program yang Tersedia
                 </h4>
                 <div className="space-y-2">
                   {selectedMachine.programs.map((program, index) => (
@@ -172,19 +172,5 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
     </Modal>
   );
 };
-
-function getWashTypeEmoji(type: WashType): string {
-  const emojiMap: Record<WashType, string> = {
-    [WashType.Pakaian]: '👕',
-    [WashType.Sepatu]: '👟',
-    [WashType.Tas]: '👜',
-    [WashType.Selimut]: '🛏️',
-    [WashType.Boneka]: '🧸',
-    [WashType.Karpet]: '🟫',
-    [WashType.Gorden]: '🪟',
-    [WashType.Lainnya]: '📦',
-  };
-  return emojiMap[type] || '📦';
-}
 
 export default WashSettingsModal;

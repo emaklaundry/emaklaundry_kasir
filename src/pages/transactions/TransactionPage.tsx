@@ -885,9 +885,10 @@ const TransactionPage: React.FC = () => {
                       <td className="px-4 py-3 text-center flex items-center justify-center space-x-1">
                         {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                           <button
+                            aria-label="Proses pembayaran"
                             onClick={() => handleOpenPaymentModal(t)}
                             title="Proses Pembayaran"
-                            className="p-2.5 rounded-md text-green-600 hover:text-green-900 dark:text-green-500 dark:hover:text-green-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            className="btn btn-ghost btn-icon text-green-700 dark:text-green-400"
                           >
                             <DollarSignIcon className="w-5 h-5" />
                           </button>
@@ -1020,9 +1021,10 @@ const TransactionPage: React.FC = () => {
                   <div className="flex items-center justify-start space-x-4 text-slate-600 dark:text-slate-400">
                     {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                       <button
+                        aria-label="Proses pembayaran"
                         onClick={() => handleOpenPaymentModal(t)}
                         title="Proses Pembayaran"
-                        className="text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-400"
+                        className="btn btn-ghost btn-icon text-green-700 dark:text-green-400"
                       >
                         <DollarSignIcon className="w-6 h-6" />
                       </button>

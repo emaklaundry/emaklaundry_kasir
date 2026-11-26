@@ -79,6 +79,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               await supabase.auth.signOut();
               setCurrentUser(null);
               prevLoggedInRef.current = false;
+            } else if (!data.employee_id && data.role !== 'Super Admin') {
+              // Login email & password hanya untuk Super Admin. Peran lain wajib
+              // login lewat profil karyawan + PIN (akun karyawan punya employee_id).
+              addToast(
+                'Login email & password hanya untuk Super Admin. Silakan masuk lewat profil karyawan dan PIN.',
+                'error',
+              );
+              await supabase.auth.signOut();
+              setCurrentUser(null);
+              prevLoggedInRef.current = false;
             } else {
               // Deteksi transisi dari logout ke login
               if (!prevLoggedInRef.current) {

@@ -42,7 +42,7 @@ const DynamicQRIS: React.FC<DynamicQRISProps> = ({
       <div
         className={`flex flex-col items-center justify-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg ${className}`}
       >
-        <p className="text-red-600 dark:text-red-400 text-sm text-center">⚠️ {error}</p>
+        <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
         <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
           Silakan setting QRIS di Pengaturan
         </p>

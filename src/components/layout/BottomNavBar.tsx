@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { NavLink } from 'react-router-dom';
 import useAppContext from '../../contexts/useAppContext';
-import { isAdminRole } from '../../config/permissions';
+import { can, isAdminRole } from '../../config/permissions';
 import { HomeIcon, UsersIcon, ShoppingCartIcon, BarChartIcon, BoltIcon } from '../icons';
 
 const NavItem: React.FC<{
@@ -32,15 +32,23 @@ const BottomNavBar: React.FC = () => {
   const { currentUser } = useAppContext();
   // Kasir & Operator: hanya menu operasional
   if (currentUser && !isAdminRole(currentUser.role)) {
+    const canEditCustomers = can(currentUser.role, 'customer.edit');
     return (
       <nav
         aria-label="Navigasi utama"
         className="fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
       >
-        <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
+        <div
+          className={`grid h-full max-w-lg mx-auto font-medium ${
+            canEditCustomers ? 'grid-cols-4' : 'grid-cols-3'
+          }`}
+        >
           <NavItem to="/" icon={HomeIcon} label="Dashboard" />
           <NavItem to="/quick-actions" icon={BoltIcon} label="Aksi Cepat" />
           <NavItem to="/transactions" icon={ShoppingCartIcon} label="Transaksi" />
+          {canEditCustomers && (
+            <NavItem to="/management/customers" icon={UsersIcon} label="Pelanggan" />
+          )}
         </div>
       </nav>
     );

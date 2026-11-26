@@ -26,7 +26,7 @@ const BusinessGuidePage: React.FC = () => {
             <div className="space-y-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded border border-blue-200 dark:border-blue-800">
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  📊 Rumus Harga Jual
+                  Rumus Harga Jual
                 </h4>
                 <code className="block bg-slate-800 text-green-400 p-3 rounded text-sm font-mono mb-2">
                   Harga Jual = (Biaya per Kg × Markup) + Margin Keuntungan
@@ -38,7 +38,7 @@ const BusinessGuidePage: React.FC = () => {
 
               <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded border border-green-200 dark:border-green-800">
                 <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                  📈 Break-Even Point (BEP)
+                  Break-Even Point (BEP)
                 </h4>
                 <code className="block bg-slate-800 text-green-400 p-3 rounded text-sm font-mono mb-2">
                   BEP (Kg) = Biaya Tetap Bulanan ÷ (Harga Jual/Kg - Biaya Variabel/Kg)
@@ -50,7 +50,7 @@ const BusinessGuidePage: React.FC = () => {
 
               <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded border border-amber-200 dark:border-amber-800">
                 <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
-                  💰 Margin Keuntungan
+                  Margin Keuntungan
                 </h4>
                 <code className="block bg-slate-800 text-green-400 p-3 rounded text-sm font-mono mb-2">
                   Margin (%) = ((Harga Jual - Biaya) ÷ Harga Jual) × 100
@@ -62,7 +62,7 @@ const BusinessGuidePage: React.FC = () => {
 
               <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded border border-sky-200 dark:border-sky-800">
                 <h4 className="font-semibold text-sky-900 dark:text-sky-100 mb-2">
-                  🎯 Estimasi Pendapatan Bulanan
+                  Estimasi Pendapatan Bulanan
                 </h4>
                 <code className="block bg-slate-800 text-green-400 p-3 rounded text-sm font-mono mb-2">
                   Pendapatan = Rata-rata Kg/Hari × Harga/Kg × 30 Hari
@@ -83,7 +83,7 @@ const BusinessGuidePage: React.FC = () => {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
-                  🏢 Biaya Tetap (Fixed Cost)
+                  Biaya Tetap (Fixed Cost)
                 </h4>
                 <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
                   <li>• Sewa tempat: Rp 1.500.000 - 3.000.000/bulan</li>
@@ -95,7 +95,7 @@ const BusinessGuidePage: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
-                  📦 Biaya Variabel (per Kg)
+                  Biaya Variabel (per Kg)
                 </h4>
                 <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
                   <li>• Deterjen: Rp 500 - 800/kg</li>
@@ -109,7 +109,7 @@ const BusinessGuidePage: React.FC = () => {
 
             <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-700 rounded">
               <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                💡 <strong>Estimasi Total Biaya Variabel:</strong> Rp 1.600 - 2.600/kg
+                <strong>Estimasi Total Biaya Variabel:</strong> Rp 1.600 - 2.600/kg
               </p>
             </div>
           </section>
@@ -205,7 +205,7 @@ const BusinessGuidePage: React.FC = () => {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
                 <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2">
-                  💎 Pricing Strategy
+                  Pricing Strategy
                 </h4>
                 <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                   <li>
@@ -222,7 +222,7 @@ const BusinessGuidePage: React.FC = () => {
 
               <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
                 <h4 className="font-bold text-green-900 dark:text-green-100 mb-2">
-                  🎁 Loyalty Program
+                  Loyalty Program
                 </h4>
                 <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
                   <li>• Bonus kg ke-10 gratis</li>
@@ -232,7 +232,7 @@ const BusinessGuidePage: React.FC = () => {
 
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
                 <h4 className="font-bold text-amber-900 dark:text-amber-100 mb-2">
-                  📅 Seasonal Planning
+                  Seasonal Planning
                 </h4>
                 <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
                   <li>
@@ -248,7 +248,7 @@ const BusinessGuidePage: React.FC = () => {
               </div>
 
               <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded border border-sky-200 dark:border-sky-800">
-                <h4 className="font-bold text-sky-900 dark:text-sky-100 mb-2">🚀 Ekspansi Usaha</h4>
+                <h4 className="font-bold text-sky-900 dark:text-sky-100 mb-2">Ekspansi Usaha</h4>
                 <ul className="text-sm text-sky-800 dark:text-sky-200 space-y-1">
                   <li>• Tambah layanan: Dry cleaning, laundry sepatu</li>
                   <li>• Pickup & delivery service</li>
@@ -261,14 +261,14 @@ const BusinessGuidePage: React.FC = () => {
           {/* Tips */}
           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
-              💡 Tips Sukses Bisnis Laundry
+              Tips Sukses Bisnis Laundry
             </h4>
-            <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
-              <li>✅ Konsistensi kualitas cucian adalah kunci repeat customer</li>
-              <li>✅ Catat semua pengeluaran untuk analisis profit akurat</li>
-              <li>✅ Investasi di mesin berkualitas untuk efisiensi jangka panjang</li>
-              <li>✅ Gunakan WhatsApp notification untuk meningkatkan customer experience</li>
-              <li>✅ Monitor KPI mingguan untuk deteksi masalah dini</li>
+            <ul className="list-disc space-y-1 pl-5 text-sm text-yellow-800 dark:text-yellow-200">
+              <li>Konsistensi kualitas cucian adalah kunci repeat customer</li>
+              <li>Catat semua pengeluaran untuk analisis profit akurat</li>
+              <li>Investasi di mesin berkualitas untuk efisiensi jangka panjang</li>
+              <li>Gunakan WhatsApp notification untuk meningkatkan customer experience</li>
+              <li>Monitor KPI mingguan untuk deteksi masalah dini</li>
             </ul>
           </div>
         </div>
