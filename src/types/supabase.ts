@@ -671,14 +671,29 @@ export type Database = {
         Row: {
           id: number;
           receiptMessage: string | null;
+          storeId: string | null;
+          isMaintenanceMode: boolean | null;
+          maintenanceMessage: string | null;
+          whatsappFooter: string | null;
+          qrisStaticCode: string | null;
         };
         Insert: {
           id?: never;
           receiptMessage?: string | null;
+          storeId?: string | null;
+          isMaintenanceMode?: boolean | null;
+          maintenanceMessage?: string | null;
+          whatsappFooter?: string | null;
+          qrisStaticCode?: string | null;
         };
         Update: {
           id?: never;
           receiptMessage?: string | null;
+          storeId?: string | null;
+          isMaintenanceMode?: boolean | null;
+          maintenanceMessage?: string | null;
+          whatsappFooter?: string | null;
+          qrisStaticCode?: string | null;
         };
         Relationships: [];
       };
@@ -957,6 +972,7 @@ export type Database = {
           p_order_status?: string;
           p_payment_method?: string;
           p_payment_status?: string;
+          p_supervisor_approval_id?: string;
           transaction_id_input: string;
         };
         Returns: {

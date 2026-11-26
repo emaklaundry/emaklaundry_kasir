@@ -75,15 +75,15 @@ npm test -- --coverage
 
 Per 26 November 2026: **86 file, 252 tes lulus, 2 dilewati** (`npm test`).
 
-| Folder | File |
-| --- | --- |
-| components | 36 |
-| pages | 16 |
-| contexts | 13 |
-| utils | 11 (+1 di `src/utils/__tests__/`) |
-| hooks | 5 |
-| types | 2 |
-| integration | 2 |
+| Folder      | File                              |
+| ----------- | --------------------------------- |
+| components  | 36                                |
+| pages       | 16                                |
+| contexts    | 13                                |
+| utils       | 11 (+1 di `src/utils/__tests__/`) |
+| hooks       | 5                                 |
+| types       | 2                                 |
+| integration | 2                                 |
 
 ---
 

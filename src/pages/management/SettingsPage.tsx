@@ -5,6 +5,7 @@ import { useStores } from '../../contexts/StoreContext';
 import useToasts from '../../contexts/useToasts';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
 import SupervisorPinSettings from '../../components/SupervisorPinSettings';
+import { isStaticQRIS, validateQRIS } from '../../utils/qrisUtils';
 import { KeyIcon, MapIcon } from '../../components/icons';
 import { Wrench, AlertTriangle } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
@@ -78,12 +79,31 @@ const SettingsPage: React.FC = () => {
     e.preventDefault();
     if (!formData) return;
 
+    // Kode QRIS: kosong = tanpa QRIS dinamis. Kalau diisi harus QRIS statis yang utuh,
+    // karena QR dinamis dibuat dari kode ini dan QR yang rusak tidak bisa dibayar.
+    // Buang baris baru & spasi di ujung saja: nama merchant di dalam QRIS boleh berisi spasi.
+    const qrisStaticCode = formData.qrisStaticCode?.replace(/[\r\n]+/g, '').trim() || null;
+    if (qrisStaticCode && !validateQRIS(qrisStaticCode)) {
+      addToast(
+        'Kode QRIS tidak valid (checksum tidak cocok). Salin ulang seluruh teks hasil scan stiker QRIS.',
+        'error',
+      );
+      return;
+    }
+    if (qrisStaticCode && !isStaticQRIS(qrisStaticCode)) {
+      addToast(
+        'Kode ini QRIS dinamis. Gunakan kode dari stiker QRIS statis toko (tanpa nominal).',
+        'error',
+      );
+      return;
+    }
+
     setIsSaving(true);
     // Create a replaceable toast and keep its id so we can update it later
     const toastId = addToast('Menyimpan perubahan...', 'info');
     try {
       // 1. Update Layout/General Settings
-      await updateSettings(formData);
+      await updateSettings({ ...formData, qrisStaticCode });
 
       // 2. Update Store Location (if valid store selected)
       if (currentStore && currentStore.id !== 'all') {

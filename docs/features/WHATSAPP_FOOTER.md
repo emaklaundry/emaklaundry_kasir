@@ -47,6 +47,7 @@ settings {
   isMaintenanceMode: boolean
   maintenanceMessage: text
   whatsappFooter: text
+  qrisStaticCode: text   -- kode QRIS statis (Section 13)
 }
 ```
 

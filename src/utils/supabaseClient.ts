@@ -64,9 +64,12 @@ export async function updateTransactionProgress(
     paymentMethod?: string | null;
     paymentStatus?: string | null;
     orderStatus?: string | null;
+    /** Izin PIN supervisor sekali pakai (wajib bagi Kasir yang mengubah pembayaran nota Lunas). */
+    supervisorApprovalId?: string | null;
   },
 ) {
-  const { amountPaid, change, paymentMethod, paymentStatus, orderStatus } = params;
+  const { amountPaid, change, paymentMethod, paymentStatus, orderStatus, supervisorApprovalId } =
+    params;
   const { data, error } = await supabase.rpc('update_transaction_progress', {
     transaction_id_input: transactionId,
     p_amount_paid: amountPaid ?? undefined,
@@ -74,6 +77,7 @@ export async function updateTransactionProgress(
     p_payment_method: paymentMethod ?? undefined,
     p_payment_status: paymentStatus ?? undefined,
     p_order_status: orderStatus ?? undefined,
+    p_supervisor_approval_id: supervisorApprovalId ?? undefined,
   });
   if (error) throw error;
   return data;

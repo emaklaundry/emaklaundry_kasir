@@ -320,8 +320,8 @@ const handleDownloadTemplate = async () => {
 - No. HP
 - Layanan (detail item transaksi)
 - Subtotal
-- Diskon *(historis — fitur diskon dihapus Nov 2026; transaksi baru selalu 0)*
-- Pajak *(historis — fitur pajak dihapus Nov 2026; transaksi baru selalu 0)*
+- Diskon _(historis — fitur diskon dihapus Nov 2026; transaksi baru selalu 0)_
+- Pajak _(historis — fitur pajak dihapus Nov 2026; transaksi baru selalu 0)_
 - Total
 - Status Pesanan
 - Status Bayar

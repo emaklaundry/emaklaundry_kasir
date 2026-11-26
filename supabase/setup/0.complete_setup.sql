@@ -1,7 +1,7 @@
 ﻿-- ============================================
 -- LAUNDRY MANAGEMENT SYSTEM - DATABASE SETUP
 -- Complete Schema & Functions Setup
--- Version: 3.5.0
+-- Version: 3.6.0
 -- Date: November 26, 2026
 -- ============================================
 -- 
@@ -22,6 +22,7 @@
 -- 10. KUNCI AKSES FUNGSI SECURITY DEFINER
 -- 11. PIN SUPERVISOR (otorisasi Kasir oleh Admin)
 -- 12. KARYAWAN: PROFIL, JADWAL & KOMPENSASI
+-- 13. QRIS STATIS TOKO
 --
 -- File ini adalah sumber utama skema database. Setiap perubahan skema baru
 -- ditulis di sini, lalu dijalankan ke database live sebagai SQL terpisah.
@@ -656,13 +657,17 @@ $$;
 -- Caller must be authenticated. Super Admin can update any transaction; Admin/Kasir can only update transactions in their store.
 
 -- Penyempurnaan: Validasi status akhir transaksi agar tidak bisa Selesai jika belum Lunas, dan tidak bisa mengubah status bayar jadi Belum Lunas jika sudah Selesai
+-- p_supervisor_approval_id: izin PIN supervisor sekali pakai (Section 11) untuk
+-- Kasir yang mengubah pembayaran nota Lunas. Diperiksa trigger enforce_supervisor_approval.
+DROP FUNCTION IF EXISTS public.update_transaction_progress(uuid, numeric, numeric, text, text, text);
 CREATE OR REPLACE FUNCTION public.update_transaction_progress(
   transaction_id_input uuid,
   p_amount_paid numeric DEFAULT NULL,
   p_change numeric DEFAULT NULL,
   p_payment_method text DEFAULT NULL,
   p_payment_status text DEFAULT NULL,
-  p_order_status text DEFAULT NULL
+  p_order_status text DEFAULT NULL,
+  p_supervisor_approval_id uuid DEFAULT NULL
 )
 RETURNS SETOF public.transactions
 LANGUAGE plpgsql
@@ -719,7 +724,8 @@ BEGIN
     "change" = COALESCE(p_change, "change"),
     "paymentMethod" = COALESCE(p_payment_method, "paymentMethod"),
     "paymentStatus" = COALESCE(p_payment_status, "paymentStatus"),
-    "orderStatus" = COALESCE(p_order_status, "orderStatus")
+    "orderStatus" = COALESCE(p_order_status, "orderStatus"),
+    "supervisorApprovalId" = COALESCE(p_supervisor_approval_id, "supervisorApprovalId")
   WHERE id = transaction_id_input;
 
   -- Audit log (use table alias to avoid ambiguity)
@@ -2328,13 +2334,15 @@ BEGIN
 END;
 $$;
 
--- BELUM AKTIF: trigger ini memblokir Kasir mengubah pembayaran nota Lunas tanpa
--- PIN. Aktifkan setelah UI input PIN untuk Kasir (SupervisorPinModal) dipasang
--- di alur ubah pembayaran. Database live juga belum memasang trigger ini.
--- CREATE TRIGGER enforce_supervisor_approval
---   BEFORE INSERT OR UPDATE ON public.transactions
---   FOR EACH ROW
---   EXECUTE FUNCTION public.enforce_supervisor_approval();
+-- Aktif di live sejak 26 Nov 2026. Kasir boleh mengubah status pesanan,
+-- melunasi nota, dan mengubah catatan tanpa PIN; mengubah pembayaran nota
+-- Lunas wajib membawa izin PIN sekali pakai (lewat parameter
+-- p_supervisor_approval_id di update_transaction_progress). Admin tanpa PIN.
+DROP TRIGGER IF EXISTS enforce_supervisor_approval ON public.transactions;
+CREATE TRIGGER enforce_supervisor_approval
+  BEFORE INSERT OR UPDATE ON public.transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_supervisor_approval();
 
 -- 8. Hak akses fungsi -----------------------------------------------------------
 REVOKE EXECUTE ON FUNCTION public.set_my_supervisor_pin(text) FROM PUBLIC, anon;
@@ -2390,6 +2398,36 @@ COMMENT ON COLUMN public.employees.monthly_incentive IS 'Insentif tetap per bula
 
 -- Filter umum di halaman Karyawan: per cabang + status.
 CREATE INDEX IF NOT EXISTS idx_employees_store_active ON public.employees (store_id, is_active);
+
+-- ============================================
+-- SECTION 13: QRIS STATIS TOKO (Added Nov 2026)
+-- ============================================
+-- Kode QRIS statis dari stiker toko. Dipakai halaman Pengaturan dan untuk
+-- membuat QRIS dinamis (nominal otomatis) saat pembayaran QRIS.
+-- Nama kolom camelCase mengikuti kolom lain di tabel settings.
+-- Validasi lengkap (CRC, statis/dinamis) dilakukan di aplikasi; database
+-- hanya menolak isian yang jelas bukan QRIS. Aman dijalankan ulang.
+
+ALTER TABLE public.settings
+  ADD COLUMN IF NOT EXISTS "qrisStaticCode" text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'settings_qris_static_code_format'
+      AND conrelid = 'public.settings'::regclass
+  ) THEN
+    ALTER TABLE public.settings
+      ADD CONSTRAINT settings_qris_static_code_format CHECK (
+        "qrisStaticCode" IS NULL
+        OR (left("qrisStaticCode", 6) = '000201' AND length("qrisStaticCode") BETWEEN 30 AND 1024)
+      );
+  END IF;
+END $$;
+
+COMMENT ON COLUMN public.settings."qrisStaticCode" IS
+  'Kode QRIS statis toko (EMVCo, diawali 000201). NULL = pembayaran QRIS tanpa QR dinamis.';
 
 -- ============================================
 -- END OF SETUP

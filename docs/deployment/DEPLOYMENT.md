@@ -4,11 +4,11 @@ Dipakai setiap kali merilis perubahan ke production. **Diperbarui:** 26 November
 
 ## Gambaran
 
-| Bagian | Di mana | Cara deploy |
-|---|---|---|
-| Frontend (React/PWA) | Vercel, project `emaklaundry-kasir` | Otomatis dari GitHub: push ke `Development` → preview, merge ke `main` → production |
-| Database | Supabase (PostgreSQL) | **Manual** di SQL Editor — lihat [supabase/setup/README.md](../../supabase/setup/README.md) |
-| Edge Functions | Supabase | **Manual**: `supabase functions deploy <nama>` |
+| Bagian               | Di mana                             | Cara deploy                                                                                 |
+| -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| Frontend (React/PWA) | Vercel, project `emaklaundry-kasir` | Otomatis dari GitHub: push ke `Development` → preview, merge ke `main` → production         |
+| Database             | Supabase (PostgreSQL)               | **Manual** di SQL Editor — lihat [supabase/setup/README.md](../../supabase/setup/README.md) |
+| Edge Functions       | Supabase                            | **Manual**: `supabase functions deploy <nama>`                                              |
 
 Frontend, database, dan edge function **tidak** ter-deploy bersamaan. Urutannya penting (langkah 3–6).
 
@@ -20,11 +20,11 @@ Frontend, database, dan edge function **tidak** ter-deploy bersamaan. Urutannya 
 - Variabel lingkungan di Vercel (Project → Settings → Environment Variables), untuk Production dan
   Preview:
 
-| Variabel | Wajib | Isi |
-|---|---|---|
-| `VITE_SUPABASE_URL` | Ya | URL project Supabase |
-| `VITE_SUPABASE_ANON_KEY` | Ya | Kunci publik (anon) Supabase. Kunci ini memang terlihat di browser; keamanan data dijaga oleh RLS |
-| `VITE_GOOGLE_CLIENT_ID` | Tidak | Untuk import kontak Google |
+| Variabel                 | Wajib | Isi                                                                                               |
+| ------------------------ | ----- | ------------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`      | Ya    | URL project Supabase                                                                              |
+| `VITE_SUPABASE_ANON_KEY` | Ya    | Kunci publik (anon) Supabase. Kunci ini memang terlihat di browser; keamanan data dijaga oleh RLS |
+| `VITE_GOOGLE_CLIENT_ID`  | Tidak | Untuk import kontak Google                                                                        |
 
 Versi aplikasi (`VITE_APP_VERSION`) diisi otomatis dari `package.json` saat build.
 
@@ -45,17 +45,13 @@ Versi aplikasi (`VITE_APP_VERSION`) diisi otomatis dari `package.json` saat buil
 4. **Frontend**: buka PR `Development` → `main`, merge. Tunggu deployment production di Vercel berstatus
    **Ready**.
 5. **Edge function** yang berubah: `supabase functions deploy <nama-fungsi>`.
-6. **SQL penghapusan** (kolom/fungsi lama): jalankan `supabase/setup/2.jalankan_setelah_deploy.sql`
-   **setelah** langkah 4 dan 5 selesai.
+6. **SQL penghapusan** (kolom/fungsi lama): jalankan **setelah** langkah 4 dan 5 selesai. Simpan SQL-nya
+   sementara di `supabase/setup/2.jalankan_setelah_deploy.sql`, lalu hapus file itu setelah dijalankan.
 7. **Uji cepat** di production (lihat checklist di bawah).
 
-### Rilis yang sedang menunggu (per 26 November 2026)
-
-| Langkah | Yang dijalankan |
-|---|---|
-| 3 | Section 12 dari `supabase/setup/0.complete_setup.sql` (kolom profil, jadwal & kompensasi karyawan) |
-| 5 | `supabase functions deploy create-user manage-employee-login` |
-| 6 | `supabase/setup/2.jalankan_setelah_deploy.sql` (hapus saldo diskon, Pajak/Diskon %, `canGiveDiscount`) |
+Status per 26 November 2026: tidak ada SQL yang menunggu; production sama dengan
+`0.complete_setup.sql` versi 3.6.0. Riwayat langkah tiap rilis ada di
+[supabase/setup/README.md](../../supabase/setup/README.md) bagian 5.
 
 ## Checklist uji cepat
 
@@ -79,13 +75,13 @@ Versi aplikasi (`VITE_APP_VERSION`) diisi otomatis dari `package.json` saat buil
 
 ## Masalah yang pernah terjadi
 
-| Gejala | Penyebab | Perbaikan |
-|---|---|---|
-| Build Vercel gagal: `npm error ERESOLVE could not resolve` | Versi `vitest` dan `@vitest/coverage-v8` di `package.json` tidak sama persis | Samakan versinya, jalankan `npm install`, commit `package-lock.json` |
-| Build gagal: `Transform failed` / `Expected ")"` | Error sintaks di kode | Jalankan `npm run build` lokal sebelum push |
-| Login karyawan / buat pengguna gagal | Edge function belum di-deploy, atau `ALLOWED_ORIGIN` tidak memuat domain aplikasi | Langkah 5 dan secret `ALLOWED_ORIGIN` |
-| Menyimpan karyawan gagal | Kolom karyawan belum ada di database | Jalankan Section 12 (langkah 3) |
-| 404 saat halaman di-refresh | — | Sudah ditangani `vercel.json` (rewrite ke `index.html`) |
+| Gejala                                                     | Penyebab                                                                          | Perbaikan                                                            |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Build Vercel gagal: `npm error ERESOLVE could not resolve` | Versi `vitest` dan `@vitest/coverage-v8` di `package.json` tidak sama persis      | Samakan versinya, jalankan `npm install`, commit `package-lock.json` |
+| Build gagal: `Transform failed` / `Expected ")"`           | Error sintaks di kode                                                             | Jalankan `npm run build` lokal sebelum push                          |
+| Login karyawan / buat pengguna gagal                       | Edge function belum di-deploy, atau `ALLOWED_ORIGIN` tidak memuat domain aplikasi | Langkah 5 dan secret `ALLOWED_ORIGIN`                                |
+| Menyimpan karyawan gagal                                   | Kolom karyawan belum ada di database                                              | Jalankan Section 12 (langkah 3)                                      |
+| 404 saat halaman di-refresh                                | —                                                                                 | Sudah ditangani `vercel.json` (rewrite ke `index.html`)              |
 
 ## Eskalasi
 

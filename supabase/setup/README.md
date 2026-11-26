@@ -3,7 +3,7 @@
 Satu halaman untuk melihat **semua** bagian backend: database dan fungsi server (Edge Functions).
 `SETUP_GUIDE.md` dan `DEPLOYMENT.md` di folder ini hanya menunjuk ke halaman ini.
 
-**Diperbarui:** 26 November 2026 · **Versi setup:** 3.5.0
+**Diperbarui:** 26 November 2026 · **Versi setup:** 3.6.0
 
 ---
 
@@ -17,7 +17,6 @@ emaklaundry_kasir/
     ├── setup/
     │   ├── 0.complete_setup.sql   ← SELURUH skema database dalam 1 file (setup dari nol)
     │   ├── 1.seed_data_awal.sql   ← cabang, profil pengguna, pengaturan awal (data uji)
-    │   ├── 2.jalankan_setelah_deploy.sql ← perubahan live yang masih menunggu deploy (sementara)
     │   └── README.md              ← halaman ini
     ├── seeds/                     ← data contoh: layanan, inventaris, aset, perawatan
     └── backup/                    ← cadangan data asli (xlsx/csv/pdf); file .sql di sini tidak masuk git
@@ -47,6 +46,7 @@ Folder `supabase/` harus tetap di root proyek dengan nama itu: Supabase CLI hany
 | 10 | Kunci akses fungsi SECURITY DEFINER (cabut akses `anon`/client dari fungsi admin & trigger) |
 | 11 | PIN supervisor: tabel, RPC `set_my_supervisor_pin` / `request_supervisor_approval`. Trigger `enforce_supervisor_approval` masih dikomentari sampai UI PIN Kasir siap |
 | 12 | Karyawan: alamat, tanggal mulai, jam shift & hari kerja, toleransi terlambat, insentif bulanan. Aman dijalankan ulang |
+| 13 | QRIS statis toko: kolom `settings."qrisStaticCode"` + cek format. Aman dijalankan ulang |
 
 ---
 
@@ -113,14 +113,11 @@ Urutan saat rilis tergantung jenis perubahan:
 - **Menambah** tabel/kolom/fungsi: jalankan SQL dulu, **baru** deploy frontend (frontend baru butuh
   kolom itu sudah ada).
 - **Menghapus** kolom/fungsi: deploy frontend & edge function dulu, **baru** jalankan SQL (frontend lama
-  masih memakai kolom itu). Simpan SQL-nya sementara di `2.jalankan_setelah_deploy.sql`.
+  masih memakai kolom itu). Simpan SQL-nya sementara di file `2.jalankan_setelah_deploy.sql` di
+  folder ini, lalu hapus file itu setelah dijalankan di production.
 
-Perubahan yang sedang menunggu di production (per 26 Nov 2026):
-
-| Kapan | SQL | Isi |
-|---|---|---|
-| **Sebelum** frontend baru live | Section 12 dari `0.complete_setup.sql` (salin bagian itu saja) | Kolom profil, jadwal & kompensasi karyawan. Tanpa ini, menyimpan data di halaman Karyawan gagal |
-| **Sesudah** frontend baru live **dan** `supabase functions deploy create-user manage-employee-login` | `2.jalankan_setelah_deploy.sql` | Hapus sisa saldo diskon, Pajak (%), Diskon (%), dan `canGiveDiscount` |
+Tidak ada perubahan yang menunggu. Production sama dengan `0.complete_setup.sql` versi 3.6.0
+(per 26 Nov 2026), kecuali trigger `enforce_supervisor_approval` yang memang belum diaktifkan.
 
 ---
 
@@ -159,5 +156,9 @@ WHERE schemaname = 'public' ORDER BY tablename, policyname;
   publik. **Dicek ulang 26 Nov 2026: sudah tertutup.** Aturan SELECT yang tersisa di kedua tabel
   mewajibkan login (`get_my_role()` / `get_my_store_id()`), dan semua tabel publik memakai RLS.
   Ulangi cek dengan query `pg_policies` di bagian 7 setiap ada perubahan aturan.
-- **QRIS statis belum tersimpan:** isian "QRIS statis" di Pengaturan dan pembayaran QRIS dinamis membaca
-  `settings."qrisStaticCode"`, tetapi kolom itu tidak ada di database live maupun di `0.complete_setup.sql`.
+- **`.env` lokal (26 Nov 2026):** `VITE_SUPABASE_ANON_KEY` berisi kunci `service_role`, yang melewati
+  semua RLS. Tes akses memakai `.env` ini akan keliru menunjukkan data "terbuka". Variabel `VITE_*` ikut
+  masuk ke JavaScript publik, jadi nilainya **wajib** kunci `anon`/publishable. Production (Vercel)
+  sudah memakai kunci `anon` yang benar.
+- **QRIS statis belum tersimpan (diperbaiki 26 Nov 2026):** kolom `settings."qrisStaticCode"` belum ada,
+  sehingga menyimpan Pengaturan dengan kode QRIS gagal. Sudah ditambahkan di live dan di Section 13.

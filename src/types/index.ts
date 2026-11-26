@@ -212,7 +212,8 @@ export interface Settings {
   isMaintenanceMode?: boolean;
   maintenanceMessage?: string;
   whatsappFooter?: string;
-  qrisStaticCode?: string; // QRIS statis merchant untuk generate dinamis
+  /** Kode QRIS statis toko (EMVCo). Kosong = pembayaran QRIS tanpa QR dinamis. */
+  qrisStaticCode?: string | null;
 }
 
 export interface ScheduledMaintenance {
