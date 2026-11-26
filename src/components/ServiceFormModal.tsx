@@ -72,10 +72,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     >
       <form className="space-y-4">
         <div>
-          <label
-            htmlFor="name"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="name" className="form-label">
             Nama Layanan
           </label>
           <input
@@ -89,10 +86,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
           />
         </div>
         <div>
-          <label
-            htmlFor="category"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="category" className="form-label">
             Kategori
           </label>
           <select
@@ -110,10 +104,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
           </select>
         </div>
         <div>
-          <label
-            htmlFor="washType"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="washType" className="form-label">
             Jenis Yang Dicuci
           </label>
           <select
@@ -132,10 +123,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="price"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="price" className="form-label">
               Harga
             </label>
             <input
@@ -149,10 +137,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             />
           </div>
           <div>
-            <label
-              htmlFor="unit"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="unit" className="form-label">
               Satuan
             </label>
             <input
@@ -167,10 +152,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
           </div>
         </div>
         <div>
-          <label
-            htmlFor="durationDays"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="durationDays" className="form-label">
             Durasi (hari)
           </label>
           <input

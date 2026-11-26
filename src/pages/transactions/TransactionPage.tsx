@@ -853,7 +853,7 @@ const TransactionPage: React.FC = () => {
                           onChange={(e) =>
                             handleOrderStatusChange(t.id, e.target.value as OrderStatus)
                           }
-                          className={`px-2 py-1 text-sm font-medium rounded-full border-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer ${getStatusBadge(t.orderStatus)}`}
+                          className={`badge cursor-pointer appearance-none border-0 py-1 ${getStatusBadge(t.orderStatus)}`}
                           title={
                             t.paymentStatus !== PaymentStatus.Paid
                               ? 'Pelunasan diperlukan untuk menyelesaikan pesanan'
@@ -1004,9 +1004,7 @@ const TransactionPage: React.FC = () => {
                       <span className="text-slate-500 dark:text-slate-400 text-base">
                         Status Pesanan:
                       </span>
-                      <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(t.orderStatus)}`}
-                      >
+                      <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                         {t.orderStatus}
                       </span>
                     </div>
@@ -1014,9 +1012,7 @@ const TransactionPage: React.FC = () => {
                       <span className="text-slate-500 dark:text-slate-400 text-base">
                         Status Bayar:
                       </span>
-                      <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}
-                      >
+                      <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                         {t.paymentStatus}
                       </span>
                     </div>

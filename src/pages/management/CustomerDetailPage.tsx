@@ -169,16 +169,12 @@ const CustomerDetailPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(t.orderStatus)}`}
-                      >
+                      <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                         {t.orderStatus}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}
-                      >
+                      <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                         {t.paymentStatus}
                       </span>
                     </td>

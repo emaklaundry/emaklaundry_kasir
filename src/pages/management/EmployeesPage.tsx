@@ -45,13 +45,7 @@ const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
 
 const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => (
-  <span
-    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-      active
-        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-        : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
-    }`}
-  >
+  <span className={`badge ${active ? 'badge-success' : 'badge-neutral'}`}>
     {active ? 'Aktif' : 'Nonaktif'}
   </span>
 );
@@ -535,7 +529,7 @@ const EmployeesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsImportOpen(false)}
-            className="rounded-lg bg-slate-100 px-4 py-2 font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
+            className="btn btn-secondary"
           >
             Tutup
           </button>

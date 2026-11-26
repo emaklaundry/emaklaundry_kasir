@@ -86,10 +86,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="description" className="form-label">
             Deskripsi Tugas
           </label>
           <input
@@ -105,10 +102,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="frequencyValue"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="frequencyValue" className="form-label">
               Ulangi Setiap
             </label>
             <input
@@ -123,10 +117,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
             />
           </div>
           <div>
-            <label
-              htmlFor="frequencyUnit"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="frequencyUnit" className="form-label">
               Satuan
             </label>
             <select
@@ -144,10 +135,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
           </div>
         </div>
         <div>
-          <label
-            htmlFor="estimatedCost"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="estimatedCost" className="form-label">
             Estimasi Biaya (Rp)
           </label>
           <input
@@ -166,10 +154,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
           </p>
         </div>
         <div>
-          <label
-            htmlFor="estimatedCost"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="estimatedCost" className="form-label">
             Estimasi Biaya (Rp)
           </label>
           <input
@@ -188,10 +173,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
           </p>
         </div>
         <div>
-          <label
-            htmlFor="nextDueDate"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="nextDueDate" className="form-label">
             Tanggal Jatuh Tempo Berikutnya
           </label>
           <input

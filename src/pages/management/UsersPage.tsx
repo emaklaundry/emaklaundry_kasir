@@ -344,7 +344,7 @@ const UsersPage: React.FC = () => {
                       )}
                       <td className="px-6 py-4">
                         <span
-                          className={`px-2 py-1 text-sm font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
+                          className={`badge ${user.isActive ? 'badge-success' : 'badge-neutral'}`}
                         >
                           {user.isActive ? 'Aktif' : 'Tidak Aktif'}
                         </span>
@@ -424,9 +424,7 @@ const UsersPage: React.FC = () => {
                           </p>
                         )}
                     </div>
-                    <span
-                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
-                    >
+                    <span className={`badge ${user.isActive ? 'badge-success' : 'badge-neutral'}`}>
                       {user.isActive ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                   </div>

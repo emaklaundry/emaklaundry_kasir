@@ -86,10 +86,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="name"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="name" className="form-label">
               Nama Aset
             </label>
             <input
@@ -103,10 +100,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
             />
           </div>
           <div>
-            <label
-              htmlFor="serialNumber"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="serialNumber" className="form-label">
               Nomor Serial
             </label>
             <input
@@ -121,10 +115,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="purchaseDate"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="purchaseDate" className="form-label">
               Tanggal Beli
             </label>
             <input
@@ -138,10 +129,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
             />
           </div>
           <div>
-            <label
-              htmlFor="purchaseCost"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="purchaseCost" className="form-label">
               Biaya Beli (Rp)
             </label>
             <input
@@ -156,10 +144,7 @@ const AssetFormModal: React.FC<AssetFormModalProps> = ({ asset, onClose, onSave 
           </div>
         </div>
         <div>
-          <label
-            htmlFor="status"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="status" className="form-label">
             Status
           </label>
           <select

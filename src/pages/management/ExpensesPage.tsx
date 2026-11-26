@@ -485,7 +485,7 @@ const ExpensesPage: React.FC = () => {
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <span
-                      className={`whitespace-nowrap px-2 py-1 rounded-full text-xs ${item.category.includes('Aset') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'}`}
+                      className={`badge ${item.category.includes('Aset') ? 'badge-info' : 'badge-neutral'}`}
                     >
                       {item.category}
                     </span>

@@ -163,7 +163,7 @@ const SOPPage = () => {
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Judul SOP</label>
+                  <label className="form-label">Judul SOP</label>
                   <input
                     type="text"
                     value={editForm.title || ''}
@@ -173,7 +173,7 @@ const SOPPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
+                  <label className="form-label">Kategori</label>
                   <input // Simple input for now, could be select
                     type="text"
                     list="categories"
@@ -190,7 +190,7 @@ const SOPPage = () => {
                   </datalist>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Urutan</label>
+                  <label className="form-label">Urutan</label>
                   <input
                     type="number"
                     value={editForm.display_order || 0}
@@ -201,9 +201,7 @@ const SOPPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Konten Prosedur
-                  </label>
+                  <label className="form-label">Konten Prosedur</label>
                   <textarea
                     rows={12}
                     value={editForm.content || ''}

@@ -67,10 +67,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
 
   return (
     <div className="relative" id={id}>
-      <label
-        htmlFor="customerName"
-        className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-      >
+      <label htmlFor="customerName" className="form-label">
         Pelanggan
       </label>
       <div className="flex gap-2">

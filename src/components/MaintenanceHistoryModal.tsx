@@ -15,7 +15,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ asset
       title={`Riwayat Pemeliharaan: ${asset.name}`}
       footer={
         <>
-          <button onClick={onClose} className="btn btn-primary">
+          <button onClick={onClose} className="btn btn-secondary">
             Tutup
           </button>
         </>

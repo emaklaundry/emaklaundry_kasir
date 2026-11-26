@@ -546,9 +546,7 @@ const AssetsPage: React.FC = () => {
                         : '-'}
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(asset.status)}`}
-                      >
+                      <span className={`badge ${getStatusBadge(asset.status)}`}>
                         {asset.status}
                       </span>
                     </td>
@@ -633,11 +631,7 @@ const AssetsPage: React.FC = () => {
                     <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
                       {asset.name}
                     </p>
-                    <span
-                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadge(asset.status)}`}
-                    >
-                      {asset.status}
-                    </span>
+                    <span className={`badge ${getStatusBadge(asset.status)}`}>{asset.status}</span>
                   </div>
                   <div className="flex items-center space-x-0">
                     <button

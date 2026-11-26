@@ -195,9 +195,7 @@ const SettingsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Latitude
-                </label>
+                <label className="form-label">Latitude</label>
                 <input
                   type="number"
                   step="any"
@@ -212,9 +210,7 @@ const SettingsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Longitude
-                </label>
+                <label className="form-label">Longitude</label>
                 <input
                   type="number"
                   step="any"
@@ -330,10 +326,7 @@ const SettingsPage: React.FC = () => {
         )}
 
         <div>
-          <label
-            htmlFor="receiptMessage"
-            className="block mb-2 text-lg font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="receiptMessage" className="form-label">
             Pesan di Struk
           </label>
           <textarea
@@ -347,10 +340,7 @@ const SettingsPage: React.FC = () => {
         </div>
 
         <div>
-          <label
-            htmlFor="whatsappFooter"
-            className="block mb-2 text-lg font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="whatsappFooter" className="form-label">
             Footer Pesan WhatsApp
           </label>
           <textarea
@@ -408,10 +398,7 @@ const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="qrisStaticCode"
-              className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300"
-            >
+            <label htmlFor="qrisStaticCode" className="form-label">
               Kode QRIS Statis
             </label>
             <textarea

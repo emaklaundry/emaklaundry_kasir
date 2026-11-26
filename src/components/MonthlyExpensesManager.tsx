@@ -69,7 +69,7 @@ const MonthlyExpensesManager: React.FC<{ storeId: string }> = ({ storeId }) => {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg bg-slate-100 px-4 py-2 font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+              className="btn btn-secondary btn-sm"
             >
               Selesai
             </button>
@@ -86,10 +86,7 @@ const MonthlyExpensesManager: React.FC<{ storeId: string }> = ({ storeId }) => {
       >
         <form id="monthly-expense-template-form" onSubmit={handleAdd} className="space-y-4">
           <div>
-            <label
-              htmlFor="monthly-expense-template-name"
-              className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200"
-            >
+            <label htmlFor="monthly-expense-template-name" className="form-label">
               Nama tagihan
             </label>
             <input
@@ -104,10 +101,7 @@ const MonthlyExpensesManager: React.FC<{ storeId: string }> = ({ storeId }) => {
             />
           </div>
           <div>
-            <label
-              htmlFor="monthly-expense-template-category"
-              className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200"
-            >
+            <label htmlFor="monthly-expense-template-category" className="form-label">
               Kategori pengeluaran
             </label>
             <select

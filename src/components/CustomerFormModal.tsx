@@ -77,10 +77,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       <div role="form" className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="customer-name"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="customer-name" className="form-label">
               Nama Pelanggan
             </label>
             <input
@@ -95,10 +92,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             />
           </div>
           <div>
-            <label
-              htmlFor="customer-phone"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="customer-phone" className="form-label">
               Nomor Telepon (Opsional)
             </label>
             <input
@@ -114,10 +108,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
         </div>
         <div>
-          <label
-            htmlFor="customer-address"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="customer-address" className="form-label">
             Alamat (Opsional)
           </label>
           <input
@@ -131,10 +122,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           />
         </div>
         <div>
-          <label
-            htmlFor="customer-notes"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="customer-notes" className="form-label">
             Catatan (Opsional)
           </label>
           <textarea

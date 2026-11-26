@@ -122,10 +122,7 @@ const LoginPage: React.FC = () => {
               method="post"
             >
               <div>
-                <label
-                  htmlFor="login-email"
-                  className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
-                >
+                <label htmlFor="login-email" className="form-label">
                   Email
                 </label>
                 <input
@@ -141,10 +138,7 @@ const LoginPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label
-                  htmlFor="login-password"
-                  className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
-                >
+                <label htmlFor="login-password" className="form-label">
                   Password
                 </label>
                 <input
@@ -243,10 +237,7 @@ const LoginPage: React.FC = () => {
                 </p>
               )}
               <div>
-                <label
-                  htmlFor="employee-pin"
-                  className="block mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
-                >
+                <label htmlFor="employee-pin" className="form-label">
                   PIN (6 digit)
                 </label>
                 <input

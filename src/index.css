@@ -188,6 +188,35 @@
   html.dark .btn-ghost:hover:not(:disabled) {
     background-color: rgb(var(--surface-muted-dark));
   }
+  /* --- LABEL FORM ------------------------------------------------------- */
+  .form-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-800 dark:text-slate-200;
+  }
+
+  /* --- BADGE STATUS ------------------------------------------------------
+   * info = sedang berjalan, warning = perlu perhatian (siap diambil, sebagian),
+   * success = selesai/lunas, danger = belum lunas/rusak, neutral = lainnya.
+   * Pakai palet `sky` untuk info: `blue-*` di proyek ini adalah oranye merek.
+   * -------------------------------------------------------------------- */
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .badge-info {
+    @apply bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200;
+  }
+  .badge-warning {
+    @apply bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200;
+  }
+  .badge-success {
+    @apply bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200;
+  }
+  .badge-danger {
+    @apply bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200;
+  }
+  .badge-neutral {
+    @apply bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200;
+  }
+
   .btn-icon {
     @apply px-0;
     width: 44px;

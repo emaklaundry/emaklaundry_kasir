@@ -107,10 +107,7 @@ const SupervisorPinSettings: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isSaving}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label
-              htmlFor={pinId}
-              className="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor={pinId} className="form-label">
               {hasPin ? 'PIN baru' : 'PIN'} (6 angka)
             </label>
             <input
@@ -126,10 +123,7 @@ const SupervisorPinSettings: React.FC = () => {
             />
           </div>
           <div>
-            <label
-              htmlFor={confirmId}
-              className="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor={confirmId} className="form-label">
               Ulangi PIN
             </label>
             <input
@@ -146,10 +140,7 @@ const SupervisorPinSettings: React.FC = () => {
           </div>
         </div>
         <div>
-          <label
-            htmlFor={passwordId}
-            className="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor={passwordId} className="form-label">
             Password akun Anda
           </label>
           <input

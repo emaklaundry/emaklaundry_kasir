@@ -97,10 +97,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     >
       <form id="expense-form" onSubmit={handleSubmit} className="space-y-6">
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="date"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="date" className="form-label">
             Tanggal
           </label>
           <input
@@ -114,10 +111,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="description"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="description" className="form-label">
             Deskripsi Pengeluaran
           </label>
           <input
@@ -132,10 +126,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="category"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="category" className="form-label">
             Kategori
           </label>
           <select
@@ -154,10 +145,7 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           </select>
         </div>
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="amount"
-            className="block text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="amount" className="form-label">
             Jumlah (Rp)
           </label>
           <input

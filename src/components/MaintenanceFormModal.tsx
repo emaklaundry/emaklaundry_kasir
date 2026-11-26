@@ -52,10 +52,7 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="date"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="date" className="form-label">
             Tanggal
           </label>
           <input
@@ -69,10 +66,7 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
           />
         </div>
         <div>
-          <label
-            htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="description" className="form-label">
             Deskripsi
           </label>
           <input
@@ -86,10 +80,7 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
           />
         </div>
         <div>
-          <label
-            htmlFor="cost"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="cost" className="form-label">
             Biaya (Rp)
           </label>
           <input

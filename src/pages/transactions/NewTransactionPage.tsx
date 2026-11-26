@@ -568,10 +568,7 @@ const NewTransactionPage: React.FC = () => {
                   onAddNewCustomer={() => setIsCustomerModalOpen(true)}
                 />
                 <div id="notes-section">
-                  <label
-                    htmlFor="notes"
-                    className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-                  >
+                  <label htmlFor="notes" className="form-label">
                     Catatan (Opsional)
                   </label>
                   <textarea
@@ -590,9 +587,7 @@ const NewTransactionPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
-                    Opsi Pembayaran
-                  </label>
+                  <label className="form-label">Opsi Pembayaran</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -617,9 +612,7 @@ const NewTransactionPage: React.FC = () => {
                       Pembayaran
                     </h3>
                     <div>
-                      <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
-                        Metode Pembayaran
-                      </label>
+                      <label className="form-label">Metode Pembayaran</label>
                       <div className="grid grid-cols-2 gap-2">
                         {Object.values(PaymentMethod).map((m) => (
                           <button
@@ -641,10 +634,7 @@ const NewTransactionPage: React.FC = () => {
                     </div>
                     {paymentMethod === PaymentMethod.Cash && (
                       <div>
-                        <label
-                          htmlFor="tenderedAmount"
-                          className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-                        >
+                        <label htmlFor="tenderedAmount" className="form-label">
                           Uang Diterima (Rp)
                         </label>
                         <input

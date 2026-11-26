@@ -116,10 +116,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="user-name"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="user-name" className="form-label">
             Nama Pengguna
           </label>
           <input
@@ -136,10 +133,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
         {isNew && (
           <>
             <div>
-              <label
-                htmlFor="user-email"
-                className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-              >
+              <label htmlFor="user-email" className="form-label">
                 Email Login
               </label>
               <input
@@ -155,10 +149,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
               />
             </div>
             <div>
-              <label
-                htmlFor="user-password"
-                className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-              >
+              <label htmlFor="user-password" className="form-label">
                 Password Awal
               </label>
               <div className="relative">
@@ -196,10 +187,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
           </>
         )}
         <div>
-          <label
-            htmlFor="role"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="role" className="form-label">
             Peran (hak akses)
           </label>
           <select
@@ -233,10 +221,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
         </div>
         {showStoreSelector && (
           <div>
-            <label
-              htmlFor="storeId"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="storeId" className="form-label">
               Cabang
             </label>
             <select

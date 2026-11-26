@@ -48,10 +48,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="name"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="name" className="form-label">
             Nama Item
           </label>
           <input
@@ -66,10 +63,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor="stock"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="stock" className="form-label">
               Stok
             </label>
             <input
@@ -84,10 +78,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
             />
           </div>
           <div>
-            <label
-              htmlFor="unit"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="unit" className="form-label">
               Satuan
             </label>
             <input
@@ -102,10 +93,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
           </div>
         </div>
         <div>
-          <label
-            htmlFor="lowStockThreshold"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="lowStockThreshold" className="form-label">
             Ambang Batas Stok Rendah
           </label>
           <input

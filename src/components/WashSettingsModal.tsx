@@ -47,10 +47,7 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
         <div className="space-y-4">
           {/* Wash Type Selector */}
           <div>
-            <label
-              htmlFor="wash-type-select"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
+            <label htmlFor="wash-type-select" className="form-label">
               Pilih Jenis Cucian
             </label>
             <select
@@ -76,10 +73,7 @@ const WashSettingsModal: React.FC<WashSettingsModalProps> = ({ isOpen, onClose }
         <div className="space-y-4">
           {/* Machine Selector */}
           <div>
-            <label
-              htmlFor="machine-select"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
+            <label htmlFor="machine-select" className="form-label">
               Pilih Mesin Cuci
             </label>
             <select

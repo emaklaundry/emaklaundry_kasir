@@ -172,10 +172,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Password Lama */}
         <div>
-          <label
-            htmlFor="currentPassword"
-            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="currentPassword" className="form-label">
             Password Lama <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -202,10 +199,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
         {/* Password Baru */}
         <div>
-          <label
-            htmlFor="newPassword"
-            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="newPassword" className="form-label">
             Password Baru <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -233,10 +227,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
         {/* Konfirmasi Password Baru */}
         <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block mb-2 text-sm sm:text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="confirmPassword" className="form-label">
             Konfirmasi Password Baru <span className="text-red-500">*</span>
           </label>
           <div className="relative">

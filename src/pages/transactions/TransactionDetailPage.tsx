@@ -204,11 +204,7 @@ const TransactionDetailPage: React.FC = () => {
             <DetailItem
               label="Status Pesanan"
               value={
-                <span
-                  className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(
-                    transaction.orderStatus,
-                  )}`}
-                >
+                <span className={`badge ${getStatusBadge(transaction.orderStatus)}`}>
                   {transaction.orderStatus}
                 </span>
               }
@@ -216,11 +212,7 @@ const TransactionDetailPage: React.FC = () => {
             <DetailItem
               label="Status Bayar"
               value={
-                <span
-                  className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(
-                    transaction.paymentStatus,
-                  )}`}
-                >
+                <span className={`badge ${getPaymentStatusBadge(transaction.paymentStatus)}`}>
                   {transaction.paymentStatus}
                 </span>
               }

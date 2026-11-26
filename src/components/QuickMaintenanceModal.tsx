@@ -133,10 +133,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
     >
       <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
         <div>
-          <label
-            htmlFor="asset"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="asset" className="form-label">
             Pilih Aset
           </label>
           <select
@@ -154,10 +151,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
           </select>
         </div>
         <div>
-          <label
-            htmlFor="date"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="date" className="form-label">
             Tanggal
           </label>
           <input
@@ -171,10 +165,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
           />
         </div>
         <div>
-          <label
-            htmlFor="description"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="description" className="form-label">
             Deskripsi Kerusakan
           </label>
           <input
@@ -189,10 +180,7 @@ const QuickMaintenanceModal: React.FC<QuickMaintenanceModalProps> = ({ isOpen, o
           />
         </div>
         <div>
-          <label
-            htmlFor="cost"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="cost" className="form-label">
             Biaya Perbaikan (Rp)
           </label>
           <input

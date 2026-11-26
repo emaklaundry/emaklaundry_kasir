@@ -112,10 +112,7 @@ const SupervisorPinModal: React.FC<SupervisorPinModalProps> = ({
         </div>
 
         <div>
-          <label
-            htmlFor={inputId}
-            className="mb-2 block text-sm font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor={inputId} className="form-label">
             Minta Admin memasukkan PIN 6 angka
           </label>
           <input

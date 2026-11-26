@@ -42,10 +42,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label
-            htmlFor="name"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="name" className="form-label">
             Nama Cabang
           </label>
           <input
@@ -59,10 +56,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
           />
         </div>
         <div>
-          <label
-            htmlFor="address"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="address" className="form-label">
             Alamat
           </label>
           <input

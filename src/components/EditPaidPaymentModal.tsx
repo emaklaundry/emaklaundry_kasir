@@ -146,10 +146,7 @@ const EditPaidPaymentModal: React.FC<EditPaidPaymentModalProps> = ({
 
         {method === PaymentMethod.Cash && (
           <div>
-            <label
-              htmlFor="editPaidTendered"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="editPaidTendered" className="form-label">
               Uang Diterima (Rp)
             </label>
             <input

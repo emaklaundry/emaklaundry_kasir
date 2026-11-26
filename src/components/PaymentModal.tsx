@@ -170,9 +170,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
 
         <div>
-          <label className="block mb-2 text-base font-medium text-slate-900 dark:text-white">
-            Metode Pembayaran
-          </label>
+          <label className="form-label">Metode Pembayaran</label>
           <div className="grid grid-cols-3 gap-2">
             {Object.values(PaymentMethod).map((m) => (
               <button
@@ -220,10 +218,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         )}
 
         <div>
-          <label
-            htmlFor="amountToPay"
-            className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-          >
+          <label htmlFor="amountToPay" className="form-label">
             Jumlah Bayar (Rp)
           </label>
           <input
@@ -239,10 +234,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
         {method === PaymentMethod.Cash && (
           <div>
-            <label
-              htmlFor="tenderedAmount"
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor="tenderedAmount" className="form-label">
               Uang Diterima (Rp)
             </label>
             <input

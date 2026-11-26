@@ -595,16 +595,12 @@ const Dashboard: React.FC = () => {
                           {new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusBadge(t.orderStatus)}`}
-                          >
+                          <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                             {t.orderStatus}
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 text-sm font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}
-                          >
+                          <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                             {t.paymentStatus}
                           </span>
                         </td>
@@ -685,18 +681,14 @@ const Dashboard: React.FC = () => {
                           {formatTransactionId(t)}
                         </Link>
                       </div>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusBadge(t.paymentStatus)}`}
-                      >
+                      <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                         {t.paymentStatus}
                       </span>
                     </div>
                     <div className="mt-3 space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Status:</span>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(t.orderStatus)}`}
-                        >
+                        <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                           {t.orderStatus}
                         </span>
                       </div>

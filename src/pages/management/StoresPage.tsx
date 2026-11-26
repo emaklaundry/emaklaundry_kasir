@@ -256,9 +256,7 @@ const StoresPage: React.FC = () => {
                   </td>
                   <td className="px-4 py-3">{store.address}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 text-sm font-medium rounded-full ${store.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
-                    >
+                    <span className={`badge ${store.isActive ? 'badge-success' : 'badge-neutral'}`}>
                       {store.isActive ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                   </td>
@@ -317,9 +315,7 @@ const StoresPage: React.FC = () => {
                   </p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">{store.address}</p>
                 </div>
-                <span
-                  className={`px-2 py-0.5 text-xs font-medium rounded-full ${store.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}
-                >
+                <span className={`badge ${store.isActive ? 'badge-success' : 'badge-neutral'}`}>
                   {store.isActive ? 'Aktif' : 'Tidak Aktif'}
                 </span>
               </div>

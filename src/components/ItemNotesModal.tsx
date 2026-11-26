@@ -60,10 +60,7 @@ const ItemNotesModal: React.FC<ItemNotesModalProps> = ({
       >
         {notes.map((n, i) => (
           <div key={i}>
-            <label
-              htmlFor={`note-${i}`}
-              className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-            >
+            <label htmlFor={`note-${i}`} className="form-label">
               {`Item #${i + 1}`}
             </label>
             <input

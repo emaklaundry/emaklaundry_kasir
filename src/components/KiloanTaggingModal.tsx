@@ -48,10 +48,7 @@ const KiloanTaggingModal: React.FC<KiloanTaggingModalProps> = ({
       }
     >
       <div>
-        <label
-          htmlFor="kiloan-tags"
-          className="block mb-2 text-base font-medium text-slate-900 dark:text-white"
-        >
+        <label htmlFor="kiloan-tags" className="form-label">
           Rincian Item (Opsional)
         </label>
         <textarea
