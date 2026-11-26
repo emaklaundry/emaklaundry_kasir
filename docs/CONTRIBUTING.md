@@ -5,7 +5,7 @@ Terima kasih atas minat Anda untuk berkontribusi! 🎉
 ## 📋 Sebelum Memulai
 
 1. Fork repository ini
-2. Clone fork Anda: `git clone https://github.com/YOUR_USERNAME/emaklaundry_kasir.git`
+2. Clone fork Anda: `git clone https://github.com/<akun-anda>/emaklaundry_kasir.git`
 3. Install dependencies: `npm install`
 4. Setup environment: `cp .env.example .env`
 5. Baca [README.md](../README.md), [STRUCTURE.md](STRUCTURE.md), dan [indeks dokumentasi](00-INDEX.md)
@@ -113,13 +113,13 @@ npm run test:all  # Format + Lint + Test
 
 ### 🐛 Bug Fixes
 
-- Cek [Issues](../../issues) dengan label `bug`
+- Cek [Issues](https://github.com/emaklaundry/emaklaundry_kasir/issues) dengan label `bug`
 - Reproduce bug terlebih dahulu
 - Tambahkan test untuk regression
 
 ### ✨ New Features
 
-- Diskusi di [Discussions](../../discussions) dulu
+- Diskusikan dulu lewat [Issues](https://github.com/emaklaundry/emaklaundry_kasir/issues)
 - Pastikan align dengan roadmap
 - Update dokumentasi
 
@@ -183,7 +183,7 @@ Jika menemukan security vulnerability:
 Questions? Reach out:
 
 - Email: mhmdnvn18@gmail.com
-- [GitHub Discussions](../../discussions)
+- [GitHub Issues](https://github.com/emaklaundry/emaklaundry_kasir/issues)
 
 ---
 

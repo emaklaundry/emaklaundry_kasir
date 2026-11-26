@@ -43,27 +43,27 @@ npm run dev             # http://localhost:3000
 
 Database baru dari nol: ikuti [supabase/setup/README.md](./supabase/setup/README.md) bagian 4.
 
-| Perintah | Kegunaan |
-|---|---|
-| `npm run dev` | Server pengembangan |
-| `npm run build` | Build production ke `dist/` |
-| `npm run type-check` | Pemeriksaan TypeScript |
-| `npm run lint` | ESLint |
-| `npm test` | Semua tes (Vitest) |
-| `npm run test:all` | Cek format + lint + tes, jalankan sebelum commit |
+| Perintah             | Kegunaan                                         |
+| -------------------- | ------------------------------------------------ |
+| `npm run dev`        | Server pengembangan                              |
+| `npm run build`      | Build production ke `dist/`                      |
+| `npm run type-check` | Pemeriksaan TypeScript                           |
+| `npm run lint`       | ESLint                                           |
+| `npm test`           | Semua tes (Vitest)                               |
+| `npm run test:all`   | Cek format + lint + tes, jalankan sebelum commit |
 
 ---
 
 ## Dokumentasi
 
-| Untuk | Dokumen |
-|---|---|
-| Semua dokumentasi | [docs/00-INDEX.md](./docs/00-INDEX.md) |
-| Database & Edge Functions | [supabase/setup/README.md](./supabase/setup/README.md) |
-| Deploy & rilis | [docs/deployment/DEPLOYMENT.md](./docs/deployment/DEPLOYMENT.md) |
-| Struktur folder | [docs/STRUCTURE.md](./docs/STRUCTURE.md) |
-| Kontribusi | [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) |
-| Tes | [src/\_\_tests\_\_/README.md](./src/__tests__/README.md) |
+| Untuk                     | Dokumen                                                          |
+| ------------------------- | ---------------------------------------------------------------- |
+| Semua dokumentasi         | [docs/00-INDEX.md](./docs/00-INDEX.md)                           |
+| Database & Edge Functions | [supabase/setup/README.md](./supabase/setup/README.md)           |
+| Deploy & rilis            | [docs/deployment/DEPLOYMENT.md](./docs/deployment/DEPLOYMENT.md) |
+| Struktur folder           | [docs/STRUCTURE.md](./docs/STRUCTURE.md)                         |
+| Kontribusi                | [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md)                   |
+| Tes                       | [src/\_\_tests\_\_/README.md](./src/__tests__/README.md)         |
 
 ---
 

@@ -112,7 +112,11 @@ export function calculateCRC16(data: string): string {
 }
 
 /**
- * Generate Dynamic QRIS from static QRIS with transaction amount
+ * Generate Dynamic QRIS from static QRIS with transaction amount.
+ *
+ * Semua tag dari QRIS statis dipertahankan (termasuk akun merchant 26–51),
+ * tag 01 menjadi "12" (dinamis), tag 54 diisi nominal, lalu ditutup tag 63:
+ * "6304" + CRC16 yang dihitung atas seluruh isi termasuk "6304".
  */
 export function generateDynamicQRIS(staticQRIS: string, amount: number): string {
   const parsed = parseQRIS(staticQRIS);
@@ -120,74 +124,31 @@ export function generateDynamicQRIS(staticQRIS: string, amount: number): string 
     throw new Error('Failed to parse static QRIS');
   }
 
-  // Build new QRIS string with dynamic amount
-  let qrisString = '';
+  const tags = new Map(parsed.rawTags);
+  tags.delete('63');
+  tags.set('00', '01');
+  tags.set('01', '12');
+  // Nominal tanpa desimal (Rupiah)
+  tags.set('54', Math.round(amount).toString());
 
-  // Tag 00: Payload Format Indicator (always "01")
-  qrisString += createTLV('00', '01');
+  const body =
+    [...tags.keys()]
+      .sort((a, b) => Number(a) - Number(b))
+      .map((tag) => createTLV(tag, tags.get(tag)!))
+      .join('') + '6304';
 
-  // Tag 01: Point of Initiation - change to "12" for dynamic
-  qrisString += createTLV('01', '12');
-
-  // Rebuild remaining tags from raw data, excluding 00, 01, 63 (CRC)
-  const orderedTags = [
-    '26',
-    '27',
-    '28',
-    '29',
-    '30',
-    '31',
-    '51',
-    '52',
-    '53',
-    '54',
-    '55',
-    '56',
-    '57',
-    '58',
-    '59',
-    '60',
-    '61',
-    '62',
-  ];
-
-  for (const tag of orderedTags) {
-    if (tag === '54') {
-      // Insert transaction amount (no decimal, in smallest unit = Rupiah)
-      const amountStr = Math.round(amount).toString();
-      qrisString += createTLV('54', amountStr);
-    } else if (parsed.rawTags.has(tag)) {
-      qrisString += createTLV(tag, parsed.rawTags.get(tag)!);
-    }
-  }
-
-  // Tag 63: CRC placeholder (4 zeros for calculation)
-  qrisString += '6304';
-
-  // Calculate CRC
-  const crc = calculateCRC16(qrisString);
-
-  // Replace placeholder with actual CRC
-  qrisString = qrisString.slice(0, -4) + crc;
-
-  return qrisString;
+  return body + calculateCRC16(body);
 }
 
 /**
- * Validate QRIS string by checking CRC
+ * Validate QRIS string: diakhiri tag 63 ("6304" + 4 digit CRC) dan CRC16
+ * atas seluruh isi sebelum 4 digit terakhir cocok.
  */
 export function validateQRIS(qrisString: string): boolean {
-  if (qrisString.length < 8) return false;
-
-  // Extract data without CRC value
-  const dataWithoutCRC = qrisString.slice(0, -4);
-  const providedCRC = qrisString.slice(-4);
-
-  // Calculate expected CRC (need to include "6304" placeholder)
-  const dataForCRC = dataWithoutCRC + '6304';
-  const calculatedCRC = calculateCRC16(dataForCRC);
-
-  return providedCRC.toUpperCase() === calculatedCRC;
+  if (qrisString.length < 12) return false;
+  if (qrisString.slice(-8, -4) !== '6304') return false;
+  const providedCRC = qrisString.slice(-4).toUpperCase();
+  return calculateCRC16(qrisString.slice(0, -4)) === providedCRC;
 }
 
 /**

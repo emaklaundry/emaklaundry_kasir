@@ -180,19 +180,28 @@ export function useTransactions(filter: TransactionFilter = {}) {
         paymentMethod = undefined,
         paymentStatus = undefined,
         orderStatus = undefined,
+        supervisorApprovalId = undefined,
         ...otherFields
       } = data;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let row: any = null;
-      // 1. Jalankan RPC untuk update progress jika ada field terkait
-      if (amountPaid !== undefined || paymentStatus !== undefined || orderStatus !== undefined) {
+      // 1. Jalankan RPC untuk update progress jika ada field terkait.
+      //    Izin PIN supervisor harus ikut di UPDATE yang sama dengan perubahan pembayaran.
+      if (
+        amountPaid !== undefined ||
+        change !== undefined ||
+        paymentMethod !== undefined ||
+        paymentStatus !== undefined ||
+        orderStatus !== undefined
+      ) {
         const updated = await updateTransactionProgress(id, {
           amountPaid,
           change,
           paymentMethod,
           paymentStatus,
           orderStatus,
+          supervisorApprovalId,
         });
         if (Array.isArray(updated) && updated[0]) row = updated[0];
         else if (updated && typeof updated === 'object') row = updated;

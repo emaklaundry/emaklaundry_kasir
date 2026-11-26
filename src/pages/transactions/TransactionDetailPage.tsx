@@ -18,6 +18,8 @@ import useAppContext from '../../contexts/useAppContext';
 import useToasts from '../../contexts/useToasts';
 import { savePayment } from '../../utils/paymentUpdate';
 import PaymentModal from '../../components/PaymentModal';
+import EditPaidPaymentModal, { PaidPaymentCorrection } from '../../components/EditPaidPaymentModal';
+import SupervisorPinModal from '../../components/SupervisorPinModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { formatRupiah } from '@/utils/formatting';
@@ -399,6 +401,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isPinOpen, setIsPinOpen] = useState(false);
+  const [isEditPaidOpen, setIsEditPaidOpen] = useState(false);
+  const [approval, setApproval] = useState<{ id: string; approverName: string } | null>(null);
 
   // State untuk WhatsApp Modal otomatis setelah aksi
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
@@ -410,6 +415,39 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   function handleOpenPaymentModal() {
     setIsPaymentOpen(true);
+  }
+
+  // Ubah pembayaran nota Lunas: Kasir wajib PIN supervisor, Admin langsung.
+  function handleOpenEditPaid() {
+    setApproval(null);
+    if (isKasir) setIsPinOpen(true);
+    else setIsEditPaidOpen(true);
+  }
+
+  function handleCloseEditPaid() {
+    setIsEditPaidOpen(false);
+    setApproval(null);
+  }
+
+  async function onSaveEditPaid(correction: PaidPaymentCorrection) {
+    if (isKasir && !approval) {
+      throw new Error('Persetujuan supervisor belum ada. Minta PIN lagi.');
+    }
+    await updateTransaction(transaction.id, {
+      paymentMethod: correction.paymentMethod,
+      change: correction.change,
+      ...(approval ? { supervisorApprovalId: approval.id } : {}),
+    });
+    addAuditLog(
+      `Mengubah pembayaran nota lunas ${transaction.invoiceCode ?? transaction.id}: ` +
+        `${transaction.paymentMethod ?? '-'} → ${correction.paymentMethod}, ` +
+        `kembalian Rp ${formatRupiah(correction.change)}` +
+        (approval ? ` (disetujui PIN ${approval.approverName}).` : '.'),
+      transaction.storeId,
+    );
+    await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
+    addToast('Pembayaran berhasil diubah.', 'success');
+    handleCloseEditPaid();
   }
 
   async function onSavePayment(updatedTransaction: Transaction) {
@@ -530,6 +568,20 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         </button>
       )}
 
+      {/* Koreksi pembayaran nota Lunas (Kasir butuh PIN supervisor) */}
+      {transaction.paymentStatus === PaymentStatus.Paid && (
+        <button
+          disabled={loading}
+          onClick={handleOpenEditPaid}
+          className="bg-white border border-slate-300 hover:bg-slate-100 text-slate-900 font-medium rounded-lg px-6 py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:text-white dark:border-slate-500 dark:hover:bg-slate-600"
+          title={
+            isKasir ? 'Ubah pembayaran (perlu PIN supervisor)' : 'Ubah metode atau uang diterima'
+          }
+        >
+          Ubah Pembayaran
+        </button>
+      )}
+
       <button
         disabled={
           loading ||
@@ -566,6 +618,31 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         onSave={onSavePayment}
         disabled={loading}
       />
+
+      {isPinOpen && (
+        <SupervisorPinModal
+          isOpen={isPinOpen}
+          action="edit_paid"
+          description={`Ubah pembayaran nota ${transaction.invoiceCode ?? transaction.id} (Rp ${formatRupiah(transaction.total)}).`}
+          transactionId={transaction.id}
+          onApproved={(approvalId, approverName) => {
+            setApproval({ id: approvalId, approverName });
+            setIsPinOpen(false);
+            setIsEditPaidOpen(true);
+          }}
+          onClose={() => setIsPinOpen(false)}
+        />
+      )}
+
+      {isEditPaidOpen && (
+        <EditPaidPaymentModal
+          isOpen={isEditPaidOpen}
+          onClose={handleCloseEditPaid}
+          transaction={transaction}
+          onSave={onSaveEditPaid}
+          approverName={approval?.approverName}
+        />
+      )}
 
       {/* Modal WA Otomatis setelah aksi */}
       {isWhatsAppOpen && (

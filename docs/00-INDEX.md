@@ -4,16 +4,16 @@ Satu daftar untuk semua dokumentasi proyek. **Diperbarui:** 26 November 2026.
 
 ## Mulai dari sini
 
-| Saya ingin… | Baca |
-|---|---|
-| Menjalankan aplikasi di komputer sendiri | [../README.md](../README.md) — Mulai cepat |
-| Membuat atau memperbarui database | [../supabase/setup/README.md](../supabase/setup/README.md) |
-| Deploy ke production / merilis versi baru | [deployment/DEPLOYMENT.md](deployment/DEPLOYMENT.md) |
-| Memahami struktur folder | [STRUCTURE.md](STRUCTURE.md) |
-| Berkontribusi (branch, commit, cek sebelum PR) | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Menulis atau menjalankan tes | [../src/\_\_tests\_\_/README.md](../src/__tests__/README.md) |
-| Memahami cara aplikasi menyimpan data dengan aman (retry & verifikasi) | [reports/DATA_CONSISTENCY.md](reports/DATA_CONSISTENCY.md) |
-| Mengajari kasir/admin memakai aplikasi | Di aplikasi: **Bantuan & Panduan → Bantuan / Tutorial** (isi: `src/config/helpTopics.ts`) |
+| Saya ingin…                                                            | Baca                                                                                      |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Menjalankan aplikasi di komputer sendiri                               | [../README.md](../README.md) — Mulai cepat                                                |
+| Membuat atau memperbarui database                                      | [../supabase/setup/README.md](../supabase/setup/README.md)                                |
+| Deploy ke production / merilis versi baru                              | [deployment/DEPLOYMENT.md](deployment/DEPLOYMENT.md)                                      |
+| Memahami struktur folder                                               | [STRUCTURE.md](STRUCTURE.md)                                                              |
+| Berkontribusi (branch, commit, cek sebelum PR)                         | [CONTRIBUTING.md](CONTRIBUTING.md)                                                        |
+| Menulis atau menjalankan tes                                           | [../src/\_\_tests\_\_/README.md](../src/__tests__/README.md)                              |
+| Memahami cara aplikasi menyimpan data dengan aman (retry & verifikasi) | [reports/DATA_CONSISTENCY.md](reports/DATA_CONSISTENCY.md)                                |
+| Mengajari kasir/admin memakai aplikasi                                 | Di aplikasi: **Bantuan & Panduan → Bantuan / Tutorial** (isi: `src/config/helpTopics.ts`) |
 
 ## Fitur
 
