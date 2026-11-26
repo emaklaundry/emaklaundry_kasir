@@ -13,7 +13,7 @@ import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useStores } from '../../contexts/StoreContext';
 import useAppContext from '../../contexts/useAppContext';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { fetchInventory } from '../../contexts/InventoryContext';
 import { useAssets } from '../../contexts/AssetContext';
@@ -28,8 +28,8 @@ const StoresPage: React.FC = () => {
   const { stores, addStore, updateStore, deleteStore } = useStores();
   const { selectedStoreId } = useAppContext();
   const { data: customers = [] } = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
   const { transactions } = useTransactions();
   const { data: result = { data: [] } } = useQuery({

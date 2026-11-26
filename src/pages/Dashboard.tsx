@@ -4,7 +4,7 @@ import { useQuery, useQuery as useInventoryQuery } from '@tanstack/react-query';
 import useAppContext from '../contexts/useAppContext';
 import { fetchInventory } from '../contexts/InventoryContext';
 import { useTransactions } from '../contexts/TransactionContext';
-import { fetchCustomers } from '../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../contexts/CustomerContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useScheduledMaintenances } from '../contexts/ScheduledMaintenanceContext';
 import { useAssets } from '../contexts/AssetContext';
@@ -62,8 +62,8 @@ const Dashboard: React.FC = () => {
     storeId: selectedStoreId,
   });
   const customersQuery = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
 
   const customers = useMemo(() => {

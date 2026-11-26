@@ -8,7 +8,8 @@ import { can } from '../../config/permissions';
 import SuccessModal from '../../components/SuccessModal';
 import { useTransactions } from '../../contexts/TransactionContext';
 import {
-  fetchCustomers,
+  ALL_CUSTOMERS_QUERY_KEY,
+  fetchAllCustomers,
   findCustomerByPhone,
   useCustomerMutations,
 } from '../../contexts/CustomerContext';
@@ -43,8 +44,8 @@ const NewTransactionPage: React.FC = () => {
   const { addTransaction } = useTransactions();
   const queryClient = useQueryClient();
   const { data: customersData } = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
     // PENTING: nonaktifkan auto-refetch saat user sedang input data
     refetchOnWindowFocus: false,
     staleTime: 10 * 60 * 1000, // 10 menit - data customer jarang berubah

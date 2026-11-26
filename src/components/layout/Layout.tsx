@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import ToastContainer from '../ToastContainer';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -91,14 +91,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, [location.pathname]);
 
   const handleSidebarToggle = () => {
-    const focusTarget = isSidebarOpen ? 'sidebar-toggle' : 'sidebar-close';
+    // Di desktop tombol tutup sidebar disembunyikan, jadi fokus tetap di tombol menu header.
+    const isDrawer = window.innerWidth < SIDEBAR_PINNED_MIN_WIDTH;
+    const focusTarget = isSidebarOpen || !isDrawer ? 'sidebar-toggle' : 'sidebar-close';
     window.requestAnimationFrame(() => document.getElementById(focusTarget)?.focus());
     setIsSidebarOpen((open) => !open);
   };
 
   const { data: customersRaw = [] } = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
   // Normalize customers to always be an array
   const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data ?? []);

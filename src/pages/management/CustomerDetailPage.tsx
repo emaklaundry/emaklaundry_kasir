@@ -8,7 +8,7 @@ import {
   ChevronLeftIcon,
   HistoryIcon,
 } from '../../components/icons';
-import { fetchCustomers } from '../../contexts/CustomerContext';
+import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { Customer } from '../../types';
 import EmptyState from '../../components/EmptyState';
@@ -19,8 +19,8 @@ import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/ut
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { data: customersData } = useQuery({
-    queryKey: ['customers', { page: 1, pageSize: 1000 }],
-    queryFn: () => fetchCustomers({ page: 1, pageSize: 1000 }),
+    queryKey: ALL_CUSTOMERS_QUERY_KEY,
+    queryFn: fetchAllCustomers,
   });
   const customers = Array.isArray(customersData) ? customersData : (customersData?.data ?? []);
   const { transactions } = useTransactions();

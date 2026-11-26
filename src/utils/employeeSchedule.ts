@@ -16,7 +16,23 @@ export const EMPLOYEE_ROLE_LABELS: Record<EmployeeRole, string> = {
   admin: 'Admin',
 };
 
-/** "Sen–Sab, 08:00–17:00" atau "Belum diatur". */
+export const FLEXIBLE_SCHEDULE_LABEL = 'Fleksibel (diatur owner)';
+
+/** Jadwal standar yang dipakai saat jadwal fleksibel dimatikan. */
+export const DEFAULT_FIXED_SCHEDULE: Pick<
+  EmployeeFormData,
+  'shiftStart' | 'shiftEnd' | 'workDays'
+> = { shiftStart: '08:00', shiftEnd: '17:00', workDays: [1, 2, 3, 4, 5, 6] };
+
+/**
+ * Jadwal fleksibel: tanpa jam shift dan tanpa hari kerja tetap, karena owner
+ * menentukan sendiri siapa masuk pagi atau siang. Absensi tetap mencatat jam
+ * masuk/pulang, tapi tidak menghitung terlambat atau libur.
+ */
+export const isFlexibleSchedule = (s: { shiftStart?: string; workDays: WorkDay[] }): boolean =>
+  !s.shiftStart && s.workDays.length === 0;
+
+/** "Sen–Sab, 08:00–17:00" atau "Fleksibel (diatur owner)". */
 export function formatSchedule(
   workDays: WorkDay[],
   shiftStart?: string,
@@ -34,7 +50,7 @@ export function formatSchedule(
         : days.map(label).join(', ');
   }
   const shiftText = shiftStart && shiftEnd ? `${shiftStart}–${shiftEnd}` : '';
-  return [dayText, shiftText].filter(Boolean).join(', ') || 'Belum diatur';
+  return [dayText, shiftText].filter(Boolean).join(', ') || FLEXIBLE_SCHEDULE_LABEL;
 }
 
 export const emptyEmployeeForm = (storeId: string): EmployeeFormData => ({
@@ -44,9 +60,10 @@ export const emptyEmployeeForm = (storeId: string): EmployeeFormData => ({
   address: '',
   role: 'operator',
   startDate: '',
-  shiftStart: '08:00',
-  shiftEnd: '17:00',
-  workDays: [1, 2, 3, 4, 5, 6],
+  // Default fleksibel: shift di laundry diatur owner sesuai kebutuhan, bukan dijadwal per hari.
+  shiftStart: '',
+  shiftEnd: '',
+  workDays: [],
   lateToleranceMinutes: 15,
   baseSalary: 0,
   commissionRate: 0,
@@ -64,7 +81,8 @@ export function validateEmployeeForm(form: EmployeeFormData, pin: string): strin
     return 'Isi jam mulai dan jam selesai shift, atau kosongkan keduanya.';
   if (form.shiftStart && form.shiftEnd && form.shiftStart === form.shiftEnd)
     return 'Jam mulai dan selesai shift tidak boleh sama.';
-  if (form.workDays.length === 0) return 'Pilih minimal satu hari kerja.';
+  if (form.shiftStart && form.workDays.length === 0)
+    return 'Pilih minimal satu hari kerja, atau aktifkan jadwal fleksibel.';
   if (form.lateToleranceMinutes < 0 || form.lateToleranceMinutes > 240)
     return 'Toleransi terlambat harus 0–240 menit.';
   if (form.baseSalary < 0 || form.monthlyIncentive < 0)

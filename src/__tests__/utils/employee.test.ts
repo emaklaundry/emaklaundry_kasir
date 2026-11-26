@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { mapEmployeeRow, toEmployeeRow } from '@/utils/employeeMappers';
-import { emptyEmployeeForm, formatSchedule, validateEmployeeForm } from '@/utils/employeeSchedule';
+import {
+  DEFAULT_FIXED_SCHEDULE,
+  emptyEmployeeForm,
+  formatSchedule,
+  isFlexibleSchedule,
+  validateEmployeeForm,
+} from '@/utils/employeeSchedule';
 
 describe('employee mappers', () => {
   it('mengubah teks kosong jadi NULL dan mengurutkan hari kerja', () => {
@@ -71,11 +77,18 @@ describe('employee schedule', () => {
     expect(formatSchedule([1, 2, 3, 4, 5, 6, 7], '07:00', '15:00')).toBe(
       'Setiap hari, 07:00–15:00',
     );
-    expect(formatSchedule([])).toBe('Belum diatur');
+    expect(formatSchedule([])).toBe('Fleksibel (diatur owner)');
+  });
+
+  it('karyawan baru default jadwal fleksibel', () => {
+    const form = { ...emptyEmployeeForm('s1'), name: 'Ani' };
+    expect(isFlexibleSchedule(form)).toBe(true);
+    expect(validateEmployeeForm(form, '')).toBeNull();
+    expect(isFlexibleSchedule({ ...form, ...DEFAULT_FIXED_SCHEDULE })).toBe(false);
   });
 
   it('memvalidasi form', () => {
-    const base = { ...emptyEmployeeForm('s1'), name: 'Ani' };
+    const base = { ...emptyEmployeeForm('s1'), ...DEFAULT_FIXED_SCHEDULE, name: 'Ani' };
     expect(validateEmployeeForm(base, '')).toBeNull();
     expect(validateEmployeeForm({ ...base, name: ' ' }, '')).toMatch(/Nama/);
     expect(validateEmployeeForm({ ...base, storeId: '' }, '')).toMatch(/cabang/);

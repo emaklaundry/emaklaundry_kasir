@@ -25,7 +25,8 @@ export async function fetchCustomers(
   }
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-  query = query.range(from, to);
+  // Urutan tetap wajib untuk paginasi: tanpa ORDER BY, halaman bisa tumpang-tindih.
+  query = query.order('name').order('id').range(from, to);
   const { data, error, count } = await query;
   if (error) throw error;
   // Convert null to undefined for optional fields
@@ -37,6 +38,27 @@ export async function fetchCustomers(
     storeId: c.storeId ?? undefined,
   })) as unknown as Customer[];
   return { data: customers, count: count || 0 };
+}
+
+/** Kunci cache bersama untuk daftar lengkap pelanggan. */
+export const ALL_CUSTOMERS_QUERY_KEY = ['customers', 'all'] as const;
+
+// Supabase membatasi satu respons ke 1.000 baris, jadi ambil per halaman.
+const ALL_CUSTOMERS_CHUNK = 1000;
+
+/**
+ * Ambil SEMUA pelanggan yang boleh dilihat pengguna (per 1.000 baris).
+ * Dipakai untuk mencocokkan nama pelanggan di transaksi; memakai satu
+ * halaman 1.000 saja membuat pelanggan ke-1.001 dst tampil "N/A".
+ */
+export async function fetchAllCustomers(): Promise<{ data: Customer[]; count: number }> {
+  const all: Customer[] = [];
+  for (let page = 1; ; page++) {
+    const { data, count } = await fetchCustomers({ page, pageSize: ALL_CUSTOMERS_CHUNK });
+    all.push(...data);
+    if (data.length < ALL_CUSTOMERS_CHUNK || all.length >= count) break;
+  }
+  return { data: all, count: all.length };
 }
 
 // Kode Postgres untuk pelanggaran indeks unik (phone, storeId).

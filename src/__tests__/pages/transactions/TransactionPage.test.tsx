@@ -52,7 +52,8 @@ vi.mock('@/contexts/TransactionContext', () => ({
 
 // CustomerContext
 vi.mock('@/contexts/CustomerContext', () => ({
-  fetchCustomers: vi.fn().mockResolvedValue({
+  ALL_CUSTOMERS_QUERY_KEY: ['customers', 'all'],
+  fetchAllCustomers: vi.fn().mockResolvedValue({
     data: [
       {
         id: 'c-1',

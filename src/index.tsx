@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
+// Side-effect import: start listening for beforeinstallprompt before any page renders.
+import './hooks/useInstallPrompt';
 import './index.css';
 
 const rootElement = document.getElementById('root');

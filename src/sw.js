@@ -1,17 +1,21 @@
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from 'workbox-precaching';
 
 // Injected at build time by workbox (may be an empty array in dev)
 precacheAndRoute(self.__WB_MANIFEST || []);
+cleanupOutdatedCaches();
+
+// The new SW waits until the user accepts the update (PWAUpdatePrompt posts SKIP_WAITING),
+// so a cashier mid-transaction is never interrupted by an automatic reload.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // Injected or fallback version to force runtime cache invalidation on updates
 const APP_VERSION = typeof __SW_VERSION__ !== 'undefined' ? __SW_VERSION__ : '2.7.1';
 const CACHE_NAME = `laundry-management-v${APP_VERSION}-runtime`;
 const RUNTIME_CACHE_PREFIX = 'laundry-management-';
-
-self.addEventListener('install', (event) => {
-  // Force immediate activation of new service worker
-  event.waitUntil(self.skipWaiting());
-});
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -69,30 +73,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation requests (HTML pages)
+  // Navigation requests (HTML pages): network-first. Every route of this SPA serves the
+  // same index.html, so offline we fall back to the single precached app shell instead of
+  // keeping a copy per visited URL. This also covers /login: the shell contains no user
+  // data, and showing the app (with its Offline badge) beats the browser's error page.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       (async () => {
         try {
-          // Always fetch fresh from network with cache-busting for login/root
           const fetchOptions = isLoginRelatedRequest(url) ? { cache: 'no-store' } : {};
-
-          const res = await fetch(event.request, fetchOptions);
-
-          // Only cache authenticated app pages, NOT login page
-          if (!isLoginRelatedRequest(url) && res && res.status === 200) {
-            await cacheRuntimeResponse(event.request, res);
-          }
-
-          return res;
+          return await fetch(event.request, fetchOptions);
         } catch (err) {
-          // For login page: NO cache fallback (must have network)
-          if (isLoginRelatedRequest(url)) {
-            return Response.error();
-          }
-          // For app pages: allow cache fallback for offline access
-          const cached = await caches.match('/index.html');
-          return cached || Response.error();
+          // Precache stores index.html under a revisioned key, so use matchPrecache.
+          const shell = await matchPrecache('/index.html');
+          return shell || Response.error();
         }
       })(),
     );

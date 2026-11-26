@@ -13,12 +13,18 @@ import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import useAppContext from '../../contexts/useAppContext';
 import { exportAllData, importAllData } from '../../utils/excelUtils';
 import {
-  exportBackup,
-  downloadBackup,
-  readBackupFile,
-  validateBackup,
-  importBackup,
+  BACKUP_TABLES,
   BackupData,
+  BackupRow,
+  dedupeById,
+  downloadBackup,
+  exportBackup,
+  fetchAllRows,
+  fetchExistingProfileIds,
+  importBackup,
+  readBackupFile,
+  upsertInBatches,
+  validateBackup,
 } from '../../utils/backupUtils';
 import {
   UserRole,
@@ -30,7 +36,30 @@ import {
   InventoryItem,
   Asset,
 } from '@/types';
-import type { Json } from '@/types/supabase';
+
+interface RestoreReport {
+  title: string;
+  tone: 'success' | 'warning' | 'error';
+  lines: string[];
+  errors: string[];
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isValidDate = (value: unknown): value is Date =>
+  value instanceof Date && !Number.isNaN(value.getTime());
+
+const toDateOnly = (value: unknown): string | null => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return isValidDate(date) ? date.toISOString().split('T')[0] : null;
+};
+
+const toIsoOrNull = (value: unknown): string | null => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return isValidDate(date) ? date.toISOString() : null;
+};
 
 const BackupRestorePage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -38,7 +67,7 @@ const BackupRestorePage: React.FC = () => {
   const [confirm, confirmDialog] = useConfirmDialog();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // JSON Backup states
   const [isExportingJson, setIsExportingJson] = useState(false);
@@ -47,329 +76,102 @@ const BackupRestorePage: React.FC = () => {
   const [pendingJsonBackup, setPendingJsonBackup] = useState<BackupData | null>(null);
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch all data without pagination limits
-  const customersQuery = useQuery({
-    queryKey: ['backup-customers-all', selectedStoreId],
+  const [restoreReport, setRestoreReport] = useState<RestoreReport | null>(null);
+  const [lastBackupDate, setLastBackupDate] = useState(() =>
+    localStorage.getItem('lastBackupDate'),
+  );
+
+  const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin;
+  const canBackup = !!currentUser && currentUser.role !== UserRole.Cashier;
+
+  // Cabang yang di-backup/restore. null = semua cabang (hanya Super Admin).
+  const scopeStoreId: string | null = isSuperAdmin
+    ? selectedStoreId && selectedStoreId !== 'all'
+      ? selectedStoreId
+      : null
+    : selectedStoreId && selectedStoreId !== 'all'
+      ? selectedStoreId
+      : (currentUser?.storeId ?? null);
+
+  const markBackupDone = () => {
+    const now = new Date().toISOString();
+    localStorage.setItem('lastBackupDate', now);
+    setLastBackupDate(now);
+  };
+
+  // Ambil semua data (dengan paginasi, melewati batas 1.000 baris Supabase).
+  const backupDataQuery = useQuery({
+    queryKey: ['backup-data-all', scopeStoreId],
+    enabled: canBackup,
     queryFn: async () => {
-      const { supabase } = await import('../../utils/supabaseClient');
-      let allCustomers: unknown[] = [];
-      let page = 0;
-      const pageSize = 1000;
-      let hasMore = true;
+      const filter = scopeStoreId ? { column: 'storeId', value: scopeStoreId } : undefined;
+      const [customerRows, serviceRows, inventoryRows, assetRows, expenseRows, transactionRows] =
+        await Promise.all([
+          fetchAllRows('customers', { filter }),
+          fetchAllRows('services', { filter }),
+          fetchAllRows('inventory_items', { filter }),
+          fetchAllRows('assets', { filter }),
+          fetchAllRows('expenses', { filter }),
+          fetchAllRows('transactions', { filter }),
+        ]);
 
-      while (hasMore) {
-        let query = supabase.from('customers').select('*');
-
-        // Apply store filter
-        if (selectedStoreId && selectedStoreId !== 'all') {
-          query = query.eq('storeId', selectedStoreId);
-        }
-
-        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          allCustomers = [...allCustomers, ...data];
-          if (data.length < pageSize) {
-            hasMore = false;
-          }
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      return (allCustomers as Record<string, unknown>[]).map((c) => ({
+      const customers = customerRows.map((c) => ({
         ...c,
         address: c.address ?? undefined,
         notes: c.notes ?? undefined,
         phone: c.phone ?? undefined,
         storeId: c.storeId ?? undefined,
-      }));
-    },
-  });
+      })) as unknown as Customer[];
 
-  const customers = customersQuery.data || [];
-
-  const servicesQuery = useQuery({
-    queryKey: ['backup-services-all', selectedStoreId],
-    queryFn: async () => {
-      const { supabase } = await import('../../utils/supabaseClient');
-      let query = supabase.from('services').select('*');
-
-      // Apply store filter
-      if (selectedStoreId && selectedStoreId !== 'all') {
-        query = query.eq('storeId', selectedStoreId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []).map((s: Record<string, unknown>) => ({
+      const services = serviceRows.map((s) => ({
         ...s,
         storeId: s.storeId ?? undefined,
         washType: s.wash_type,
-      }));
-    },
-  });
+      })) as unknown as Service[];
 
-  const services = servicesQuery.data || [];
-
-  const inventoryQuery = useQuery({
-    queryKey: ['backup-inventory-all', selectedStoreId],
-    queryFn: async () => {
-      const { supabase } = await import('../../utils/supabaseClient');
-      let allInventory: unknown[] = [];
-      let page = 0;
-      const pageSize = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        let query = supabase.from('inventory_items').select('*');
-
-        // Apply store filter
-        if (selectedStoreId && selectedStoreId !== 'all') {
-          query = query.eq('storeId', selectedStoreId);
-        }
-
-        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          allInventory = [...allInventory, ...data];
-          if (data.length < pageSize) {
-            hasMore = false;
-          }
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      return (allInventory as Record<string, unknown>[]).map((i) => ({
+      const inventory = inventoryRows.map((i) => ({
         ...i,
         storeId: i.storeId ?? undefined,
-      }));
-    },
-  });
+      })) as unknown as InventoryItem[];
 
-  const inventory = inventoryQuery.data || [];
-
-  const assetsQuery = useQuery({
-    queryKey: ['backup-assets-all', selectedStoreId],
-    queryFn: async () => {
-      const { supabase } = await import('../../utils/supabaseClient');
-      let query = supabase.from('assets').select('*');
-
-      // Apply store filter
-      if (selectedStoreId && selectedStoreId !== 'all') {
-        query = query.eq('storeId', selectedStoreId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []).map((a: Record<string, unknown>) => ({
+      const assets = assetRows.map((a) => ({
         ...a,
         purchaseDate: a.purchaseDate ?? undefined,
         serialNumber: a.serialNumber ?? undefined,
         purchaseCost: a.purchaseCost ?? undefined,
         storeId: a.storeId ?? undefined,
         maintenanceHistory: Array.isArray(a.maintenanceHistory) ? a.maintenanceHistory : [],
-      }));
-    },
-  });
+      })) as unknown as Asset[];
 
-  const assets = assetsQuery.data || [];
+      const expenses = expenseRows.map((e) => ({
+        ...e,
+        date: new Date(String(e.date)),
+        storeId: e.storeId ?? '',
+        recurringTemplateId: e.recurringTemplateId ?? undefined,
+        recurringPeriod: e.recurringPeriod ?? undefined,
+      })) as unknown as Expense[];
 
-  // Fetch combined expenses (from database + asset purchases + maintenance)
-  const expensesQuery = useQuery({
-    queryKey: ['backup-expenses-combined', selectedStoreId],
-    queryFn: async () => {
-      const { supabase } = await import('../../utils/supabaseClient');
-
-      // Helper untuk format tanggal lokal (YYYY-MM-DD)
-      const formatDateStr = (date: Date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      };
-
-      // 1. Fetch ALL expenses from database
-      let allOperationalExpenses: Expense[] = [];
-      let page = 0;
-      const pageSize = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        let query = supabase.from('expenses').select('*');
-
-        // Apply store filter
-        if (selectedStoreId && selectedStoreId !== 'all') {
-          query = query.eq('storeId', selectedStoreId);
-        }
-
-        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          allOperationalExpenses = [
-            ...allOperationalExpenses,
-            ...data.map((e) => ({
-              ...e,
-              date: new Date(typeof e.date === 'string' ? e.date : e.date),
-              storeId: e.storeId ?? '',
-              recurringTemplateId: e.recurringTemplateId ?? undefined,
-              recurringPeriod: e.recurringPeriod ?? undefined,
-            })),
-          ];
-          if (data.length < pageSize) {
-            hasMore = false;
-          }
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      // 2. Fetch Assets for backfilling old purchases and maintenance
-      let assetQuery = supabase.from('assets').select('*');
-
-      // Apply store filter
-      if (selectedStoreId && selectedStoreId !== 'all') {
-        assetQuery = assetQuery.eq('storeId', selectedStoreId);
-      }
-
-      const { data: assetsData, error: assetsError } = await assetQuery;
-
-      if (assetsError) throw assetsError;
-
-      const assetExpenses: Expense[] = [];
-
-      // Helper to check duplicate expenses
-      const isExpenseExist = (desc: string, date: string, amount: number) => {
-        return allOperationalExpenses.some(
-          (e) =>
-            e.description === desc &&
-            (e.date instanceof Date ? e.date.toISOString().split('T')[0] : e.date) === date &&
-            Math.abs(e.amount - amount) < Math.max(100, amount * 0.01),
-        );
-      };
-
-      if (assetsData) {
-        (assetsData as Record<string, unknown>[]).forEach((asset) => {
-          if (!asset.id || !asset.name) return;
-
-          // A. Asset Purchases
-          if (asset.purchaseDate) {
-            let purchaseDateStr = String(asset.purchaseDate);
-            if (purchaseDateStr.includes('T')) {
-              purchaseDateStr = purchaseDateStr.split('T')[0];
-            }
-
-            const cost = Number(asset.purchaseCost) || 0;
-            const description = `Pembelian Aset: ${asset.name}`;
-
-            if (!isExpenseExist(description, purchaseDateStr, cost)) {
-              assetExpenses.push({
-                id: `asset-purchase-${asset.id}`,
-                date: new Date(purchaseDateStr),
-                description: description,
-                category: 'Pembelian Aset',
-                amount: cost,
-                storeId: (typeof asset.storeId === 'string' ? asset.storeId : '') as string,
-              });
-            }
-          }
-
-          // B. Asset Maintenance History
-          let maintenanceHistory: {
-            id: string;
-            date: Date | string;
-            description: string;
-            cost: number;
-          }[] = [];
-          if (asset.maintenanceHistory) {
-            if (Array.isArray(asset.maintenanceHistory)) {
-              maintenanceHistory = asset.maintenanceHistory;
-            } else if (typeof asset.maintenanceHistory === 'string') {
-              try {
-                maintenanceHistory = JSON.parse(asset.maintenanceHistory);
-              } catch (error) {
-                console.error(`Failed to parse maintenanceHistory for asset ${asset.id}:`, error);
-              }
-            }
-          }
-
-          maintenanceHistory.forEach((log, index) => {
-            const logDate = new Date(log.date);
-            const logDateStr = formatDateStr(logDate);
-            const cost = Number(log.cost) || 0;
-
-            const description = `Perawatan Aset: ${asset.name} (${log.description})`;
-
-            if (!isExpenseExist(description, logDateStr, cost)) {
-              assetExpenses.push({
-                id: `asset-maint-${asset.id}-${index}`,
-                date: new Date(logDateStr),
-                description: description,
-                category: 'Pemeliharaan Aset',
-                amount: cost,
-                storeId: (typeof asset.storeId === 'string' ? asset.storeId : '') as string,
-              });
-            }
-          });
-        });
-      }
-
-      // Combine: Database expenses + Asset expenses
-      return [...allOperationalExpenses, ...assetExpenses];
-    },
-  });
-
-  const expenses = expensesQuery.data || [];
-
-  // Fetch all transactions without filters
-  const transactionsQuery = useQuery({
-    queryKey: ['backup-transactions-all', selectedStoreId],
-    queryFn: async () => {
-      const { supabase } = await import('../../utils/supabaseClient');
-      let query = supabase
-        .from('transactions')
-        .select('*', { count: 'exact' })
-        .order('createdAt', { ascending: false });
-
-      // Apply store filter
-      if (selectedStoreId && selectedStoreId !== 'all') {
-        query = query.eq('storeId', selectedStoreId);
-      }
-
-      query = query.range(0, 9999);
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      // Convert database format to Transaction type
-      return (data || []).map((t) => ({
+      const transactions = transactionRows.map((t) => ({
         ...t,
         customerId: t.customerId || '',
         createdByUserId: t.createdByUserId || '',
-        createdAt: new Date(t.createdAt || new Date()),
+        createdAt: new Date(String(t.createdAt)),
         estimatedCompletionDate: t.estimatedCompletionDate ?? undefined,
         paymentMethod: t.paymentMethod ?? undefined,
-        items: t.items as unknown as TransactionItem[],
-      })) as Transaction[];
+        items: (Array.isArray(t.items) ? t.items : []) as TransactionItem[],
+      })) as unknown as Transaction[];
+
+      return { customers, services, inventory, assets, expenses, transactions };
     },
   });
 
-  const transactions = transactionsQuery.data || [];
+  const customers = backupDataQuery.data?.customers ?? [];
+  const services = backupDataQuery.data?.services ?? [];
+  const inventory = backupDataQuery.data?.inventory ?? [];
+  const assets = backupDataQuery.data?.assets ?? [];
+  const expenses = backupDataQuery.data?.expenses ?? [];
+  const transactions = backupDataQuery.data?.transactions ?? [];
 
-  // Calculate stats
   const totalRecords =
     customers.length +
     services.length +
@@ -378,12 +180,25 @@ const BackupRestorePage: React.FC = () => {
     expenses.length +
     transactions.length;
 
-  const lastBackupDate = localStorage.getItem('lastBackupDate');
+  const percentOfTotal = (count: number) =>
+    totalRecords > 0 ? `${(count / totalRecords) * 100}%` : '0%';
 
-  // Handle Full Export
+  // ============================================
+  // Full Backup (Excel)
+  // ============================================
+
   const handleFullExport = async () => {
-    if (currentUser?.role === UserRole.Cashier) {
+    if (!canBackup) {
       addToast('Anda tidak memiliki izin untuk melakukan backup.', 'error');
+      return;
+    }
+    if (!backupDataQuery.data) {
+      addToast(
+        backupDataQuery.isError
+          ? 'Data gagal dimuat. Muat ulang halaman lalu coba lagi.'
+          : 'Data masih dimuat, coba lagi sebentar.',
+        'error',
+      );
       return;
     }
 
@@ -391,24 +206,8 @@ const BackupRestorePage: React.FC = () => {
     const toastId = addToast('Mempersiapkan full backup...', 'info');
 
     try {
-      // Filter out synthetic expenses (from Assets) before exporting
-      // These have IDs like "asset-purchase-..." or "asset-maint-..."
-      // We only want to backup REAL database expenses
-      const realExpenses = expenses.filter((e) => !e.id.startsWith('asset-'));
-
-      await exportAllData(
-        customers as unknown as Customer[],
-        services as unknown as Service[],
-        inventory as unknown as InventoryItem[],
-        assets as unknown as Asset[],
-        realExpenses,
-        transactions,
-      );
-
-      // Save last backup date
-      const now = new Date().toISOString();
-      localStorage.setItem('lastBackupDate', now);
-
+      await exportAllData(customers, services, inventory, assets, expenses, transactions);
+      markBackupDone();
       updateToast(toastId, `Berhasil backup ${totalRecords} data!`, 'success');
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -418,9 +217,8 @@ const BackupRestorePage: React.FC = () => {
     }
   };
 
-  // Handle Import (placeholder for now)
   const handleImport = async () => {
-    if (currentUser?.role === UserRole.Cashier) {
+    if (!canBackup) {
       addToast('Anda tidak memiliki izin untuk melakukan restore.', 'error');
       return;
     }
@@ -432,13 +230,14 @@ const BackupRestorePage: React.FC = () => {
 
     const file = fileInputRef.current.files[0];
 
-    // Confirmation
     const confirmed = await confirm({
-      title: 'Restore data dari backup?',
+      title: 'Restore data dari file Excel?',
       message:
-        `Semua data saat ini akan DITIMPA oleh isi file ${file.name}. Tindakan ini tidak bisa dibatalkan.\n\n` +
-        `Sebaiknya lakukan backup terlebih dahulu sebelum restore.`,
-      confirmText: 'Timpa & restore',
+        `Data dari ${file.name} yang belum ada di sistem akan ditambahkan. ` +
+        `Data yang sudah ada (ID sama) TIDAK diubah.\n\n` +
+        `Untuk mengembalikan data persis seperti saat backup (menimpa data yang ada), ` +
+        `gunakan Quick Backup (JSON).`,
+      confirmText: 'Mulai restore',
     });
 
     if (!confirmed) {
@@ -447,15 +246,13 @@ const BackupRestorePage: React.FC = () => {
     }
 
     setIsImporting(true);
+    setRestoreReport(null);
     const toastId = addToast('Membaca file backup...', 'info');
 
     try {
-      // Import data from Excel
-      updateToast(toastId, 'Memproses data dari file...', 'info');
       const importedData = await importAllData(file);
 
-      // Count total records
-      const totalImported =
+      const totalInFile =
         importedData.customers.length +
         importedData.services.length +
         importedData.inventory.length +
@@ -463,272 +260,121 @@ const BackupRestorePage: React.FC = () => {
         importedData.expenses.length +
         importedData.transactions.length;
 
-      updateToast(toastId, `Ditemukan ${totalImported} data. Mulai restore ke database...`, 'info');
+      if (totalInFile === 0) {
+        updateToast(toastId, 'File tidak berisi data yang bisa dipulihkan.', 'error');
+        return;
+      }
 
-      // Import to database using Supabase
-      const { supabase } = await import('../../utils/supabaseClient');
+      // Selain Super Admin, semua data dipaksa masuk ke cabang sendiri (sesuai RLS).
+      const resolveStoreId = (storeId: string | undefined | null): string | null =>
+        isSuperAdmin ? storeId || null : scopeStoreId;
 
-      // Helper function to safely parse dates
-      const safeToISOString = (dateValue: unknown): string => {
-        try {
-          if (!dateValue) return new Date().toISOString();
-          if (dateValue instanceof Date) {
-            // Check if date is valid before calling toISOString
-            if (isNaN(dateValue.getTime())) return new Date().toISOString();
-            return dateValue.toISOString();
-          }
-          if (typeof dateValue === 'string') {
-            const parsed = new Date(dateValue);
-            if (isNaN(parsed.getTime())) return new Date().toISOString();
-            return parsed.toISOString();
-          }
-          return new Date().toISOString();
-        } catch {
-          console.warn(`Invalid date value: ${dateValue}, using current date`);
-          return new Date().toISOString();
+      const lines: string[] = [];
+      const errors: string[] = [];
+      let savedTotal = 0;
+
+      const run = async (label: string, tableName: string, rows: BackupRow[]) => {
+        if (rows.length === 0) return;
+        updateToast(toastId, `Restore ${label} (${rows.length})...`, 'info');
+        const unique = dedupeById(rows);
+        const result = await upsertInBatches(tableName, unique, { ignoreDuplicates: true });
+        savedTotal += result.saved;
+        lines.push(`${label}: ${result.saved} baris diproses`);
+        if (result.failed > 0) {
+          errors.push(`${label}: ${result.failed} baris gagal — ${result.errors.join('; ')}`);
         }
       };
 
-      // Note: We use UPSERT instead of DELETE + INSERT because:
-      // 1. RLS policies may prevent DELETE for non-Super Admin users
-      // 2. UPSERT is safer and handles duplicates gracefully
-      // 3. Data with same ID will be updated instead of causing conflict
-      updateToast(toastId, 'Mempersiapkan restore data...', 'info');
-
-      // Insert/Update data using UPSERT
-      let insertedCount = 0;
-
-      if (importedData.customers.length > 0) {
-        updateToast(toastId, `Restore pelanggan (${importedData.customers.length})...`, 'info');
-        // Convert Customer to database format
-        const dbCustomers = importedData.customers.map((c) => {
-          // For non-Super Admin users, force storeId to current user's store
-          // This is required by RLS policy which checks storeId = get_my_store_id()
-          let finalStoreId: string | null = c.storeId || null;
-          if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId =
-              selectedStoreId && selectedStoreId !== 'all'
-                ? selectedStoreId
-                : currentUser?.storeId || null;
-          }
-
-          return {
-            ...c,
-            storeId: finalStoreId,
-            createdAt: safeToISOString(c.createdAt),
+      await run(
+        'Pelanggan',
+        'customers',
+        importedData.customers.map((c) => {
+          const row: BackupRow = {
+            id: c.id,
+            name: c.name,
             phone: c.phone ?? null,
             address: c.address ?? null,
             notes: c.notes ?? null,
+            storeId: resolveStoreId(c.storeId),
           };
-        });
+          const createdAt = toIsoOrNull(c.createdAt);
+          if (createdAt) row.createdAt = createdAt;
+          return row;
+        }),
+      );
 
-        // Deduplicate by ID - keep last occurrence
-        // This prevents "ON CONFLICT DO UPDATE command cannot affect row a second time" error
-        const deduplicatedCustomers = Array.from(
-          new Map(dbCustomers.map((c) => [c.id, c])).values(),
-        );
+      await run(
+        'Layanan',
+        'services',
+        importedData.services.map((s) => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          wash_type: s.washType || 'Pakaian',
+          price: s.price,
+          unit: s.unit,
+          durationDays: s.durationDays,
+          storeId: resolveStoreId(s.storeId),
+        })),
+      );
 
-        const duplicateCount = dbCustomers.length - deduplicatedCustomers.length;
-        if (duplicateCount > 0) {
-          console.warn(`Removed ${duplicateCount} duplicate customer IDs from import batch`);
-        }
+      await run(
+        'Inventaris',
+        'inventory_items',
+        importedData.inventory.map((i) => ({
+          id: i.id,
+          name: i.name,
+          stock: i.stock,
+          lowStockThreshold: i.lowStockThreshold,
+          unit: i.unit,
+          storeId: resolveStoreId(i.storeId),
+        })),
+      );
 
-        // Use upsert with ignoreDuplicates=true to avoid RLS policy violations on UPDATE
-        // This will INSERT new records, but SKIP existing records to prevent cross-store updates
-        const { error } = await supabase.from('customers').upsert(deduplicatedCustomers, {
-          onConflict: 'id',
-          ignoreDuplicates: true, // Skip update if record exists to avoid RLS USING check
-        });
-        if (error) throw new Error(`Gagal restore pelanggan: ${error.message}`);
-        insertedCount += deduplicatedCustomers.length;
-      }
+      await run(
+        'Aset',
+        'assets',
+        importedData.assets.map((a) => ({
+          id: a.id,
+          name: a.name,
+          status: a.status,
+          serialNumber: a.serialNumber ?? null,
+          purchaseDate: toDateOnly(a.purchaseDate),
+          purchaseCost: a.purchaseCost ?? null,
+          maintenanceHistory: a.maintenanceHistory ?? [],
+          storeId: resolveStoreId(a.storeId),
+        })),
+      );
 
-      if (importedData.services.length > 0) {
-        updateToast(toastId, `Restore layanan (${importedData.services.length})...`, 'info');
-        const dbServices = importedData.services.map((s) => {
-          let finalStoreId: string | null = s.storeId || null;
-          if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId =
-              selectedStoreId && selectedStoreId !== 'all'
-                ? selectedStoreId
-                : currentUser?.storeId || null;
-          }
-          // Only include columns that exist in database schema
-          const sRecord = s as unknown as Record<string, unknown>;
-          return {
-            id: s.id,
-            name: s.name,
-            category: s.category,
-            wash_type: (sRecord.wash_type as string) || (sRecord.washType as string) || 'Pakaian',
-            price: s.price,
-            unit: s.unit,
-            durationDays: s.durationDays,
-            storeId: finalStoreId,
-          };
-        });
-
-        // Deduplicate by ID
-        const deduplicatedServices = Array.from(new Map(dbServices.map((s) => [s.id, s])).values());
-
-        const { error } = await supabase.from('services').upsert(deduplicatedServices, {
-          onConflict: 'id',
-          ignoreDuplicates: true, // Skip existing to avoid RLS violations
-        });
-        if (error) throw new Error(`Gagal restore layanan: ${error.message}`);
-        insertedCount += deduplicatedServices.length;
-      }
-
-      if (importedData.inventory.length > 0) {
-        updateToast(toastId, `Restore inventaris (${importedData.inventory.length})...`, 'info');
-        const dbInventory = importedData.inventory.map((i) => {
-          let finalStoreId: string | null = i.storeId || null;
-          if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId =
-              selectedStoreId && selectedStoreId !== 'all'
-                ? selectedStoreId
-                : currentUser?.storeId || null;
-          }
-          return { ...i, storeId: finalStoreId };
-        });
-
-        // Deduplicate by ID
-        const deduplicatedInventory = Array.from(
-          new Map(dbInventory.map((i) => [i.id, i])).values(),
-        );
-
-        const { error } = await supabase.from('inventory_items').upsert(deduplicatedInventory, {
-          onConflict: 'id',
-          ignoreDuplicates: true, // Skip existing to avoid RLS violations
-        });
-        if (error) throw new Error(`Gagal restore inventaris: ${error.message}`);
-        insertedCount += deduplicatedInventory.length;
-      }
-
-      if (importedData.assets.length > 0) {
-        updateToast(toastId, `Restore aset (${importedData.assets.length})...`, 'info');
-        // Convert Asset to database format
-        const dbAssets = importedData.assets.map((a) => {
-          let finalStoreId: string | null = a.storeId || null;
-          if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId =
-              selectedStoreId && selectedStoreId !== 'all'
-                ? selectedStoreId
-                : currentUser?.storeId || null;
-          }
-          return {
-            ...a,
-            storeId: finalStoreId,
-            maintenanceHistory: a.maintenanceHistory as unknown as Json,
-            serialNumber: a.serialNumber ?? null,
-            purchaseDate:
-              typeof a.purchaseDate === 'string'
-                ? a.purchaseDate
-                : (a.purchaseDate?.toISOString?.() ?? null),
-            purchaseCost: a.purchaseCost ?? null,
-          };
-        });
-
-        // Deduplicate by ID
-        const deduplicatedAssets = Array.from(new Map(dbAssets.map((a) => [a.id, a])).values());
-
-        const { error } = await supabase.from('assets').upsert(deduplicatedAssets, {
-          onConflict: 'id',
-          ignoreDuplicates: true, // Skip existing to avoid RLS violations
-        });
-        if (error) throw new Error(`Gagal restore aset: ${error.message}`);
-        insertedCount += deduplicatedAssets.length;
-      }
-
-      if (importedData.expenses.length > 0) {
-        updateToast(toastId, `Restore pengeluaran (${importedData.expenses.length})...`, 'info');
-
-        // Helper function to check if ID is valid UUID
-        const isValidUUID = (id: string): boolean => {
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          return uuidRegex.test(id);
-        };
-
-        // Helper function to generate UUID v4
-        const generateUUID = (): string => {
-          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            const r = (Math.random() * 16) | 0;
-            const v = c === 'x' ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-          });
-        };
-
-        // Convert Expense to database format
-        const dbExpenses = importedData.expenses.map((e) => {
-          // For non-Super Admin users, force storeId to current user's store
-          let finalStoreId: string | null = e.storeId || null;
-          if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId =
-              selectedStoreId && selectedStoreId !== 'all'
-                ? selectedStoreId
-                : currentUser?.storeId || null;
-          }
-
-          // Validate and fix UUID
-          let finalId = e.id;
-          if (!isValidUUID(e.id)) {
-            // Invalid UUID (e.g., "asset-purchase-xxx" or "asset-maint-xxx")
-            // Generate new UUID to avoid database error
-            finalId = generateUUID();
-            console.warn(`Invalid UUID "${e.id}" replaced with "${finalId}"`);
-          }
-
-          // Ensure date is properly formatted as YYYY-MM-DD for database
-          let dateStr: string;
-          if (e.date instanceof Date) {
-            dateStr = e.date.toISOString().split('T')[0];
-          } else if (typeof e.date === 'string') {
-            // If already a string, parse it first to ensure valid format
-            const parsedDate = new Date(e.date);
-            dateStr = isNaN(parsedDate.getTime())
-              ? new Date().toISOString().split('T')[0]
-              : parsedDate.toISOString().split('T')[0];
-          } else {
-            dateStr = new Date().toISOString().split('T')[0];
-          }
-
-          return {
-            ...e,
-            id: finalId,
-            date: dateStr,
-            storeId: finalStoreId,
-          };
-        });
-
-        // Deduplicate by ID
-        const deduplicatedExpenses = Array.from(new Map(dbExpenses.map((e) => [e.id, e])).values());
-
-        const { error } = await supabase.from('expenses').upsert(deduplicatedExpenses, {
-          onConflict: 'id',
-          ignoreDuplicates: true, // Skip existing to avoid RLS violations
-        });
-        if (error) throw new Error(`Gagal restore pengeluaran: ${error.message}`);
-        insertedCount += deduplicatedExpenses.length;
-      }
+      await run(
+        'Pengeluaran',
+        'expenses',
+        importedData.expenses.map((e) => ({
+          // Id non-UUID (mis. dari backup lama) diganti agar diterima database.
+          id: UUID_REGEX.test(e.id) ? e.id : crypto.randomUUID(),
+          date: toDateOnly(e.date),
+          description: e.description,
+          category: e.category,
+          amount: e.amount,
+          storeId: resolveStoreId(e.storeId),
+        })),
+      );
 
       if (importedData.transactions.length > 0) {
-        updateToast(toastId, `Restore transaksi (${importedData.transactions.length})...`, 'info');
-        // Convert Transaction to database format
-        const dbTransactions = importedData.transactions.map((t) => {
-          // For non-Super Admin users, force storeId to current user's store
-          let finalStoreId: string | null = t.storeId || null;
-          if (currentUser?.role !== UserRole.SuperAdmin) {
-            finalStoreId =
-              selectedStoreId && selectedStoreId !== 'all'
-                ? selectedStoreId
-                : currentUser?.storeId || null;
-          }
+        const profileIds = await fetchExistingProfileIds();
+        let invalidDates = 0;
 
-          // Explicitly map only database schema fields to avoid sending unknown columns
+        const rows = importedData.transactions.map((t) => {
+          let createdAt = toIsoOrNull(t.createdAt);
+          if (!createdAt) {
+            invalidDates++;
+            createdAt = new Date().toISOString();
+          }
+          // invoiceCode tidak dikirim: trigger database selalu membuat kode baru saat insert.
           return {
             id: t.id,
-            invoiceCode: t.invoiceCode ?? null,
-            customerId: t.customerId && t.customerId !== '' ? t.customerId : null,
-            items: t.items as unknown as Json,
+            customerId: t.customerId || null,
+            items: t.items,
             subtotal: t.subtotal,
             discount: t.discount,
             tax: t.tax,
@@ -738,122 +384,74 @@ const BackupRestorePage: React.FC = () => {
             amountPaid: t.amountPaid,
             change: t.change,
             paymentMethod: t.paymentMethod ?? null,
-            estimatedCompletionDate: (() => {
-              // Handle estimatedCompletionDate properly
-              if (!t.estimatedCompletionDate || t.estimatedCompletionDate === '') {
-                return null;
-              }
-
-              // If it's already a valid ISO string, use it
-              if (typeof t.estimatedCompletionDate === 'string') {
-                try {
-                  const parsed = new Date(t.estimatedCompletionDate);
-                  if (!isNaN(parsed.getTime())) {
-                    return parsed.toISOString();
-                  }
-                } catch {
-                  // Invalid date string
-                }
-              }
-
-              // If it's a Date object
-              if (
-                typeof t.estimatedCompletionDate === 'object' &&
-                t.estimatedCompletionDate !== null &&
-                'getTime' in t.estimatedCompletionDate
-              ) {
-                return safeToISOString(t.estimatedCompletionDate as Date);
-              }
-
-              // Default to null if can't parse
-              return null;
-            })(),
-            notes: t.notes ?? null,
-            createdAt: (() => {
-              // Handle createdAt - try multiple formats
-              try {
-                if (!t.createdAt) return new Date().toISOString();
-
-                // If already a Date object
-                if (t.createdAt instanceof Date) {
-                  const iso = t.createdAt.toISOString();
-                  if (iso && iso !== 'Invalid Date') return iso;
-                }
-
-                // If it's a string, try parsing
-                if (typeof t.createdAt === 'string') {
-                  const str = String(t.createdAt);
-
-                  // Try Excel format: "dd/MM/yyyy, HH.mm.ss"
-                  const excelMatch = str.match(
-                    /^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/,
-                  );
-                  if (excelMatch) {
-                    const [, day, month, year, hour, minute, second] = excelMatch;
-                    const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.000Z`;
-                    return isoDate;
-                  }
-
-                  // Try standard Date parse
-                  const parsed = new Date(str);
-                  if (!isNaN(parsed.getTime())) {
-                    return parsed.toISOString();
-                  }
-                }
-
-                // Fallback
-                return new Date().toISOString();
-              } catch (error) {
-                console.error('Error parsing createdAt:', t.createdAt, error);
-                return new Date().toISOString();
-              }
-            })(),
-            storeId: finalStoreId && finalStoreId !== '' ? finalStoreId : null,
+            estimatedCompletionDate: toIsoOrNull(t.estimatedCompletionDate),
+            notes: t.notes || null,
+            createdAt,
+            storeId: resolveStoreId(t.storeId),
             createdByUserId:
-              t.createdByUserId && t.createdByUserId !== '' ? t.createdByUserId : null,
+              t.createdByUserId && profileIds.has(t.createdByUserId) ? t.createdByUserId : null,
           };
         });
 
-        // Deduplicate by ID
-        const deduplicatedTransactions = Array.from(
-          new Map(dbTransactions.map((t) => [t.id, t])).values(),
-        );
-
-        const { error } = await supabase.from('transactions').upsert(deduplicatedTransactions, {
-          onConflict: 'id',
-          ignoreDuplicates: true, // Skip existing to avoid RLS violations
-        });
-        if (error) throw new Error(`Gagal restore transaksi: ${error.message}`);
-        insertedCount += deduplicatedTransactions.length;
+        await run('Transaksi', 'transactions', rows);
+        if (invalidDates > 0) {
+          errors.push(
+            `Transaksi: ${invalidDates} baris tanggalnya tidak terbaca, diisi tanggal hari ini.`,
+          );
+        }
       }
 
+      setRestoreReport({
+        title:
+          errors.length === 0 ? 'Restore Excel selesai' : 'Restore Excel selesai dengan masalah',
+        tone: errors.length === 0 ? 'success' : 'warning',
+        lines: [
+          ...lines,
+          'Data yang sudah ada dengan ID sama dilewati (tidak diubah). Transaksi baru mendapat kode invoice baru.',
+        ],
+        errors,
+      });
       updateToast(
         toastId,
-        `Berhasil restore ${insertedCount} data! Halaman akan di-refresh...`,
-        'success',
+        errors.length === 0
+          ? `Restore selesai: ${savedTotal} data diproses.`
+          : `Restore selesai dengan ${errors.length} masalah. Lihat rincian di halaman.`,
+        errors.length === 0 ? 'success' : 'warning',
       );
-
-      // Reload page after 2 seconds
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      void backupDataQuery.refetch();
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       updateToast(toastId, `Gagal restore: ${errMsg}`, 'error');
+      setRestoreReport({
+        title: 'Restore Excel gagal',
+        tone: 'error',
+        lines: [],
+        errors: [errMsg],
+      });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // JSON Backup Handlers
+  // ============================================
+  // Quick Backup (JSON)
+  // ============================================
+
   const handleExportJson = async () => {
+    if (!canBackup) return;
     setIsExportingJson(true);
     const toastId = addToast('Mengekspor data ke JSON...', 'info');
     try {
-      const backup = await exportBackup();
+      const backup = await exportBackup({
+        storeId: scopeStoreId,
+        onProgress: (label, percent) =>
+          updateToast(toastId, `Mengekspor ${label} (${percent}%)...`, 'info'),
+      });
       downloadBackup(backup);
-      updateToast(toastId, 'Backup JSON berhasil didownload!', 'success');
+      markBackupDone();
+      const total = Object.values(backup.data).reduce((sum, rows) => sum + rows.length, 0);
+      updateToast(toastId, `Backup JSON berhasil didownload (${total} baris).`, 'success');
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error';
       updateToast(toastId, `Gagal export JSON: ${errMsg}`, 'error');
@@ -872,65 +470,95 @@ const BackupRestorePage: React.FC = () => {
         addToast('File backup tidak valid atau format tidak sesuai.', 'error');
         return;
       }
-      setPendingJsonBackup(data as BackupData);
+      setRestoreReport(null);
+      setPendingJsonBackup(data);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error';
       addToast(`Gagal membaca file: ${errMsg}`, 'error');
-    }
-
-    // Reset input
-    if (jsonFileInputRef.current) {
-      jsonFileInputRef.current.value = '';
+    } finally {
+      if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
     }
   };
 
   const handleImportJson = async () => {
-    if (!pendingJsonBackup) return;
+    if (!pendingJsonBackup || !canBackup) return;
+
+    const confirmed = await confirm({
+      title: 'Restore dari backup JSON?',
+      message:
+        `Data dengan ID yang sama akan DITIMPA dengan isi backup ` +
+        `(${new Date(pendingJsonBackup.exportedAt).toLocaleString('id-ID')}). ` +
+        `Data yang dibuat setelah backup tidak dihapus.\n\n` +
+        `Sebaiknya download backup terbaru terlebih dahulu.`,
+      confirmText: 'Timpa & restore',
+    });
+    if (!confirmed) return;
 
     setIsImportingJson(true);
     setImportJsonProgress(0);
+    setRestoreReport(null);
     const toastId = addToast('Mengimpor data JSON...', 'info');
 
     try {
       const result = await importBackup(pendingJsonBackup, {
-        onProgress: (_table, progress) => {
-          setImportJsonProgress(Math.round(progress));
-        },
+        restrictToStoreId: scopeStoreId,
+        canOverwriteTransactions: isSuperAdmin,
+        canRestoreStores: isSuperAdmin,
+        onProgress: (_label, progress) => setImportJsonProgress(progress),
       });
 
-      if (result.success) {
-        updateToast(toastId, 'Import JSON berhasil! Halaman akan direfresh...', 'success');
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
-        updateToast(toastId, `Import selesai dengan ${result.errors.length} error.`, 'warning');
-        console.error('Import errors:', result.errors);
+      const restoredTotal = Object.values(result.restored).reduce((a, b) => a + b, 0);
+      const lines = BACKUP_TABLES.filter((t) => result.restored[t.name] !== undefined).map(
+        (t) => `${t.label}: ${result.restored[t.name]} baris dipulihkan`,
+      );
+      if (restoredTotal === 0 && result.errors.length === 0) {
+        lines.push(
+          scopeStoreId
+            ? 'Tidak ada data untuk cabang ini di file backup.'
+            : 'File backup tidak berisi data.',
+        );
       }
 
+      setRestoreReport({
+        title: result.success ? 'Restore JSON selesai' : 'Restore JSON selesai dengan masalah',
+        tone: result.success ? 'success' : 'warning',
+        lines: [...lines, ...result.skipped],
+        errors: result.errors,
+      });
+      updateToast(
+        toastId,
+        result.success
+          ? `Restore JSON berhasil: ${restoredTotal} baris.`
+          : `Restore JSON selesai dengan ${result.errors.length} masalah. Lihat rincian di halaman.`,
+        result.success ? 'success' : 'warning',
+      );
       setPendingJsonBackup(null);
+      void backupDataQuery.refetch();
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error';
       updateToast(toastId, `Gagal import: ${errMsg}`, 'error');
+      setRestoreReport({ title: 'Restore JSON gagal', tone: 'error', lines: [], errors: [errMsg] });
     } finally {
       setIsImportingJson(false);
       setImportJsonProgress(0);
     }
   };
 
-  // Check if user has permission
-  const canBackup = currentUser?.role !== UserRole.Cashier;
+  const getStoreName = (storeId: string | null | undefined) => {
+    if (!storeId) return 'Semua Cabang';
+    return stores.find((s) => s.id === storeId)?.name || 'Cabang Tidak Dikenal';
+  };
 
-  // Get store name for display
-  const getStoreName = () => {
-    if (currentUser?.role === UserRole.SuperAdmin) {
-      if (selectedStoreId === 'all') return 'Semua Cabang';
-      return stores.find((s) => s.id === selectedStoreId)?.name || 'Cabang Tidak Dikenal';
-    }
-    if (currentUser?.storeId) {
-      return stores.find((s) => s.id === currentUser.storeId)?.name || 'Cabang Tidak Dikenal';
-    }
-    return 'Cabang Tidak Dikenal';
+  const pendingScopeMismatch =
+    pendingJsonBackup && scopeStoreId && pendingJsonBackup.storeId !== scopeStoreId;
+
+  const reportStyles: Record<RestoreReport['tone'], string> = {
+    success:
+      'border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200',
+    warning:
+      'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200',
+    error:
+      'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200',
   };
 
   return (
@@ -939,9 +567,9 @@ const BackupRestorePage: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
           Data Backup & Restore:{' '}
-          <span className="text-blue-600 dark:text-blue-400">{getStoreName()}</span>
+          <span className="text-blue-600 dark:text-blue-400">{getStoreName(scopeStoreId)}</span>
         </h2>
-        {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
+        {isSuperAdmin && !scopeStoreId && (
           <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
             Mode gabungan - Data dari semua cabang akan di-backup/restore
           </p>
@@ -971,18 +599,57 @@ const BackupRestorePage: React.FC = () => {
         </div>
       )}
 
+      {backupDataQuery.isError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm text-red-700 dark:text-red-300">
+          Gagal memuat data:{' '}
+          {backupDataQuery.error instanceof Error ? backupDataQuery.error.message : 'error'}. Backup
+          Excel tidak bisa dibuat sampai data berhasil dimuat.
+        </div>
+      )}
+
+      {restoreReport && (
+        <div className={`rounded-lg border p-4 ${reportStyles[restoreReport.tone]}`} role="status">
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="font-semibold">{restoreReport.title}</h3>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm font-medium underline"
+            >
+              Muat ulang halaman
+            </button>
+          </div>
+          {restoreReport.lines.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+              {restoreReport.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+          {restoreReport.errors.length > 0 && (
+            <>
+              <p className="mt-3 text-sm font-semibold">Masalah:</p>
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm break-words">
+                {restoreReport.errors.map((err) => (
+                  <li key={err}>{err}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Statistics Overview */}
       <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Data Aplikasi</p>
             <p className="text-4xl font-bold tabular-nums text-slate-900 dark:text-white">
-              {totalRecords.toLocaleString('id-ID')}
+              {backupDataQuery.isLoading ? '…' : totalRecords.toLocaleString('id-ID')}
             </p>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               {lastBackupDate
-                ? `Backup terakhir: ${new Date(lastBackupDate).toLocaleDateString('id-ID')} ${new Date(lastBackupDate).toLocaleTimeString('id-ID')}`
-                : 'Belum pernah backup'}
+                ? `Backup terakhir di perangkat ini: ${new Date(lastBackupDate).toLocaleDateString('id-ID')} ${new Date(lastBackupDate).toLocaleTimeString('id-ID')}`
+                : 'Belum pernah backup dari perangkat ini'}
             </p>
           </div>
           <div className="rounded-lg bg-slate-100 p-4 dark:bg-slate-700">
@@ -999,7 +666,7 @@ const BackupRestorePage: React.FC = () => {
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
               className="h-full bg-brand-blue-600 dark:bg-brand-blue-400"
-              style={{ width: `${(customers.length / totalRecords) * 100}%` }}
+              style={{ width: percentOfTotal(customers.length) }}
             />
           </div>
         </div>
@@ -1010,7 +677,7 @@ const BackupRestorePage: React.FC = () => {
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
               className="h-full bg-brand-blue-600 dark:bg-brand-blue-400"
-              style={{ width: `${(services.length / totalRecords) * 100}%` }}
+              style={{ width: percentOfTotal(services.length) }}
             />
           </div>
         </div>
@@ -1021,7 +688,7 @@ const BackupRestorePage: React.FC = () => {
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
               className="h-full bg-brand-blue-600 dark:bg-brand-blue-400"
-              style={{ width: `${(inventory.length / totalRecords) * 100}%` }}
+              style={{ width: percentOfTotal(inventory.length) }}
             />
           </div>
         </div>
@@ -1032,7 +699,7 @@ const BackupRestorePage: React.FC = () => {
           <div className="mt-2 h-1 bg-orange-200 dark:bg-orange-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-orange-600 dark:bg-orange-400"
-              style={{ width: `${(assets.length / totalRecords) * 100}%` }}
+              style={{ width: percentOfTotal(assets.length) }}
             />
           </div>
         </div>
@@ -1043,7 +710,7 @@ const BackupRestorePage: React.FC = () => {
           <div className="mt-2 h-1 bg-red-200 dark:bg-red-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-red-600 dark:bg-red-400"
-              style={{ width: `${(expenses.length / totalRecords) * 100}%` }}
+              style={{ width: percentOfTotal(expenses.length) }}
             />
           </div>
         </div>
@@ -1054,7 +721,7 @@ const BackupRestorePage: React.FC = () => {
           <div className="mt-2 h-1 bg-cyan-200 dark:bg-cyan-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-cyan-600 dark:bg-cyan-400"
-              style={{ width: `${(transactions.length / totalRecords) * 100}%` }}
+              style={{ width: percentOfTotal(transactions.length) }}
             />
           </div>
         </div>
@@ -1070,16 +737,16 @@ const BackupRestorePage: React.FC = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Export Full Backup
+                Export Full Backup (Excel)
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Download semua data aplikasi dalam satu file Excel. File akan berisi semua
-                pelanggan, layanan, inventori, aset, pengeluaran, dan transaksi.
+                Download data utama dalam satu file Excel: pelanggan, layanan, inventori, aset,
+                pengeluaran, dan transaksi. Mudah dibaca dan diolah.
               </p>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <CheckCircleIcon className="w-4 h-4 text-green-600" />
-                  <span>Semua data dalam 1 file</span>
+                  <span>Semua baris ikut, tanpa batas jumlah</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <CheckCircleIcon className="w-4 h-4 text-green-600" />
@@ -1087,37 +754,18 @@ const BackupRestorePage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <CheckCircleIcon className="w-4 h-4 text-green-600" />
-                  <span>Siap untuk disaster recovery</span>
+                  <span>Tanggal & item transaksi tersimpan utuh</span>
                 </div>
               </div>
               <button
                 onClick={handleFullExport}
-                disabled={!canBackup || isExporting}
+                disabled={!canBackup || isExporting || backupDataQuery.isLoading}
                 className="btn btn-primary mt-6 w-full"
               >
-                {isExporting ? (
+                {isExporting || backupDataQuery.isLoading ? (
                   <>
-                    <svg
-                      className="animate-spin h-5 w-5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      ></path>
-                    </svg>
-                    <span>Memproses...</span>
+                    <SpinnerIcon className="w-5 h-5 text-white" />
+                    <span>{isExporting ? 'Memproses...' : 'Memuat data...'}</span>
                   </>
                 ) : (
                   <>
@@ -1138,24 +786,24 @@ const BackupRestorePage: React.FC = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Import Full Backup
+                Import Full Backup (Excel)
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Restore semua data dari file backup sebelumnya. Gunakan fitur ini untuk disaster
-                recovery atau migrasi sistem.
+                Kembalikan data yang hilang dari file backup Excel. Cocok untuk memulihkan data yang
+                terhapus atau memindahkan data ke sistem baru.
               </p>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                   <CheckCircleIcon className="w-4 h-4" />
-                  <span>Validasi format Excel</span>
+                  <span>Menambahkan data yang belum ada</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                   <CheckCircleIcon className="w-4 h-4" />
-                  <span>Konfirmasi sebelum restore</span>
+                  <span>Rincian hasil & error ditampilkan</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
                   <AlertTriangleIcon className="w-4 h-4" />
-                  <span>Data lama akan ditimpa!</span>
+                  <span>Data yang sudah ada tidak diubah</span>
                 </div>
               </div>
               <input
@@ -1163,7 +811,7 @@ const BackupRestorePage: React.FC = () => {
                 id="backup-restore-file"
                 name="backup-restore-file"
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx"
                 className="hidden"
                 onChange={handleImport}
               />
@@ -1196,15 +844,17 @@ const BackupRestorePage: React.FC = () => {
           Quick Backup (JSON)
         </h3>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Format backup yang lebih ringan dan cepat. Cocok untuk backup harian.
+          Backup paling lengkap: termasuk pengaturan, karyawan, absensi, kasbon, penggajian, jadwal
+          perawatan, dan template biaya bulanan. Restore JSON mengembalikan data persis seperti saat
+          backup (menimpa data dengan ID yang sama).
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Export JSON */}
           <button
             onClick={handleExportJson}
-            disabled={isExportingJson}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition-colors"
+            disabled={!canBackup || isExportingJson}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isExportingJson ? (
               <SpinnerIcon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
@@ -1218,14 +868,15 @@ const BackupRestorePage: React.FC = () => {
           <div className="flex gap-2">
             <input
               type="file"
-              accept=".json"
+              accept=".json,application/json"
               ref={jsonFileInputRef}
               onChange={handleJsonFileSelect}
               className="hidden"
             />
             <button
               onClick={() => jsonFileInputRef.current?.click()}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition-colors"
+              disabled={!canBackup || isImportingJson}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               <UploadIcon className="w-5 h-5" />
               Pilih File JSON
@@ -1246,20 +897,34 @@ const BackupRestorePage: React.FC = () => {
                   <p>Versi Backup: {pendingJsonBackup.version}</p>
                   <p>
                     Tanggal:{' '}
-                    {new Date(pendingJsonBackup.exportedAt).toLocaleDateString('id-ID', {
+                    {new Date(pendingJsonBackup.exportedAt).toLocaleString('id-ID', {
                       dateStyle: 'full',
                       timeStyle: 'medium',
                     })}
                   </p>
+                  {pendingJsonBackup.storeId !== undefined && (
+                    <p>Cakupan backup: {getStoreName(pendingJsonBackup.storeId)}</p>
+                  )}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 p-2 bg-blue-100 dark:bg-blue-900/40 rounded">
-                    <p>Stores: {pendingJsonBackup.data.stores.length}</p>
-                    <p>Customers: {pendingJsonBackup.data.customers.length}</p>
-                    <p>Services: {pendingJsonBackup.data.services.length}</p>
-                    <p>Inventory: {pendingJsonBackup.data.inventory_items.length}</p>
-                    <p>Assets: {pendingJsonBackup.data.assets.length}</p>
-                    <p>Expenses: {pendingJsonBackup.data.expenses.length}</p>
-                    <p>Transactions: {pendingJsonBackup.data.transactions.length}</p>
+                    {BACKUP_TABLES.filter((t) => pendingJsonBackup.data[t.name] !== undefined).map(
+                      (t) => (
+                        <p key={t.name}>
+                          {t.label}: {pendingJsonBackup.data[t.name].length}
+                        </p>
+                      ),
+                    )}
                   </div>
+                  {pendingScopeMismatch && (
+                    <p className="mt-2 text-amber-700 dark:text-amber-300">
+                      Hanya data milik cabang {getStoreName(scopeStoreId)} yang akan dipulihkan.
+                    </p>
+                  )}
+                  {!isSuperAdmin && (
+                    <p className="mt-2 text-amber-700 dark:text-amber-300">
+                      Sebagai Admin, transaksi yang sudah ada tidak ditimpa dan data cabang tidak
+                      diubah. Hubungi Super Admin untuk restore penuh.
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-4 flex gap-3">
@@ -1271,7 +936,7 @@ const BackupRestorePage: React.FC = () => {
                     {isImportingJson ? (
                       <>
                         <SpinnerIcon className="w-4 h-4 text-white" />
-                        <span>Processing {importJsonProgress}%...</span>
+                        <span>Memproses {importJsonProgress}%...</span>
                       </>
                     ) : (
                       <>
@@ -1309,8 +974,16 @@ const BackupRestorePage: React.FC = () => {
               <li className="flex items-start gap-2">
                 <span className="font-bold">•</span>
                 <span>
-                  <strong>Full Backup</strong> mencakup semua data: pelanggan, layanan, inventori,
-                  aset, pengeluaran, dan transaksi dalam satu file Excel.
+                  <strong>JSON</strong> adalah backup utama untuk pemulihan: paling lengkap dan
+                  mengembalikan data persis. <strong>Excel</strong> cocok untuk arsip yang mudah
+                  dibaca dan untuk mengembalikan data yang terhapus.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-bold">•</span>
+                <span>
+                  Akun login tidak dipulihkan dari backup (akun dikelola lewat menu Akun Login).
+                  Transaksi yang dipulihkan karena terhapus mendapat kode invoice baru.
                 </span>
               </li>
               <li className="flex items-start gap-2">
@@ -1324,14 +997,7 @@ const BackupRestorePage: React.FC = () => {
                 <span className="font-bold">•</span>
                 <span>
                   Simpan file backup di tempat yang aman seperti Google Drive, OneDrive, atau hard
-                  drive eksternal.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-bold">•</span>
-                <span>
-                  Disarankan untuk melakukan backup rutin (mingguan atau bulanan) untuk
-                  mengantisipasi kehilangan data.
+                  drive eksternal, dan lakukan backup rutin (mingguan atau bulanan).
                 </span>
               </li>
             </ul>

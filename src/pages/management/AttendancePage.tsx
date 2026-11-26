@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { ClockIcon, UserIcon, CheckCircleIcon, SpinnerIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import { getLocalDateString } from '../../utils/dateHelpers';
+import { isFlexibleSchedule } from '../../utils/employeeSchedule';
 import {
   AttendanceSummary,
   ClockOutKind,
@@ -209,11 +210,13 @@ const AttendancePage: React.FC = () => {
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       <span className="capitalize">{employee.role}</span>
-                      {employee.shiftStart && employee.shiftEnd && (
+                      {employee.shiftStart && employee.shiftEnd ? (
                         <>
                           {' '}
                           · shift {employee.shiftStart}–{employee.shiftEnd}
                         </>
+                      ) : (
+                        isFlexibleSchedule(employee) && <> · jadwal fleksibel</>
                       )}
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1 text-xs">

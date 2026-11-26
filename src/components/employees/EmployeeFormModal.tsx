@@ -4,9 +4,11 @@ import Modal from '../Modal';
 import { Employee, EmployeeFormData, EmployeeRole, WorkDay } from '../../types/hrm';
 import { Store } from '../../types';
 import {
+  DEFAULT_FIXED_SCHEDULE,
   EMPLOYEE_ROLE_LABELS,
   WORK_DAYS,
   emptyEmployeeForm,
+  isFlexibleSchedule,
   validateEmployeeForm,
 } from '../../utils/employeeSchedule';
 
@@ -86,6 +88,14 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
         ? form.workDays.filter((d) => d !== day)
         : [...form.workDays, day],
     );
+
+  const flexible = isFlexibleSchedule(form);
+
+  const setFlexible = (on: boolean) =>
+    setForm((prev) => ({
+      ...prev,
+      ...(on ? { shiftStart: '', shiftEnd: '', workDays: [] } : DEFAULT_FIXED_SCHEDULE),
+    }));
 
   const numberValue = (value: string) => Math.max(0, Number(value) || 0);
 
@@ -255,81 +265,102 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
         </Section>
 
         <Section title="Jadwal & absensi">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="employee-shift-start" className={labelClass}>
-                Jam masuk
-              </label>
-              <input
-                id="employee-shift-start"
-                type="time"
-                value={form.shiftStart}
-                onChange={(e) => set('shiftStart', e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label htmlFor="employee-shift-end" className={labelClass}>
-                Jam pulang
-              </label>
-              <input
-                id="employee-shift-end"
-                type="time"
-                value={form.shiftEnd}
-                onChange={(e) => set('shiftEnd', e.target.value)}
-                className={inputClass}
-              />
-            </div>
-          </div>
-          <div>
-            <span id="employee-workdays-label" className={labelClass}>
-              Hari kerja
-            </span>
-            <div
-              role="group"
-              aria-labelledby="employee-workdays-label"
-              className="grid grid-cols-7 gap-1.5"
-            >
-              {WORK_DAYS.map((day) => {
-                const checked = form.workDays.includes(day.value);
-                return (
-                  <label
-                    key={day.value}
-                    title={day.long}
-                    className={`flex cursor-pointer select-none items-center justify-center rounded-lg border py-2 text-sm font-medium transition-colors ${
-                      checked
-                        ? 'border-brand-blue-600 bg-brand-blue-600 text-white'
-                        : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={checked}
-                      onChange={() => toggleDay(day.value)}
-                      aria-label={day.long}
-                    />
-                    {day.short}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-          <div className="sm:w-1/2">
-            <label htmlFor="employee-late-tolerance" className={labelClass}>
-              Toleransi terlambat (menit)
-            </label>
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-600">
             <input
-              id="employee-late-tolerance"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={240}
-              value={form.lateToleranceMinutes}
-              onChange={(e) => set('lateToleranceMinutes', numberValue(e.target.value))}
-              className={inputClass}
+              type="checkbox"
+              checked={flexible}
+              onChange={(e) => setFlexible(e.target.checked)}
+              className="mt-0.5 h-5 w-5 rounded border-slate-300 text-brand-blue-600"
             />
-          </div>
+            <span>
+              <span className="block font-medium text-slate-900 dark:text-white">
+                Jadwal fleksibel (diatur owner)
+              </span>
+              <span className="block text-sm text-slate-600 dark:text-slate-400">
+                Shift pagi/siang ditentukan owner sesuai kebutuhan. Absensi tetap mencatat jam
+                masuk, pulang dan lama kerja, tanpa status terlambat atau libur.
+              </span>
+            </span>
+          </label>
+          {!flexible && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="employee-shift-start" className={labelClass}>
+                    Jam masuk
+                  </label>
+                  <input
+                    id="employee-shift-start"
+                    type="time"
+                    value={form.shiftStart}
+                    onChange={(e) => set('shiftStart', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="employee-shift-end" className={labelClass}>
+                    Jam pulang
+                  </label>
+                  <input
+                    id="employee-shift-end"
+                    type="time"
+                    value={form.shiftEnd}
+                    onChange={(e) => set('shiftEnd', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+              <div>
+                <span id="employee-workdays-label" className={labelClass}>
+                  Hari kerja
+                </span>
+                <div
+                  role="group"
+                  aria-labelledby="employee-workdays-label"
+                  className="grid grid-cols-7 gap-1.5"
+                >
+                  {WORK_DAYS.map((day) => {
+                    const checked = form.workDays.includes(day.value);
+                    return (
+                      <label
+                        key={day.value}
+                        title={day.long}
+                        className={`flex cursor-pointer select-none items-center justify-center rounded-lg border py-2 text-sm font-medium transition-colors ${
+                          checked
+                            ? 'border-brand-blue-600 bg-brand-blue-600 text-white'
+                            : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={checked}
+                          onChange={() => toggleDay(day.value)}
+                          aria-label={day.long}
+                        />
+                        {day.short}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="sm:w-1/2">
+                <label htmlFor="employee-late-tolerance" className={labelClass}>
+                  Toleransi terlambat (menit)
+                </label>
+                <input
+                  id="employee-late-tolerance"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={240}
+                  value={form.lateToleranceMinutes}
+                  onChange={(e) => set('lateToleranceMinutes', numberValue(e.target.value))}
+                  className={inputClass}
+                />
+              </div>
+            </>
+          )}
         </Section>
 
         <Section title="Kompensasi">
