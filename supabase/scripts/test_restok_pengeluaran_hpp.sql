@@ -242,9 +242,9 @@ BEGIN
   ASSERT (SELECT unit_cost FROM public.inventory_movements
            WHERE transaction_id = tx AND kind = 'transaksi' AND quantity = -3) = 22000, 'pemakaian baru @22000';
 
-  -- Harga berubah lagi: 7 @22000 + 1/33000 → 23375
+  -- Harga berubah lagi: 9 @22000 + 1/33000 → 23100
   r := public.record_stock_purchase(i4, 1, 33000, (now() AT TIME ZONE 'Asia/Jakarta')::date);
-  ASSERT (r ->> 'avgCost')::numeric = 23375, format('i4 avg 23375, dapat %s', r ->> 'avgCost');
+  ASSERT (r ->> 'avgCost')::numeric = 23100, format('i4 avg 23100, dapat %s', r ->> 'avgCost');
 END $$;
 
 DELETE FROM public.transactions WHERE id = '00000000-0000-0000-0000-000000000d01';
@@ -325,10 +325,13 @@ END $$;
 
 -- Admin B tidak bisa membaca pengeluaran cabang A, jadi ambil id sebagai superuser lalu uji batal.
 RESET ROLE;
-SELECT set_config('test.kasir_exp', e.id::text, true)
-  FROM public.expenses e
-  JOIN public.inventory_movements mm ON mm.id = e."inventoryMovementId"
- WHERE mm.inventory_item_id = '00000000-0000-0000-0000-000000000f06';
+DO $$
+BEGIN
+  PERFORM set_config('test.kasir_exp', e.id::text, true)
+     FROM public.expenses e
+     JOIN public.inventory_movements mm ON mm.id = e."inventoryMovementId"
+    WHERE mm.inventory_item_id = '00000000-0000-0000-0000-000000000f06';
+END $$;
 SET LOCAL ROLE authenticated;
 DO $$
 DECLARE ok boolean := false;
