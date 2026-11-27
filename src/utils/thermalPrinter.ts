@@ -29,6 +29,10 @@ export interface PrinterSettings {
   autoCut: boolean;
   /** Baris kosong sebelum potong supaya teks terakhir keluar dari kepala printer. */
   feedLines: number;
+  /** ESC/POS: cetak dua kali per baris (double-strike) supaya huruf lebih pekat. */
+  darkPrint: boolean;
+  /** ESC/POS: jarak antarbaris rapat supaya struk lebih pendek. */
+  compactLines: boolean;
 }
 
 export const DEFAULT_PRINTER_SETTINGS: PrinterSettings = {
@@ -38,6 +42,8 @@ export const DEFAULT_PRINTER_SETTINGS: PrinterSettings = {
   baudRate: 9600,
   autoCut: true,
   feedLines: 4,
+  darkPrint: true,
+  compactLines: true,
 };
 
 const STORAGE_KEY = 'thermalPrinterSettings';
@@ -77,6 +83,8 @@ export function sanitizeSettings(s: PrinterSettings): PrinterSettings {
     baudRate: clampInt(s.baudRate, 1200, 921600, 9600),
     autoCut: s.autoCut !== false,
     feedLines: clampInt(s.feedLines, 0, 10, 4),
+    darkPrint: s.darkPrint !== false,
+    compactLines: s.compactLines !== false,
   };
 }
 
@@ -210,6 +218,8 @@ export function renderReceiptText(lines: ReceiptLine[], width: number): string[]
 const ESC = 0x1b;
 const GS = 0x1d;
 const LF = 0x0a;
+/** Jarak baris rapat (dot). Font A tingginya 24 dot; bawaan printer ~30 dot. */
+const COMPACT_LINE_SPACING = 26;
 
 /** Ubah struk menjadi byte ESC/POS. Hanya memakai perintah dasar yang didukung semua printer. */
 export function encodeEscPos(lines: ReceiptLine[], settings: PrinterSettings): Uint8Array {
@@ -222,7 +232,10 @@ export function encodeEscPos(lines: ReceiptLine[], settings: PrinterSettings): U
 
   push(ESC, 0x40); // ESC @  — inisialisasi
   push(ESC, 0x74, 0x00); // ESC t 0 — codepage PC437 (ASCII aman)
-  push(ESC, 0x32); // ESC 2  — spasi baris default
+  const setSpacing = (compact: boolean) =>
+    compact ? push(ESC, 0x33, COMPACT_LINE_SPACING) : push(ESC, 0x32); // ESC 3 n / ESC 2
+  setSpacing(settings.compactLines);
+  if (settings.darkPrint) push(ESC, 0x47, 1); // ESC G 1 — double-strike (lebih pekat)
 
   for (const line of lines) {
     const isText = line.type === 'text';
@@ -232,7 +245,11 @@ export function encodeEscPos(lines: ReceiptLine[], settings: PrinterSettings): U
 
     push(ESC, 0x61, alignMode === 'center' ? 1 : alignMode === 'right' ? 2 : 0); // ESC a n
     if (bold) push(ESC, 0x45, 1); // ESC E 1
-    if (large) push(GS, 0x21, 0x11); // GS ! — lebar & tinggi ganda
+    if (large) {
+      push(GS, 0x21, 0x11); // GS ! — lebar & tinggi ganda
+      // Teks tinggi ganda tidak boleh memakai jarak rapat, nanti barisnya bertumpuk.
+      if (settings.compactLines) setSpacing(false);
+    }
 
     if (isText) {
       // Perataan ditangani printer (ESC a), jadi kirim teks yang hanya dibungkus.
@@ -248,11 +265,17 @@ export function encodeEscPos(lines: ReceiptLine[], settings: PrinterSettings): U
       }
     }
 
-    if (large) push(GS, 0x21, 0x00);
+    if (large) {
+      push(GS, 0x21, 0x00);
+      if (settings.compactLines) setSpacing(true);
+    }
     if (bold) push(ESC, 0x45, 0);
   }
 
   push(ESC, 0x61, 0);
+  if (settings.darkPrint) push(ESC, 0x47, 0);
+  // Baris kosong akhir memakai jarak normal supaya teks terakhir benar-benar keluar dari kepala printer.
+  if (settings.compactLines) setSpacing(false);
   for (let i = 0; i < settings.feedLines; i++) push(LF);
   if (settings.autoCut) push(GS, 0x56, 0x42, 0x00); // GS V 66 0 — feed & potong (parsial)
 
@@ -281,7 +304,7 @@ export function buildReceiptHtml(lines: ReceiptLine[], settings: PrinterSettings
 
   const body = lines
     .map((line) => {
-      if (line.type === 'blank') return '<div class="l">&nbsp;</div>';
+      if (line.type === 'blank') return '<div class="sp"></div>';
       if (line.type === 'divider') return '<div class="d"></div>';
       if (line.type === 'pair') {
         return `<div class="p${line.bold ? ' b' : ''}"><span>${escapeHtml(line.left)}</span><span class="r">${escapeHtml(line.right)}</span></div>`;
@@ -297,15 +320,19 @@ export function buildReceiptHtml(lines: ReceiptLine[], settings: PrinterSettings
 @page { size: ${paper}mm auto; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: ${paper}mm; background: #fff; color: #000; }
-body { padding: 2mm 3mm; font-family: 'Courier New', Courier, monospace; font-size: ${fontPt}pt;
-  line-height: 1.25; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { padding: 1mm 3mm; font-family: Consolas, 'Lucida Console', 'DejaVu Sans Mono', 'Droid Sans Mono', 'Courier New', monospace;
+  font-size: ${fontPt}pt; line-height: 1.12; font-weight: 700;
+  /* Thermal mencetak 1-bit: pertebal goresan agar huruf tidak pudar/putus-putus. */
+  -webkit-text-stroke: 0.25px #000; -webkit-font-smoothing: none;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .l { white-space: pre-wrap; word-break: break-word; }
-.b { font-weight: 800; }
-.lg { font-size: 1.6em; }
+.b { font-weight: 900; }
+.lg { font-size: 1.35em; line-height: 1.1; }
+.sp { height: 1mm; }
 .p { display: flex; justify-content: space-between; gap: 2mm; }
-.p span:first-child { min-width: 0; word-break: break-word; }
+.p span:first-child { min-width: 0; white-space: pre-wrap; word-break: break-word; }
 .p .r { white-space: nowrap; text-align: right; }
-.d { border-top: 1px dashed #000; margin: 1.5mm 0; }
+.d { border-top: 1.5px dashed #000; margin: 0.8mm 0; }
 </style></head><body>${body}</body></html>`;
 }
 

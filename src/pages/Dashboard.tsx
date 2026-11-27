@@ -237,16 +237,25 @@ const Dashboard: React.FC = () => {
 
   const handleSavePayment = useCallback(
     async (updatedTransaction: Transaction) => {
-      await savePayment(updateTransaction, updatedTransaction);
+      const orderStatus = await savePayment(updateTransaction, updatedTransaction, {
+        completeIfReady: canComplete,
+      });
+      const autoCompleted = orderStatus !== updatedTransaction.orderStatus;
       addAuditLog(
-        `Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.`,
+        `Menerima pembayaran untuk transaksi ${updatedTransaction.id} dari Dashboard. Status bayar: ${updatedTransaction.paymentStatus}.` +
+          (autoCompleted ? ` Status pesanan menjadi "${orderStatus}".` : ''),
         updatedTransaction.storeId,
       );
       setIsPaymentModalOpen(false);
       setTransactionForPayment(null);
-      addToast('Pembayaran berhasil disimpan.', 'success');
+      addToast(
+        autoCompleted
+          ? 'Pembayaran disimpan. Pesanan ditandai Selesai.'
+          : 'Pembayaran berhasil disimpan.',
+        'success',
+      );
     },
-    [updateTransaction, addAuditLog, addToast],
+    [updateTransaction, addAuditLog, addToast, canComplete],
   );
 
   const handleNextStatus = useCallback(
@@ -270,7 +279,14 @@ const Dashboard: React.FC = () => {
         return; // No next status from 'Completed'
       }
 
-      await updateTransaction(transaction.id, { orderStatus: nextStatus });
+      try {
+        await updateTransaction(transaction.id, { orderStatus: nextStatus });
+      } catch (error) {
+        // Mis. mode "Tahan nota" menolak karena stok bahan kurang.
+        const message = error instanceof Error ? error.message : String(error);
+        addToast(`Gagal mengubah status: ${message}`, 'error');
+        return;
+      }
       addAuditLog(
         `Mengubah status transaksi ${transactionId} menjadi "${nextStatus}" dari Dashboard.`,
         transaction.storeId,
@@ -454,10 +470,18 @@ const Dashboard: React.FC = () => {
               <tbody>
                 {paginatedActiveOrders.length > 0 ? (
                   paginatedActiveOrders.map((t) => {
-                    const isSelesaikanDisabled =
+                    const isUnpaidReady =
                       t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
+                    // Pelanggan bayar saat mengambil: satu tombol buka pembayaran,
+                    // nota otomatis Selesai begitu lunas.
+                    const isPayToComplete = isUnpaidReady && canTakePayment;
+                    const isSelesaikanDisabled = isUnpaidReady && !isPayToComplete;
                     const nextActionText =
-                      t.orderStatus === OrderStatus.Processing ? 'Siap Diambil' : 'Selesaikan';
+                      t.orderStatus === OrderStatus.Processing
+                        ? 'Siap Diambil'
+                        : isPayToComplete
+                          ? 'Bayar & Selesaikan'
+                          : 'Selesaikan';
                     const nextActionColor =
                       t.orderStatus === OrderStatus.Processing
                         ? 'bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300'
@@ -486,26 +510,34 @@ const Dashboard: React.FC = () => {
                         </td>
                         <td className="px-4 py-2.5 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
-                              <button
-                                onClick={() => handleOpenPaymentModal(t)}
-                                className="btn btn-success btn-sm"
-                                title="Proses Pembayaran"
-                              >
-                                <DollarSignIcon className="w-4 h-4" />
-                                <span>Bayar</span>
-                              </button>
-                            )}
+                            {canTakePayment &&
+                              t.paymentStatus !== PaymentStatus.Paid &&
+                              !isPayToComplete && (
+                                <button
+                                  onClick={() => handleOpenPaymentModal(t)}
+                                  className="btn btn-success btn-sm"
+                                  title="Proses Pembayaran"
+                                >
+                                  <DollarSignIcon className="w-4 h-4" />
+                                  <span>Bayar</span>
+                                </button>
+                              )}
                             {t.orderStatus !== OrderStatus.Completed &&
                               (canComplete || t.orderStatus !== OrderStatus.Ready) && (
                                 <button
-                                  onClick={() => handleNextStatus(t.id)}
+                                  onClick={() =>
+                                    isPayToComplete
+                                      ? handleOpenPaymentModal(t)
+                                      : handleNextStatus(t.id)
+                                  }
                                   disabled={isSelesaikanDisabled}
                                   className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${nextActionColor}`}
                                   title={
-                                    isSelesaikanDisabled
-                                      ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
-                                      : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                                    isPayToComplete
+                                      ? 'Terima pembayaran; pesanan otomatis Selesai setelah lunas.'
+                                      : isSelesaikanDisabled
+                                        ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                        : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
                                   }
                                 >
                                   {nextActionText}
@@ -536,12 +568,16 @@ const Dashboard: React.FC = () => {
           <div className="sm:hidden space-y-3">
             {paginatedActiveOrders.length > 0 ? (
               paginatedActiveOrders.map((t) => {
-                const isSelesaikanDisabled =
+                const isUnpaidReady =
                   t.orderStatus === OrderStatus.Ready && t.paymentStatus !== PaymentStatus.Paid;
+                const isPayToComplete = isUnpaidReady && canTakePayment;
+                const isSelesaikanDisabled = isUnpaidReady && !isPayToComplete;
                 const mobileNextActionText =
                   t.orderStatus === OrderStatus.Processing
                     ? 'Tandai Siap Diambil'
-                    : 'Selesaikan Pesanan';
+                    : isPayToComplete
+                      ? 'Bayar & Selesaikan'
+                      : 'Selesaikan Pesanan';
                 const mobileNextActionColor =
                   t.orderStatus === OrderStatus.Processing
                     ? 'bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300'
@@ -584,26 +620,32 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
                       <div className="flex items-center justify-center gap-2">
-                        {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
-                          <button
-                            onClick={() => handleOpenPaymentModal(t)}
-                            className="btn btn-success btn-sm flex-1"
-                            title="Proses Pembayaran"
-                          >
-                            <DollarSignIcon className="w-4 h-4" />
-                            <span>Bayar</span>
-                          </button>
-                        )}
+                        {canTakePayment &&
+                          t.paymentStatus !== PaymentStatus.Paid &&
+                          !isPayToComplete && (
+                            <button
+                              onClick={() => handleOpenPaymentModal(t)}
+                              className="btn btn-success btn-sm flex-1"
+                              title="Proses Pembayaran"
+                            >
+                              <DollarSignIcon className="w-4 h-4" />
+                              <span>Bayar</span>
+                            </button>
+                          )}
                         {t.orderStatus !== OrderStatus.Completed &&
                           (canComplete || t.orderStatus !== OrderStatus.Ready) && (
                             <button
-                              onClick={() => handleNextStatus(t.id)}
+                              onClick={() =>
+                                isPayToComplete ? handleOpenPaymentModal(t) : handleNextStatus(t.id)
+                              }
                               disabled={isSelesaikanDisabled}
                               className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
                               title={
-                                isSelesaikanDisabled
-                                  ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
-                                  : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                                isPayToComplete
+                                  ? 'Terima pembayaran; pesanan otomatis Selesai setelah lunas.'
+                                  : isSelesaikanDisabled
+                                    ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                    : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
                               }
                             >
                               {mobileNextActionText}

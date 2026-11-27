@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useSearchParams } from 'react-router-dom';
 import {
   PlusCircleIcon,
@@ -7,7 +8,6 @@ import {
   HistoryIcon,
   WrenchIcon,
   CalendarIcon,
-  SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   DownloadIcon,
@@ -34,6 +34,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { getStatusBadge, getAssetStatusLabel } from '@/utils/uiHelpers';
 import { getStartOfDay } from '@/utils/dateHelpers';
 import { Asset, AssetStatus, MaintenanceLog, UserRole } from '@/types';
+import SearchInput from '../../components/SearchInput';
 
 type StatusFilter = 'in_use' | 'all' | AssetStatus;
 
@@ -98,6 +99,7 @@ const AssetsPage: React.FC = () => {
   const [currentAsset, setCurrentAsset] = useState<Asset | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [maintenanceFilter, setMaintenanceFilter] = useState<'all' | 'due'>(() =>
     searchParams.get('filter') === 'maintenance_due' ? 'due' : 'all',
   );
@@ -257,7 +259,7 @@ const AssetsPage: React.FC = () => {
   }, [assetsWithStore, daysUntilDueByAsset]);
 
   const filteredAssets = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = debouncedSearch.trim().toLowerCase();
     return assetsWithStore.filter((asset) => {
       if (statusFilter === 'in_use' && asset.status === 'Decommissioned') return false;
       if (statusFilter !== 'in_use' && statusFilter !== 'all' && asset.status !== statusFilter) {
@@ -274,7 +276,7 @@ const AssetsPage: React.FC = () => {
         asset.storeName.toLowerCase().includes(term)
       );
     });
-  }, [assetsWithStore, searchTerm, statusFilter, maintenanceFilter, daysUntilDueByAsset]);
+  }, [assetsWithStore, debouncedSearch, statusFilter, maintenanceFilter, daysUntilDueByAsset]);
 
   const hasNoAssetsAtAll = assetsWithStore.length === 0;
 
@@ -577,19 +579,15 @@ const AssetsPage: React.FC = () => {
       )}
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            id="asset-search"
-            name="asset-search"
-            placeholder="Cari nama, nomor serial, atau toko..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            autoComplete="off"
-          />
-        </div>
+        <SearchInput
+          id="asset-search"
+          name="asset-search"
+          label="Cari aset"
+          placeholder="Cari nama, nomor serial, atau toko..."
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          wrapperClassName="flex-1"
+        />
         <select
           id="asset-maintenance-filter"
           name="asset-maintenance-filter"

@@ -3,6 +3,8 @@ import {
   getLocalDateString,
   getMonthPeriod,
   getOutstandingMonthlyTemplates,
+  isMonthlyReminderDue,
+  normalizeReminderDay,
 } from '@/utils/monthlyExpenses';
 
 describe('monthly expense helpers', () => {
@@ -20,6 +22,7 @@ describe('monthly expense helpers', () => {
         category: 'Listrik',
         isActive: true,
         sortOrder: 1,
+        defaultAmount: null,
       },
       {
         id: 'water',
@@ -28,6 +31,7 @@ describe('monthly expense helpers', () => {
         category: 'Air',
         isActive: true,
         sortOrder: 2,
+        defaultAmount: 150000,
       },
       {
         id: 'wifi',
@@ -36,6 +40,7 @@ describe('monthly expense helpers', () => {
         category: 'Operasional',
         isActive: false,
         sortOrder: 3,
+        defaultAmount: null,
       },
       {
         id: 'other-store',
@@ -44,6 +49,7 @@ describe('monthly expense helpers', () => {
         category: 'Air',
         isActive: true,
         sortOrder: 1,
+        defaultAmount: null,
       },
     ];
     const records = [
@@ -55,5 +61,21 @@ describe('monthly expense helpers', () => {
     expect(getOutstandingMonthlyTemplates(templates, records, 'store-a', '2026-02-01')).toEqual([
       templates[1],
     ]);
+  });
+
+  it('shows the reminder only when enabled and the configured day has arrived', () => {
+    const day19 = new Date(2026, 10, 19);
+    const day20 = new Date(2026, 10, 20);
+    expect(isMonthlyReminderDue(day19, {})).toBe(true);
+    expect(isMonthlyReminderDue(day19, { enabled: true, day: 20 })).toBe(false);
+    expect(isMonthlyReminderDue(day20, { enabled: true, day: 20 })).toBe(true);
+    expect(isMonthlyReminderDue(day20, { enabled: false, day: 1 })).toBe(false);
+  });
+
+  it('clamps invalid reminder days to 1-28', () => {
+    expect(normalizeReminderDay(undefined)).toBe(1);
+    expect(normalizeReminderDay(0)).toBe(1);
+    expect(normalizeReminderDay(31)).toBe(28);
+    expect(normalizeReminderDay(Number.NaN)).toBe(1);
   });
 });

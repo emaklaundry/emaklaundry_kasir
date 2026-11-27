@@ -68,6 +68,8 @@ describe('buildWhatsAppReceiptMessage', () => {
     expect(msg).toContain('Dibayar: Rp21.000');
     expect(msg).not.toMatch(/Diskon:|Pajak:|Sisa Tagihan/);
     expect(msg).toContain('Tim Emak Laundry');
+    expect(msg).toContain('Dibayar: Rp21.000 (Tunai)');
+    expect(msg).not.toMatch(/\n{3,}/);
   });
 
   it('selesai tapi belum lunas tidak menulis LUNAS', () => {
@@ -76,13 +78,27 @@ describe('buildWhatsAppReceiptMessage', () => {
       paymentStatus: PaymentStatus.Unpaid,
       amountPaid: 5000,
     });
-    expect(msg).toContain('Status Bayar*: Belum Lunas');
-    expect(msg).toContain('Sisa Tagihan: Rp16.000');
+    expect(msg).toContain('Status Bayar: *BELUM LUNAS* – Sisa Tagihan: Rp16.000');
+  });
+
+  it('siap diambil belum lunas: ajak bayar saat pengambilan', () => {
+    const msg = build({
+      orderStatus: OrderStatus.Ready,
+      paymentStatus: PaymentStatus.Unpaid,
+      amountPaid: 0,
+    });
+    expect(msg).toContain('pembayaran Rp21.000 dapat dilakukan saat pengambilan');
+  });
+
+  it('siap diambil lunas: penutup biasa', () => {
+    const msg = build({ orderStatus: OrderStatus.Ready });
+    expect(msg).toContain('Silakan ambil di toko kami. Terima kasih!');
+    expect(msg).not.toContain('saat pengambilan');
   });
 
   it('selesai lunas memakai footer', () => {
     const msg = build({ orderStatus: OrderStatus.Completed });
-    expect(msg).toContain('Status Bayar*: Lunas');
+    expect(msg).toContain('Status Bayar: *LUNAS*');
     expect(msg).toContain('forms.gle');
   });
 
@@ -101,14 +117,15 @@ describe('buildWhatsAppReceiptMessage', () => {
 
   it('mencantumkan metode bayar, kembalian dan catatan', () => {
     const msg = build({ amountPaid: 50000, change: 29000, notes: 'Jangan pakai pewangi' });
-    expect(msg).toContain('Metode Bayar: Tunai');
+    expect(msg).toContain('Dibayar: Rp50.000 (Tunai)');
     expect(msg).toContain('Kembalian: Rp29.000');
-    expect(msg).toContain('Catatan*: Jangan pakai pewangi');
+    expect(msg).toContain('Catatan: Jangan pakai pewangi');
   });
 
   it('belum bayar: tanpa metode bayar & kembalian', () => {
     const msg = build({ amountPaid: 0, paymentStatus: PaymentStatus.Unpaid });
-    expect(msg).not.toContain('Metode Bayar');
+    expect(msg).toContain('Dibayar: Rp0\n');
+    expect(msg).not.toContain('(Tunai)');
     expect(msg).not.toContain('Kembalian');
   });
 

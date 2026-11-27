@@ -386,6 +386,7 @@ export type Database = {
         Row: {
           category: string;
           created_at: string;
+          default_amount: number | null;
           id: string;
           is_active: boolean;
           name: string;
@@ -395,6 +396,7 @@ export type Database = {
         Insert: {
           category: string;
           created_at?: string;
+          default_amount?: number | null;
           id?: string;
           is_active?: boolean;
           name: string;
@@ -404,6 +406,7 @@ export type Database = {
         Update: {
           category?: string;
           created_at?: string;
+          default_amount?: number | null;
           id?: string;
           is_active?: boolean;
           name?: string;
@@ -536,6 +539,41 @@ export type Database = {
             columns: ['transaction_id'];
             isOneToOne: false;
             referencedRelation: 'transactions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      inventory_store_settings: {
+        Row: {
+          auto_deduct_enabled: boolean;
+          deduct_at: string;
+          stock_guard: string;
+          store_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          auto_deduct_enabled?: boolean;
+          deduct_at?: string;
+          stock_guard?: string;
+          store_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          auto_deduct_enabled?: boolean;
+          deduct_at?: string;
+          stock_guard?: string;
+          store_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'inventory_store_settings_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: true;
+            referencedRelation: 'stores';
             referencedColumns: ['id'];
           },
         ];
@@ -692,6 +730,7 @@ export type Database = {
           id: string;
           name: string;
           price: number;
+          showOnWeb: boolean;
           storeId: string | null;
           unit: string;
           wash_type: string;
@@ -703,6 +742,7 @@ export type Database = {
           id?: string;
           name: string;
           price: number;
+          showOnWeb?: boolean;
           storeId?: string | null;
           unit: string;
           wash_type?: string;
@@ -714,6 +754,7 @@ export type Database = {
           id?: string;
           name?: string;
           price?: number;
+          showOnWeb?: boolean;
           storeId?: string | null;
           unit?: string;
           wash_type?: string;
@@ -739,6 +780,8 @@ export type Database = {
           qrisStaticCode: string | null;
           businessName: string | null;
           trackingUrl: string | null;
+          monthlyExpenseReminderEnabled: boolean;
+          monthlyExpenseReminderDay: number;
         };
         Insert: {
           id?: never;
@@ -750,6 +793,8 @@ export type Database = {
           qrisStaticCode?: string | null;
           businessName?: string | null;
           trackingUrl?: string | null;
+          monthlyExpenseReminderEnabled?: boolean;
+          monthlyExpenseReminderDay?: number;
         };
         Update: {
           id?: never;
@@ -761,6 +806,8 @@ export type Database = {
           qrisStaticCode?: string | null;
           businessName?: string | null;
           trackingUrl?: string | null;
+          monthlyExpenseReminderEnabled?: boolean;
+          monthlyExpenseReminderDay?: number;
         };
         Relationships: [];
       };
@@ -977,6 +1024,16 @@ export type Database = {
         Args: { p_item_id: string; p_mode: string; p_note?: string; p_value: number };
         Returns: number;
       };
+      check_transaction_stock: {
+        Args: { p_store_id: string; p_items: Json };
+        Returns: {
+          inventory_item_id: string;
+          item_name: string;
+          unit: string;
+          needed: number;
+          available: number;
+        }[];
+      };
       record_stock_opname: {
         Args: { p_item_id: string; p_notes?: string; p_physical_stock: number };
         Returns: Database['public']['Tables']['stock_opname']['Row'];
@@ -1021,6 +1078,18 @@ export type Database = {
       };
       get_my_role: { Args: never; Returns: string };
       get_my_store_id: { Args: never; Returns: string };
+      get_public_price_list: {
+        Args: { store_id_input: string };
+        Returns: {
+          category: string;
+          duration_days: number;
+          min_quantity: number;
+          price: number;
+          service_name: string;
+          unit: string;
+          wash_type: string;
+        }[];
+      };
       get_public_services: {
         Args: { store_id_input: string };
         Returns: {

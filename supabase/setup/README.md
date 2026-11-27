@@ -47,6 +47,7 @@ Folder `supabase/` harus tetap di root proyek dengan nama itu: Supabase CLI hany
 | 11 | PIN supervisor: tabel, RPC `set_my_supervisor_pin` / `request_supervisor_approval`, trigger `enforce_supervisor_approval` (Kasir yang mengubah pembayaran nota Lunas wajib izin PIN; dikirim lewat `p_supervisor_approval_id` di `update_transaction_progress`) |
 | 12 | Karyawan: alamat, tanggal mulai, jam shift & hari kerja, toleransi terlambat, insentif bulanan. Aman dijalankan ulang |
 | 13 | QRIS statis toko: kolom `settings."qrisStaticCode"` + cek format. Aman dijalankan ulang |
+| 14 | Pengaturan potong stok per cabang (`inventory_store_settings`): saklar utama, waktu potong (dibuat / Siap Diambil / Selesai), aturan stok kurang (biarkan minus / peringatan / tahan nota), RPC `check_transaction_stock`. Aman dijalankan ulang |
 
 ---
 

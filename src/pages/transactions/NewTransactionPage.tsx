@@ -28,6 +28,11 @@ import useToasts from '../../contexts/useToasts';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import KiloanTaggingModal from '../../components/KiloanTaggingModal';
 import {
+  checkTransactionStock,
+  useInventorySettings,
+} from '../../contexts/InventoryRecipeContext';
+import { formatQty } from '../../utils/inventoryFormat';
+import {
   ExtendedTransactionItem,
   PaymentStatus,
   OrderStatus,
@@ -37,6 +42,7 @@ import {
   PaymentMethod,
   Transaction,
   Service,
+  StockShortage,
 } from '@/types';
 
 const NewTransactionPage: React.FC = () => {
@@ -174,6 +180,7 @@ const NewTransactionPage: React.FC = () => {
       ? selectedStoreId
       : currentUser?.storeId;
   }, [currentUser, selectedStoreId]);
+  const { data: inventorySettings } = useInventorySettings(currentStoreId ?? undefined);
 
   // --- MODIFIKASI: handleItemChange ---
   const handleItemChange = (
@@ -365,6 +372,52 @@ const NewTransactionPage: React.FC = () => {
     }
   };
 
+  /**
+   * Cek stok bahan sesuai pengaturan cabang. true = lanjut simpan.
+   * Mode "tahan" juga ditegakkan database; cek ini hanya memberi pesan lebih awal.
+   * Bila pengecekan gagal (mis. jaringan), nota tetap boleh disimpan.
+   */
+  const confirmStockAvailability = async (): Promise<boolean> => {
+    const settings = inventorySettings;
+    if (!currentStoreId || !settings?.autoDeductEnabled || settings.stockGuard === 'bebas') {
+      return true;
+    }
+    let shortages: StockShortage[];
+    try {
+      shortages = await checkTransactionStock(
+        currentStoreId,
+        items.map((item) => ({ serviceId: item.serviceId, quantity: item.quantity })),
+      );
+    } catch (error) {
+      console.warn('Cek stok bahan gagal, nota tetap disimpan:', error);
+      return true;
+    }
+    if (shortages.length === 0) return true;
+
+    const list = shortages
+      .map(
+        (s) =>
+          `${s.itemName} (butuh ${formatQty(s.needed)} ${s.unit}, sisa ${formatQty(s.available)})`,
+      )
+      .join(', ');
+    if (settings.stockGuard === 'tahan' && settings.deductAt === 'dibuat') {
+      addToast(`Stok bahan tidak cukup: ${list}. Tambah stok dulu di Inventaris.`, 'error');
+      return false;
+    }
+    const later =
+      settings.stockGuard === 'tahan'
+        ? ` Nota bisa disimpan, tetapi tidak bisa diubah ke status "${
+            settings.deductAt === 'selesai' ? OrderStatus.Completed : OrderStatus.Ready
+          }" sebelum stok ditambah.`
+        : '';
+    return confirm({
+      title: 'Stok Bahan Kurang',
+      message: `Stok bahan tidak cukup untuk nota ini: ${list}.${later} Tetap simpan nota?`,
+      confirmText: 'Tetap Simpan',
+      confirmVariant: 'primary',
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSaving) {
@@ -418,6 +471,11 @@ const NewTransactionPage: React.FC = () => {
         setIsSaving(false);
         return;
       }
+    }
+
+    if (!(await confirmStockAvailability())) {
+      setIsSaving(false);
+      return;
     }
 
     const toastId = addToast('Menyimpan transaksi ke database...', 'info');

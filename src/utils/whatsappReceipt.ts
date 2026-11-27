@@ -5,8 +5,8 @@ export const DEFAULT_BUSINESS_NAME = 'Emak Laundry';
 export const DEFAULT_TRACKING_URL = 'https://emaklaundry.my.id/';
 const FEEDBACK_URL = 'https://forms.gle/8JnjZZ4cu5oTXGYr9';
 
-export const buildDefaultWhatsAppFooter = (trackingBase: string = DEFAULT_TRACKING_URL) =>
-  `🔍 Cek status cucian Anda:\n${trackingBase}\n\n💬 Bantu kami lebih baik! Berikan kritik & saran:\n${FEEDBACK_URL}`;
+/** Footer default: link kritik & saran. Link cek status per-invoice sudah ditulis di badan pesan. */
+export const buildDefaultWhatsAppFooter = () => `💬 Kritik & saran: ${FEEDBACK_URL}`;
 
 /** Link cek status untuk satu invoice, aman bila base URL sudah punya query string. */
 export function buildTrackingUrl(base: string, invoiceNumber: string): string {
@@ -29,16 +29,9 @@ export function buildWhatsAppReceiptMessage({
   store,
 }: BuildArgs): string {
   const rp = (n: number) => `Rp${n.toLocaleString('id-ID')}`;
-  const line = '─────────────────────────────';
   const businessName = settings?.businessName?.trim() || DEFAULT_BUSINESS_NAME;
   const trackingBase = settings?.trackingUrl?.trim() || DEFAULT_TRACKING_URL;
 
-  const itemsList = transaction.items
-    .map(
-      (item) =>
-        `- ${item.quantity} ${item.unit} ${item.serviceName} @ ${rp(item.price)} = ${rp(item.subtotal)}`,
-    )
-    .join('\n');
   const subtotal =
     transaction.subtotal || transaction.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
   const discount = transaction.discount || 0;
@@ -51,97 +44,103 @@ export function buildWhatsAppReceiptMessage({
   const invoiceNumber = formatTransactionId(transaction);
   const trackingUrl = buildTrackingUrl(trackingBase, invoiceNumber);
 
-  const footer = settings?.whatsappFooter || buildDefaultWhatsAppFooter(trackingBase);
+  const footer = settings?.whatsappFooter?.trim() || buildDefaultWhatsAppFooter();
   const closingMessage =
     settings?.receiptMessage?.trim() || 'Terima kasih telah menggunakan layanan kami.';
 
-  // Rincian biaya: subtotal/diskon/pajak hanya muncul bila ada potongan atau pajak,
-  // supaya jumlah item tetap cocok dengan total yang ditagih.
-  const costLines: string[] = [];
-  if (discount > 0 || tax > 0) {
-    costLines.push(`Subtotal: ${rp(subtotal)}`);
-    if (discount > 0) costLines.push(`Diskon: -${rp(discount)}`);
-    if (tax > 0) costLines.push(`Pajak: ${rp(tax)}`);
-  }
-  costLines.push(`Total: ${rp(total)}`);
-  costLines.push(`Dibayar: ${rp(amountPaid)}`);
-  if (amountPaid > 0 && transaction.paymentMethod) {
-    costLines.push(`Metode Bayar: ${transaction.paymentMethod}`);
-  }
-  if (change > 0) costLines.push(`Kembalian: ${rp(change)}`);
-  if (remainingBalance > 0) costLines.push(`Sisa Tagihan: ${rp(remainingBalance)}`);
-  costLines.push(`💳 *Status Bayar*: ${isPaid ? PaymentStatus.Paid : PaymentStatus.Unpaid}`);
-  const costBlock = costLines.join('\n');
+  const formatDate = (value: Date | string | undefined | null, withTime = false) => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toLocaleString(
+      'id-ID',
+      withTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' },
+    );
+  };
 
-  const notes = transaction.notes?.trim();
-  const notesLine = notes ? `📝 *Catatan*: ${notes}\n` : '';
-
-  const estimated = transaction.estimatedCompletionDate
-    ? new Date(transaction.estimatedCompletionDate)
-    : null;
-  const estimatedText =
-    estimated && !Number.isNaN(estimated.getTime())
-      ? estimated.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
-      : null;
-
+  // ── Kepala: nama usaha / cabang
   const storeName = store?.name?.trim();
   const storeAddress = store?.address?.trim();
-  const storeBlock = storeName
-    ? `📍 *${businessName} – ${storeName}*${storeAddress ? `\n${storeAddress}` : ''}\n\n`
-    : '';
-  const signTeam = `Tim ${businessName}`;
+  const header = [
+    `*${storeName ? `${businessName} – ${storeName}` : businessName}*`,
+    storeAddress || null,
+  ];
 
-  if (transaction.orderStatus === OrderStatus.Processing) {
-    return (
-      `Halo ${customer.name},\n\n` +
-      `Terima kasih telah mempercayakan laundry Anda kepada kami. Berikut adalah detail pesanan Anda:\n` +
-      `${line}\n` +
-      `🧾 *No. Invoice*: ${invoiceNumber}\n` +
-      `🔗 *Cek Status*: ${trackingUrl}\n` +
-      `📅 *Tanggal*: ${new Date(transaction.createdAt).toLocaleDateString('id-ID')}\n` +
-      `${line}\n` +
-      `*Daftar Item:*\n${itemsList}\n` +
-      notesLine +
-      `${line}\n` +
-      `${costBlock}\n` +
-      (estimatedText ? `⏳ *Estimasi Selesai*: ${estimatedText}\n` : '') +
-      `${line}\n` +
-      `Kami akan menginformasikan kembali jika pesanan Anda sudah siap diambil.\n\n` +
-      `${footer}\n\n` +
-      storeBlock +
-      `Salam hangat,\n${signTeam}`
-    );
+  // ── Sapaan + status pesanan (satu kalimat)
+  const statusLine =
+    transaction.orderStatus === OrderStatus.Processing
+      ? `Halo ${customer.name}, pesanan Anda sudah kami terima dan sedang diproses.`
+      : transaction.orderStatus === OrderStatus.Ready
+        ? `Halo ${customer.name}, pesanan Anda sudah *SIAP DIAMBIL* ✅`
+        : `Halo ${customer.name}, pesanan Anda sudah *SELESAI* ✅`;
+
+  // ── Info invoice
+  const createdText = formatDate(transaction.createdAt);
+  const estimatedText =
+    transaction.orderStatus === OrderStatus.Processing
+      ? formatDate(transaction.estimatedCompletionDate, true)
+      : null;
+  const infoBlock = [
+    `🧾 No. Invoice: *${invoiceNumber}*`,
+    createdText ? `📅 Tanggal: ${createdText}` : null,
+    estimatedText ? `⏳ Estimasi Selesai: ${estimatedText}` : null,
+  ];
+
+  // ── Rincian item
+  const itemsBlock = [
+    '*Rincian*',
+    ...transaction.items.map(
+      (item) =>
+        `• ${item.serviceName} ${item.quantity} ${item.unit} × ${rp(item.price)} = ${rp(item.subtotal)}`,
+    ),
+  ];
+
+  // ── Pembayaran: subtotal/diskon/pajak hanya muncul bila ada potongan atau pajak,
+  // supaya jumlah item tetap cocok dengan total yang ditagih.
+  const paymentBlock: (string | null)[] = [];
+  if (discount > 0 || tax > 0) {
+    paymentBlock.push(`Subtotal: ${rp(subtotal)}`);
+    if (discount > 0) paymentBlock.push(`Diskon: -${rp(discount)}`);
+    if (tax > 0) paymentBlock.push(`Pajak: ${rp(tax)}`);
   }
-  if (transaction.orderStatus === OrderStatus.Ready) {
-    return (
-      `Halo ${customer.name},\n\n` +
-      `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SIAP DIAMBIL*.\n` +
-      `🔗 *Cek Status*: ${trackingUrl}\n` +
-      `${line}\n` +
-      `*Daftar Item:*\n${itemsList}\n` +
-      notesLine +
-      `${line}\n` +
-      `${costBlock}\n` +
-      `${line}\n` +
-      `Silakan datang ke toko kami untuk pengambilan.\n\n` +
-      `${footer}\n\n` +
-      storeBlock +
-      `Terima kasih,\n${signTeam}`
-    );
-  }
-  return (
-    `Halo ${customer.name},\n\n` +
-    `Pesanan laundry Anda dengan No. Invoice *${invoiceNumber}* sudah *SELESAI*.\n` +
-    `🔗 *Cek Status*: ${trackingUrl}\n` +
-    `${line}\n` +
-    `*Daftar Item:*\n${itemsList}\n` +
-    notesLine +
-    `${line}\n` +
-    `${costBlock}\n` +
-    `${line}\n` +
-    `${closingMessage}\n\n` +
-    `${footer}\n\n` +
-    storeBlock +
-    signTeam
+  paymentBlock.push(`*Total: ${rp(total)}*`);
+  paymentBlock.push(
+    `Dibayar: ${rp(amountPaid)}${amountPaid > 0 && transaction.paymentMethod ? ` (${transaction.paymentMethod})` : ''}`,
   );
+  if (change > 0) paymentBlock.push(`Kembalian: ${rp(change)}`);
+  paymentBlock.push(
+    isPaid
+      ? `Status Bayar: *${PaymentStatus.Paid.toUpperCase()}* ✅`
+      : `Status Bayar: *${PaymentStatus.Unpaid.toUpperCase()}* – Sisa Tagihan: ${rp(remainingBalance)}`,
+  );
+
+  const notes = transaction.notes?.trim();
+  const notesBlock = notes ? [`📝 Catatan: ${notes}`] : [];
+
+  // ── Penutup sesuai status
+  const closing =
+    transaction.orderStatus === OrderStatus.Processing
+      ? 'Kami kabari lagi saat pesanan siap diambil.'
+      : transaction.orderStatus === OrderStatus.Ready
+        ? isPaid
+          ? 'Silakan ambil di toko kami. Terima kasih!'
+          : `Silakan ambil di toko kami, pembayaran ${rp(remainingBalance)} dapat dilakukan saat pengambilan. Terima kasih!`
+        : closingMessage;
+
+  const sections: (string | null)[][] = [
+    header,
+    [statusLine],
+    infoBlock,
+    itemsBlock,
+    paymentBlock,
+    notesBlock,
+    [`🔍 Cek status: ${trackingUrl}`],
+    [closing, `– Tim ${businessName}`],
+    [footer],
+  ];
+
+  return sections
+    .map((lines) => lines.filter((l): l is string => !!l).join('\n'))
+    .filter(Boolean)
+    .join('\n\n');
 }

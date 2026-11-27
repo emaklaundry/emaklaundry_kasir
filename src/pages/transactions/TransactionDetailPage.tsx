@@ -492,13 +492,25 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       (updatedTransaction.orderStatus === OrderStatus.Completed ||
         updatedTransaction.orderStatus === OrderStatus.Ready);
     try {
-      await savePayment(updateTransaction, { ...updatedTransaction, id: transaction.id });
+      const orderStatus = await savePayment(
+        updateTransaction,
+        { ...updatedTransaction, id: transaction.id },
+        { completeIfReady: canComplete },
+      );
+      const autoCompleted = orderStatus !== updatedTransaction.orderStatus;
       addAuditLog(
-        `Menerima pembayaran untuk transaksi ${transaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
+        `Menerima pembayaran untuk transaksi ${transaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.` +
+          (autoCompleted ? ` Status pesanan menjadi "${orderStatus}".` : ''),
         transaction.storeId,
       );
       await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
-      updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
+      updateToast(
+        toastId,
+        autoCompleted
+          ? 'Pembayaran disimpan. Pesanan ditandai Selesai.'
+          : 'Pembayaran berhasil disimpan',
+        'success',
+      );
       if (shouldShowWhatsAppModal && canNotify) {
         setIsWhatsAppOpen(true);
       }
@@ -510,6 +522,13 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       setIsPaymentOpen(false);
     }
   }
+
+  // Pelanggan bayar saat mengambil: pelunasan nota "Siap Diambil" langsung menutupnya.
+  const isPayToComplete =
+    canTakePayment &&
+    canComplete &&
+    transaction.orderStatus === OrderStatus.Ready &&
+    transaction.paymentStatus !== PaymentStatus.Paid;
 
   async function handleMarkReady() {
     setLoading(true);
@@ -590,8 +609,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         </div>
       )}
 
-      {/* Tombol Bayar HANYA muncul jika BELUM Lunas */}
-      {canTakePayment && transaction.paymentStatus !== PaymentStatus.Paid && (
+      {/* Tombol Bayar HANYA muncul jika BELUM Lunas (nota Siap Diambil pakai "Bayar & Selesaikan") */}
+      {canTakePayment && transaction.paymentStatus !== PaymentStatus.Paid && !isPayToComplete && (
         <button
           disabled={loading}
           onClick={handleOpenPaymentModal}
@@ -634,17 +653,19 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           disabled={
             loading ||
             transaction.orderStatus === OrderStatus.Completed ||
-            transaction.paymentStatus !== PaymentStatus.Paid
+            (transaction.paymentStatus !== PaymentStatus.Paid && !isPayToComplete)
           }
-          onClick={handleMarkCompleted}
+          onClick={isPayToComplete ? handleOpenPaymentModal : handleMarkCompleted}
           className="btn btn-primary"
           title={
-            transaction.paymentStatus !== PaymentStatus.Paid
-              ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
-              : 'Selesaikan Pesanan'
+            isPayToComplete
+              ? 'Terima pembayaran; pesanan otomatis Selesai setelah lunas'
+              : transaction.paymentStatus !== PaymentStatus.Paid
+                ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
+                : 'Selesaikan Pesanan'
           }
         >
-          Tandai Selesai
+          {isPayToComplete ? 'Bayar & Selesaikan' : 'Tandai Selesai'}
         </button>
       )}
 

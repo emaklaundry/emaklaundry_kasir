@@ -107,7 +107,10 @@ export const HELP_TOPICS: HelpTopic[] = [
       'Tekan Tandai Siap Ambil saat cucian selesai dikerjakan, lalu kabari pelanggan lewat WhatsApp.',
       'Saat pelanggan mengambil, pastikan sudah Lunas, lalu tekan Tandai Selesai.',
     ],
-    tips: ['Pesanan tidak bisa diselesaikan sebelum lunas.'],
+    tips: [
+      'Pesanan boleh ditandai Siap Diambil walau belum lunas; pelanggan bisa bayar saat mengambil.',
+      'Saat nota Siap Diambil dilunasi, status otomatis berubah jadi Selesai.',
+    ],
     keywords: 'status siap ambil selesai diproses pengambilan',
   },
   {
@@ -187,6 +190,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       'Atur batas stok minimum; bahan di bawah batas ditandai stok menipis.',
       'Tambah stok setelah belanja lewat Aksi Cepat → Update Stok, atau edit barangnya di Inventaris. Tekan Opname untuk mencocokkan hitungan fisik.',
       'Tekan Resep untuk mengatur pemakaian bahan per layanan, agar stok terpotong otomatis setiap ada transaksi.',
+      'Di jendela Potong Otomatis, atur juga saklar utama per cabang, kapan stok dipotong (saat nota dibuat, Siap Diambil, atau Selesai), dan apa yang terjadi bila stok bahan kurang (biarkan minus, beri peringatan, atau tahan nota).',
     ],
     adminOnly: true,
     link: { to: '/management/inventory', label: 'Buka Inventaris' },

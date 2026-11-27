@@ -15,12 +15,12 @@ import {
   TrashIcon,
   UserIcon,
   ArrowDownIcon,
-  SearchIcon,
   SpinnerIcon,
 } from '../../components/icons';
 import { formatRupiah } from '../../utils/formatting';
 import { EMPLOYEE_ROLE_LABELS, formatSchedule } from '../../utils/employeeSchedule';
 import { revokeEmployeeLogin, setEmployeePin, syncEmployeeLogin } from '../../utils/employeeLogin';
+import SearchInput from '../../components/SearchInput';
 
 type StatusFilter = 'active' | 'inactive' | 'all';
 
@@ -336,20 +336,14 @@ const EmployeesPage: React.FC = () => {
       </div>
 
       <div className="card flex flex-col gap-3 p-3 md:flex-row md:items-center">
-        <div className="relative flex-1">
-          <label htmlFor="employee-search" className="sr-only">
-            Cari karyawan
-          </label>
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <input
-            id="employee-search"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari nama atau nomor HP"
-            className="form-input py-2.5 pl-10 pr-3"
-          />
-        </div>
+        <SearchInput
+          id="employee-search"
+          label="Cari karyawan"
+          placeholder="Cari nama atau nomor HP"
+          value={query}
+          onValueChange={setQuery}
+          wrapperClassName="flex-1"
+        />
         {isSuperAdmin && (
           <div>
             <label htmlFor="employee-store-filter" className="sr-only">

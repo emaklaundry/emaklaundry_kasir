@@ -12,14 +12,14 @@ import { SpinnerIcon } from '../../components/icons';
 import { AlertTriangle, Building2, Printer, QrCode, Receipt, Wrench } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
 import { UserRole } from '../../types';
-import { DEFAULT_BUSINESS_NAME, DEFAULT_TRACKING_URL } from '@/utils/whatsappReceipt';
+import {
+  buildDefaultWhatsAppFooter,
+  DEFAULT_BUSINESS_NAME,
+  DEFAULT_TRACKING_URL,
+} from '@/utils/whatsappReceipt';
 
-// Template default untuk WhatsApp footer
-const DEFAULT_WHATSAPP_FOOTER = `🔍 Cek status cucian Anda:
-https://www.emaklaundry.my.id/
-
-💬 Bantu kami lebih baik! Berikan kritik & saran:
-https://forms.gle/8JnjZZ4cu5oTXGYr9`;
+// Template default untuk WhatsApp footer (link cek status per-invoice sudah otomatis di pesan)
+const DEFAULT_WHATSAPP_FOOTER = buildDefaultWhatsAppFooter();
 
 const DEFAULT_RECEIPT_MESSAGE = 'Terima kasih telah menggunakan layanan kami.';
 
@@ -247,8 +247,8 @@ const SettingsPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pengaturan</h1>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Pengaturan usaha, struk, WhatsApp, dan pembayaran berlaku untuk semua cabang. Data
-          cabang mengikuti cabang yang dipilih di header.
+          Pengaturan usaha, struk, WhatsApp, dan pembayaran berlaku untuk semua cabang. Data cabang
+          mengikuti cabang yang dipilih di header.
         </p>
       </div>
 

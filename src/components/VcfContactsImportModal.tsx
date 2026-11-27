@@ -1,36 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { XIcon, UserPlusIcon, RefreshCwIcon } from './icons';
-import useGoogleContacts, { GoogleContact } from '../hooks/useGoogleContacts';
+import React, { useEffect, useRef, useState } from 'react';
+import { XIcon, UserPlusIcon, RefreshCwIcon, UploadIcon } from './icons';
+import { parseVcf, VcfContact } from '../utils/vcfParser';
+import { normalizePhone } from '../utils/phone';
 
-interface GoogleContactsImportModalProps {
+const readFileAsText = (file: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+
+interface VcfContactsImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (contacts: GoogleContact[]) => Promise<void>;
+  onImport: (contacts: VcfContact[]) => Promise<void>;
   existingPhones: string[];
 }
 
-const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
+const VcfContactsImportModal: React.FC<VcfContactsImportModalProps> = ({
   isOpen,
   onClose,
   onImport,
   existingPhones,
 }) => {
-  const { contacts, isLoading, error, isAuthenticated, signIn, signOut, fetchContacts } =
-    useGoogleContacts();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [contacts, setContacts] = useState<VcfContact[]>([]);
+  const [fileName, setFileName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isReading, setIsReading] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [isImporting, setIsImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch contacts when authenticated
-  useEffect(() => {
-    if (isAuthenticated && contacts.length === 0) {
-      fetchContacts();
-    }
-  }, [isAuthenticated, contacts.length, fetchContacts]);
-
-  // Reset state when modal closes
+  // Reset state saat modal ditutup
   useEffect(() => {
     if (!isOpen) {
+      setContacts([]);
+      setFileName('');
+      setError(null);
       setSelectedContacts(new Set());
       setSearchTerm('');
     }
@@ -38,15 +46,11 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Normalize phone number for comparison
-  const normalizePhone = (phone: string) => phone.replace(/[^0-9]/g, '');
+  const existingSet = new Set(existingPhones.map(normalizePhone).filter(Boolean));
 
-  // Filter contacts to exclude existing customers and apply search
+  // Buang kontak yang nomornya sudah ada di database, lalu terapkan pencarian
   const filteredContacts = contacts.filter((contact) => {
-    const phoneNormalized = normalizePhone(contact.phone);
-    const isExisting = existingPhones.some((p) => normalizePhone(p) === phoneNormalized);
-    if (isExisting) return false;
-
+    if (existingSet.has(normalizePhone(contact.phone))) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       return (
@@ -56,26 +60,41 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
     return true;
   });
 
-  const toggleContact = (resourceName: string) => {
-    const newSelected = new Set(selectedContacts);
-    if (newSelected.has(resourceName)) {
-      newSelected.delete(resourceName);
-    } else {
-      newSelected.add(resourceName);
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setIsReading(true);
+    setError(null);
+    try {
+      const parsed = parseVcf(await readFileAsText(file));
+      if (parsed.length === 0) {
+        setError('Tidak ada kontak dengan nama dan nomor telepon di file ini.');
+      }
+      setContacts(parsed);
+      setFileName(file.name);
+      setSelectedContacts(new Set());
+      setSearchTerm('');
+    } catch {
+      setError('Gagal membaca file. Pastikan file berformat .vcf (vCard).');
+    } finally {
+      setIsReading(false);
     }
-    setSelectedContacts(newSelected);
   };
 
-  const selectAll = () => {
-    setSelectedContacts(new Set(filteredContacts.map((c) => c.resourceName)));
+  const toggleContact = (id: string) => {
+    const next = new Set(selectedContacts);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedContacts(next);
   };
 
-  const deselectAll = () => {
-    setSelectedContacts(new Set());
-  };
+  const selectAll = () => setSelectedContacts(new Set(filteredContacts.map((c) => c.id)));
+  const deselectAll = () => setSelectedContacts(new Set());
 
   const handleImport = async () => {
-    const contactsToImport = contacts.filter((c) => selectedContacts.has(c.resourceName));
+    const contactsToImport = contacts.filter((c) => selectedContacts.has(c.id));
     if (contactsToImport.length === 0) return;
 
     setIsImporting(true);
@@ -86,6 +105,8 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
       setIsImporting(false);
     }
   };
+
+  const hasFile = fileName !== '' && contacts.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -98,12 +119,12 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                Import dari Google Contacts
+                Import Kontak dari File .vcf
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {isAuthenticated
-                  ? `${filteredContacts.length} kontak tersedia untuk diimport`
-                  : 'Hubungkan akun Google Anda'}
+                {hasFile
+                  ? `${fileName} · ${filteredContacts.length} kontak tersedia untuk diimport`
+                  : 'Pilih file kontak hasil export dari HP atau Google Contacts'}
               </p>
             </div>
           </div>
@@ -117,52 +138,43 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
           </button>
         </div>
 
+        <input
+          ref={fileInputRef}
+          id="vcf-import-file"
+          name="vcf-import-file"
+          type="file"
+          accept=".vcf,.vcard,text/vcard,text/x-vcard"
+          onChange={handleFileChange}
+          className="hidden"
+          data-testid="vcf-file-input"
+        />
+
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {!isAuthenticated ? (
-            /* Not Authenticated View */
+          {!hasFile ? (
             <div className="flex flex-col items-center justify-center p-12">
               <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                </svg>
+                <UploadIcon className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-                Hubungkan dengan Google
+                Pilih File Kontak
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 text-center mb-6 max-w-sm">
-                Izinkan akses ke Google Contacts Anda untuk mengimport data pelanggan secara
-                otomatis
+                Export kontak dari aplikasi Kontak di HP atau dari contacts.google.com sebagai
+                file .vcf, lalu pilih file tersebut di sini.
               </p>
-              <button onClick={signIn} disabled={isLoading} className="btn btn-secondary">
-                {isLoading ? (
-                  <RefreshCwIcon className="w-5 h-5 animate-spin text-slate-600" />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isReading}
+                className="btn btn-primary"
+              >
+                {isReading ? (
+                  <RefreshCwIcon className="w-5 h-5 animate-spin" />
                 ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
+                  <UploadIcon className="w-5 h-5" />
                 )}
-                <span className="text-slate-700 dark:text-slate-700 font-medium">
-                  Masuk dengan Google
-                </span>
+                Pilih File .vcf
               </button>
               {error && (
                 <p role="alert" className="mt-4 text-sm text-red-500">
@@ -171,16 +183,15 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
               )}
             </div>
           ) : (
-            /* Authenticated View */
             <>
               {/* Search & Actions Bar */}
               <div className="p-4 border-b dark:border-slate-700 space-y-3">
-                <label htmlFor="google-contacts-search" className="sr-only">
+                <label htmlFor="vcf-contacts-search" className="sr-only">
                   Cari kontak
                 </label>
                 <input
-                  id="google-contacts-search"
-                  name="google-contacts-search"
+                  id="vcf-contacts-search"
+                  name="vcf-contacts-search"
                   type="text"
                   placeholder="Cari kontak..."
                   value={searchTerm}
@@ -190,6 +201,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={selectAll}
                       className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     >
@@ -197,6 +209,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                     </button>
                     <span className="text-slate-300">|</span>
                     <button
+                      type="button"
                       onClick={deselectAll}
                       className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     >
@@ -211,12 +224,7 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
 
               {/* Contacts List */}
               <div className="flex-1 overflow-y-auto p-4">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <RefreshCwIcon className="w-8 h-8 animate-spin text-blue-500" />
-                    <span className="ml-3 text-slate-500">Memuat kontak...</span>
-                  </div>
-                ) : filteredContacts.length === 0 ? (
+                {filteredContacts.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-slate-500 dark:text-slate-400">
                       {searchTerm
@@ -228,17 +236,17 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
                   <div className="space-y-2">
                     {filteredContacts.map((contact) => (
                       <label
-                        key={contact.resourceName}
+                        key={contact.id}
                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                          selectedContacts.has(contact.resourceName)
+                          selectedContacts.has(contact.id)
                             ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'
                             : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent'
                         }`}
                       >
                         <input
                           type="checkbox"
-                          checked={selectedContacts.has(contact.resourceName)}
-                          onChange={() => toggleContact(contact.resourceName)}
+                          checked={selectedContacts.has(contact.id)}
+                          onChange={() => toggleContact(contact.id)}
                           className="h-5 w-5 shrink-0 accent-blue-600"
                         />
                         <div className="flex-1 min-w-0">
@@ -259,19 +267,22 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
               {/* Footer Actions */}
               <div className="p-4 border-t dark:border-slate-700 flex items-center justify-between">
                 <button
-                  onClick={signOut}
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
                   className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                 >
-                  Ganti Akun
+                  Ganti File
                 </button>
                 <div className="flex gap-3">
                   <button
+                    type="button"
                     onClick={onClose}
                     className="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                   >
                     Batal
                   </button>
                   <button
+                    type="button"
                     onClick={handleImport}
                     disabled={selectedContacts.size === 0 || isImporting}
                     className="btn btn-primary btn-sm"
@@ -289,4 +300,4 @@ const GoogleContactsImportModal: React.FC<GoogleContactsImportModalProps> = ({
   );
 };
 
-export default GoogleContactsImportModal;
+export default VcfContactsImportModal;

@@ -36,7 +36,7 @@ const BottomNavBar: React.FC = () => {
     return (
       <nav
         aria-label="Navigasi utama"
-        className="fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
+        className="print-hide fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
       >
         <div
           className={`grid h-full max-w-lg mx-auto font-medium ${
@@ -58,7 +58,7 @@ const BottomNavBar: React.FC = () => {
   return (
     <nav
       aria-label="Navigasi utama"
-      className="fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
+      className="print-hide fixed bottom-0 left-0 z-50 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-white border-t border-slate-200 dark:bg-slate-800 dark:border-slate-700 sm:hidden shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
     >
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         <NavItem to="/" icon={HomeIcon} label="Dashboard" />

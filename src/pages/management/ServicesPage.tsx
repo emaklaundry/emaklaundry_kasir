@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import {
   PlusCircleIcon,
   EditIcon,
   Trash2Icon,
   PackageIcon,
-  SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   DownloadIcon,
@@ -27,6 +27,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import useAppContext from '../../contexts/useAppContext';
 import { Service, UserRole } from '@/types';
 import { formatMinQuantity } from '../../utils/serviceMinimum';
+import SearchInput from '../../components/SearchInput';
 
 const ServicesPage: React.FC = () => {
   const { services, addService, updateService, deleteService } = useServices();
@@ -36,6 +37,7 @@ const ServicesPage: React.FC = () => {
   const [currentService, setCurrentService] = useState<Service | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const { addToast, updateToast } = useToasts();
   const [isSavingService, setIsSavingService] = useState(false);
   const { currentUser, selectedStoreId } = useAppContext();
@@ -47,8 +49,8 @@ const ServicesPage: React.FC = () => {
   const filteredServices = useMemo(() => {
     let filtered = services.filter(
       (service) =>
-        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.category.toLowerCase().includes(searchTerm.toLowerCase()),
+        service.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        service.category.toLowerCase().includes(debouncedSearch.toLowerCase()),
     );
 
     if (categoryFilter !== 'all') {
@@ -56,7 +58,7 @@ const ServicesPage: React.FC = () => {
     }
 
     return filtered;
-  }, [services, searchTerm, categoryFilter]);
+  }, [services, debouncedSearch, categoryFilter]);
 
   const {
     items: sortedServices,
@@ -374,19 +376,15 @@ const ServicesPage: React.FC = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            id="service-search"
-            name="service-search"
-            placeholder="Cari layanan..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            autoComplete="off"
-          />
-        </div>
+        <SearchInput
+          id="service-search"
+          name="service-search"
+          label="Cari layanan"
+          placeholder="Cari layanan..."
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          wrapperClassName="flex-1"
+        />
         <select
           id="service-category-filter"
           name="service-category-filter"
@@ -462,6 +460,14 @@ const ServicesPage: React.FC = () => {
                   </td>
                   <td className="px-3 sm:px-4 py-2.5 sm:py-4 font-medium text-slate-900 dark:text-white">
                     {service.name}
+                    {service.showOnWeb && (
+                      <span
+                        className="ml-2 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                        title="Harga layanan ini tampil di website"
+                      >
+                        Di web
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 sm:px-4 py-2.5 sm:py-4">{service.category}</td>
                   <td className="hidden md:table-cell px-3 sm:px-4 py-2.5 sm:py-4">

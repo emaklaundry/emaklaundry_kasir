@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  InventoryDeductAt,
   InventoryMovement,
   InventoryMovementKind,
   InventoryRecipe,
   InventoryRecipeBasis,
+  InventorySettings,
+  InventoryStockGuard,
   StockAdjustMode,
   StockOpname,
+  StockShortage,
 } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
@@ -153,6 +157,127 @@ export function estimateInventoryUsage(
     }
   }
   return usage;
+}
+
+// ============================================
+// PENGATURAN POTONG STOK PER CABANG
+// ============================================
+
+/** Nilai bawaan bila cabang belum pernah diatur (sama dengan nilai bawaan database). */
+export const DEFAULT_INVENTORY_SETTINGS: Omit<InventorySettings, 'storeId'> = {
+  autoDeductEnabled: true,
+  deductAt: 'dibuat',
+  stockGuard: 'peringatan',
+};
+
+export const DEDUCT_AT_LABELS: Record<InventoryDeductAt, string> = {
+  dibuat: 'Saat nota dibuat',
+  siap_diambil: 'Saat "Siap Diambil"',
+  selesai: 'Saat "Selesai"',
+};
+
+export const STOCK_GUARD_LABELS: Record<InventoryStockGuard, string> = {
+  bebas: 'Biarkan minus',
+  peringatan: 'Beri peringatan',
+  tahan: 'Tahan nota',
+};
+
+const DEDUCT_AT_VALUES: InventoryDeductAt[] = ['dibuat', 'siap_diambil', 'selesai'];
+const STOCK_GUARD_VALUES: InventoryStockGuard[] = ['bebas', 'peringatan', 'tahan'];
+
+type InventorySettingsRow = {
+  store_id: string;
+  auto_deduct_enabled: boolean;
+  deduct_at: string;
+  stock_guard: string;
+  updated_at?: string | null;
+};
+
+export function mapInventorySettings(
+  storeId: string,
+  row: InventorySettingsRow | null,
+): InventorySettings {
+  if (!row) return { storeId, ...DEFAULT_INVENTORY_SETTINGS };
+  return {
+    storeId,
+    autoDeductEnabled: row.auto_deduct_enabled !== false,
+    deductAt: DEDUCT_AT_VALUES.includes(row.deduct_at as InventoryDeductAt)
+      ? (row.deduct_at as InventoryDeductAt)
+      : DEFAULT_INVENTORY_SETTINGS.deductAt,
+    stockGuard: STOCK_GUARD_VALUES.includes(row.stock_guard as InventoryStockGuard)
+      ? (row.stock_guard as InventoryStockGuard)
+      : DEFAULT_INVENTORY_SETTINGS.stockGuard,
+    updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
+  };
+}
+
+export async function fetchInventorySettings(storeId: string): Promise<InventorySettings> {
+  const { data, error } = await supabase
+    .from('inventory_store_settings')
+    .select('*')
+    .eq('store_id', storeId)
+    .maybeSingle();
+  if (error) throw error;
+  return mapInventorySettings(storeId, data as InventorySettingsRow | null);
+}
+
+export function useInventorySettings(storeId?: string) {
+  const enabled = !!storeId && storeId !== 'all';
+  return useQuery({
+    queryKey: ['inventory_settings', storeId],
+    queryFn: () => fetchInventorySettings(storeId as string),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useInventorySettingsMutation() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (settings: InventorySettings) => {
+      const { data, error } = await supabase
+        .from('inventory_store_settings')
+        .upsert(
+          {
+            store_id: settings.storeId,
+            auto_deduct_enabled: settings.autoDeductEnabled,
+            deduct_at: settings.deductAt,
+            stock_guard: settings.stockGuard,
+          },
+          { onConflict: 'store_id' },
+        )
+        .select()
+        .single();
+      if (error) throw error;
+      return mapInventorySettings(settings.storeId, data as InventorySettingsRow);
+    },
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['inventory_settings', saved.storeId], saved);
+    },
+  });
+  return { saveSettings: mutation.mutateAsync, isSaving: mutation.isPending };
+}
+
+/**
+ * Bahan yang stoknya tidak cukup untuk baris nota ini — dihitung database dengan
+ * rumus yang sama seperti potong stok sebenarnya.
+ */
+export async function checkTransactionStock(
+  storeId: string,
+  lines: UsageLine[],
+): Promise<StockShortage[]> {
+  const { data, error } = await supabase.rpc('check_transaction_stock', {
+    p_store_id: storeId,
+    p_items: lines.map((l) => ({ serviceId: l.serviceId, quantity: l.quantity })),
+  });
+  if (error) throw error;
+  return (data || []).map((r) => ({
+    inventoryItemId: r.inventory_item_id,
+    itemName: r.item_name,
+    unit: r.unit,
+    needed: Number(r.needed) || 0,
+    available: Number(r.available) || 0,
+  }));
 }
 
 // ============================================

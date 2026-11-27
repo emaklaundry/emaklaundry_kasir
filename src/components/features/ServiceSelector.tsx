@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { SearchIcon } from '../icons';
 import { Service } from '../../types';
+import SearchInput from '../SearchInput';
 
 interface ServiceSelectorProps {
   services: Service[];
@@ -23,19 +23,13 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({ services, onAddServic
 
   return (
     <div className="space-y-4" id={id}>
-      <div className="relative">
-        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
-        <input
-          aria-label="Cari layanan"
-          type="text"
-          name="serviceSearch"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Cari layanan..."
-          className="form-input pl-10"
-          autoComplete="off"
-        />
-      </div>
+      <SearchInput
+        name="serviceSearch"
+        label="Cari layanan"
+        placeholder="Cari layanan..."
+        value={searchTerm}
+        onValueChange={setSearchTerm}
+      />
       <div className="max-h-[45vh] overflow-y-auto space-y-4 pr-2 -mr-2">
         {filteredServices.length > 0 ? (
           Object.entries(servicesByWashType).map(([type, services]) => (
