@@ -52,6 +52,8 @@ export interface Store {
   isActive: boolean;
   latitude?: number;
   longitude?: number;
+  /** Kode wilayah kelurahan/desa (adm4) untuk prakiraan cuaca BMKG, mis. 32.79.01.1002. */
+  bmkgAdm4?: string | null;
 }
 
 export interface Customer {

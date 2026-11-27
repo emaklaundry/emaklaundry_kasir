@@ -12,6 +12,15 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      // Sama dengan rewrite di vercel.json: BMKG tidak selalu mengirim header CORS,
+      // jadi browser memanggilnya lewat origin sendiri.
+      proxy: {
+        '/api/bmkg': {
+          target: 'https://api.bmkg.go.id',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api\/bmkg/, '/publik'),
+        },
+      },
     },
     plugins: [
       react(),

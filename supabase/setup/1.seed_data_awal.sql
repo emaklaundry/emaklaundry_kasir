@@ -38,20 +38,22 @@ ALTER TABLE public.stores
 ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION,
 ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
-INSERT INTO public.stores (id, name, address, "isActive", latitude, longitude)
+INSERT INTO public.stores (id, name, address, "isActive", latitude, longitude, "bmkgAdm4")
 VALUES (
   '9b7e1c2a-1234-4bcd-8e9f-abcdef123456', 
   'Cimenyan, Kota Banjar', 
   'Kota Banjar', 
   true,
   -7.372186953412669,
-  108.53945949758317
+  108.53945949758317,
+  '32.79.01.1002' -- BMKG: Kel. Mekarsari, Kec. Banjar
 )
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   address = EXCLUDED.address,
   latitude = EXCLUDED.latitude,
-  longitude = EXCLUDED.longitude;
+  longitude = EXCLUDED.longitude,
+  "bmkgAdm4" = EXCLUDED."bmkgAdm4";
 
 
 -- ============================================

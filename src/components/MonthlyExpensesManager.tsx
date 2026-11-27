@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
+import { EXPENSE_CATEGORIES } from '../config/expenseCategories';
 import { useMonthlyExpenseTemplates } from '../hooks/useMonthlyExpenses';
 import { useSettings } from '../contexts/SettingsContext';
 import {
@@ -9,7 +10,7 @@ import {
   normalizeReminderDay,
 } from '../utils/monthlyExpenses';
 
-const categories = ['Operasional', 'Listrik', 'Air', 'Gaji', 'Perlengkapan', 'Lainnya'];
+const categories = EXPENSE_CATEGORIES;
 const reminderDays = Array.from(
   { length: MAX_REMINDER_DAY - MIN_REMINDER_DAY + 1 },
   (_, index) => MIN_REMINDER_DAY + index,

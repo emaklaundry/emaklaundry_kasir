@@ -13,7 +13,7 @@ import useToasts from '../../contexts/useToasts';
 import useAppContext from '../../contexts/useAppContext';
 import { can, isAdminRole } from '../../config/permissions';
 import { supabase } from '../../utils/supabaseClient';
-import { savePayment } from '../../utils/paymentUpdate';
+import { savePayment, bulkMarkPaid } from '../../utils/paymentUpdate';
 
 import {
   PlusCircleIcon,
@@ -30,12 +30,18 @@ import {
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import PaymentModal from '../../components/PaymentModal';
+import BulkPaymentModal from '../../components/BulkPaymentModal';
 import WhatsAppModal from '../../components/WhatsAppModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Pagination from '../../components/Pagination';
 
-import { Transaction, OrderStatus, PaymentStatus, Customer } from '@/types';
-import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
+import { Transaction, OrderStatus, PaymentStatus, PaymentMethod, Customer } from '@/types';
+import {
+  getStatusBadge,
+  getPaymentStatusBadge,
+  formatTransactionId,
+  formatDateTime,
+} from '@/utils/uiHelpers';
 import {
   exportTransactionsToExcel,
   downloadTransactionTemplate,
@@ -68,6 +74,8 @@ const TransactionPage: React.FC = () => {
   const { currentUser } = useAppContext();
   const canCreateTransaction = can(currentUser?.role, 'transaction.create');
   const canTakePayment = can(currentUser?.role, 'transaction.payment');
+  // Lunasi massal hanya untuk Admin & Super Admin (Kasir tetap melunasi satu per satu).
+  const canBulkPay = canTakePayment && isAdminRole(currentUser?.role);
   const canComplete = can(currentUser?.role, 'transaction.complete');
   // Kirim WhatsApp & cetak struk butuh nomor HP / nominal: Kasir ke atas.
   const canNotify = can(currentUser?.role, 'transaction.notify');
@@ -102,6 +110,7 @@ const TransactionPage: React.FC = () => {
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<OrderStatus | null>(null);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [isBulkPaymentOpen, setIsBulkPaymentOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Pagination and data
@@ -550,6 +559,70 @@ const TransactionPage: React.FC = () => {
     }
   };
 
+  const selectedTransactions = useMemo(
+    () => transactions.filter((t: Transaction) => selectedIds.has(t.id)),
+    [transactions, selectedIds],
+  );
+  const selectedUnpaidCount = selectedTransactions.filter(
+    (t: Transaction) => t.paymentStatus !== PaymentStatus.Paid,
+  ).length;
+
+  const confirmBulkPayment = async (method: PaymentMethod) => {
+    if (!canBulkPay) {
+      addToast(
+        'Hanya Admin atau Super Admin yang dapat melunasi transaksi secara massal.',
+        'error',
+      );
+      setIsBulkPaymentOpen(false);
+      return;
+    }
+
+    setIsBulkProcessing(true);
+    const toastId = addToast('Melunasi transaksi...', 'info');
+    try {
+      const { succeeded, failed } = await bulkMarkPaid(
+        updateTransaction,
+        selectedTransactions,
+        method,
+        { completeIfReady: canComplete },
+      );
+      const completed = succeeded.filter((s) => s.orderStatus === OrderStatus.Completed);
+
+      if (succeeded.length > 0) {
+        addAuditLog(
+          `Melunasi ${succeeded.length} transaksi secara massal via ${method}: ${succeeded
+            .map((s) => s.id)
+            .join(', ')}.` +
+            (completed.length > 0 ? ` ${completed.length} pesanan menjadi "Selesai".` : ''),
+        );
+      }
+
+      if (failed.length === 0) {
+        updateToast(
+          toastId,
+          `Berhasil melunasi ${succeeded.length} transaksi.` +
+            (completed.length > 0 ? ` ${completed.length} pesanan ditandai Selesai.` : ''),
+          'success',
+        );
+        setSelectedIds(new Set());
+      } else {
+        updateToast(
+          toastId,
+          `${succeeded.length} transaksi lunas, ${failed.length} gagal: ${failed[0].error}`,
+          'error',
+        );
+        // Sisakan pilihan pada nota yang gagal agar bisa dicoba lagi.
+        setSelectedIds(new Set(failed.map((f) => f.id)));
+      }
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      updateToast(toastId, `Gagal melunasi transaksi: ${errMsg}`, 'error');
+    } finally {
+      setIsBulkPaymentOpen(false);
+      setIsBulkProcessing(false);
+    }
+  };
+
   const statusOptions: (OrderStatus | 'all')[] = ['all', ...Object.values(OrderStatus)];
 
   return (
@@ -728,28 +801,45 @@ const TransactionPage: React.FC = () => {
             <span className="font-semibold text-blue-800 dark:text-blue-300">
               {selectedIds.size} transaksi dipilih
             </span>
-            <div className="relative">
-              <select
-                id="bulk-status-change"
-                name="bulk-status-change"
-                onChange={(e) => handleBulkStatusChange(e.target.value as OrderStatus)}
-                className="pl-3 pr-8 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 appearance-none"
-                value=""
-              >
-                <option value="" disabled>
-                  Ubah Status Menjadi...
-                </option>
-                {Object.values(OrderStatus).map((status) => (
-                  <option
-                    key={status}
-                    value={status}
-                    disabled={status === OrderStatus.Completed && !canComplete}
-                  >
-                    {status}
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {canBulkPay && (
+                <button
+                  type="button"
+                  onClick={() => setIsBulkPaymentOpen(true)}
+                  disabled={selectedUnpaidCount === 0}
+                  className="btn btn-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    selectedUnpaidCount === 0
+                      ? 'Semua transaksi terpilih sudah lunas'
+                      : 'Tandai transaksi terpilih yang belum lunas menjadi Lunas'
+                  }
+                >
+                  Tandai Lunas ({selectedUnpaidCount})
+                </button>
+              )}
+              <div className="relative">
+                <select
+                  id="bulk-status-change"
+                  name="bulk-status-change"
+                  onChange={(e) => handleBulkStatusChange(e.target.value as OrderStatus)}
+                  className="pl-3 pr-8 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 appearance-none"
+                  value=""
+                >
+                  <option value="" disabled>
+                    Ubah Status Menjadi...
                   </option>
-                ))}
-              </select>
-              <ChevronDownIcon className="w-5 h-5 text-white absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  {Object.values(OrderStatus).map((status) => (
+                    <option
+                      key={status}
+                      value={status}
+                      disabled={status === OrderStatus.Completed && !canComplete}
+                    >
+                      {status}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="w-5 h-5 text-white absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
         )}
@@ -794,7 +884,15 @@ const TransactionPage: React.FC = () => {
                       onClick={() => requestSort('createdAt')}
                       className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
                     >
-                      Tanggal {getSortIcon('createdAt')}
+                      Tgl Masuk {getSortIcon('createdAt')}
+                    </button>
+                  </th>
+                  <th className="px-2 sm:px-4 py-2 sm:py-3">
+                    <button
+                      onClick={() => requestSort('estimatedCompletionDate')}
+                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                    >
+                      Estimasi Selesai {getSortIcon('estimatedCompletionDate')}
                     </button>
                   </th>
                   {canTakePayment && (
@@ -849,16 +947,11 @@ const TransactionPage: React.FC = () => {
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                         {t.customerName}
                       </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
-                        {t.createdAt
-                          ? new Date(t.createdAt).toLocaleString('id-ID', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '-'}
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm whitespace-nowrap">
+                        {formatDateTime(t.createdAt)}
+                      </td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm whitespace-nowrap">
+                        {formatDateTime(t.estimatedCompletionDate)}
                       </td>
                       {canTakePayment && (
                         <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">
@@ -967,7 +1060,7 @@ const TransactionPage: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={canTakePayment ? 8 : 7}>
+                    <td colSpan={canTakePayment ? 9 : 8}>
                       <EmptyState
                         icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
                         title="Tidak Ada Transaksi"
@@ -1018,22 +1111,27 @@ const TransactionPage: React.FC = () => {
                     <p className="font-bold text-lg text-slate-900 dark:text-white">
                       {t.customerName}
                     </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {t.createdAt
-                        ? new Date(t.createdAt).toLocaleString('id-ID', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : '-'}
-                    </p>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                     {formatTransactionId(t)}
                   </p>
                   <div className="space-y-2 mb-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 dark:text-slate-400 text-base">
+                        Tgl Masuk:
+                      </span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {formatDateTime(t.createdAt)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 dark:text-slate-400 text-base">
+                        Estimasi Selesai:
+                      </span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {formatDateTime(t.estimatedCompletionDate)}
+                      </span>
+                    </div>
                     {canTakePayment && (
                       <div className="flex justify-between items-center">
                         <span className="text-slate-500 dark:text-slate-400 text-base">Total:</span>
@@ -1168,6 +1266,16 @@ const TransactionPage: React.FC = () => {
           title="Konfirmasi Aksi Massal"
           message={`Anda yakin ingin mengubah status ${selectedIds.size} transaksi menjadi "${bulkActionStatus}"?`}
           confirmText="Ya, Ubah"
+        />
+      )}
+      {canBulkPay && isBulkPaymentOpen && (
+        <BulkPaymentModal
+          isOpen={true}
+          onClose={() => setIsBulkPaymentOpen(false)}
+          transactions={selectedTransactions}
+          onConfirm={confirmBulkPayment}
+          completeIfReady={canComplete}
+          isProcessing={isBulkProcessing}
         />
       )}
     </>

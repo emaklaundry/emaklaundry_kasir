@@ -20,6 +20,7 @@ import Pagination from '../../components/Pagination';
 import MonthlyExpensesManager from '../../components/MonthlyExpensesManager';
 import { Expense, UserRole } from '@/types';
 import SearchInput from '../../components/SearchInput';
+import { EXPENSE_CATEGORIES, LEGACY_EXPENSE_CATEGORIES } from '../../config/expenseCategories';
 
 type CombinedExpenseItem = {
   id: string;
@@ -445,11 +446,11 @@ const ExpensesPage: React.FC = () => {
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
         >
           <option value="all">Semua Kategori</option>
-          <option value="Aset / Inventaris">Aset / Inventaris</option>
-          <option value="Operasional">Operasional</option>
-          <option value="Pemeliharaan">Pemeliharaan</option>
-          <option value="Gaji">Gaji</option>
-          <option value="Lainnya">Lainnya</option>
+          {[...EXPENSE_CATEGORIES, ...LEGACY_EXPENSE_CATEGORIES].map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
         </select>
       </div>
 

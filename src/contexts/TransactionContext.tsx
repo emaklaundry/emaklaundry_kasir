@@ -92,6 +92,7 @@ export type TransactionSortKey =
   | 'id'
   | 'customerName'
   | 'createdAt'
+  | 'estimatedCompletionDate'
   | 'total'
   | 'paymentStatus'
   | 'orderStatus';

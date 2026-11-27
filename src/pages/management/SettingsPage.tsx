@@ -11,7 +11,8 @@ import { buildReceiptHeader } from '../../utils/receiptHeader';
 import { SpinnerIcon } from '../../components/icons';
 import { AlertTriangle, Building2, Printer, QrCode, Receipt, Wrench } from 'lucide-react';
 import useAppContext from '../../contexts/useAppContext';
-import { UserRole } from '../../types';
+import { UserRole, type Store } from '../../types';
+import { isValidAdm4 } from '../../utils/weather';
 import {
   buildDefaultWhatsAppFooter,
   DEFAULT_BUSINESS_NAME,
@@ -31,6 +32,7 @@ interface StoreForm {
   phone: string;
   latitude: number;
   longitude: number;
+  bmkgAdm4: string;
 }
 
 const Section: React.FC<{
@@ -78,6 +80,7 @@ const SettingsPage: React.FC = () => {
     phone: '',
     latitude: 0,
     longitude: 0,
+    bmkgAdm4: '',
   });
 
   // Mode maintenance & data cabang (RLS stores) hanya bisa diubah Super Admin.
@@ -95,6 +98,7 @@ const SettingsPage: React.FC = () => {
         phone: currentStore.phone || '',
         latitude: currentStore.latitude || 0,
         longitude: currentStore.longitude || 0,
+        bmkgAdm4: currentStore.bmkgAdm4 || '',
       });
     }
   }, [currentStore]);
@@ -187,6 +191,11 @@ const SettingsPage: React.FC = () => {
       addToast('No. HP cabang hanya boleh berisi angka, spasi, strip, dan "+".', 'error');
       return;
     }
+    const storeAdm4 = storeForm.bmkgAdm4.trim();
+    if (canEditStore && storeAdm4 && !isValidAdm4(storeAdm4)) {
+      addToast('Kode Wilayah BMKG harus berformat 00.00.00.0000, mis. 32.79.01.1002.', 'error');
+      return;
+    }
 
     setIsSaving(true);
     // Create a replaceable toast and keep its id so we can update it later
@@ -197,13 +206,18 @@ const SettingsPage: React.FC = () => {
 
       // 2. Data cabang yang dipilih
       if (canEditStore && currentStore) {
-        const storeChanges = {
+        const storeChanges: Partial<Store> = {
           address: storeForm.address.trim(),
           phone: storePhone || null,
           latitude: storeForm.latitude,
           longitude: storeForm.longitude,
         };
+        const adm4Changed = (storeAdm4 || null) !== (currentStore.bmkgAdm4 || null);
+        // Kirim kolom bmkgAdm4 hanya bila berubah, supaya simpan tetap jalan di database
+        // yang belum menjalankan migrasi kolom ini.
+        if (adm4Changed) storeChanges.bmkgAdm4 = storeAdm4 || null;
         const changed =
+          adm4Changed ||
           storeChanges.address !== (currentStore.address || '') ||
           storeChanges.phone !== (currentStore.phone || null) ||
           storeChanges.latitude !== (currentStore.latitude || 0) ||
@@ -372,6 +386,33 @@ const SettingsPage: React.FC = () => {
                   </button>
                 )}
               </fieldset>
+
+              <div>
+                <label htmlFor="store-bmkg-adm4" className="form-label">
+                  Kode Wilayah BMKG (kelurahan/desa)
+                </label>
+                <input
+                  id="store-bmkg-adm4"
+                  name="bmkgAdm4"
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={storeForm.bmkgAdm4}
+                  onChange={handleStoreChange}
+                  readOnly={storeReadOnly}
+                  placeholder="Contoh: 32.79.01.1002"
+                  aria-describedby="store-bmkg-adm4-hint"
+                  className="form-input font-mono text-sm"
+                />
+                <p
+                  id="store-bmkg-adm4-hint"
+                  className="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                >
+                  Kode Kemendagri 10 digit untuk kelurahan/desa lokasi cabang. Bila diisi, cuaca
+                  diambil dari BMKG (lebih akurat untuk Indonesia). Kosongkan untuk memakai
+                  Open-Meteo dari koordinat.
+                </p>
+              </div>
             </div>
           ) : (
             <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-400">

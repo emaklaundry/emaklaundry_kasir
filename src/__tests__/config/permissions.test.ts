@@ -41,6 +41,12 @@ describe('permissions', () => {
     expect(can(UserRole.SuperAdmin, 'system.manage')).toBe(true);
   });
 
+  it('hanya Super Admin yang menyimpan target bisnis per cabang', () => {
+    expect(can(UserRole.SuperAdmin, 'business.targets.manage')).toBe(true);
+    expect(can(UserRole.Admin, 'business.targets.manage')).toBe(false);
+    expect(can(UserRole.Cashier, 'business.targets.manage')).toBe(false);
+  });
+
   it('peran tak dikenal tidak punya hak apa pun', () => {
     expect(can(undefined, 'transaction.updateStatus')).toBe(false);
     expect(can('Tamu', 'transaction.updateStatus')).toBe(false);

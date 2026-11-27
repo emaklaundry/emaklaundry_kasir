@@ -13,6 +13,7 @@ import { AppProviders } from './contexts/AppProviders';
 import CommandPalette from './components/CommandPalette';
 import QuickActionsPage from './pages/QuickActionsPage';
 import MonthlyExpenseReminder from './components/MonthlyExpenseReminder';
+import SOPReminder from './components/SOPReminder';
 import { can, isAdminRole, type Permission } from './config/permissions';
 import { SpinnerIcon } from './components/icons';
 
@@ -118,6 +119,8 @@ const AppRoutes: React.FC = () => {
     <>
       {/* Isian pengeluaran bulanan (listrik, air, dll) hanya untuk Admin & Super Admin. */}
       {can(currentUser.role, 'expense.monthly') && <MonthlyExpenseReminder />}
+      {/* SOP wajib baca sekali sehari untuk Kasir & Operator. */}
+      <SOPReminder />
       <Layout>
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -258,14 +261,8 @@ const AppRoutes: React.FC = () => {
                 </AdminRoute>
               }
             />
-            <Route
-              path="/management/sop"
-              element={
-                <AdminRoute>
-                  <SOPPage />
-                </AdminRoute>
-              }
-            />
+            {/* SOP: semua peran bisa membaca; tambah/edit/hapus hanya Admin (dicek di halaman & RLS). */}
+            <Route path="/management/sop" element={<SOPPage />} />
             <Route
               path="/business"
               element={

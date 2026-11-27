@@ -105,7 +105,8 @@ export const navSections: NavSection[] = [
   {
     title: 'Bantuan & Panduan',
     items: [
-      { path: '/management/sop', label: 'SOP (Prosedur)', icon: FileTextIcon, adminOnly: true },
+      // Semua peran: Kasir & Operator membaca SOP-nya (tanpa edit).
+      { path: '/management/sop', label: 'SOP (Prosedur)', icon: FileTextIcon },
       { path: '/help', label: 'Bantuan / Tutorial', icon: HelpCircleIcon },
     ],
   },

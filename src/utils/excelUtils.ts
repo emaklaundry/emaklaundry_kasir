@@ -16,6 +16,7 @@ import type {
   PaymentMethod,
   MaintenanceLog,
 } from '../types';
+import { normalizeExpenseCategory } from '../config/expenseCategories';
 
 // Dynamic import to prevent ExcelJS from bloating the initial bundle
 const getExcelJS = async () => {
@@ -622,7 +623,7 @@ export async function importExpensesFromExcel(file: File): Promise<Partial<Expen
     const expense: Partial<Expense> = {
       id: expenseId,
       date: new Date(formattedDate),
-      category: row.getCell(3).value?.toString() || 'Lainnya',
+      category: normalizeExpenseCategory(row.getCell(3).value?.toString() || 'Lainnya'),
       amount: Number(row.getCell(4).value) || 0,
       description: row.getCell(5).value?.toString() || '',
     };
@@ -1370,7 +1371,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
     '   • Gunakan tanggal saat pengeluaran terjadi',
     '',
     '3️⃣ Kolom Kategori: WAJIB diisi',
-    '   • Contoh: Pembelian Bahan, Gaji Karyawan, Listrik & Air, Sewa Tempat, dll',
+    '   • Contoh: Bahan Baku, Gaji, Sewa Tempat, Listrik, Air, Marketing & Promosi, Pemeliharaan, Operasional, Lainnya',
     '   • Gunakan kategori yang konsisten',
     '',
     '4️⃣ Kolom Jumlah: WAJIB diisi (dalam Rupiah, tanpa titik/koma)',
@@ -1442,7 +1443,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
     {
       id: '',
       date: '2024-12-15',
-      category: 'Pembelian Bahan',
+      category: 'Bahan Baku',
       amount: 500000,
       description: 'Beli detergen 10kg + pewangi 5 liter',
       notes: 'Supplier Toko Makmur',
@@ -1450,7 +1451,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
     {
       id: '',
       date: '2024-12-10',
-      category: 'Gaji Karyawan',
+      category: 'Gaji',
       amount: 3000000,
       description: 'Gaji karyawan bulan Desember',
       notes: '2 karyawan @ Rp 1.500.000',
@@ -1458,7 +1459,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
     {
       id: '',
       date: '2024-12-05',
-      category: 'Listrik & Air',
+      category: 'Listrik',
       amount: 750000,
       description: 'Bayar tagihan listrik dan air bulan November',
       notes: 'Listrik Rp 550k, Air Rp 200k',
@@ -1474,7 +1475,7 @@ export async function downloadExpenseTemplate(): Promise<void> {
     {
       id: '',
       date: '2024-11-28',
-      category: 'Maintenance',
+      category: 'Pemeliharaan',
       amount: 350000,
       description: 'Service mesin cuci',
       notes: 'Ganti bearing + bersih mesin',
