@@ -26,7 +26,8 @@ if (!['patch', 'minor', 'major'].includes(level)) {
   process.exit(1);
 }
 
-const git = (cmd) => execSync(`git ${cmd}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+const git = (cmd) =>
+  execSync(`git ${cmd}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 const tryGit = (cmd) => {
   try {
     return git(cmd);
@@ -70,7 +71,7 @@ if (fromHook) {
   if (dirty.length) {
     console.warn(
       `[versi] Bump otomatis dilewati: ada perubahan belum di-stage di ${dirty.join(', ')}.\n` +
-        '        Stage file tersebut atau jalankan "npm run version:patch" manual.'
+        '        Stage file tersebut atau jalankan "npm run version:patch" manual.',
     );
     process.exit(0);
   }
@@ -100,10 +101,7 @@ if (existsSync(FILES.lock)) {
 // src/sw.js — fallback versi cache bila __SW_VERSION__ tidak ter-inject.
 if (existsSync(FILES.sw)) {
   const sw = readFileSync(FILES.sw, 'utf8');
-  writeFileSync(
-    FILES.sw,
-    sw.replace(/(__SW_VERSION__\s*:\s*')[^']+(')/, `$1${newVersion}$2`)
-  );
+  writeFileSync(FILES.sw, sw.replace(/(__SW_VERSION__\s*:\s*')[^']+(')/, `$1${newVersion}$2`));
 }
 
 // CHANGELOG.md — entri baru paling atas.
@@ -115,7 +113,7 @@ const areas = [
       .map((f) => {
         const parts = f.split('/');
         return parts[0] === 'src' && parts.length > 2 ? `${parts[0]}/${parts[1]}` : parts[0];
-      })
+      }),
   ),
 ];
 const date = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' }); // YYYY-MM-DD
@@ -132,7 +130,9 @@ const entry = [
 const header =
   '# Changelog\n\nSemua perubahan versi Emak Laundry Kasir. Versi mengikuti semver: patch = update kecil, minor = update besar, major = perubahan yang tidak kompatibel.\n\n';
 const existing = existsSync(FILES.changelog) ? readFileSync(FILES.changelog, 'utf8') : header;
-const body = existing.startsWith(header) ? existing.slice(header.length) : existing.replace(/^# Changelog[^\n]*\n+/, '');
+const body = existing.startsWith(header)
+  ? existing.slice(header.length)
+  : existing.replace(/^# Changelog[^\n]*\n+/, '');
 writeFileSync(FILES.changelog, `${header}${entry}\n${body}`);
 
 if (fromHook) {
