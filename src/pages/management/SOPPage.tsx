@@ -16,6 +16,7 @@ import { UserRole } from '@/types';
 import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
 import { SpinnerIcon } from '../../components/icons';
+import { getSopCategoriesForRole } from '../../config/sop';
 
 interface SOP {
   id: string;
@@ -35,6 +36,8 @@ const SOPPage = () => {
   const [editForm, setEditForm] = useState<Partial<SOP>>({});
 
   const isAdmin = currentUser?.role === UserRole.Admin || currentUser?.role === UserRole.SuperAdmin;
+  // Kasir & Operator hanya melihat SOP untuk perannya (baca saja).
+  const roleCategories = isAdmin ? undefined : getSopCategoriesForRole(currentUser?.role);
 
   const fetchSops = React.useCallback(async () => {
     // Note: We don't set loading(true) here to avoid "setState in effect" lint error.
@@ -131,7 +134,16 @@ const SOPPage = () => {
   };
 
   // Group SOPs by category
-  const groupedSops = Object.groupBy(sops, (sop) => sop.category);
+  const visibleSops = roleCategories
+    ? sops
+        .filter((sop) => roleCategories.includes(sop.category))
+        .sort(
+          (a, b) =>
+            roleCategories.indexOf(a.category) - roleCategories.indexOf(b.category) ||
+            a.display_order - b.display_order,
+        )
+    : sops;
+  const groupedSops = Object.groupBy(visibleSops, (sop) => sop.category);
 
   const field = (key: string) => `sop-${key}`;
 
@@ -142,7 +154,9 @@ const SOPPage = () => {
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <p className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
             <BookOpenIcon className="h-5 w-5 text-brand-blue-600 dark:text-brand-blue-400" />
-            Dokumen standar operasional laundry.
+            {isAdmin
+              ? 'Dokumen standar operasional laundry.'
+              : `SOP untuk ${currentUser?.role ?? 'Anda'}. Baca kembali bila ragu saat bekerja.`}
           </p>
           <div className="flex gap-2">
             {isAdmin && (
@@ -211,6 +225,7 @@ const SOPPage = () => {
               <datalist id="sop-categories">
                 <option value="Umum" />
                 <option value="Kasir" />
+                <option value="Operator" />
                 <option value="Produksi" />
                 <option value="Admin" />
               </datalist>
@@ -249,7 +264,9 @@ const SOPPage = () => {
               id={field('content-hint')}
               className="mt-1 text-sm text-slate-500 dark:text-slate-400"
             >
-              Tekan Enter untuk baris baru. Judul dan konten wajib diisi.
+              Tekan Enter untuk baris baru. Judul dan konten wajib diisi. SOP kategori Umum &amp;
+              Kasir tampil sebagai pop up wajib baca untuk Kasir; Umum, Operator &amp; Produksi
+              untuk Operator.
             </p>
           </div>
         </div>
@@ -279,12 +296,16 @@ const SOPPage = () => {
               <SpinnerIcon className="h-8 w-8 text-brand-blue-600" />
               <span className="sr-only">Memuat SOP…</span>
             </div>
-          ) : sops.length === 0 ? (
+          ) : visibleSops.length === 0 ? (
             <div className="print:hidden">
               <EmptyState
                 icon={<FileTextIcon className="h-12 w-12" />}
                 title="Belum ada SOP"
-                description="SOP membantu karyawan baru bekerja dengan standar yang sama di setiap cabang."
+                description={
+                  isAdmin
+                    ? 'SOP membantu karyawan baru bekerja dengan standar yang sama di setiap cabang.'
+                    : 'Admin belum menulis SOP untuk peran Anda.'
+                }
               >
                 {isAdmin && (
                   <button onClick={handleCreate} className="btn btn-primary">

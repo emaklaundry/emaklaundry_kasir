@@ -19,7 +19,11 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:all": "npm run format:check && npm run lint && npm run test",
-    "type-check": "tsc"
+    "type-check": "tsc",
+    "prepare": "node scripts/install-hooks.mjs",
+    "version:patch": "node scripts/bump-version.mjs patch",
+    "version:minor": "node scripts/bump-version.mjs minor",
+    "version:major": "node scripts/bump-version.mjs major"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",

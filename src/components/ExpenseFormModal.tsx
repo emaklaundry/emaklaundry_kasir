@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Expense } from '../types';
 import { formatRupiah, parseRupiah, convertLocalDateToISOString } from '../utils/formatting';
 import Modal from './Modal';
+import { EXPENSE_CATEGORIES } from '../config/expenseCategories';
 
 interface ExpenseFormModalProps {
   expense: Expense | null;
@@ -16,7 +17,6 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const categoryOptions = ['Operasional', 'Listrik', 'Air', 'Gaji', 'Perlengkapan', 'Lainnya'];
   const initialFormData = useMemo(() => {
     if (expense) {
       let dateValue = new Date().toISOString().split('T')[0];
@@ -43,6 +43,13 @@ const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   }, [expense]);
 
   const [formData, setFormData] = useState(initialFormData);
+  const categoryOptions = useMemo(
+    () =>
+      formData.category && !EXPENSE_CATEGORIES.includes(formData.category)
+        ? [...EXPENSE_CATEGORIES, formData.category]
+        : EXPENSE_CATEGORIES,
+    [formData.category],
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset formData when modal is opened or expense changes

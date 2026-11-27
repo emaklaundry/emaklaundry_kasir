@@ -1,0 +1,4 @@
+#!/bin/sh
+# Naikkan versi patch otomatis di setiap commit (lihat scripts/bump-version.mjs).
+# Lewati sekali: SKIP_VERSION_BUMP=1 git commit ...
+node scripts/bump-version.mjs patch --hook || exit 1

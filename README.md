@@ -24,6 +24,8 @@ harian dan admin untuk mengelola pelanggan, layanan, stok, karyawan, aset, penge
 - Karyawan: profil, cabang, jadwal shift & hari kerja, toleransi terlambat, gaji/komisi/insentif, dan
   akun login PIN. Absensi masuk/pulang.
 - Aset & jadwal perawatan, laporan keuangan & performa kasir, log audit, backup & restore Excel.
+- Rencana vs Realisasi: target bisnis per cabang (Default atau per bulan) dibandingkan dengan omzet,
+  pendapatan diterima, biaya, dan laba nyata; ringkasan "Target bulan ini" di Dashboard.
 - PIN Supervisor untuk menyetujui aksi sensitif Kasir.
 - Multi-cabang: data dipisah per cabang dengan Row Level Security; Super Admin melihat semua cabang.
 

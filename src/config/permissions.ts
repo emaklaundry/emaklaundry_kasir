@@ -43,6 +43,8 @@ export type Permission =
   | 'branch.manage'
   /** Panduan & Kalkulator Bisnis. */
   | 'business.hub'
+  /** Menyimpan target Simulasi Bisnis per cabang. */
+  | 'business.targets.manage'
   /** Mengelola banyak cabang, mode maintenance, data lintas cabang. */
   | 'system.manage';
 
@@ -74,7 +76,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   [UserRole.Operator]: OPERATOR,
   [UserRole.Cashier]: CASHIER,
   [UserRole.Admin]: ADMIN,
-  [UserRole.SuperAdmin]: [...ADMIN, 'system.manage'],
+  [UserRole.SuperAdmin]: [...ADMIN, 'system.manage', 'business.targets.manage'],
 };
 
 export function can(role: UserRole | string | undefined | null, permission: Permission): boolean {

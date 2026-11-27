@@ -39,6 +39,20 @@ export const formatTransactionId = (transaction: { id: string; invoiceCode?: str
   return `#${transaction.id.substring(0, 8)}`;
 };
 
+/** Format tanggal + jam (dd/mm/yyyy hh.mm, id-ID); '-' bila kosong/tidak valid. */
+export const formatDateTime = (value: Date | string | null | undefined): string => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('id-ID', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 /** Label Bahasa Indonesia untuk status aset (nilai DB tetap bahasa Inggris). */
 export const ASSET_STATUS_LABELS: Record<string, string> = {
   Active: 'Aktif',

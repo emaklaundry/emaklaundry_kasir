@@ -21,6 +21,7 @@ import { savePayment } from '../utils/paymentUpdate';
 import PaymentModal from '../components/PaymentModal';
 import WashSettingsModal from '../components/WashSettingsModal';
 import DashboardStats from '../components/widgets/DashboardStats';
+import TargetMonthCard from '../components/dashboard/TargetMonthCard';
 import { can, isAdminRole } from '../config/permissions';
 import {
   WrenchIcon,
@@ -40,7 +41,12 @@ import {
   ScheduledMaintenance,
   Asset,
 } from '@/types';
-import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/utils/uiHelpers';
+import {
+  getStatusBadge,
+  getPaymentStatusBadge,
+  formatTransactionId,
+  formatDateTime,
+} from '@/utils/uiHelpers';
 import { calculateNextDueDate } from '../utils/formatting';
 
 // Tipe kustom untuk order aktif
@@ -369,6 +375,7 @@ const Dashboard: React.FC = () => {
           <WeatherWidget
             latitude={selectedStoreData?.latitude}
             longitude={selectedStoreData?.longitude}
+            bmkgAdm4={selectedStoreData?.bmkgAdm4}
             locationName={selectedStoreData?.name}
           />
         </div>
@@ -382,6 +389,18 @@ const Dashboard: React.FC = () => {
           lowStock={lowStockStats}
           maintenance={maintenanceStats}
         />
+
+        {canViewFinance && (
+          <TargetMonthCard
+            storeId={
+              currentUser?.role === UserRole.SuperAdmin
+                ? selectedStoreId === 'all'
+                  ? null
+                  : selectedStoreId
+                : (currentUser?.storeId ?? null)
+            }
+          />
+        )}
 
         <div className={`card p-4 ${isStaff ? 'hidden sm:block' : 'block'}`}>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
@@ -461,6 +480,7 @@ const Dashboard: React.FC = () => {
                 <tr>
                   <th className="px-4 py-2.5">ID Transaksi</th>
                   <th className="px-4 py-2.5">Pelanggan</th>
+                  <th className="px-4 py-2.5">Tgl Masuk</th>
                   <th className="px-4 py-2.5">Estimasi Selesai</th>
                   <th className="px-4 py-2.5">Status Pesanan</th>
                   <th className="px-4 py-2.5">Status Bayar</th>
@@ -495,8 +515,11 @@ const Dashboard: React.FC = () => {
                           </Link>
                         </td>
                         <td className="px-4 py-2.5">{t.customerName}</td>
-                        <td className="px-4 py-2.5">
-                          {new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}
+                        <td className="px-4 py-2.5 whitespace-nowrap">
+                          {formatDateTime(t.createdAt)}
+                        </td>
+                        <td className="px-4 py-2.5 whitespace-nowrap">
+                          {formatDateTime(t.estimatedCompletionDate)}
                         </td>
                         <td className="px-4 py-2.5">
                           <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
@@ -551,7 +574,7 @@ const Dashboard: React.FC = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-slate-500 dark:text-slate-400">
+                    <td colSpan={7} className="text-center py-4 text-slate-500 dark:text-slate-400">
                       Tidak ada pesanan aktif.
                     </td>
                   </tr>
@@ -610,11 +633,17 @@ const Dashboard: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Tgl Masuk:</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          {formatDateTime(t.createdAt)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
                         <span className="text-slate-500 dark:text-slate-400">
                           Estimasi Selesai:
                         </span>
                         <span className="font-medium text-slate-700 dark:text-slate-300">
-                          {new Date(t.estimatedCompletionDate).toLocaleDateString('id-ID')}
+                          {formatDateTime(t.estimatedCompletionDate)}
                         </span>
                       </div>
                     </div>
