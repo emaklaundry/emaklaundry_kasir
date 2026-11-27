@@ -9,6 +9,7 @@ import { useServices } from '../contexts/ServiceContext';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
 import { formatQty } from '../utils/inventoryFormat';
+import InventorySettingsPanel from './InventorySettingsPanel';
 
 interface RecipeConfigModalProps {
   isOpen: boolean;
@@ -186,10 +187,12 @@ const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({ isOpen, onClose, 
     >
       <div className="space-y-4">
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          Setiap nota baru otomatis mengurangi stok bahan sesuai aturan di bawah. Bila item nota
-          diubah atau nota dihapus, stok ikut dikoreksi. Semua potongan tercatat di{' '}
-          <strong>Riwayat</strong> tiap item.
+          Nota otomatis mengurangi stok bahan sesuai aturan di bawah, pada waktu yang Anda pilih.
+          Bila item nota diubah atau nota dihapus, stok ikut dikoreksi. Semua potongan tercatat
+          di <strong>Riwayat</strong> tiap item.
         </p>
+
+        <InventorySettingsPanel storeId={storeId} />
 
         {form ? (
           <form

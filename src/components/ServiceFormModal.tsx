@@ -20,6 +20,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     unit: service?.unit || 'kg',
     durationDays: service?.durationDays || 0,
     minQuantity: service?.minQuantity || 0,
+    showOnWeb: service?.showOnWeb ?? false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -192,6 +193,26 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             />
             <p id="minQuantity-hint" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Isi 0 bila tanpa minimum.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+          <input
+            type="checkbox"
+            name="showOnWeb"
+            id="showOnWeb"
+            checked={formData.showOnWeb ?? false}
+            onChange={(e) => setFormData((prev) => ({ ...prev, showOnWeb: e.target.checked }))}
+            className="mt-1 h-4 w-4 shrink-0"
+            aria-describedby="showOnWeb-hint"
+          />
+          <div>
+            <label htmlFor="showOnWeb" className="form-label mb-0">
+              Tampilkan di website
+            </label>
+            <p id="showOnWeb-hint" className="text-xs text-slate-500 dark:text-slate-400">
+              Nama, harga, dan durasi layanan ini akan terlihat oleh siapa saja di
+              emaklaundry.my.id. Jangan centang harga khusus (mis. harga mitra).
             </p>
           </div>
         </div>

@@ -102,7 +102,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
       </label>
       <div className="flex gap-2">
         <div className="relative flex-grow">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             ref={inputRef}
             type="text"

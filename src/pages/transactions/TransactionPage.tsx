@@ -17,7 +17,6 @@ import { savePayment } from '../../utils/paymentUpdate';
 
 import {
   PlusCircleIcon,
-  SearchIcon,
   PrinterIcon,
   SendIcon,
   EyeIcon,
@@ -42,6 +41,7 @@ import {
   downloadTransactionTemplate,
   importTransactionsFromExcel,
 } from '@/utils/excelUtils';
+import SearchInput from '../../components/SearchInput';
 
 // Tipe kustom untuk transaksi dengan nama pelanggan
 type TransactionWithCustomer = Transaction & { customerName: string; customerPhone: string };
@@ -231,24 +231,35 @@ const TransactionPage: React.FC = () => {
   };
 
   const handleSavePayment = async (updatedTransaction: Transaction) => {
-    const shouldShowModal =
-      updatedTransaction.paymentStatus === PaymentStatus.Paid &&
-      updatedTransaction.orderStatus === OrderStatus.Completed;
     setIsSavingPayment(true);
     const toastId = addToast('Menyimpan pembayaran...', 'info');
     try {
-      await savePayment(updateTransaction, updatedTransaction);
+      const orderStatus = await savePayment(updateTransaction, updatedTransaction, {
+        completeIfReady: canComplete,
+      });
+      const autoCompleted = orderStatus !== updatedTransaction.orderStatus;
+      const savedTransaction = { ...updatedTransaction, orderStatus };
 
       addAuditLog(
-        `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.`,
+        `Menerima pembayaran untuk transaksi ${updatedTransaction.id}. Status bayar: ${updatedTransaction.paymentStatus}.` +
+          (autoCompleted ? ` Status pesanan menjadi "${orderStatus}".` : ''),
         updatedTransaction.storeId,
       );
-      updateToast(toastId, 'Pembayaran berhasil disimpan.', 'success');
+      updateToast(
+        toastId,
+        autoCompleted
+          ? 'Pembayaran disimpan. Pesanan ditandai Selesai.'
+          : 'Pembayaran berhasil disimpan.',
+        'success',
+      );
 
       setIsPaymentModalOpen(false);
       setSelectedTransaction(null);
-      if (shouldShowModal) {
-        setTransactionForWhatsApp(updatedTransaction);
+      if (
+        savedTransaction.paymentStatus === PaymentStatus.Paid &&
+        savedTransaction.orderStatus === OrderStatus.Completed
+      ) {
+        setTransactionForWhatsApp(savedTransaction);
         setIsWhatsAppModalOpen(true);
       }
     } catch (error: unknown) {
@@ -497,17 +508,15 @@ const TransactionPage: React.FC = () => {
       return;
     }
 
-    // FIXED: Extended guard clause - prevent marking unpaid transactions as Ready or Completed
+    // Nota belum lunas boleh "Siap Diambil" (bayar saat diambil), tapi belum boleh "Selesai".
     const unpaidTransactions = transactionsToUpdate.filter(
       (t: Transaction) =>
-        (bulkActionStatus === OrderStatus.Ready || bulkActionStatus === OrderStatus.Completed) &&
-        t.paymentStatus !== PaymentStatus.Paid,
+        bulkActionStatus === OrderStatus.Completed && t.paymentStatus !== PaymentStatus.Paid,
     );
 
     if (unpaidTransactions.length > 0) {
-      const statusText = bulkActionStatus === OrderStatus.Ready ? 'siap' : 'diselesaikan';
       addToast(
-        `${unpaidTransactions.length} transaksi belum lunas dan tidak dapat ditandai ${statusText}.`,
+        `${unpaidTransactions.length} transaksi belum lunas dan tidak dapat diselesaikan.`,
         'error',
       );
       setIsBulkConfirmOpen(false);
@@ -626,24 +635,17 @@ const TransactionPage: React.FC = () => {
 
         <div
           id="transaction-filters"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700"
         >
-          <div className="relative">
-            <label htmlFor="searchTerm" className="sr-only">
-              Cari Transaksi
-            </label>
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              id="searchTerm"
-              name="searchTerm"
-              type="text"
-              placeholder="Cari ID, Invoice, Nama, atau No. HP..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input text-sm sm:text-base pl-10 p-2 sm:p-3"
-              autoComplete="off"
-            />
-          </div>
+          <SearchInput
+            id="searchTerm"
+            name="searchTerm"
+            label="Cari transaksi"
+            placeholder="Cari ID, Invoice, Nama, atau No. HP..."
+            value={searchTerm}
+            onValueChange={setSearchTerm}
+            wrapperClassName="sm:col-span-2"
+          />
           {canReadCustomers && (
             <div>
               <label htmlFor="customerFilter" className="sr-only">
@@ -885,19 +887,16 @@ const TransactionPage: React.FC = () => {
                           className={`badge cursor-pointer appearance-none border-0 py-1 ${getStatusBadge(t.orderStatus)}`}
                           title={
                             t.paymentStatus !== PaymentStatus.Paid
-                              ? 'Pelunasan diperlukan untuk menyelesaikan pesanan'
+                              ? 'Belum lunas: bisa ditandai Siap Diambil, selesai otomatis saat dilunasi'
                               : ''
                           }
                         >
                           {Object.values(OrderStatus).map((status) => {
-                            // Tombol/toggle ke 'Selesai' hanya aktif jika sudah lunas DAN/ATAU sudah 'Siap Diambil'
+                            // 'Selesai' hanya bisa dipilih bila sudah lunas; nota belum lunas
+                            // tetap boleh 'Siap Diambil' dan ditutup otomatis saat dilunasi.
                             const disableCompleted =
                               status === OrderStatus.Completed &&
-                              (!canComplete ||
-                                !(
-                                  t.paymentStatus === PaymentStatus.Paid ||
-                                  t.orderStatus === OrderStatus.Ready
-                                ));
+                              (!canComplete || t.paymentStatus !== PaymentStatus.Paid);
                             return (
                               <option
                                 key={status}

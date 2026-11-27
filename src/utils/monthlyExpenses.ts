@@ -5,6 +5,26 @@ export interface MonthlyExpenseTemplate {
   category: string;
   isActive: boolean;
   sortOrder: number;
+  /** Nominal yang mengisi pop-up otomatis; null = kosong. */
+  defaultAmount: number | null;
+}
+
+export const MIN_REMINDER_DAY = 1;
+export const MAX_REMINDER_DAY = 28;
+
+/** Tanggal muncul pop-up yang aman (1-28); nilai rusak/kosong kembali ke 1. */
+export function normalizeReminderDay(day: number | null | undefined): number {
+  if (typeof day !== 'number' || !Number.isFinite(day)) return MIN_REMINDER_DAY;
+  return Math.min(MAX_REMINDER_DAY, Math.max(MIN_REMINDER_DAY, Math.trunc(day)));
+}
+
+/** Pop-up muncul bila aktif dan hari ini sudah mencapai tanggal yang diatur. */
+export function isMonthlyReminderDue(
+  date: Date,
+  settings: { enabled?: boolean | null; day?: number | null },
+): boolean {
+  if (settings.enabled === false) return false;
+  return date.getDate() >= normalizeReminderDay(settings.day);
 }
 
 export interface MonthlyExpenseRecordReference {

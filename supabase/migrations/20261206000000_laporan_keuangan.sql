@@ -53,6 +53,8 @@ CREATE POLICY "Allow SELECT for Admins" ON public.transaction_payments
         AND "storeId" = (SELECT public.get_my_store_id()))
   );
 -- Tidak ada policy INSERT/UPDATE/DELETE: hanya trigger yang menulis.
+REVOKE ALL ON public.transaction_payments FROM anon, authenticated;
+GRANT SELECT ON public.transaction_payments TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.transaction_collected_amount(
   p_status text, p_total numeric, p_amount_paid numeric

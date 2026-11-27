@@ -187,7 +187,23 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
       0,
     );
 
-    return { today, todayValue, yesterday, overdue, stalePickup, outstanding };
+    // Siap diambil tapi belum bayar: tagih saat pelanggan mengambil.
+    const readyUnpaid = unpaidQuery.transactions.filter((t) => t.orderStatus === OrderStatus.Ready);
+    const readyUnpaidAmount = readyUnpaid.reduce(
+      (sum, t) => sum + Math.max(t.total - collectedOf(t), 0),
+      0,
+    );
+
+    return {
+      today,
+      todayValue,
+      yesterday,
+      overdue,
+      stalePickup,
+      outstanding,
+      readyUnpaidCount: readyUnpaid.length,
+      readyUnpaidAmount,
+    };
   }, [recentQuery.transactions, activeOrders, unpaidQuery.transactions]);
 
   const finance = useMemo(() => {
@@ -273,11 +289,28 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
             label="Siap diambil"
             value={dash(readyQuery.totalCount)}
             sub={
-              ops.stalePickup > 0
-                ? `${ops.stalePickup} menunggu > ${STALE_PICKUP_DAYS} hari — hubungi pelanggan`
-                : 'Tidak ada yang menumpuk'
+              <>
+                {ops.stalePickup > 0
+                  ? `${ops.stalePickup} menunggu > ${STALE_PICKUP_DAYS} hari — hubungi pelanggan`
+                  : 'Tidak ada yang menumpuk'}
+                {ops.readyUnpaidCount > 0 && (
+                  <span className="block font-semibold">
+                    {ops.readyUnpaidCount} belum bayar
+                    {showMoney && ` (${rp(ops.readyUnpaidAmount)})`} — tagih saat diambil
+                  </span>
+                )}
+              </>
             }
-            to={`/transactions?status=${encodeURIComponent(OrderStatus.Ready)}`}
+            hint={
+              ops.readyUnpaidCount > 0
+                ? 'Klik untuk melihat pesanan siap diambil yang belum dibayar'
+                : undefined
+            }
+            to={
+              ops.readyUnpaidCount > 0
+                ? `/transactions?status=${encodeURIComponent(OrderStatus.Ready)}&payment=${encodeURIComponent(PaymentStatus.Unpaid)}`
+                : `/transactions?status=${encodeURIComponent(OrderStatus.Ready)}`
+            }
           />
           <StatCard
             tone={unpaidCount > 0 ? 'amber' : 'slate'}
@@ -290,7 +323,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                   : 'Semua nota lunas'
                 : 'Tagih saat pelanggan mengambil'
             }
-            hint="Pesanan baru bisa ditandai Selesai setelah lunas"
+            hint="Nota Siap Diambil otomatis Selesai saat dilunasi"
             to={`/transactions?payment=${encodeURIComponent(PaymentStatus.Unpaid)}`}
           />
         </div>

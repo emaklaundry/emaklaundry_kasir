@@ -42,6 +42,7 @@ export function useMonthlyExpenseTemplates(storeIds: string[]) {
         category: template.category,
         isActive: template.is_active,
         sortOrder: template.sort_order,
+        defaultAmount: template.default_amount == null ? null : Number(template.default_amount),
       }));
     },
   });
@@ -55,6 +56,7 @@ export function useMonthlyExpenseTemplates(storeIds: string[]) {
         name: template.name.trim(),
         category: template.category,
         sort_order: template.sortOrder,
+        default_amount: template.defaultAmount,
       });
       if (error) throw error;
     },
@@ -72,13 +74,43 @@ export function useMonthlyExpenseTemplates(storeIds: string[]) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['monthly-expense-templates'] }),
   });
 
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      category,
+      defaultAmount,
+    }: Pick<MonthlyExpenseTemplate, 'id' | 'name' | 'category' | 'defaultAmount'>) => {
+      const { error } = await supabase
+        .from('monthly_expense_templates')
+        .update({ name: name.trim(), category, default_amount: defaultAmount })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['monthly-expense-templates'] }),
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('monthly_expense_templates').delete().eq('id', id);
+      // 23503 = FK expenses: tagihan sudah punya riwayat, jadi tidak boleh dihapus.
+      if (error) throw Object.assign(new Error(error.message), { code: error.code });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['monthly-expense-templates'] }),
+  });
+
   return {
     templates: query.data ?? [],
     ...query,
     addTemplate: addTemplateMutation.mutateAsync,
     isAddingTemplate: addTemplateMutation.isPending,
     setTemplateActive: setTemplateActiveMutation.mutateAsync,
-    isUpdatingTemplate: setTemplateActiveMutation.isPending,
+    updateTemplate: updateTemplateMutation.mutateAsync,
+    deleteTemplate: deleteTemplateMutation.mutateAsync,
+    isUpdatingTemplate:
+      setTemplateActiveMutation.isPending ||
+      updateTemplateMutation.isPending ||
+      deleteTemplateMutation.isPending,
   };
 }
 

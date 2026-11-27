@@ -74,6 +74,8 @@ export interface Service {
   durationDays: number;
   /** Jumlah minimum per transaksi (mis. 3 kg). 0 / kosong = tanpa minimum. */
   minQuantity?: number;
+  /** Tampilkan layanan ini beserta harganya di landing page. */
+  showOnWeb?: boolean;
   storeId: string;
 }
 
@@ -159,6 +161,30 @@ export interface InventoryRecipe {
   storeId: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+/** Kapan stok dipotong: saat nota dibuat, saat "Siap Diambil", atau saat "Selesai". */
+export type InventoryDeductAt = 'dibuat' | 'siap_diambil' | 'selesai';
+
+/** Bila stok bahan kurang: dibiarkan minus, diberi peringatan, atau nota ditahan. */
+export type InventoryStockGuard = 'bebas' | 'peringatan' | 'tahan';
+
+/** Pengaturan potong stok otomatis per cabang (tabel inventory_store_settings). */
+export interface InventorySettings {
+  storeId: string;
+  autoDeductEnabled: boolean;
+  deductAt: InventoryDeductAt;
+  stockGuard: InventoryStockGuard;
+  updatedAt?: Date;
+}
+
+/** Bahan yang stoknya tidak cukup untuk sebuah nota. */
+export interface StockShortage {
+  inventoryItemId: string;
+  itemName: string;
+  unit: string;
+  needed: number;
+  available: number;
 }
 
 export interface StockOpname {
@@ -276,6 +302,10 @@ export interface Settings {
   trackingUrl?: string | null;
   /** Kode QRIS statis toko (EMVCo). Kosong = pembayaran QRIS tanpa QR dinamis. */
   qrisStaticCode?: string | null;
+  /** Pop-up pengeluaran bulanan (listrik, air, dll). Default aktif. */
+  monthlyExpenseReminderEnabled?: boolean;
+  /** Tanggal (1-28) pop-up mulai muncul tiap bulan. Default 1. */
+  monthlyExpenseReminderDay?: number;
 }
 
 export interface ScheduledMaintenance {

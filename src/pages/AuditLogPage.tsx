@@ -3,7 +3,6 @@ import { AuditLogQuery, useAuditLogList } from '../contexts/AuditLogContext';
 import useAppContext from '../contexts/useAppContext';
 import {
   HistoryIcon,
-  SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   SpinnerIcon,
@@ -15,6 +14,7 @@ import EmptyState from '../components/EmptyState';
 import Pagination from '../components/Pagination';
 import useDebounce from '../hooks/useDebounce';
 import { AuditLog, UserRole } from '@/types';
+import SearchInput from '../components/SearchInput';
 
 const PAGE_SIZE = 50;
 
@@ -232,20 +232,15 @@ const AuditLogPage: React.FC = () => {
     // agar halaman ini tidak memenuhi dirinya sendiri. Kunjungan halaman tetap tercatat.
     <div className="card p-4" data-audit-ignore>
       <div className="flex flex-col md:flex-row items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700 flex-wrap">
-        <div className="relative w-full md:w-64">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            id="audit-search"
-            name="audit-search"
-            aria-label="Cari pengguna atau aksi"
-            placeholder="Cari pengguna atau aksi..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-input pl-10"
-            autoComplete="off"
-          />
-        </div>
+        <SearchInput
+          id="audit-search"
+          name="audit-search"
+          label="Cari pengguna atau aksi"
+          placeholder="Cari pengguna atau aksi..."
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          wrapperClassName="w-full md:w-64"
+        />
         <select
           id="audit-category"
           aria-label="Kategori log"

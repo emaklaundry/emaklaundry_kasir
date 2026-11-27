@@ -178,6 +178,22 @@ const PrinterSettingsPanel: React.FC<Props> = ({
             />
             Potong kertas otomatis (jika printer punya cutter)
           </label>
+          <label className="col-span-2 flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={settings.darkPrint}
+              onChange={(e) => update({ darkPrint: e.target.checked })}
+            />
+            Cetak pekat (huruf lebih hitam, sedikit lebih lambat)
+          </label>
+          <label className="col-span-2 flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={settings.compactLines}
+              onChange={(e) => update({ compactLines: e.target.checked })}
+            />
+            Jarak baris rapat (struk lebih pendek)
+          </label>
         </div>
       )}
 

@@ -5,13 +5,13 @@ import {
   PlusCircleIcon,
   EditIcon,
   Trash2Icon,
-  SearchIcon,
   UsersIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   DownloadIcon,
   UploadIcon,
   RefreshCwIcon,
+  UserPlusIcon,
 } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -40,8 +40,34 @@ import {
   downloadCustomerTemplate,
 } from '../../utils/excelUtils';
 import { supabase } from '../../utils/supabaseClient';
-import GoogleContactsImportModal from '../../components/GoogleContactsImportModal';
-import { GoogleContact, useGoogleContacts } from '../../hooks/useGoogleContacts';
+import VcfContactsImportModal from '../../components/VcfContactsImportModal';
+import type { VcfContact } from '../../utils/vcfParser';
+import { useGoogleContacts } from '../../hooks/useGoogleContacts';
+import SearchInput from '../../components/SearchInput';
+
+/**
+ * Ambil SEMUA nomor HP pelanggan di satu cabang (bukan hanya halaman yang
+ * sedang tampil) agar import .vcf bisa menyaring duplikat dengan benar.
+ */
+async function fetchStorePhones(storeId: string): Promise<Set<string>> {
+  const phones = new Set<string>();
+  const batch = 1000;
+  for (let from = 0; ; from += batch) {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('phone')
+      .eq('storeId', storeId)
+      .not('phone', 'is', null)
+      .range(from, from + batch - 1);
+    if (error) throw error;
+    for (const row of data ?? []) {
+      const phone = normalizePhone((row as { phone: string | null }).phone);
+      if (phone) phones.add(phone);
+    }
+    if (!data || data.length < batch) break;
+  }
+  return phones;
+}
 
 const CustomersPage: React.FC = () => {
   const { currentUser, selectedStoreId } = useAppContext();
@@ -112,7 +138,7 @@ const CustomersPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isGoogleImportModalOpen, setIsGoogleImportModalOpen] = useState(false);
+  const [isVcfImportModalOpen, setIsVcfImportModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
   // type CustomerInput = Omit<Customer, 'id'>;
@@ -428,8 +454,8 @@ const CustomersPage: React.FC = () => {
     }
   };
 
-  // Google Contacts Import
-  const handleGoogleContactsImport = async (contacts: GoogleContact[]) => {
+  // Import kontak dari file .vcf (vCard)
+  const handleVcfContactsImport = async (contacts: VcfContact[]) => {
     const storeId =
       currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId;
     if (!storeId || storeId === 'all') {
@@ -443,35 +469,38 @@ const CustomersPage: React.FC = () => {
     let successCount = 0;
     let skipCount = 0;
     let errorCount = 0;
+    let seenPhones: Set<string>;
+    try {
+      // Cek ulang ke database tepat sebelum import (bisa saja ada pelanggan
+      // baru sejak modal dibuka).
+      seenPhones = await fetchStorePhones(storeId);
+    } catch {
+      setIsSaving(false);
+      updateToast(toastId, 'Gagal memeriksa data pelanggan yang sudah ada.', 'error');
+      return;
+    }
 
     for (const contact of contacts) {
+      const phone = normalizePhone(contact.phone);
+      if (!phone || seenPhones.has(phone)) {
+        skipCount++;
+        continue;
+      }
       try {
-        // Normalize phone number
-        let phone = contact.phone.replace(/\D/g, '');
-        if (phone.startsWith('0')) {
-          phone = '62' + phone.substring(1);
-        } else if (phone.startsWith('8')) {
-          phone = '62' + phone;
-        }
-
-        // Check for duplicate
-        const existingCustomer = customers.find((c) => c.phone?.replace(/\D/g, '') === phone);
-        if (existingCustomer) {
-          skipCount++;
-          continue;
-        }
-
         await addCustomer({
           name: contact.name,
-          phone: phone,
+          phone,
           address: contact.address || undefined,
-          notes: `Imported from Google Contacts`,
-          storeId: storeId,
+          notes: 'Imported from VCF',
+          storeId,
           createdAt: new Date(),
         });
+        seenPhones.add(phone);
         successCount++;
-      } catch {
-        errorCount++;
+      } catch (error) {
+        // Indeks unik (phone, storeId) menolak nomor yang sudah terdaftar.
+        if (error instanceof Error && error.message.includes('sudah terdaftar')) skipCount++;
+        else errorCount++;
       }
     }
 
@@ -481,13 +510,13 @@ const CustomersPage: React.FC = () => {
       updateToast(
         toastId,
         `Import selesai: ${successCount} berhasil, ${skipCount} duplikat, ${errorCount} gagal`,
-        skipCount > 0 ? 'warning' : 'error',
+        errorCount > 0 ? 'error' : 'warning',
       );
     } else {
-      updateToast(toastId, `Berhasil import ${successCount} kontak dari Google!`, 'success');
+      updateToast(toastId, `Berhasil import ${successCount} kontak dari file .vcf!`, 'success');
     }
 
-    addAuditLog(`Import ${successCount} pelanggan dari Google Contacts.`, storeId);
+    addAuditLog(`Import ${successCount} pelanggan dari file VCF.`, storeId);
   };
 
   // Google Contacts Sync (Export)
@@ -545,10 +574,15 @@ const CustomersPage: React.FC = () => {
     );
   };
 
-  // Get existing phone numbers for deduplication
-  const existingPhones = useMemo(() => {
-    return customers.map((c) => c.phone || '').filter(Boolean);
-  }, [customers]);
+  // Semua nomor HP di cabang tujuan, untuk menyembunyikan kontak .vcf yang sudah terdaftar
+  const vcfTargetStoreId =
+    currentUser?.role === UserRole.SuperAdmin ? selectedStoreId : currentUser?.storeId;
+  const { data: storePhones } = useQuery({
+    queryKey: ['customers', 'store-phones', vcfTargetStoreId],
+    queryFn: () => fetchStorePhones(vcfTargetStoreId!),
+    enabled: isVcfImportModalOpen && !!vcfTargetStoreId && vcfTargetStoreId !== 'all',
+  });
+  const existingPhones = useMemo(() => Array.from(storePhones ?? []), [storePhones]);
 
   const NoCustomersFound = () => (
     <EmptyState
@@ -607,18 +641,13 @@ const CustomersPage: React.FC = () => {
               </button>
 
               <button
-                onClick={() => setIsGoogleImportModalOpen(true)}
+                onClick={() => setIsVcfImportModalOpen(true)}
                 disabled={!canAddNewCustomer || isSaving}
                 className="btn btn-secondary btn-sm"
-                title="Import dari Google Contacts"
+                title="Import kontak dari file .vcf"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                </svg>
-                <span className="hidden sm:inline text-sm">Import Google</span>
+                <UserPlusIcon className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">Import .vcf</span>
               </button>
 
               <button
@@ -660,19 +689,15 @@ const CustomersPage: React.FC = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            id="customer-search"
-            name="customer-search"
-            placeholder="Cari pelanggan..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            autoComplete="off"
-          />
-        </div>
+        <SearchInput
+          id="customer-search"
+          name="customer-search"
+          label="Cari pelanggan"
+          placeholder="Cari pelanggan..."
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          wrapperClassName="flex-1"
+        />
         <select
           id="customer-activity-filter"
           name="customer-activity-filter"
@@ -898,10 +923,10 @@ const CustomersPage: React.FC = () => {
         />
       )}
 
-      <GoogleContactsImportModal
-        isOpen={isGoogleImportModalOpen}
-        onClose={() => setIsGoogleImportModalOpen(false)}
-        onImport={handleGoogleContactsImport}
+      <VcfContactsImportModal
+        isOpen={isVcfImportModalOpen}
+        onClose={() => setIsVcfImportModalOpen(false)}
+        onImport={handleVcfContactsImport}
         existingPhones={existingPhones}
       />
     </div>

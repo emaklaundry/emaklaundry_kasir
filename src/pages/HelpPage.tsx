@@ -4,8 +4,9 @@ import useAppContext from '../contexts/useAppContext';
 import { useTutorial } from '../hooks/useTutorial';
 import { navSections } from '../config/navigation';
 import { HELP_TOPICS, HELP_TOURS, HelpTopic, HelpTour } from '../config/helpTopics';
-import { ChevronDownIcon, HelpCircleIcon, SearchIcon } from '../components/icons';
+import { ChevronDownIcon, HelpCircleIcon } from '../components/icons';
 import { UserRole } from '../types';
+import SearchInput from '../components/SearchInput';
 
 const ALL = 'Semua';
 
@@ -76,21 +77,13 @@ const HelpPage: React.FC = () => {
           dipelajari.
         </p>
 
-        <div className="relative">
-          <label htmlFor={searchId} className="sr-only">
-            Cari topik bantuan
-          </label>
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <input
-            id={searchId}
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari: bayar, struk, stok, PIN, karyawan…"
-            autoComplete="off"
-            className="block w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-          />
-        </div>
+        <SearchInput
+          id={searchId}
+          label="Cari topik bantuan"
+          placeholder="Cari: bayar, struk, stok, PIN, karyawan…"
+          value={query}
+          onValueChange={setQuery}
+        />
 
         <div
           role="tablist"

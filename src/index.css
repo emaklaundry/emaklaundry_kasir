@@ -208,6 +208,12 @@
   .form-input:disabled {
     @apply cursor-not-allowed opacity-60;
   }
+  /* Kotak pencarian (SearchInput): tombol × bawaan browser diganti tombol sendiri. */
+  .search-input::-webkit-search-cancel-button,
+  .search-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 
   /* --- BADGE STATUS ------------------------------------------------------
    * info = sedang berjalan, warning = perlu perhatian (siap diambil, sebagian),
@@ -463,6 +469,54 @@ html {
 
 /* --- PRINT STYLES --- */
 
+/* Pratinjau struk (ReceiptPreview) — tampilan layar meniru kertas thermal. */
+.receipt-paper {
+  margin: 0 auto;
+  width: 100%;
+  max-width: calc(var(--receipt-width, 58mm) * 1.45);
+  padding: 0.75rem;
+  background: #fff;
+  color: #000;
+  border: 1px solid #e2e8f0;
+  font-family:
+    Consolas, 'Lucida Console', 'DejaVu Sans Mono', 'Droid Sans Mono', 'Courier New', monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.rc-l {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.rc-b {
+  font-weight: 800;
+}
+.rc-lg {
+  font-size: 1.35em;
+  line-height: 1.15;
+}
+.rc-sp {
+  height: 0.25rem;
+}
+.rc-p {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.rc-p > span:first-child {
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.rc-r {
+  white-space: nowrap;
+  text-align: right;
+}
+.rc-d {
+  border-top: 1px dashed #000;
+  margin: 0.25rem 0;
+}
+
 /* Print-only elements should be hidden on screen */
 @media screen {
   .print-only-block,
@@ -539,6 +593,23 @@ html {
   }
 
   /* --- THERMAL RECEIPT STYLES --- */
+  /* Saat halaman struk dicetak (jalur mobile = window.print seluruh halaman), buang semua
+     elemen selain struk & leluhurnya supaya navbar/footer/toast tidak ikut tercetak dan
+     tidak ada sisa tinggi halaman yang membuang kertas. */
+  body:has(.receipt-print) *:not(.receipt-print):not(.receipt-print *):not(:has(.receipt-print)) {
+    display: none !important;
+  }
+  html:has(.receipt-print),
+  body:has(.receipt-print),
+  body:has(.receipt-print) *:has(.receipt-print) {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    border: 0 !important;
+    background: #fff !important;
+  }
+
   /* Use strict absolute positioning to escape any layout constraints */
   .receipt-print {
     position: absolute !important;
@@ -548,7 +619,7 @@ html {
     width: var(--receipt-width, 58mm) !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 0 3mm !important; /* Safe horizontal padding */
+    padding: 1mm 3mm !important; /* Safe horizontal padding */
 
     /* Ensure it sits on top of everything else and has a background */
     z-index: 9999 !important;
@@ -558,56 +629,36 @@ html {
     /* Jangan paksa tinggi 100vh: di kertas roll itu membuang kertas kosong panjang */
 
     /* Typography */
-    font-family: 'Courier New', Courier, monospace !important;
+    font-family:
+      Consolas, 'Lucida Console', 'DejaVu Sans Mono', 'Droid Sans Mono', 'Courier New', monospace !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
-  /* CONTENT STYLING */
+  /* CONTENT STYLING — ringkas & pekat (thermal mencetak 1-bit, abu-abu jadi pudar).
+     Strukturnya (rc-*) sama dengan buildReceiptHtml() di thermalPrinter.ts. */
   .receipt-print * {
-    font-size: 10pt !important; /* Slightly larger for better visibility */
+    font-size: 9pt !important;
     color: #000000 !important;
-    font-weight: 600 !important; /* Make text bolder/blacker */
-    line-height: 1.2 !important;
+    font-weight: 700 !important;
+    line-height: 1.12 !important;
     visibility: visible !important;
+    -webkit-text-stroke: 0.25px #000;
     -webkit-font-smoothing: none !important; /* Sharper text for thermal printers */
     -moz-osx-font-smoothing: grayscale !important;
-    text-rendering: optimizeLegibility !important;
   }
-
-  .receipt-print h1 {
-    font-size: 14pt !important;
-    font-weight: 800 !important; /* Extra bold for title */
-    margin-bottom: 3mm !important;
-    text-align: center;
-    text-transform: uppercase; /* Make title standout more */
+  .receipt-print .rc-b {
+    font-weight: 900 !important;
   }
-
-  /* UTILITY OVERRIDES FOR PRINT */
-  .receipt-print .text-center {
-    text-align: center !important;
+  .receipt-print .rc-lg {
+    font-size: 12pt !important;
+    line-height: 1.1 !important;
   }
-
-  .receipt-print .flex.justify-between {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: flex-start !important;
-    gap: 2mm;
+  .receipt-print .rc-d {
+    border-top: 1.5px dashed #000 !important;
+    margin: 0.8mm 0 !important;
   }
-
-  /* Dashed lines - Make them thicker/darker */
-  .receipt-print .border-dashed {
-    border-style: dashed !important;
-    border-width: 0 0 2px 0 !important; /* Thicker line */
-    border-color: #000000 !important;
-    margin: 2mm 0 !important;
-    padding-bottom: 2mm !important;
-  }
-
-  .receipt-print > div {
-    margin-bottom: 2mm !important;
-  }
-
-  /* Hide elements explicitly marked to hide in print */
-  .receipt-print .print-hide {
-    display: none !important;
+  .receipt-print .rc-sp {
+    height: 1mm !important;
   }
 
   /* --- REPORT STYLES --- */

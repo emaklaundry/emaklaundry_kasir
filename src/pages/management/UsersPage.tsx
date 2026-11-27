@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useUsers } from '../../contexts/UserContext';
 import {
   EditIcon,
   PowerIcon,
   UsersIcon,
-  SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
 } from '../../components/icons';
@@ -19,6 +19,7 @@ import { useSortableData } from '../../hooks/useSortableData';
 import { User, UserRole } from '@/types';
 import { Link } from 'react-router-dom';
 import { ROLE_DESCRIPTIONS, ROLE_ORDER } from '../../config/permissions';
+import SearchInput from '../../components/SearchInput';
 
 /** Penjelasan singkat Akun Login vs Karyawan + hak akses tiap peran. */
 const AccessGuide: React.FC = () => (
@@ -83,6 +84,7 @@ const UsersPage: React.FC = () => {
   const [currentUserToEdit, setCurrentUserToEdit] = useState<User | null>(null);
   const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState<
     'all' | 'superadmin' | 'admin' | 'kasir' | 'operator' | 'active' | 'inactive'
   >('all');
@@ -192,7 +194,7 @@ const UsersPage: React.FC = () => {
 
   const filteredUsers = useMemo(() => {
     let filtered = usersWithStore.filter((user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      user.name.toLowerCase().includes(debouncedSearch.toLowerCase()),
     );
 
     if (roleFilter === 'superadmin') {
@@ -210,7 +212,7 @@ const UsersPage: React.FC = () => {
     }
 
     return filtered;
-  }, [usersWithStore, searchTerm, roleFilter]);
+  }, [usersWithStore, debouncedSearch, roleFilter]);
 
   const {
     items: sortedUsers,
@@ -239,19 +241,15 @@ const UsersPage: React.FC = () => {
       <AccessGuide />
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            id="user-search"
-            name="user-search"
-            placeholder="Cari akun..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            autoComplete="off"
-          />
-        </div>
+        <SearchInput
+          id="user-search"
+          name="user-search"
+          label="Cari akun"
+          placeholder="Cari akun..."
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          wrapperClassName="flex-1"
+        />
         <select
           id="user-role-filter"
           name="user-role-filter"

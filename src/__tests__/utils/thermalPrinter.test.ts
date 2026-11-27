@@ -64,6 +64,34 @@ describe('thermalPrinter', () => {
     expect(Array.from(noCut.slice(-1))).toEqual([0x0a]);
   });
 
+  it('mode pekat & rapat: double-strike dan jarak baris rapat, dimatikan bila opsi off', () => {
+    const has = (bytes: Uint8Array, seq: number[]) =>
+      Array.from(bytes).join(',').includes(seq.join(','));
+    const on = encodeEscPos([{ type: 'text', text: 'x' }], DEFAULT_PRINTER_SETTINGS);
+    expect(has(on, [0x1b, 0x47, 1])).toBe(true); // ESC G 1
+    expect(has(on, [0x1b, 0x33, 26])).toBe(true); // ESC 3 26
+
+    const off = encodeEscPos([{ type: 'text', text: 'x' }], {
+      ...DEFAULT_PRINTER_SETTINGS,
+      darkPrint: false,
+      compactLines: false,
+    });
+    expect(has(off, [0x1b, 0x47, 1])).toBe(false);
+    expect(has(off, [0x1b, 0x33])).toBe(false);
+  });
+
+  it('teks besar memakai jarak baris normal agar tidak bertumpuk', () => {
+    const bytes = Array.from(
+      encodeEscPos([{ type: 'text', text: 'JUDUL', size: 'large' }], DEFAULT_PRINTER_SETTINGS),
+    ).join(',');
+    const big = bytes.indexOf([0x1d, 0x21, 0x11].join(','));
+    const normalSpacing = bytes.indexOf([0x1b, 0x32].join(','), big);
+    const text = bytes.indexOf([74, 85, 68, 85, 76].join(','));
+    expect(big).toBeGreaterThan(-1);
+    expect(normalSpacing).toBeGreaterThan(big);
+    expect(normalSpacing).toBeLessThan(text);
+  });
+
   it('HTML struk memakai lebar kertas & meng-escape isi', () => {
     const html = buildReceiptHtml([{ type: 'text', text: '<b>x</b>' }], {
       ...DEFAULT_PRINTER_SETTINGS,

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { SearchIcon, DownloadIcon, UploadIcon } from '../../components/icons';
+import { useDebounce } from '../../hooks/useDebounce';
+import { DownloadIcon, UploadIcon } from '../../components/icons';
 import EmptyState from '../../components/EmptyState';
 import {
   exportExpensesToExcel,
@@ -18,6 +19,7 @@ import useToasts from '../../contexts/useToasts';
 import Pagination from '../../components/Pagination';
 import MonthlyExpensesManager from '../../components/MonthlyExpensesManager';
 import { Expense, UserRole } from '@/types';
+import SearchInput from '../../components/SearchInput';
 
 type CombinedExpenseItem = {
   id: string;
@@ -40,6 +42,7 @@ const ExpensesPage: React.FC = () => {
   const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   const handleOpenFormModal = (expense: Expense | null = null) => {
@@ -144,11 +147,11 @@ const ExpensesPage: React.FC = () => {
 
   const filteredItems = useMemo(() => {
     return allFinancialItems.filter((item) => {
-      const matchesSearch = item.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = item.description.toLowerCase().includes(debouncedSearch.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
       return matchesSearch && matchesCategory;
     });
-  }, [allFinancialItems, searchTerm, categoryFilter]);
+  }, [allFinancialItems, debouncedSearch, categoryFilter]);
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -425,19 +428,15 @@ const ExpensesPage: React.FC = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            id="expense-search"
-            name="expense-search"
-            placeholder="Cari..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            autoComplete="off"
-          />
-        </div>
+        <SearchInput
+          id="expense-search"
+          name="expense-search"
+          label="Cari pengeluaran"
+          placeholder="Cari deskripsi pengeluaran..."
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          wrapperClassName="flex-1"
+        />
         <select
           id="expense-category-filter"
           name="expense-category-filter"

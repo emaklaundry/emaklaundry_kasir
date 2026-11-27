@@ -6,7 +6,9 @@ import {
   getLocalDateString,
   getMonthPeriod,
   getOutstandingMonthlyTemplates,
+  isMonthlyReminderDue,
 } from '../utils/monthlyExpenses';
+import { useSettings } from '../contexts/SettingsContext';
 import {
   useMonthlyExpenseRecords,
   useMonthlyExpenseTemplates,
@@ -16,16 +18,24 @@ import useToasts from '../contexts/useToasts';
 
 const MonthlyExpenseReminder: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
-  const period = getMonthPeriod(new Date());
+  const { settings, isLoading: isLoadingSettings } = useSettings();
+  const today = new Date();
+  const period = getMonthPeriod(today);
+  const isDue =
+    !isLoadingSettings &&
+    isMonthlyReminderDue(today, {
+      enabled: settings?.monthlyExpenseReminderEnabled,
+      day: settings?.monthlyExpenseReminderDay,
+    });
   const storeIds = useMemo(() => {
-    if (!currentUser) return [];
+    if (!currentUser || !isDue) return [];
     if (currentUser.role === UserRole.SuperAdmin) {
       return selectedStoreId === 'all'
         ? stores.filter((store) => store.isActive).map((store) => store.id)
         : [selectedStoreId];
     }
     return currentUser.storeId ? [currentUser.storeId] : [];
-  }, [currentUser, selectedStoreId, stores]);
+  }, [currentUser, selectedStoreId, stores, isDue]);
   const templatesQuery = useMonthlyExpenseTemplates(storeIds);
   const recordsQuery = useMonthlyExpenseRecords(storeIds, period);
   const [dismissedKey, setDismissedKey] = useState('');
@@ -118,7 +128,13 @@ const MonthlyExpenseReminderDialog: React.FC<MonthlyExpenseReminderDialogProps> 
 }) => {
   const { addToast } = useToasts();
   const saveMonthlyExpenses = useSaveMonthlyExpenses();
-  const [amounts, setAmounts] = useState<Record<string, string>>({});
+  const [amounts, setAmounts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      templates
+        .filter((template) => template.defaultAmount !== null)
+        .map((template) => [template.id, String(template.defaultAmount)]),
+    ),
+  );
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSave = async (event: React.FormEvent) => {
@@ -185,8 +201,9 @@ const MonthlyExpenseReminderDialog: React.FC<MonthlyExpenseReminderDialogProps> 
             {storeName ? `Cabang ${storeName}` : 'Lengkapi tagihan cabang ini'}
           </p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Catat jumlah tagihan rutin bulan ini. Anda dapat menundanya dan pengingat akan muncul
-            kembali saat masuk berikutnya.
+            Catat jumlah tagihan rutin bulan ini. Nominal default sudah terisi; ubah bila tagihan
+            bulan ini berbeda. Anda dapat menundanya dan pengingat akan muncul kembali saat masuk
+            berikutnya.
           </p>
         </div>
         {templates.map((template, index) => (

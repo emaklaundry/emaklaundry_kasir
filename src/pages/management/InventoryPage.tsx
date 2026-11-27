@@ -5,7 +5,6 @@ import {
   EditIcon,
   Trash2Icon,
   PackageIcon,
-  SearchIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   DownloadIcon,
@@ -29,7 +28,11 @@ import {
   useInventoryMutations,
   InventorySortKey,
 } from '../../contexts/InventoryContext';
-import { adjustInventoryStock, useRecipes } from '../../contexts/InventoryRecipeContext';
+import {
+  adjustInventoryStock,
+  useInventorySettings,
+  useRecipes,
+} from '../../contexts/InventoryRecipeContext';
 import useAppContext from '../../contexts/useAppContext';
 import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
@@ -43,6 +46,7 @@ import StockOpnameModal from '../../components/StockOpnameModal';
 import StockAdjustModal from '../../components/StockAdjustModal';
 import StockHistoryModal from '../../components/StockHistoryModal';
 import { formatQty, getStockLevel, STOCK_LEVEL_META } from '../../utils/inventoryFormat';
+import SearchInput from '../../components/SearchInput';
 
 type StockFilter = 'all' | 'low_stock' | 'out_of_stock';
 
@@ -116,6 +120,7 @@ const InventoryPage: React.FC = () => {
   });
 
   const { data: recipes = [] } = useRecipes(activeStoreId);
+  const { data: inventorySettings } = useInventorySettings(activeStoreId);
   const autoItemIds = useMemo(
     () => new Set(recipes.filter((r) => r.isActive).map((r) => r.inventoryItemId)),
     [recipes],
@@ -492,12 +497,21 @@ const InventoryPage: React.FC = () => {
           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
             <BoltIcon className="w-3.5 h-3.5" /> Potong Otomatis
           </p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            {canAddNewItem ? activeRuleCount : '–'}
-            <span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">
-              aturan aktif
-            </span>
-          </p>
+          {canAddNewItem && inventorySettings && !inventorySettings.autoDeductEnabled ? (
+            <p className="text-2xl font-bold text-slate-400 dark:text-slate-500">
+              Mati
+              <span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">
+                saklar dimatikan
+              </span>
+            </p>
+          ) : (
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {canAddNewItem ? activeRuleCount : '–'}
+              <span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">
+                aturan aktif
+              </span>
+            </p>
+          )}
         </button>
       </div>
 
@@ -587,19 +601,15 @@ const InventoryPage: React.FC = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-          <input
-            type="search"
-            id="inventory-search"
-            name="inventory-search"
-            placeholder="Cari item..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-            autoComplete="off"
-          />
-        </div>
+        <SearchInput
+          id="inventory-search"
+          name="inventory-search"
+          label="Cari item inventaris"
+          placeholder="Cari item..."
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          wrapperClassName="flex-1"
+        />
         <select
           id="inventory-filter"
           name="inventory-filter"
