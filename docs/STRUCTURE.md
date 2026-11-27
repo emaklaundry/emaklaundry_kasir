@@ -49,7 +49,7 @@ src/
 │   ├── transactions/        Daftar, transaksi baru, detail, struk
 │   ├── management/          Pelanggan, layanan, inventaris, karyawan, absensi, aset, pengguna, pengaturan, backup, ...
 │   ├── business/            Kalkulator Bisnis
-│   └── *.tsx                Dashboard, Laporan, Log Audit, Bantuan, Dokumentasi, Login, Aksi Cepat
+│   └── *.tsx                Dashboard, Laporan, Log Audit, Bantuan, Login, Aksi Cepat
 ├── types/                   index.ts (tipe aplikasi), hrm.ts (karyawan), supabase.ts (tipe database)
 ├── utils/                   Logika murni & klien Supabase (lihat tabel di bawah)
 ├── data/                    Data statis (spesifikasi mesin cuci)

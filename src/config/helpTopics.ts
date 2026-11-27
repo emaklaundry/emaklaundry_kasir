@@ -257,6 +257,27 @@ export const HELP_TOPICS: HelpTopic[] = [
     link: { to: '/management/assets', label: 'Buka Aset' },
     keywords: 'mesin cuci pengering servis perawatan kerusakan',
   },
+  {
+    id: 'electrical',
+    section: 'SDM & Aset',
+    title: 'Instalasi listrik toko',
+    summary: 'Panel listrik 1 fasa 220V yang aman untuk mesin laundry (acuan PUIL).',
+    steps: [
+      'Spesifikasi: 1 fasa + arde (220V/50Hz), panel maks. 32A, sistem arde TN-S (fasa, netral, ground terpisah), tahanan arde di bawah 5 Ohm.',
+      'Panel utama: Main MCB 2-pole 32A → busbar sisir tembaga → RCBO 10A/30mA untuk rumah/server, mesin 1 & 2, dan mesin 3 & 4, plus MCB 16A untuk beban berat (vakum). SPD opsional ke batang arde.',
+      'Kabel: feeder NYM 3x4mm² dari kWh meter, distribusi NYM 3x2.5mm², wiring panel NYAF 6mm², stop kontak dan steker berarde.',
+      'Sebelum pasang: ukur tahanan arde (tambah batang arde bila di atas 5 Ohm) dan bagi beban mesin merata di setiap RCBO.',
+      'Saat terminasi: kupas kabel dengan wire stripper, pasang skun jarum (ferrule) di ujung kabel serabut, kencangkan baut terminal, goyangkan kabel, lalu kencangkan lagi (ulangi 2x).',
+      'Monitoring daya (opsional): sensor PZEM-004T + ESP32. Jepit sensor CT di kabel fasa utama sampai terkunci, beri jarak minimal 1 modul (18mm) dari komponen tegangan tinggi.',
+    ],
+    tips: [
+      'Estimasi biaya material sekitar Rp 1,7 juta (panel Rp 500 rb, kabel & distribusi Rp 1 jt, modul monitoring Rp 200 rb), belum termasuk ongkos tukang.',
+      'Daya 2200VA: jangan nyalakan semua mesin bersamaan. Naik ke 3500/4400VA cukup ganti MCB meteran oleh PLN, panel tidak perlu diubah. Di atas 8 mesin, pertimbangkan 3 fasa (Main MCB 4-pole, busbar 3 fasa).',
+      'Pemasangan sebaiknya dikerjakan teknisi listrik bersertifikat.',
+    ],
+    adminOnly: true,
+    keywords: 'listrik wiring panel mcb rcbo grounding arde kabel pln daya va pzem esp32',
+  },
 
   // --- Laporan & Analisis ---------------------------------------------------------
   {
@@ -364,6 +385,20 @@ export const HELP_TOPICS: HelpTopic[] = [
     link: { to: '/management/backup', label: 'Buka Backup' },
     keywords: 'cadangan backup restore excel pulihkan',
   },
+  {
+    id: 'api-status',
+    section: 'Sistem & Keamanan',
+    title: 'Cek status pesanan dari website',
+    summary: 'API untuk landing page agar pelanggan bisa melacak pesanannya.',
+    steps: [
+      'Dari landing page: panggil GET https://emaklaundry.my.id/api/cek-status?invoice=[NO-INVOICE], tanpa API key.',
+      'Langsung ke Supabase: GET https://[PROJECT-REF].supabase.co/functions/v1/check-order?invoice=[NO-INVOICE] dengan header Authorization: Bearer [ANON-KEY]. Domain pemanggil harus terdaftar di secret ALLOWED_ORIGIN (pisahkan dengan koma).',
+      'Respons berisi invoice, nama pelanggan (disamarkan), status, status bayar, total, jumlah dibayar, estimasi selesai, dan item.',
+      'Kode error: 400 format invoice salah, 404 tidak ditemukan, 429 terlalu sering, 5xx gangguan server.',
+    ],
+    adminOnly: true,
+    keywords: 'api integrasi landing page website lacak tracking cek status invoice endpoint',
+  },
 
   // --- Bantuan & Panduan --------------------------------------------------------
   {
@@ -373,11 +408,23 @@ export const HELP_TOPICS: HelpTopic[] = [
     summary: 'Bacaan lengkap untuk prosedur kerja dan pengembangan usaha (khusus Admin).',
     steps: [
       'SOP (Prosedur) berisi langkah kerja standar di toko.',
-      'Pusat Bisnis menggabungkan Panduan Bisnis, Kalkulator Bisnis, dan Dokumentasi dalam satu halaman bertab.',
+      'Pusat Bisnis menggabungkan Panduan Bisnis dan Kalkulator Bisnis dalam satu halaman bertab.',
+      'Cara pakai aplikasi dan perawatan mesin ada di halaman Bantuan ini.',
     ],
     adminOnly: true,
-    link: { to: '/business?tab=dokumentasi', label: 'Buka Pusat Bisnis' },
+    link: { to: '/business', label: 'Buka Pusat Bisnis' },
     keywords: 'sop prosedur panduan dokumentasi',
+  },
+  {
+    id: 'command-palette',
+    section: 'Bantuan & Panduan',
+    title: 'Pencarian cepat (Ctrl + K)',
+    summary: 'Buka menu atau cari pelanggan tanpa mouse.',
+    steps: [
+      'Tekan Ctrl + K (Windows) atau Cmd + K (Mac) di mana saja.',
+      'Ketik nama menu, pelanggan, atau aksi seperti Transaksi Baru, lalu tekan Enter.',
+    ],
+    keywords: 'command palette pintasan keyboard shortcut ctrl k cari',
   },
   {
     id: 'account',

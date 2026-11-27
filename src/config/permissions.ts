@@ -41,7 +41,7 @@ export type Permission =
   | 'finance.view'
   /** Menu manajemen cabang: pelanggan, layanan, inventaris, karyawan, laporan, dll. */
   | 'branch.manage'
-  /** Panduan, Dokumentasi & Kalkulator Bisnis. */
+  /** Panduan & Kalkulator Bisnis. */
   | 'business.hub'
   /** Mengelola banyak cabang, mode maintenance, data lintas cabang. */
   | 'system.manage';
@@ -130,7 +130,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, { summary: string; can: string[
       'Semua hak Kasir',
       'Kelola pelanggan, layanan, inventaris, aset, karyawan & absensi',
       'Pengeluaran bulanan (listrik, air, sewa) & laporan keuangan',
-      'Pusat Bisnis: panduan, dokumentasi & kalkulator',
+      'Pusat Bisnis: panduan & kalkulator',
       'Beri PIN login untuk karyawan di cabangnya',
     ],
   },

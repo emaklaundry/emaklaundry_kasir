@@ -280,7 +280,7 @@ const AppRoutes: React.FC = () => {
               path="/business/calculator"
               element={<Navigate to="/business?tab=kalkulator" replace />}
             />
-            <Route path="/docs" element={<Navigate to="/business?tab=dokumentasi" replace />} />
+            <Route path="/docs" element={<Navigate to="/help" replace />} />
             <Route path="/help" element={<HelpPage />} />
             {/* Tambahkan catch-all route di bawah ini */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -2,16 +2,14 @@ import React, { Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ArrowTrendingUpIcon,
-  BookOpenIcon,
   CalculatorIcon,
   SpinnerIcon,
 } from '../../components/icons';
 
 const BusinessGuidePage = lazy(() => import('../BusinessGuidePage'));
 const BusinessCalculatorPage = lazy(() => import('./BusinessCalculatorPage'));
-const DocumentationPage = lazy(() => import('../DocumentationPage'));
 
-export type BusinessHubTab = 'panduan' | 'kalkulator' | 'dokumentasi';
+export type BusinessHubTab = 'panduan' | 'kalkulator';
 
 const TABS: {
   id: BusinessHubTab;
@@ -31,12 +29,6 @@ const TABS: {
     description: 'Simulasi omzet, biaya & balik modal',
     icon: CalculatorIcon,
   },
-  {
-    id: 'dokumentasi',
-    label: 'Dokumentasi',
-    description: 'Cara pakai aplikasi & perawatan mesin',
-    icon: BookOpenIcon,
-  },
 ];
 
 const isTab = (value: string | null): value is BusinessHubTab =>
@@ -49,7 +41,7 @@ const TabLoader: React.FC = () => (
   </div>
 );
 
-/** Panduan Bisnis, Kalkulator Bisnis, dan Dokumentasi dalam satu halaman (khusus Admin). */
+/** Panduan Bisnis dan Kalkulator Bisnis dalam satu halaman (khusus Admin). */
 const BusinessHubPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const requested = searchParams.get('tab');
@@ -62,13 +54,13 @@ const BusinessHubPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <p className="text-slate-600 dark:text-slate-400">
-        Panduan, kalkulator, dan dokumentasi untuk mengelola usaha laundry.
+        Panduan dan kalkulator untuk mengelola usaha laundry.
       </p>
 
       <div
         role="tablist"
         aria-label="Bagian Pusat Bisnis"
-        className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+        className="grid grid-cols-1 gap-2 sm:grid-cols-2"
       >
         {TABS.map((tab) => {
           const selected = tab.id === activeTab;
@@ -117,7 +109,6 @@ const BusinessHubPage: React.FC = () => {
         <Suspense fallback={<TabLoader />}>
           {activeTab === 'panduan' && <BusinessGuidePage />}
           {activeTab === 'kalkulator' && <BusinessCalculatorPage />}
-          {activeTab === 'dokumentasi' && <DocumentationPage />}
         </Suspense>
       </div>
     </div>
