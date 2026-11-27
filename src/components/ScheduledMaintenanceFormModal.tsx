@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { convertLocalDateToISOString } from '../utils/formatting';
+import { getLocalDateString } from '../utils/dateHelpers';
 import Modal from './Modal';
 import { ScheduledMaintenance } from '@/types';
 
@@ -27,9 +28,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
         description: schedule.description,
         frequencyValue: schedule.frequencyValue,
         frequencyUnit: schedule.frequencyUnit,
-        nextDueDate: schedule.nextDueDate
-          ? String(schedule.nextDueDate).split('T')[0]
-          : new Date().toISOString().split('T')[0],
+        nextDueDate: getLocalDateString(schedule.nextDueDate),
         estimatedCost: schedule.estimatedCost || 0,
       };
     }
@@ -39,7 +38,7 @@ const ScheduledMaintenanceFormModal: React.FC<ScheduledMaintenanceFormModalProps
       description: '',
       frequencyValue: 1,
       frequencyUnit: 'months',
-      nextDueDate: tomorrow.toISOString().split('T')[0],
+      nextDueDate: getLocalDateString(tomorrow),
       estimatedCost: 0,
     };
   }, [schedule]);

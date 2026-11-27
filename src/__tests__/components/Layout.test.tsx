@@ -17,6 +17,7 @@ vi.mock('@/components/ToastContainer', () => ({ default: () => null }));
 vi.mock('@/components/layout/Header', () => ({ default: () => null }));
 vi.mock('@/components/layout/Sidebar', () => ({ default: () => null }));
 vi.mock('@/components/layout/BottomNavBar', () => ({ default: () => null }));
+vi.mock('@/components/layout/ActivityTracker', () => ({ default: () => null }));
 
 describe('Layout', () => {
   it('provides a skip link to the focusable main content', () => {

@@ -139,8 +139,8 @@ export const BACKUP_TABLES: BackupTableSpec[] = [
     optional: true,
   },
   {
-    name: 'inventory_usage_log',
-    label: 'Log Pemakaian Inventori',
+    name: 'inventory_movements',
+    label: 'Riwayat Mutasi Stok',
     storeColumn: 'store_id',
     restore: 'upsert',
     optional: true,

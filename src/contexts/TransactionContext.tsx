@@ -1,11 +1,72 @@
+import { useContext } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
 import { retrySupabaseOperation, verifyDataSaved } from '../utils/retryUtils';
-import { Transaction } from '@/types';
-import { autoDeductInventory } from './InventoryRecipeContext';
+import { Transaction, UserRole } from '@/types';
+import AppContext from './AppContextContext';
 import { mapDBtoTransaction, RawDBTransaction } from '../utils/mappers';
 import { escapeLikePattern } from '../utils/sanitize';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
+
+/**
+ * Operator tidak punya akses baca ke tabel transactions & customers. Ia membaca
+ * view transactions_operator: tanpa nominal, hanya pesanan aktif + yang Selesai
+ * 7 hari terakhir, dengan kolom tambahan customerName.
+ */
+export const OPERATOR_TRANSACTIONS_VIEW = 'transactions_operator';
+
+export const isOperatorRole = (role: UserRole | string | null | undefined): boolean =>
+  role === UserRole.Operator;
+
+/** Tabel/view tempat peran ini membaca transaksi. */
+export const transactionSource = (role: UserRole | string | null | undefined) =>
+  // Tipe Supabase hasil generate belum mengenal view ini; bentuk kolomnya sama.
+  (isOperatorRole(role) ? OPERATOR_TRANSACTIONS_VIEW : 'transactions') as 'transactions';
+
+/** Peran pengguna aktif tanpa melempar error bila dipakai di luar AppProvider (mis. tes). */
+export const useCurrentRole = (): UserRole | undefined =>
+  useContext(AppContext)?.currentUser?.role as UserRole | undefined;
+
+/** Ambil satu transaksi dari sumber yang sesuai peran. */
+export async function fetchTransactionRow(
+  id: string,
+  role: UserRole | string | null | undefined,
+): Promise<RawDBTransaction | null> {
+  const { data, error } = await supabase
+    .from(transactionSource(role))
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as RawDBTransaction) ?? null;
+}
+
+/** Kolom yang boleh diubah Operator lewat RPC operator_update_transaction. */
+const OPERATOR_EDITABLE_FIELDS = ['orderStatus', 'notes', 'estimatedCompletionDate'] as const;
+
+async function operatorUpdateTransaction(
+  id: string,
+  data: Partial<Transaction>,
+): Promise<RawDBTransaction | null> {
+  const patch: Record<string, unknown> = {};
+  for (const key of Object.keys(data) as (keyof Transaction)[]) {
+    const value = data[key];
+    if (value === undefined) continue;
+    if (!(OPERATOR_EDITABLE_FIELDS as readonly string[]).includes(key)) {
+      throw new Error('Operator hanya dapat mengubah progres, catatan, dan estimasi selesai.');
+    }
+    patch[key] = value instanceof Date ? value.toISOString() : (value ?? null);
+  }
+  if (Object.keys(patch).length === 0) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rows, error } = await (supabase.rpc as any)('operator_update_transaction', {
+    p_transaction_id: id,
+    p_patch: patch,
+  });
+  if (error) throw error;
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return (row as RawDBTransaction) ?? null;
+}
 
 // Pagination-aware fetchTransactions
 
@@ -37,7 +98,9 @@ export type TransactionSortKey =
 
 const fetchTransactions = async (
   filter: TransactionFilter = {},
+  role?: UserRole,
 ): Promise<{ data: Transaction[]; count: number }> => {
+  const isOperator = isOperatorRole(role);
   try {
     const {
       page = 1,
@@ -60,11 +123,12 @@ const fetchTransactions = async (
       throw new Error('Page size must be between 1 and 1000');
     }
 
-    // Urut berdasarkan nama pelanggan butuh relasi customers di-embed.
+    // Urut berdasarkan nama pelanggan butuh relasi customers di-embed
+    // (view Operator sudah punya kolom customerName sendiri).
     const sortByCustomer = sortBy === 'customerName';
     let query = supabase
-      .from('transactions')
-      .select(sortByCustomer ? '*, customers(name)' : '*', { count: 'exact' });
+      .from(transactionSource(role))
+      .select(sortByCustomer && !isOperator ? '*, customers(name)' : '*', { count: 'exact' });
 
     if (dateRange) {
       // Validasi date range
@@ -108,8 +172,15 @@ const fetchTransactions = async (
 
     // Pencarian di server agar mencakup semua halaman, bukan hanya halaman aktif.
     // Karakter , ( ) " dibuang karena memecah sintaks filter or() PostgREST.
-    const term = searchTerm?.trim().replace(/[,()"\\]/g, ' ').trim();
-    if (term) {
+    const term = searchTerm
+      ?.trim()
+      .replace(/[,()"\\]/g, ' ')
+      .trim();
+    if (term && isOperator) {
+      // Operator tidak membaca tabel customers: cari nama langsung di view-nya.
+      const pattern = `%${escapeLikePattern(term)}%`;
+      query = query.or(`invoiceCode.ilike.${pattern},customerName.ilike.${pattern}`);
+    } else if (term) {
       const pattern = `%${escapeLikePattern(term)}%`;
       const { data: matchedCustomers, error: customerError } = await supabase
         .from('customers')
@@ -127,7 +198,9 @@ const fetchTransactions = async (
     const to = from + pageSize - 1;
     // Urutan dikerjakan di server agar berlaku untuk semua halaman, bukan hanya halaman aktif.
     const ascending = sortAscending;
-    if (sortByCustomer) {
+    if (sortByCustomer && isOperator) {
+      query = query.order('customerName' as 'id', { ascending, nullsFirst: false });
+    } else if (sortByCustomer) {
       query = query.order('customers(name)', { ascending, nullsFirst: false });
     } else if (sortBy === 'id') {
       query = query.order('invoiceCode', { ascending, nullsFirst: false });
@@ -155,11 +228,14 @@ const fetchTransactions = async (
 
 export function useTransactions(filter: TransactionFilter = {}) {
   const queryClient = useQueryClient();
+  const role = useCurrentRole();
+  const isOperator = isOperatorRole(role);
   // Ambil enabled dari filter, default true
   const { enabled = true, ...queryFilter } = filter;
   const { data: result, ...query } = useQuery({
-    queryKey: ['transactions', queryFilter],
-    queryFn: () => fetchTransactions(queryFilter),
+    // Peran ikut di kunci cache: Operator membaca sumber yang berbeda (tanpa nominal).
+    queryKey: ['transactions', queryFilter, role ?? null],
+    queryFn: () => fetchTransactions(queryFilter, role),
     placeholderData: keepPreviousData,
     enabled: enabled,
     // Disabled untuk POS: andalkan invalidateQueries setelah mutasi
@@ -220,23 +296,23 @@ export function useTransactions(filter: TransactionFilter = {}) {
         );
       }
     },
-    onSuccess: async (savedTransaction, variables) => {
-      // Auto-deduct 1 sachet sabun liquid dari inventory
-      try {
-        await autoDeductInventory(savedTransaction.id, variables.storeId);
-      } catch (deductError) {
-        console.error('Auto-deduct inventory failed:', deductError);
-        // Don't throw - transaction is already saved
-      }
-      // Invalidate untuk force refresh dari server
+    onSuccess: () => {
+      // Stok bahan sudah dipotong otomatis oleh trigger database saat nota disimpan
+      // (aturan di Inventaris → Potong Otomatis). Cukup segarkan cache.
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory_summary'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory_movements'] });
     },
   });
 
   const updateTransaction = useMutation({
     mutationFn: async (variables: { id: string; data: Partial<Transaction> }) => {
       const { id, data } = variables;
+      if (isOperator) {
+        const row = await operatorUpdateTransaction(id, data);
+        return row ? mapDBtoTransaction(row) : null;
+      }
       // Pisahkan data untuk RPC dan update biasa
       const {
         amountPaid = undefined,
@@ -300,20 +376,13 @@ export function useTransactions(filter: TransactionFilter = {}) {
       if (result) {
         try {
           await verifyDataSaved(
-            async () => {
-              const { data } = await supabase
-                .from('transactions')
-                .select('*')
-                .eq('id', variables.id)
-                .single();
-              return data;
-            },
+            async () => fetchTransactionRow(variables.id, role),
             (data) => {
               if (!data) return false;
               // Verify semua field yang diupdate
               return Object.keys(variables.data).every((key) => {
                 const expectedValue = variables.data[key as keyof typeof variables.data];
-                const actualValue = (data as Record<string, unknown>)[key];
+                const actualValue = (data as unknown as Record<string, unknown>)[key];
                 return expectedValue === undefined || actualValue === expectedValue;
               });
             },

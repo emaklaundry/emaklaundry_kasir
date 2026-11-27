@@ -218,7 +218,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       'Profil: isi nama lengkap, nomor HP, posisi, alamat, dan tanggal mulai bekerja.',
       'Penempatan & status: pilih cabang (Super Admin) dan pastikan Karyawan aktif tercentang.',
       'Jadwal & absensi: atur jam masuk, jam pulang, hari kerja, dan toleransi terlambat.',
-      'Kompensasi: isi gaji pokok per bulan, komisi (%), dan insentif per bulan.',
+      'Kompensasi: isi gaji harian, komisi (%), dan insentif per bulan. Gaji harian otomatis tercatat di Pengeluaran (kategori Gaji) setiap hari karyawan absen masuk.',
       'Akun login: isi PIN 6 angka agar karyawan bisa masuk sebagai Kasir. Untuk lupa PIN, isi PIN baru (reset). Tekan Cabut akses login bila perlu.',
       'Karyawan yang berhenti: tekan Nonaktifkan. Login-nya ditutup, data dan riwayatnya tetap tersimpan.',
       'Gunakan pencarian, filter status (Aktif/Nonaktif/Semua), dan filter cabang untuk menemukan karyawan.',

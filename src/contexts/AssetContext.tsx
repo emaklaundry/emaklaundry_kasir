@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Asset } from '../types';
+import { Asset, MaintenanceLog } from '../types';
 import { supabase } from '../utils/supabaseClient';
 
 const fetchAssets = async (): Promise<Asset[]> => {
@@ -58,6 +58,34 @@ export function useAssets() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] }),
   });
 
+  // Semua perubahan maintenanceHistory dibaca dari data TERBARU di DB lalu ditulis
+  // ulang — bukan dari snapshot di UI — agar perubahan bersamaan tidak saling menimpa.
+  const modifyMaintenanceHistory = useMutation({
+    mutationFn: async (variables: {
+      assetId: string;
+      modify: (history: MaintenanceLog[]) => MaintenanceLog[];
+    }) => {
+      const { assetId, modify } = variables;
+      const { data: current, error: fetchError } = await supabase
+        .from('assets')
+        .select('maintenanceHistory')
+        .eq('id', assetId)
+        .single();
+      if (fetchError) throw fetchError;
+      const history = Array.isArray(current?.maintenanceHistory)
+        ? (current.maintenanceHistory as unknown as MaintenanceLog[])
+        : [];
+      const { error } = await supabase
+        .from('assets')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ maintenanceHistory: modify(history) as any })
+        .eq('id', assetId);
+      if (error) throw error;
+      return null;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] }),
+  });
+
   const deleteAsset = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('assets').delete().eq('id', id);
@@ -71,6 +99,21 @@ export function useAssets() {
     assets,
     addAsset: addAsset.mutateAsync,
     updateAsset: (id: string, data: Partial<Asset>) => updateAsset.mutateAsync({ id, data }),
+    appendMaintenanceLog: (assetId: string, log: Omit<MaintenanceLog, 'id'>) =>
+      modifyMaintenanceHistory.mutateAsync({
+        assetId,
+        modify: (history) => [...history, { ...log, id: crypto.randomUUID() }],
+      }),
+    updateMaintenanceLog: (assetId: string, logId: string, log: Omit<MaintenanceLog, 'id'>) =>
+      modifyMaintenanceHistory.mutateAsync({
+        assetId,
+        modify: (history) => history.map((l) => (l.id === logId ? { ...log, id: logId } : l)),
+      }),
+    deleteMaintenanceLog: (assetId: string, logId: string) =>
+      modifyMaintenanceHistory.mutateAsync({
+        assetId,
+        modify: (history) => history.filter((l) => l.id !== logId),
+      }),
     deleteAsset: deleteAsset.mutateAsync,
     ...query,
   };

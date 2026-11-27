@@ -38,7 +38,7 @@ vi.mock('@tanstack/react-query', async () => {
 
 describe('useAuditLogs', () => {
   beforeEach(() => vi.clearAllMocks());
-  it('returns logs and addAuditLog function', () => {
+  it('returns addAuditLog and logActivity functions', () => {
     const { result } = renderHook(() => useAuditLogs(), {
       wrapper: ({ children }) => (
         <ToastProvider>
@@ -46,7 +46,7 @@ describe('useAuditLogs', () => {
         </ToastProvider>
       ),
     });
-    expect(Array.isArray(result.current.logs)).toBe(true);
+    expect(typeof result.current.logActivity).toBe('function');
     expect(typeof result.current.addAuditLog).toBe('function');
   });
 });

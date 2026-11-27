@@ -3,6 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScheduledMaintenance } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { useAssets } from './AssetContext';
+import { getLocalDateString, parseLocalDate } from '../utils/dateHelpers';
+
+// Kolom DB bertipe DATE. Gunakan komponen tanggal LOKAL (bukan toISOString/UTC)
+// agar tanggal tidak mundur sehari di zona WIB/WITA/WIT.
+const toDbDate = (value: Date | string): string => getLocalDateString(value);
+const fromDbDate = (value: string): Date =>
+  /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseLocalDate(value) : new Date(value);
 
 const fetchScheduledMaintenances = async (): Promise<ScheduledMaintenance[]> => {
   const { data, error } = await supabase.from('scheduled_maintenances').select('*');
@@ -10,8 +17,8 @@ const fetchScheduledMaintenances = async (): Promise<ScheduledMaintenance[]> => 
   return (data || []).map((s) => ({
     ...s,
     assetId: s.assetId ?? undefined,
-    lastCompletedDate: s.lastCompletedDate ? new Date(s.lastCompletedDate) : undefined,
-    nextDueDate: new Date(s.nextDueDate),
+    lastCompletedDate: s.lastCompletedDate ? fromDbDate(s.lastCompletedDate) : null,
+    nextDueDate: fromDbDate(s.nextDueDate),
   })) as ScheduledMaintenance[];
 };
 
@@ -35,14 +42,8 @@ export function useScheduledMaintenances() {
       const dbSM = {
         ...sm,
         assetId: sm.assetId ?? null,
-        nextDueDate:
-          sm.nextDueDate instanceof Date
-            ? sm.nextDueDate.toISOString().split('T')[0]
-            : sm.nextDueDate,
-        lastCompletedDate:
-          sm.lastCompletedDate instanceof Date
-            ? sm.lastCompletedDate.toISOString().split('T')[0]
-            : (sm.lastCompletedDate ?? null),
+        nextDueDate: toDbDate(sm.nextDueDate),
+        lastCompletedDate: sm.lastCompletedDate ? toDbDate(sm.lastCompletedDate) : null,
       };
       const { error } = await supabase.from('scheduled_maintenances').insert([dbSM]);
       if (error) throw error;
@@ -59,7 +60,7 @@ export function useScheduledMaintenances() {
       for (const key in data) {
         const value = (data as Record<string, unknown>)[key];
         if (value instanceof Date) {
-          dbData[key] = value.toISOString().split('T')[0];
+          dbData[key] = toDbDate(value);
         } else {
           dbData[key] = value ?? null;
         }

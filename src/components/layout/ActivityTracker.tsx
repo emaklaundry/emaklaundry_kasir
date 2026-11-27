@@ -46,7 +46,7 @@ function labelOf(el: Element): string {
   }
 
   const title = el.getAttribute('title');
-  const text = el instanceof HTMLElement ? el.innerText : el.textContent;
+  const text = (el instanceof HTMLElement && el.innerText) || el.textContent;
   return clean(text) || clean(title) || clean(el.getAttribute('name')) || clean(el.id) || el.tagName.toLowerCase();
 }
 

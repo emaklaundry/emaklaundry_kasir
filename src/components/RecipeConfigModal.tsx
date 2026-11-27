@@ -1,206 +1,408 @@
-import React, { useState } from 'react';
-import { XIcon, CheckCircleIcon } from './icons';
-import { InventoryItem, InventoryRecipe } from '../types';
-import { useRecipes, useRecipeMutations } from '../contexts/InventoryRecipeContext';
+import React, { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import Modal from './Modal';
+import { EditIcon, Trash2Icon, PlusIcon, BoltIcon } from './icons';
+import { InventoryRecipe, InventoryRecipeBasis } from '../types';
+import { fetchInventory } from '../contexts/InventoryContext';
+import { useRecipes, useRecipeMutations, RecipeInput } from '../contexts/InventoryRecipeContext';
+import { useServices } from '../contexts/ServiceContext';
+import { useAuditLogs } from '../contexts/AuditLogContext';
 import useToasts from '../contexts/useToasts';
+import { formatQty } from '../utils/inventoryFormat';
 
 interface RecipeConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  inventoryItems: InventoryItem[];
   storeId: string;
 }
 
-const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({
-  isOpen,
-  onClose,
-  inventoryItems,
-  storeId,
-}) => {
+type FormState = {
+  id?: string;
+  inventoryItemId: string;
+  serviceId: string; // '' = semua layanan
+  basis: InventoryRecipeBasis;
+  amount: string;
+  isActive: boolean;
+};
+
+const EMPTY_FORM: FormState = {
+  inventoryItemId: '',
+  serviceId: '',
+  basis: 'per_unit',
+  amount: '',
+  isActive: true,
+};
+
+/**
+ * Atur bahan yang dipotong otomatis setiap nota dibuat.
+ * Perhitungan dijalankan oleh database, jadi berlaku untuk semua kasir & perangkat.
+ */
+const RecipeConfigModal: React.FC<RecipeConfigModalProps> = ({ isOpen, onClose, storeId }) => {
   const { data: recipes = [], isLoading: loadingRecipes } = useRecipes(storeId);
-  const { upsertRecipe, isLoading: saving } = useRecipeMutations();
+  const { saveRecipe, deleteRecipe, isLoading: saving } = useRecipeMutations();
+  const { services } = useServices();
+  const { addAuditLog } = useAuditLogs();
   const { addToast } = useToasts();
-  const [prevRecipes, setPrevRecipes] = useState(recipes);
-  const [recipeValues, setRecipeValues] = useState<Record<string, string>>({});
+  // Semua item cabang, bukan hanya halaman tabel yang sedang tampil.
+  const { data: inventoryResult } = useQuery({
+    queryKey: ['inventory', { page: 1, pageSize: 1000, storeId }],
+    queryFn: () => fetchInventory({ page: 1, pageSize: 1000, storeId }),
+    enabled: isOpen,
+  });
+  const inventoryItems = useMemo(() => inventoryResult?.data ?? [], [inventoryResult]);
 
-  // Sync recipe values when recipes data loads
-  if (recipes !== prevRecipes) {
-    setPrevRecipes(recipes);
-    if (recipes.length > 0) {
-      const values: Record<string, string> = {};
-      recipes.forEach((r: InventoryRecipe) => {
-        values[r.inventoryItemId] = r.usagePerKg.toString();
-      });
-      setRecipeValues(values);
-    }
-  }
+  const [form, setForm] = useState<FormState | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  const storeServices = useMemo(
+    () =>
+      services
+        .filter((s) => !s.storeId || s.storeId === storeId)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [services, storeId],
+  );
+  const itemById = useMemo(
+    () => new Map(inventoryItems.map((i) => [i.id, i] as const)),
+    [inventoryItems],
+  );
+  const serviceById = useMemo(
+    () => new Map(storeServices.map((s) => [s.id, s] as const)),
+    [storeServices],
+  );
 
-  const handleValueChange = (itemId: string, value: string) => {
-    setRecipeValues((prev) => ({ ...prev, [itemId]: value }));
+  const describeScope = (serviceId: string | null) =>
+    serviceId ? (serviceById.get(serviceId)?.name ?? 'Layanan terhapus') : 'Semua layanan';
+
+  const describeRule = (
+    r: Pick<InventoryRecipe, 'amount' | 'basis' | 'serviceId' | 'inventoryItemId'>,
+  ) => {
+    const unit = itemById.get(r.inventoryItemId)?.unit;
+    const serviceUnit = r.serviceId ? serviceById.get(r.serviceId)?.unit : undefined;
+    const per = r.basis === 'per_unit' ? `per ${serviceUnit || 'kg/pcs'}` : 'per nota';
+    return `${formatQty(r.amount)} ${unit ?? ''} ${per}`.replace(/\s+/g, ' ');
   };
 
-  /** Mengembalikan `true` bila resep berhasil disimpan. */
-  const handleSave = async (itemId: string): Promise<boolean> => {
-    const usagePerKg = parseFloat(recipeValues[itemId] || '0');
-    const itemName = inventoryItems.find((i) => i.id === itemId)?.name ?? 'item';
-    if (isNaN(usagePerKg) || usagePerKg < 0) {
-      addToast(`Takaran ${itemName} harus berupa angka 0 atau lebih.`, 'error');
-      return false;
-    }
+  const sortedRecipes = useMemo(
+    () =>
+      [...recipes].sort((a, b) =>
+        (itemById.get(a.inventoryItemId)?.name ?? '').localeCompare(
+          itemById.get(b.inventoryItemId)?.name ?? '',
+        ),
+      ),
+    [recipes, itemById],
+  );
 
+  const startEdit = (r: InventoryRecipe) => {
+    setConfirmDeleteId(null);
+    setForm({
+      id: r.id,
+      inventoryItemId: r.inventoryItemId,
+      serviceId: r.serviceId ?? '',
+      basis: r.basis,
+      amount: String(r.amount),
+      isActive: r.isActive,
+    });
+  };
+
+  const amountValue = form ? parseFloat(form.amount.replace(',', '.')) : NaN;
+  const formItem = form ? itemById.get(form.inventoryItemId) : undefined;
+  const formService = form?.serviceId ? serviceById.get(form.serviceId) : undefined;
+  const preview = (() => {
+    if (!form || !formItem || !(amountValue > 0)) return null;
+    if (form.basis === 'per_transaksi') {
+      return `Setiap nota${formService ? ` berisi "${formService.name}"` : ''}, stok ${formItem.name} berkurang ${formatQty(amountValue)} ${formItem.unit}.`;
+    }
+    const exampleQty =
+      formService?.minQuantity && formService.minQuantity > 0 ? formService.minQuantity : 3;
+    const unit = formService?.unit || 'kg';
+    return `Contoh: nota ${formatQty(exampleQty)} ${unit}${formService ? ` "${formService.name}"` : ''} → stok ${formItem.name} berkurang ${formatQty(amountValue * exampleQty)} ${formItem.unit}.`;
+  })();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    if (!form.inventoryItemId) {
+      addToast('Pilih bahan yang akan dipotong.', 'warning');
+      return;
+    }
+    if (!(amountValue > 0)) {
+      addToast('Takaran harus lebih dari 0.', 'warning');
+      return;
+    }
+    const input: RecipeInput = {
+      id: form.id,
+      inventoryItemId: form.inventoryItemId,
+      serviceId: form.serviceId || null,
+      basis: form.basis,
+      amount: Math.round(amountValue * 1000) / 1000,
+      isActive: form.isActive,
+    };
     try {
-      await upsertRecipe({
-        inventoryItemId: itemId,
-        usagePerKg,
+      await saveRecipe(input);
+      addAuditLog(
+        `${form.id ? 'Mengubah' : 'Menambah'} aturan potong stok otomatis: ${formItem?.name} ${describeRule(input)} (${describeScope(input.serviceId)}).`,
         storeId,
-      });
-      return true;
+      );
+      addToast('Aturan potong stok tersimpan.', 'success');
+      setForm(null);
     } catch (error) {
-      console.error('Error saving recipe:', error);
-      addToast(`Gagal menyimpan resep ${itemName}. Coba lagi.`, 'error');
-      return false;
+      addToast(error instanceof Error ? error.message : 'Gagal menyimpan aturan.', 'error');
     }
   };
 
-  const handleSaveAll = async () => {
-    let allSaved = true;
-    for (const item of inventoryItems) {
-      if (recipeValues[item.id]) {
-        allSaved = (await handleSave(item.id)) && allSaved;
-      }
-    }
-    // Modal tetap terbuka bila ada yang gagal, supaya isian bisa diperbaiki.
-    if (allSaved) {
-      addToast('Resep tersimpan.', 'success');
-      onClose();
+  const handleToggle = async (r: InventoryRecipe) => {
+    try {
+      await saveRecipe({ ...r, isActive: !r.isActive });
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Gagal mengubah status.', 'error');
     }
   };
 
-  // Default recommendations
-  const getDefaultValue = (itemName: string): number => {
-    const name = itemName.toLowerCase();
-    if (name.includes('deterjen') || name.includes('detergent')) return 10;
-    if (name.includes('softener') || name.includes('pewangi') || name.includes('pelembut'))
-      return 5;
-    if (name.includes('plastik') || name.includes('kantong')) return 1;
-    return 0;
+  const handleDelete = async (r: InventoryRecipe) => {
+    try {
+      await deleteRecipe(r.id);
+      addAuditLog(
+        `Menghapus aturan potong stok otomatis: ${itemById.get(r.inventoryItemId)?.name ?? 'item'} (${describeScope(r.serviceId)}).`,
+        storeId,
+      );
+      addToast('Aturan dihapus.', 'success');
+    } catch {
+      addToast('Gagal menghapus aturan.', 'error');
+    } finally {
+      setConfirmDeleteId(null);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Konfigurasi Resep Bahan Baku
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Tentukan penggunaan bahan per kg cucian
-            </p>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Potong Stok Otomatis"
+      footer={
+        <button type="button" onClick={onClose} className="btn btn-secondary">
+          Tutup
+        </button>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Setiap nota baru otomatis mengurangi stok bahan sesuai aturan di bawah. Bila item nota
+          diubah atau nota dihapus, stok ikut dikoreksi. Semua potongan tercatat di{' '}
+          <strong>Riwayat</strong> tiap item.
+        </p>
+
+        {form ? (
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3"
+          >
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100">
+              {form.id ? 'Ubah Aturan' : 'Aturan Baru'}
+            </h3>
+            <div>
+              <label htmlFor="recipe-item" className="form-label">
+                Bahan yang dipotong
+              </label>
+              <select
+                id="recipe-item"
+                className="form-input"
+                value={form.inventoryItemId}
+                onChange={(e) => setForm({ ...form, inventoryItemId: e.target.value })}
+                required
+              >
+                <option value="">— Pilih bahan —</option>
+                {inventoryItems.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name} ({i.unit})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="recipe-service" className="form-label">
+                Berlaku untuk layanan
+              </label>
+              <select
+                id="recipe-service"
+                className="form-input"
+                value={form.serviceId}
+                onChange={(e) => setForm({ ...form, serviceId: e.target.value })}
+              >
+                <option value="">Semua layanan</option>
+                {storeServices.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.unit})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <fieldset>
+              <legend className="form-label">Dasar hitung</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ['per_unit', 'Per kg / pcs', 'Dikali jumlah di nota'],
+                    ['per_transaksi', 'Per nota', 'Sekali tiap nota'],
+                  ] as const
+                ).map(([value, label, hint]) => (
+                  <label
+                    key={value}
+                    className={`cursor-pointer rounded-lg border p-2 text-sm ${
+                      form.basis === value
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                        : 'border-slate-200 dark:border-slate-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="recipe-basis"
+                      value={value}
+                      checked={form.basis === value}
+                      onChange={() => setForm({ ...form, basis: value })}
+                      className="sr-only"
+                    />
+                    <span className="block font-medium text-slate-800 dark:text-slate-100">
+                      {label}
+                    </span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">{hint}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <div>
+              <label htmlFor="recipe-amount" className="form-label">
+                Takaran
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="recipe-amount"
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  min="0"
+                  className="form-input"
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  placeholder="mis. 0,5"
+                  required
+                />
+                <span className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  {formItem?.unit ?? 'satuan'}{' '}
+                  {form.basis === 'per_unit' ? `/ ${formService?.unit || 'kg'}` : '/ nota'}
+                </span>
+              </div>
+            </div>
+            {preview && (
+              <p className="text-xs rounded bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-2">
+                {preview}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setForm(null)}
+              >
+                Batal
+              </button>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
+                {saving ? 'Menyimpan…' : 'Simpan Aturan'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm w-full"
+            onClick={() => setForm(EMPTY_FORM)}
+            disabled={inventoryItems.length === 0}
+          >
+            <PlusIcon className="w-4 h-4" /> Tambah Aturan
+          </button>
+        )}
+
+        {loadingRecipes ? (
+          <p className="text-center py-6 text-slate-500">Memuat aturan…</p>
+        ) : sortedRecipes.length === 0 ? (
+          <div className="text-center py-6 text-sm text-slate-500 dark:text-slate-400">
+            <BoltIcon className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+            Belum ada aturan. Contoh: <em>Sabun 1 sachet per 3 kg</em> → takaran 0,333 per kg, atau{' '}
+            <em>Plastik packing 1 lembar per nota</em>.
           </div>
-          <button aria-label="Tutup" onClick={onClose} className="btn btn-ghost btn-icon">
-            <XIcon className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Info box */}
-        <div className="mx-4 mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>Logika:</strong> Setiap transaksi kiloan akan otomatis mengurangi stok virtual
-            berdasarkan resep yang dikonfigurasi di sini.
-          </p>
-          <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-            Contoh: 1 kg cucian = 10 ml deterjen + 5 ml softener + 1 pcs plastik
-          </p>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 overflow-auto max-h-[50vh]">
-          {loadingRecipes ? (
-            <div className="text-center py-8 text-slate-500">Memuat resep...</div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-slate-100 dark:bg-slate-700 sticky top-0">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Nama Bahan</th>
-                  <th className="px-3 py-2 text-center font-semibold">Unit</th>
-                  <th className="px-3 py-2 text-center font-semibold">Penggunaan per Kg</th>
-                  <th className="px-3 py-2 text-center font-semibold">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {inventoryItems.map((item) => {
-                  const defaultVal = getDefaultValue(item.name);
-                  const currentValue = recipeValues[item.id] || '';
-                  const hasRecipe = recipes.some(
-                    (r: InventoryRecipe) => r.inventoryItemId === item.id,
-                  );
-
-                  return (
-                    <tr key={item.id}>
-                      <td className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
-                        {item.name}
-                        {hasRecipe && (
-                          <span className="ml-2 text-xs text-green-600 dark:text-green-400">
-                            Dikonfigurasi
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-center text-slate-500">{item.unit}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center justify-center gap-2">
-                          <input
-                            aria-label={`Takaran per kg ${item.name}`}
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            value={currentValue}
-                            onChange={(e) => handleValueChange(item.id, e.target.value)}
-                            placeholder={defaultVal > 0 ? `Saran: ${defaultVal}` : '0'}
-                            className="w-28 px-2 py-1 text-center border rounded dark:bg-slate-700 dark:border-slate-600"
-                          />
-                          <span className="text-slate-500 text-xs">{item.unit}/kg</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <button
-                          onClick={() => handleSave(item.id)}
-                          disabled={!currentValue || saving}
-                          className="btn btn-primary btn-sm"
-                        >
-                          Simpan
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-700">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
-          >
-            Tutup
-          </button>
-          <button
-            onClick={handleSaveAll}
-            disabled={saving || Object.keys(recipeValues).length === 0}
-            className="btn btn-success btn-sm"
-          >
-            <CheckCircleIcon className="w-4 h-4" />
-            {saving ? 'Menyimpan...' : 'Simpan Semua'}
-          </button>
-        </div>
+        ) : (
+          <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+            {sortedRecipes.map((r) => {
+              const item = itemById.get(r.inventoryItemId);
+              return (
+                <li key={r.id} className={`py-3 ${r.isActive ? '' : 'opacity-60'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-800 dark:text-slate-100 truncate">
+                        {item?.name ?? 'Item terhapus'}
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                        {describeRule(r)}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {describeScope(r.serviceId)}
+                        {!r.isActive && ' · nonaktif'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <label className="flex items-center gap-1 text-xs text-slate-500 mr-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={r.isActive}
+                          onChange={() => handleToggle(r)}
+                          disabled={saving}
+                          aria-label={`Aktifkan aturan ${item?.name ?? ''}`}
+                        />
+                        Aktif
+                      </label>
+                      <button
+                        type="button"
+                        aria-label={`Ubah aturan ${item?.name ?? ''}`}
+                        className="btn btn-ghost btn-icon"
+                        onClick={() => startEdit(r)}
+                      >
+                        <EditIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Hapus aturan ${item?.name ?? ''}`}
+                        className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
+                        onClick={() => setConfirmDeleteId(r.id)}
+                      >
+                        <Trash2Icon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {confirmDeleteId === r.id && (
+                    <div className="mt-2 flex items-center justify-end gap-2 text-sm">
+                      <span className="text-slate-600 dark:text-slate-300">Hapus aturan ini?</span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setConfirmDeleteId(null)}
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(r)}
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 };
 

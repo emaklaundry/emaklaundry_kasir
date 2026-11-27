@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Expense } from '../types';
 import { supabase } from '../utils/supabaseClient';
+import { can } from '../config/permissions';
+import { useCurrentRole } from './TransactionContext';
 
 const fetchExpenses = async (): Promise<Expense[]> => {
   const { data, error } = await supabase.from('expenses').select('*');
@@ -11,14 +13,19 @@ const fetchExpenses = async (): Promise<Expense[]> => {
     storeId: e.storeId ?? undefined,
     recurringTemplateId: e.recurringTemplateId ?? undefined,
     recurringPeriod: e.recurringPeriod ?? undefined,
+    attendanceId: e.attendanceId ?? undefined,
   })) as Expense[];
 };
 
 export function useExpenses() {
   const queryClient = useQueryClient();
+  // Daftar pengeluaran hanya bisa dibaca Admin & Super Admin (RLS). Kasir tetap
+  // bisa mencatat pengeluaran (insert tanpa membaca balik).
+  const canReadExpenses = can(useCurrentRole(), 'finance.view');
   const { data: expenses = [], ...query } = useQuery({
     queryKey: ['expenses'],
     queryFn: fetchExpenses,
+    enabled: canReadExpenses,
   });
 
   const addExpense = useMutation({

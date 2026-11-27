@@ -314,6 +314,8 @@ const BackupRestorePage: React.FC = () => {
           price: s.price,
           unit: s.unit,
           durationDays: s.durationDays,
+          // Backup lama belum punya kolom ini: biarkan default database.
+          ...(typeof s.minQuantity === 'number' ? { minQuantity: s.minQuantity } : {}),
           storeId: resolveStoreId(s.storeId),
         })),
       );
@@ -725,7 +727,7 @@ const BackupRestorePage: React.FC = () => {
       {/* Main Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Export Full Backup */}
-        <div className="card p-6">
+        <div className="card p-4">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
               <DownloadIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -774,7 +776,7 @@ const BackupRestorePage: React.FC = () => {
         </div>
 
         {/* Import Full Backup */}
-        <div className="card p-6">
+        <div className="card p-4">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg flex-shrink-0">
               <UploadIcon className="w-6 h-6 text-green-600 dark:text-green-400" />

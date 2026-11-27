@@ -48,6 +48,9 @@ const CustomersPage: React.FC = () => {
   // Kasir boleh membuka halaman ini untuk tambah & ubah pelanggan;
   // hapus, import, export, dan sinkron Google tetap khusus Admin.
   const canManageCustomers = can(currentUser?.role, 'branch.manage');
+  // Total Belanja pelanggan rahasia: hanya Admin & Super Admin. Database juga
+  // mengosongkan kolom ini untuk peran lain (view customers_with_stats).
+  const canViewTotalSpent = can(currentUser?.role, 'finance.view');
   const {
     createContact,
     signIn,
@@ -695,8 +698,8 @@ const CustomersPage: React.FC = () => {
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-6 py-3">No</th>
-              <th className="px-6 py-3">
+              <th className="px-4 py-2.5">No</th>
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -704,9 +707,9 @@ const CustomersPage: React.FC = () => {
                   Nama {getSortIcon('name')}
                 </button>
               </th>
-              <th className="px-6 py-3">No. Telepon</th>
+              <th className="px-4 py-2.5">No. Telepon</th>
               {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('storeName')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -715,7 +718,7 @@ const CustomersPage: React.FC = () => {
                   </button>
                 </th>
               )}
-              <th className="px-6 py-3 text-center">
+              <th className="px-4 py-2.5 text-center">
                 <button
                   onClick={() => requestSort('transactionCount')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 mx-auto"
@@ -723,15 +726,17 @@ const CustomersPage: React.FC = () => {
                   Total Transaksi {getSortIcon('transactionCount')}
                 </button>
               </th>
-              <th className="px-6 py-3 text-right">
-                <button
-                  onClick={() => requestSort('totalSpent')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
-                >
-                  Total Belanja {getSortIcon('totalSpent')}
-                </button>
-              </th>
-              <th className="px-6 py-3">Aksi</th>
+              {canViewTotalSpent && (
+                <th className="px-4 py-2.5 text-right">
+                  <button
+                    onClick={() => requestSort('totalSpent')}
+                    className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
+                  >
+                    Total Belanja {getSortIcon('totalSpent')}
+                  </button>
+                </th>
+              )}
+              <th className="px-4 py-2.5">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -741,10 +746,10 @@ const CustomersPage: React.FC = () => {
                   key={customer.id}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                  <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">
                     {(page - 1) * pageSize + index + 1}
                   </td>
-                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                  <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                     <Link
                       to={`/management/customers/${customer.id}`}
                       className="hover:underline text-blue-600 dark:text-blue-400"
@@ -752,15 +757,17 @@ const CustomersPage: React.FC = () => {
                       {customer.name}
                     </Link>
                   </td>
-                  <td className="px-6 py-4">{customer.phone}</td>
+                  <td className="px-4 py-2.5">{customer.phone}</td>
                   {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                    <td className="px-6 py-4">{customer.storeName}</td>
+                    <td className="px-4 py-2.5">{customer.storeName}</td>
                   )}
-                  <td className="px-6 py-4 text-center">{customer.transactionCount}</td>
-                  <td className="px-6 py-4 text-right">
-                    Rp {customer.totalSpent.toLocaleString('id-ID')}
-                  </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-2.5 text-center">{customer.transactionCount}</td>
+                  {canViewTotalSpent && (
+                    <td className="px-4 py-2.5 text-right">
+                      Rp {customer.totalSpent.toLocaleString('id-ID')}
+                    </td>
+                  )}
+                  <td className="px-4 py-2.5">
                     <div className="flex items-center space-x-2">
                       <button
                         aria-label={`Edit ${customer.name}`}
@@ -786,7 +793,11 @@ const CustomersPage: React.FC = () => {
               <tr>
                 <td
                   colSpan={
-                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6
+                    5 +
+                    (currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all'
+                      ? 1
+                      : 0) +
+                    (canViewTotalSpent ? 1 : 0)
                   }
                 >
                   <NoCustomersFound />
@@ -838,19 +849,25 @@ const CustomersPage: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3">
+              <div
+                className={`mt-4 grid grid-cols-1 ${
+                  canViewTotalSpent ? 'min-[360px]:grid-cols-2' : ''
+                } gap-3 text-center border-t border-slate-200 dark:border-slate-600 pt-3`}
+              >
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Transaksi</p>
                   <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
                     {customer.transactionCount}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Total Belanja</p>
-                  <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
-                    Rp {customer.totalSpent.toLocaleString('id-ID')}
-                  </p>
-                </div>
+                {canViewTotalSpent && (
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Total Belanja</p>
+                    <p className="font-semibold text-base text-slate-800 dark:text-slate-200">
+                      Rp {customer.totalSpent.toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ))

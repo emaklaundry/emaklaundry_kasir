@@ -18,6 +18,7 @@ import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import useAppContext from '../../contexts/useAppContext';
 import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { resolveMinQuantity, formatMinQuantity } from '../../utils/serviceMinimum';
 import CustomerSelector from '../../components/features/CustomerSelector';
 import ServiceSelector from '../../components/features/ServiceSelector';
 import TransactionItemsTable from '../../components/features/TransactionItemsTable';
@@ -113,17 +114,21 @@ const NewTransactionPage: React.FC = () => {
         }
         return updatedItems;
       } else {
+        // Layanan dengan minimum (mis. "min. 3 kg") langsung diisi sebesar minimumnya.
+        const startQuantity = isMeter ? 1 : Math.max(1, resolveMinQuantity(service));
         const newItem: ExtendedTransactionItem = {
           serviceId: service.id,
           serviceName: service.name,
           price: service.price,
           unit: service.unit,
-          quantity: 1,
-          subtotal: service.price * 1,
+          quantity: startQuantity,
+          subtotal: service.price * startQuantity,
           length: isMeter ? 1 : undefined,
           width: isMeter ? 1 : undefined,
           // Tambahkan itemDetails kosong jika Satuan
-          ...(!isKiloan && !isMeter ? { itemDetails: [{ note: '' }] } : {}),
+          ...(!isKiloan && !isMeter
+            ? { itemDetails: Array.from({ length: startQuantity }, () => ({ note: '' })) }
+            : {}),
         };
         return [...currentItems, newItem];
       }
@@ -383,6 +388,21 @@ const NewTransactionPage: React.FC = () => {
       addToast('Minimal satu layanan harus ditambahkan.', 'warning');
       return;
     }
+    const minimumOf = (item: ExtendedTransactionItem) =>
+      resolveMinQuantity(
+        services.find((s) => s.id === item.serviceId),
+        item.serviceName,
+      );
+    const belowMinimum = items.find((item) => item.quantity < minimumOf(item));
+    if (belowMinimum) {
+      addToast(
+        `"${belowMinimum.serviceName}" minimal ${formatMinQuantity(minimumOf(belowMinimum))} ${
+          belowMinimum.unit
+        }. Ubah jumlahnya dulu.`,
+        'warning',
+      );
+      return;
+    }
 
     // Prevent double submission
     setIsSaving(true);
@@ -601,8 +621,8 @@ const NewTransactionPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <div className="card p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
+            <div className="card p-4 sm:p-4">
+              <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 Pilih Layanan
               </h2>
               <ServiceSelector
@@ -612,8 +632,8 @@ const NewTransactionPage: React.FC = () => {
               />
             </div>
 
-            <div className="card p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-slate-900 dark:text-white">
+            <div className="card p-4 sm:p-4">
+              <h2 className="text-lg sm:text-lg font-semibold mb-4 text-slate-900 dark:text-white">
                 Item Transaksi
               </h2>
               <TransactionItemsTable
@@ -633,7 +653,7 @@ const NewTransactionPage: React.FC = () => {
               id="payment-section"
               className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md sticky top-24 overflow-visible"
             >
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-slate-900 dark:text-white">
+              <h2 className="text-lg sm:text-lg font-semibold mb-4 text-slate-900 dark:text-white">
                 Detail & Total
               </h2>
               <div className="space-y-4">

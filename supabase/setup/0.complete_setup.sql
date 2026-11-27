@@ -23,6 +23,11 @@
 -- 11. PIN SUPERVISOR (otorisasi Kasir oleh Admin)
 -- 12. KARYAWAN: PROFIL, JADWAL & KOMPENSASI
 -- 13. QRIS STATIS TOKO
+-- 14. PERAN OPERATOR & HAK AKSES PER PERAN
+-- 15. ABSENSI OTOMATIS DARI LOGIN
+-- 16. LOGIN EMAIL KHUSUS SUPER ADMIN
+-- 17. LOG AUDIT LENGKAP (trigger perubahan data, append-only)
+-- 20. GAJI HARIAN OTOMATIS KE PENGELUARAN
 --
 -- File ini adalah sumber utama skema database. Setiap perubahan skema baru
 -- ditulis di sini, lalu dijalankan ke database live sebagai SQL terpisah.
@@ -61,6 +66,8 @@ CREATE TABLE public.stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   address text,
+  -- Nomor HP/WhatsApp cabang, dicetak di header struk.
+  phone text CONSTRAINT stores_phone_length CHECK (phone IS NULL OR char_length(phone) <= 30),
   "isActive" boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT NOW()
 );
@@ -162,6 +169,7 @@ CREATE TABLE public.services (
   price integer NOT NULL,
   unit text NOT NULL,
   "durationDays" integer NOT NULL,
+  "minQuantity" numeric(10,2) NOT NULL DEFAULT 0 CONSTRAINT services_min_quantity_nonnegative CHECK ("minQuantity" >= 0),
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
@@ -570,6 +578,15 @@ BEGIN
     IF NEW.total IS DISTINCT FROM OLD.total THEN
       RAISE EXCEPTION 'You are not allowed to change total';
     END IF;
+    IF NEW.subtotal IS DISTINCT FROM OLD.subtotal THEN
+      RAISE EXCEPTION 'You are not allowed to change subtotal';
+    END IF;
+    IF NEW.discount IS DISTINCT FROM OLD.discount THEN
+      RAISE EXCEPTION 'You are not allowed to change discount';
+    END IF;
+    IF NEW.tax IS DISTINCT FROM OLD.tax THEN
+      RAISE EXCEPTION 'You are not allowed to change tax';
+    END IF;
     IF NEW.items IS DISTINCT FROM OLD.items THEN
       RAISE EXCEPTION 'You are not allowed to change items';
     END IF;
@@ -592,13 +609,25 @@ CREATE TRIGGER prevent_immutable_transaction_update
   BEFORE UPDATE ON public.transactions
   FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_transaction_update();
 
+-- Operator ikut boleh UPDATE (mis. menandai struk WA terkirim); kolom yang boleh
+-- diubah tiap peran dijaga trigger (prevent_immutable_transaction_update,
+-- guard_operator_transactions, enforce_supervisor_approval).
 DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
-CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
+DROP POLICY IF EXISTS "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions;
+DROP POLICY IF EXISTS "Allow UPDATE for store staff" ON public.transactions;
+CREATE POLICY "Allow UPDATE for store staff" ON public.transactions
   FOR UPDATE
   USING (
     public.get_my_role() = 'Super Admin'
     OR (
-      public.get_my_role() IN ('Admin','Kasir')
+      public.get_my_role() IN ('Admin','Kasir','Operator')
+      AND "storeId" = public.get_my_store_id()
+    )
+  )
+  WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin','Kasir','Operator')
       AND "storeId" = public.get_my_store_id()
     )
   );
@@ -615,16 +644,14 @@ CREATE POLICY "Allow INSERT for all logged-in users" ON public.audit_logs
     WITH CHECK (auth.uid() IS NOT NULL);
 
 -- --- Tabel: settings ---
+-- Satu baris pengaturan berlaku untuk semua cabang: semua pengguna login boleh membaca.
 DROP POLICY IF EXISTS "Allow read for store users" ON public.settings;
-CREATE POLICY "Allow read access for own store" ON public.settings
-  FOR SELECT USING (
-    "storeId" = public.get_my_store_id()
-    OR public.get_my_role() = 'Super Admin'
-    -- Tambahkan OR true jika halaman tracking publik perlu akses ini tanpa login
-  );
+CREATE POLICY "Allow read for signed-in users" ON public.settings
+  FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Allow ALL for Admins" ON public.settings
-  FOR ALL USING (public.get_my_role() IN ('Super Admin', 'Admin'))
-  WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
+  FOR ALL TO authenticated
+  USING ((SELECT public.get_my_role()) IN ('Super Admin', 'Admin'))
+  WITH CHECK ((SELECT public.get_my_role()) IN ('Super Admin', 'Admin'));
 
 
 -- ============================================
@@ -1027,51 +1054,12 @@ ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Policy untuk transactions (sudah ada, tapi dipastikan)
+-- Policy transactions cukup yang di SECTION 2. Policy lama di bawah dihapus karena
+-- mengizinkan semua peran di cabang (termasuk Operator) membuat & mengubah nota;
+-- policy permissive digabung OR sehingga policy ketat Admin/Kasir tidak berlaku.
 DROP POLICY IF EXISTS "Users can view their store transactions" ON public.transactions;
-CREATE POLICY "Users can view their store transactions"
-  ON public.transactions FOR SELECT
-  USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles 
-      WHERE role = 'Super Admin'
-    )
-    OR
-    "storeId" = (
-      SELECT store_id FROM public.profiles 
-      WHERE id = auth.uid()
-    )
-  );
-
 DROP POLICY IF EXISTS "Users can insert their store transactions" ON public.transactions;
-CREATE POLICY "Users can insert their store transactions"
-  ON public.transactions FOR INSERT
-  WITH CHECK (
-    "storeId" = (
-      SELECT store_id FROM public.profiles 
-      WHERE id = auth.uid()
-    )
-    OR
-    auth.uid() IN (
-      SELECT id FROM public.profiles 
-      WHERE role = 'Super Admin'
-    )
-  );
-
 DROP POLICY IF EXISTS "Users can update their store transactions" ON public.transactions;
-CREATE POLICY "Users can update their store transactions"
-  ON public.transactions FOR UPDATE
-  USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles 
-      WHERE role = 'Super Admin'
-    )
-    OR
-    "storeId" = (
-      SELECT store_id FROM public.profiles 
-      WHERE id = auth.uid()
-    )
-  );
 
 -- 4. FUNCTION UNTUK CLEANUP OLD DATA
 -- Function untuk archive/delete data lama (jalankan periodic via cron)
@@ -1189,6 +1177,17 @@ ALTER TABLE public.settings
 
 COMMENT ON COLUMN public.settings."whatsappFooter" IS 
   'Footer custom untuk pesan WhatsApp (tracking link & feedback form). Jika kosong, akan menggunakan default.';
+
+-- Struk WhatsApp (sumber: migrations/20261128000000_whatsapp_receipt.sql)
+-- * transactions."whatsappSentAt": kapan struk/notifikasi terakhir dikirim via WhatsApp.
+-- * settings."businessName" / "trackingUrl": nama usaha & link cek status di pesan WhatsApp.
+-- Semua kolom nullable tanpa default: data lama tidak berubah, aplikasi memakai nilai bawaan.
+ALTER TABLE public.transactions
+  ADD COLUMN IF NOT EXISTS "whatsappSentAt" timestamptz;
+
+ALTER TABLE public.settings
+  ADD COLUMN IF NOT EXISTS "businessName" text,
+  ADD COLUMN IF NOT EXISTS "trackingUrl" text;
 
 
 -- ---------------------------------------------
@@ -1518,41 +1517,7 @@ CREATE INDEX IF NOT EXISTS idx_payroll_employee_id ON payroll(employee_id);
 -- SECTION 7: INVENTORY RECIPES, STOCK OPNAME, & SOP (Added Jan 2026)
 -- ============================================
 
--- 1. Inventory Recipes
-CREATE TABLE IF NOT EXISTS public.inventory_recipes (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE CASCADE,
-    usage_per_kg NUMERIC NOT NULL DEFAULT 0,
-    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(inventory_item_id, store_id)
-);
-
--- 2. Stock Opname
-CREATE TABLE IF NOT EXISTS public.stock_opname (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE SET NULL,
-    virtual_stock NUMERIC NOT NULL,
-    physical_stock NUMERIC NOT NULL,
-    discrepancy NUMERIC, -- Will be calculated in application or trigger
-    notes TEXT,
-    recorded_by TEXT,
-    recorded_at TIMESTAMPTZ DEFAULT NOW(),
-    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE
-);
-
--- 3. Inventory Usage Log
-CREATE TABLE IF NOT EXISTS public.inventory_usage_log (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE SET NULL,
-    transaction_id UUID REFERENCES public.transactions(id) ON DELETE SET NULL,
-    quantity_used NUMERIC NOT NULL,
-    total_kg NUMERIC DEFAULT 0,
-    usage_per_kg NUMERIC DEFAULT 0,
-    store_id UUID REFERENCES public.stores(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Aturan potong stok, stock opname & riwayat stok: lihat SECTION 21.
 
 -- 4. Standard Operating Procedures (SOP)
 CREATE TABLE IF NOT EXISTS public.standard_operating_procedures (
@@ -1566,26 +1531,11 @@ CREATE TABLE IF NOT EXISTS public.standard_operating_procedures (
 );
 
 -- Enable RLS
-ALTER TABLE public.inventory_recipes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.stock_opname ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.inventory_usage_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.standard_operating_procedures ENABLE ROW LEVEL SECURITY;
 
 -- Policies
 DO $$ 
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'inventory_recipes' AND policyname = 'Enable all for authenticated users') THEN
-        CREATE POLICY "Enable all for authenticated users" ON public.inventory_recipes FOR ALL USING (auth.role() = 'authenticated');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'stock_opname' AND policyname = 'Enable all for authenticated users') THEN
-        CREATE POLICY "Enable all for authenticated users" ON public.stock_opname FOR ALL USING (auth.role() = 'authenticated');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'inventory_usage_log' AND policyname = 'Enable all for authenticated users') THEN
-        CREATE POLICY "Enable all for authenticated users" ON public.inventory_usage_log FOR ALL USING (auth.role() = 'authenticated');
-    END IF;
-
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'standard_operating_procedures' AND policyname = 'Enable all for authenticated users') THEN
         CREATE POLICY "Enable all for authenticated users" ON public.standard_operating_procedures FOR ALL USING (auth.role() = 'authenticated');
     END IF;
@@ -2023,6 +1973,9 @@ BEGIN
       AND p.proname IN (
         'cleanup_old_audit_logs', 'backfill_invoice_codes', 'generate_invoice_code',
         'bulk_update_order_status', 'complete_scheduled_maintenance',
+        -- Tidak dipakai aplikasi; parameter "caller" bisa diisi bebas sehingga
+        -- cek cabang bisa dilewati.
+        'update_transaction_status_safe',
         'handle_new_user', 'handle_new_user_trigger',
         'prevent_immutable_transaction_update', 'set_invoice_code',
         'update_updated_at_column'
@@ -2037,7 +1990,7 @@ BEGIN
     SELECT p.oid::regprocedure AS sig
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname IN ('update_transaction_progress', 'update_transaction_status_safe')
+      AND p.proname IN ('update_transaction_progress')
   LOOP
     EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon', r.sig);
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', r.sig);
@@ -2464,7 +2417,9 @@ CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
     AND role IN ('Admin', 'Kasir', 'Operator')
   );
 
--- 2. Operator: tidak boleh membuat nota dan tidak boleh menyentuh data pembayaran.
+-- 2. Operator: tidak boleh membuat nota, tidak boleh menyentuh data pembayaran,
+--    hanya boleh mengubah kolom progres, dan tidak boleh menandai Selesai
+--    (serah terima ke pelanggan dilakukan Kasir).
 --    Berlaku juga untuk RPC SECURITY DEFINER (update_transaction_progress,
 --    bulk_update_order_status) karena dicek di trigger, bukan di RLS.
 CREATE OR REPLACE FUNCTION public.guard_operator_transactions()
@@ -2473,6 +2428,13 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+DECLARE
+  -- Kolom yang boleh diubah Operator. supervisorApprovalId diatur ulang oleh
+  -- enforce_supervisor_approval, updatedAt oleh trigger updated_at.
+  v_allowed text[] := ARRAY[
+    'orderStatus', 'notes', 'estimatedCompletionDate', 'whatsappSentAt',
+    'updatedAt', 'updatedByUserId', 'supervisorApprovalId'
+  ];
 BEGIN
   IF public.get_my_role() IS DISTINCT FROM 'Operator' THEN
     RETURN NEW;
@@ -2494,6 +2456,16 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  IF (to_jsonb(NEW) - v_allowed) IS DISTINCT FROM (to_jsonb(OLD) - v_allowed) THEN
+    RAISE EXCEPTION 'Operator hanya dapat mengubah progres pesanan'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW."orderStatus" = 'Selesai' AND OLD."orderStatus" IS DISTINCT FROM 'Selesai' THEN
+    RAISE EXCEPTION 'Operator tidak dapat menyelesaikan pesanan. Serah terima dilakukan Kasir.'
+      USING ERRCODE = '42501';
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -2505,6 +2477,39 @@ DROP TRIGGER IF EXISTS guard_operator_transactions ON public.transactions;
 CREATE TRIGGER guard_operator_transactions
   BEFORE INSERT OR UPDATE ON public.transactions
   FOR EACH ROW EXECUTE FUNCTION public.guard_operator_transactions();
+
+-- 3. Selesai harus Lunas, untuk semua jalur (UPDATE langsung, RPC, peran apa pun).
+--    Sebelumnya hanya dicek di RPC update_transaction_progress & tombol aplikasi.
+CREATE OR REPLACE FUNCTION public.enforce_order_payment_consistency()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF NEW."orderStatus" = 'Selesai' AND NEW."paymentStatus" IS DISTINCT FROM 'Lunas' THEN
+    RAISE EXCEPTION 'Pesanan tidak boleh berstatus Selesai jika pembayaran belum Lunas.'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF TG_OP = 'UPDATE'
+     AND OLD."orderStatus" = 'Selesai'
+     AND NEW."paymentStatus" IS DISTINCT FROM 'Lunas' THEN
+    RAISE EXCEPTION 'Status pembayaran tidak boleh diubah menjadi belum lunas jika pesanan sudah selesai.'
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.enforce_order_payment_consistency()
+  FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS enforce_order_payment_consistency ON public.transactions;
+CREATE TRIGGER enforce_order_payment_consistency
+  BEFORE INSERT OR UPDATE OF "orderStatus", "paymentStatus" ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_order_payment_consistency();
 
 COMMENT ON COLUMN public.profiles.role IS
   'Peran akun: Operator, Kasir, Admin, atau Super Admin. Lihat src/config/permissions.ts.';
@@ -2617,6 +2622,1612 @@ AS $$
   WHERE id = auth.uid()
     AND (role = 'Super Admin' OR employee_id IS NOT NULL)
 $$;
+
+-- ============================================
+-- SECTION 17: LOG AUDIT LENGKAP (Added Nov 2026)
+-- ============================================
+-- Setiap INSERT/UPDATE/DELETE di semua tabel bisnis dicatat otomatis oleh trigger
+-- (kategori 'data', beserta kolom yang berubah dan nilai sebelum/sesudah), apa pun
+-- asalnya: halaman aplikasi, RPC, maupun edge function. Aplikasi menambah log
+-- interaksi (navigasi, klik, isian form tanpa nilai teks, sesi, error) ke tabel
+-- yang sama. Nama pengguna diisi server dari auth.uid() agar tidak bisa dipalsukan,
+-- dan audit_logs dijadikan append-only (tidak bisa diubah/dihapus dari aplikasi).
+-- Kolom rahasia (pin_hash, password, token, secret) disamarkan; perubahan yang
+-- hanya menyentuh updatedAt/updated_at/last_seen_at tidak dicatat.
+-- Migrasi live: supabase/migrations/20261129000000_audit_log_lengkap.sql
+
+alter table public.audit_logs
+  add column if not exists actor_id uuid default auth.uid(),
+  add column if not exists category text not null default 'aktivitas',
+  add column if not exists table_name text,
+  add column if not exists record_id text,
+  add column if not exists operation text,
+  add column if not exists changed_fields text[],
+  add column if not exists old_data jsonb,
+  add column if not exists new_data jsonb,
+  add column if not exists page text,
+  add column if not exists metadata jsonb;
+
+comment on column public.audit_logs.category is
+  'data = perubahan data (trigger), aktivitas = aksi bisnis dari aplikasi, navigasi = buka halaman, klik = tombol/tautan, sesi = login/logout/online/offline';
+
+create index if not exists audit_logs_category_timestamp_idx on public.audit_logs (category, "timestamp" desc);
+create index if not exists audit_logs_record_idx on public.audit_logs (table_name, record_id);
+
+-- 2. Nama pengguna & actor diisi server untuk insert dari aplikasi ------------
+create or replace function public.audit_logs_stamp_actor()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_name text;
+begin
+  if v_uid is not null then
+    new.actor_id := v_uid;
+    select p.name into v_name from public.profiles p where p.id = v_uid;
+    if v_name is not null then
+      new."user" := v_name;
+    end if;
+  end if;
+  new."timestamp" := coalesce(new."timestamp", now());
+  if new."timestamp" > now() + interval '5 minutes' then
+    new."timestamp" := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists audit_logs_stamp_actor on public.audit_logs;
+create trigger audit_logs_stamp_actor
+  before insert on public.audit_logs
+  for each row execute function public.audit_logs_stamp_actor();
+
+-- 3. Trigger perubahan data generik ------------------------------------------
+create or replace function public.audit_row_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_user text;
+  v_new jsonb;
+  v_old jsonb;
+  v_row jsonb;
+  v_changed text[];
+  v_old_diff jsonb;
+  v_new_diff jsonb;
+  v_store uuid;
+  v_label text;
+  v_entity text;
+  v_verb text;
+  v_record_id text;
+  -- kolom yang berubah otomatis/terus-menerus dan tidak perlu dicatat sendiri
+  v_ignored constant text[] := array['updatedAt', 'updated_at', 'last_seen_at'];
+  -- kolom rahasia: nilainya tidak pernah disimpan di log
+  v_secret constant text[] := array['pin_hash', 'password', 'password_hash', 'token', 'secret'];
+  k text;
+begin
+  if tg_op in ('INSERT', 'UPDATE') then v_new := to_jsonb(new); end if;
+  if tg_op in ('UPDATE', 'DELETE') then v_old := to_jsonb(old); end if;
+  v_row := coalesce(v_new, v_old);
+
+  -- sembunyikan kolom rahasia
+  foreach k in array v_secret loop
+    if v_new ? k then v_new := jsonb_set(v_new, array[k], '"[disembunyikan]"'); end if;
+    if v_old ? k then v_old := jsonb_set(v_old, array[k], '"[disembunyikan]"'); end if;
+  end loop;
+
+  if tg_op = 'UPDATE' then
+    select array_agg(n.key order by n.key),
+           jsonb_object_agg(n.key, v_old -> n.key),
+           jsonb_object_agg(n.key, n.value)
+      into v_changed, v_old_diff, v_new_diff
+      from jsonb_each(v_new) n
+     where (v_old -> n.key) is distinct from n.value
+       and not (n.key = any (v_ignored));
+    if v_changed is null then
+      return null; -- tidak ada perubahan berarti (mis. hanya heartbeat last_seen_at)
+    end if;
+    v_old := v_old_diff;
+    v_new := v_new_diff;
+  end if;
+
+  -- cabang terkait
+  begin
+    v_store := coalesce(
+      nullif(v_row ->> 'storeId', '')::uuid,
+      nullif(v_row ->> 'store_id', '')::uuid,
+      case when tg_table_name = 'stores' then (v_row ->> 'id')::uuid end
+    );
+  exception when others then v_store := null;
+  end;
+  if v_store is null and v_row ? 'employee_id' then
+    select e.store_id into v_store from public.employees e where e.id = (v_row ->> 'employee_id')::uuid;
+  end if;
+  if v_store is null and v_row ? 'user_id' then
+    select p.store_id into v_store from public.profiles p where p.id = (v_row ->> 'user_id')::uuid;
+  end if;
+  if v_store is null and v_row ? 'assetId' then
+    select a."storeId" into v_store from public.assets a where a.id = (v_row ->> 'assetId')::uuid;
+  end if;
+
+  v_record_id := coalesce(v_row ->> 'id', v_row ->> 'employee_id', v_row ->> 'user_id');
+  v_label := coalesce(
+    v_row ->> 'invoiceCode', v_row ->> 'name', v_row ->> 'description',
+    v_row ->> 'login_email', v_row ->> 'action', v_row ->> 'date', v_record_id
+  );
+
+  v_entity := case tg_table_name
+    when 'transactions' then 'transaksi'
+    when 'customers' then 'pelanggan'
+    when 'services' then 'layanan'
+    when 'inventory_items' then 'item inventaris'
+    when 'assets' then 'aset'
+    when 'scheduled_maintenances' then 'jadwal perawatan'
+    when 'expenses' then 'pengeluaran'
+    when 'monthly_expense_templates' then 'template pengeluaran bulanan'
+    when 'settings' then 'pengaturan'
+    when 'stores' then 'cabang'
+    when 'profiles' then 'profil pengguna'
+    when 'employees' then 'karyawan'
+    when 'employee_auth_accounts' then 'akun login karyawan'
+    when 'employee_login_attempts' then 'percobaan login karyawan'
+    when 'attendance' then 'absensi'
+    when 'advances' then 'kasbon'
+    when 'payroll' then 'penggajian'
+    when 'supervisor_pins' then 'PIN supervisor'
+    when 'supervisor_pin_attempts' then 'percobaan PIN supervisor'
+    when 'supervisor_approvals' then 'izin supervisor'
+    else tg_table_name
+  end;
+  v_verb := case tg_op when 'INSERT' then 'Menambah' when 'UPDATE' then 'Mengubah' else 'Menghapus' end;
+
+  if v_uid is not null then
+    select p.name into v_user from public.profiles p where p.id = v_uid;
+  end if;
+
+  insert into public.audit_logs (
+    "timestamp", "user", action, "storeId", actor_id, category,
+    table_name, record_id, operation, changed_fields, old_data, new_data
+  ) values (
+    now(),
+    coalesce(v_user, case when v_uid is null then 'Sistem' else 'Unknown' end),
+    v_verb || ' ' || v_entity
+      || case when v_label is not null and v_label <> coalesce(v_record_id, '') then ' "' || left(v_label, 80) || '"' else '' end
+      || case when tg_op = 'UPDATE' then ': ' || array_to_string(v_changed, ', ') else '' end,
+    v_store, v_uid, 'data',
+    tg_table_name, v_record_id, tg_op, v_changed, v_old, v_new
+  );
+
+  return null;
+end;
+$$;
+
+revoke execute on function public.audit_row_change() from public, anon, authenticated;
+revoke execute on function public.audit_logs_stamp_actor() from public, anon, authenticated;
+
+-- pasang di semua tabel bisnis
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'transactions', 'customers', 'services', 'inventory_items', 'assets',
+    'scheduled_maintenances', 'expenses', 'monthly_expense_templates', 'settings',
+    'stores', 'profiles', 'employees', 'employee_auth_accounts', 'employee_login_attempts',
+    'attendance', 'advances', 'payroll', 'supervisor_pins', 'supervisor_pin_attempts',
+    'supervisor_approvals'
+  ] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('drop trigger if exists zz_audit_row_change on public.%I', t);
+      execute format(
+        'create trigger zz_audit_row_change after insert or update or delete on public.%I
+           for each row execute function public.audit_row_change()', t);
+    end if;
+  end loop;
+end;
+$$;
+
+-- 4. Append-only -------------------------------------------------------------
+revoke update, delete, truncate on public.audit_logs from anon, authenticated;
+revoke insert, select on public.audit_logs from anon;
+
+-- ============================================
+-- SECTION 18: DAFTAR PELANGGAN + STATISTIK, TOTAL BELANJA RAHASIA (Added Nov 2026)
+-- ============================================
+-- Sumber: migrations/20261127000000_customers_with_stats.sql &
+--         migrations/20261201000000_sembunyikan_total_belanja.sql
+
+-- Total Belanja pelanggan bersifat rahasia: hanya Admin & Super Admin yang
+-- boleh melihatnya. Untuk Kasir dan Operator kolom "totalSpent" dikembalikan
+-- NULL dari server, jadi angkanya tidak pernah sampai ke browser mereka
+-- (bukan sekadar disembunyikan di tampilan).
+--
+-- Mengurutkan berdasarkan "totalSpent" juga tidak membocorkan urutan, karena
+-- untuk peran tersebut semua nilainya NULL.
+--
+-- View dibuat ulang (drop + create) karena c.* bisa berubah urutan kolomnya
+-- jika tabel customers pernah diubah, yang membuat CREATE OR REPLACE gagal.
+
+drop view if exists public.customers_with_stats;
+
+create view public.customers_with_stats
+with (security_invoker = on) as
+select
+  c.*,
+  coalesce(s.transaction_count, 0)::integer as "transactionCount",
+  case
+    when (select public.get_my_role()) in ('Admin', 'Super Admin')
+      then coalesce(s.total_spent, 0)::numeric
+    else null::numeric
+  end as "totalSpent",
+  st.name as "storeName"
+from public.customers c
+left join lateral (
+  select count(*) as transaction_count, sum(t.total) as total_spent
+  from public.transactions t
+  where t."customerId" = c.id
+) s on true
+left join public.stores st on st.id = c."storeId";
+
+revoke all on public.customers_with_stats from anon;
+grant select on public.customers_with_stats to authenticated;
+
+-- ============================================
+-- SECTION 19: PERKETAT AKSES BACA PER PERAN (Added Nov 2026)
+-- ============================================
+-- Sumber: migrations/20261202000000_perketat_akses_baca.sql
+
+-- Perketat akses BACA per peran.
+--
+-- Sebelumnya semua peran di cabang (termasuk Kasir & Operator) bisa membaca
+-- langsung dari database: seluruh pengeluaran, seluruh data pelanggan, dan
+-- angka uang di setiap transaksi, walaupun menunya disembunyikan di aplikasi.
+--
+-- 1. Pengeluaran   : hanya Admin (cabangnya) & Super Admin yang bisa membaca.
+--                    Kasir tetap bisa MENCATAT pengeluaran (insert tanpa baca).
+-- 2. Transaksi     : Operator tidak lagi membaca tabel transactions. Ia memakai
+--                    view transactions_operator: tanpa nominal (harga, total,
+--                    bayar, kembalian, metode bayar), hanya pesanan aktif +
+--                    yang Selesai dalam 7 hari terakhir, dan hanya nama pelanggan.
+-- 3. Pelanggan     : Operator tidak lagi membaca tabel customers (nama pelanggan
+--                    sudah ada di transactions_operator).
+-- 4. Ubah progres  : Operator mengubah pesanan lewat RPC operator_update_transaction
+--                    (hanya orderStatus, notes, estimatedCompletionDate).
+--                    update_transaction_progress menolak Operator karena fungsi itu
+--                    mengembalikan baris transaksi lengkap beserta nominalnya.
+--                    Struk WhatsApp kini hanya dikirim Kasir ke atas.
+-- 5. Performa      : get_my_role()/get_my_store_id() di policy dibungkus (select ...)
+--                    supaya dihitung sekali per query, bukan per baris.
+-- 6. View customers_with_stats hanya diberi izin SELECT.
+
+-- 1. Pengeluaran ---------------------------------------------------------------------
+drop policy if exists "Allow SELECT for store users" on public.expenses;
+drop policy if exists "Allow SELECT for Admins" on public.expenses;
+create policy "Allow SELECT for Admins" on public.expenses
+  for select to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  );
+
+drop policy if exists "Allow INSERT for store users" on public.expenses;
+create policy "Allow INSERT for store users" on public.expenses
+  for insert to authenticated
+  with check (
+    (select public.get_my_role()) = 'Super Admin'
+    or (
+      (select public.get_my_role()) in ('Admin', 'Kasir')
+      and "storeId" = (select public.get_my_store_id())
+    )
+  );
+
+drop policy if exists "Allow UPDATE for Admins" on public.expenses;
+create policy "Allow UPDATE for Admins" on public.expenses
+  for update to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  )
+  with check (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  );
+
+drop policy if exists "Allow DELETE for Admins" on public.expenses;
+create policy "Allow DELETE for Admins" on public.expenses
+  for delete to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  );
+
+-- 2 & 3. Transaksi & pelanggan: Operator tidak membaca tabel langsung -----------------
+drop policy if exists "Allow SELECT for store users" on public.transactions;
+create policy "Allow SELECT for store users" on public.transactions
+  for select to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or (
+      (select public.get_my_role()) in ('Admin', 'Kasir')
+      and "storeId" = (select public.get_my_store_id())
+    )
+  );
+
+drop policy if exists "Allow INSERT for store users" on public.transactions;
+create policy "Allow INSERT for store users" on public.transactions
+  for insert to authenticated
+  with check (
+    (select public.get_my_role()) = 'Super Admin'
+    or (
+      (select public.get_my_role()) in ('Admin', 'Kasir')
+      and "storeId" = (select public.get_my_store_id())
+    )
+  );
+
+-- Operator dikeluarkan: ia mengubah progres lewat operator_update_transaction.
+drop policy if exists "Allow UPDATE for store staff" on public.transactions;
+create policy "Allow UPDATE for store staff" on public.transactions
+  for update to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or (
+      (select public.get_my_role()) in ('Admin', 'Kasir')
+      and "storeId" = (select public.get_my_store_id())
+    )
+  )
+  with check (
+    (select public.get_my_role()) = 'Super Admin'
+    or (
+      (select public.get_my_role()) in ('Admin', 'Kasir')
+      and "storeId" = (select public.get_my_store_id())
+    )
+  );
+
+drop policy if exists "Allow DELETE for Admins" on public.transactions;
+create policy "Allow DELETE for Admins" on public.transactions
+  for delete to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  );
+
+drop policy if exists "Allow SELECT for store users" on public.customers;
+create policy "Allow SELECT for store users" on public.customers
+  for select to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or (
+      (select public.get_my_role()) in ('Admin', 'Kasir')
+      and "storeId" = (select public.get_my_store_id())
+    )
+  );
+
+drop policy if exists "Allow INSERT for store users" on public.customers;
+create policy "Allow INSERT for store users" on public.customers
+  for insert to authenticated
+  with check (
+    (select public.get_my_role()) = 'Super Admin'
+    or (
+      (select public.get_my_role()) in ('Admin', 'Kasir')
+      and "storeId" = (select public.get_my_store_id())
+    )
+  );
+
+drop policy if exists "Allow UPDATE/DELETE for Admins" on public.customers;
+create policy "Allow UPDATE/DELETE for Admins" on public.customers
+  for update to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  )
+  with check (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  );
+
+drop policy if exists "Allow DELETE for Admins" on public.customers;
+create policy "Allow DELETE for Admins" on public.customers
+  for delete to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or ((select public.get_my_role()) = 'Admin' and "storeId" = (select public.get_my_store_id()))
+  );
+-- "Allow UPDATE for Cashiers in own store" sudah memakai (select ...), tidak diubah.
+
+-- 5. Bungkus juga policy stores & profiles -------------------------------------------
+drop policy if exists "Allow SELECT for store users" on public.stores;
+create policy "Allow SELECT for store users" on public.stores
+  for select to authenticated
+  using (
+    (select public.get_my_role()) = 'Super Admin'
+    or id = (select public.get_my_store_id())
+  );
+
+drop policy if exists "Allow INSERT/UPDATE/DELETE for Super Admins only" on public.stores;
+create policy "Allow INSERT/UPDATE/DELETE for Super Admins only" on public.stores
+  for all to authenticated
+  using ((select public.get_my_role()) = 'Super Admin')
+  with check ((select public.get_my_role()) = 'Super Admin');
+
+drop policy if exists "Admins can manage profiles in their store" on public.profiles;
+create policy "Admins can manage profiles in their store" on public.profiles
+  for all to authenticated
+  using (
+    (select public.get_my_role()) = 'Admin' and store_id = (select public.get_my_store_id())
+  )
+  with check (
+    (select public.get_my_role()) = 'Admin'
+    and store_id = (select public.get_my_store_id())
+    and role in ('Admin', 'Kasir', 'Operator')
+  );
+
+drop policy if exists "Super Admins can manage all profiles" on public.profiles;
+create policy "Super Admins can manage all profiles" on public.profiles
+  for all to authenticated
+  using ((select public.get_my_role()) = 'Super Admin')
+  with check ((select public.get_my_role()) = 'Super Admin');
+
+drop policy if exists "Admins can see profiles in their store" on public.profiles;
+create policy "Admins can see profiles in their store" on public.profiles
+  for select to authenticated
+  using (
+    (select public.get_my_role()) = 'Admin' and store_id = (select public.get_my_store_id())
+  );
+
+drop policy if exists "Super Admins can see all profiles" on public.profiles;
+create policy "Super Admins can see all profiles" on public.profiles
+  for select to authenticated
+  using ((select public.get_my_role()) = 'Super Admin');
+
+drop policy if exists "Users can see their own profile" on public.profiles;
+create policy "Users can see their own profile" on public.profiles
+  for select to authenticated
+  using (id = (select auth.uid()));
+-- "Users can update their own profile" tidak diubah (with check-nya mengunci role & cabang).
+
+-- 2. View transaksi khusus Operator ----------------------------------------------------
+-- Sengaja BUKAN security_invoker: Operator tidak punya akses baca ke tabel
+-- transactions/customers, jadi view ini berjalan dengan hak pemiliknya dan
+-- membatasi barisnya sendiri (WHERE) ke Operator di cabangnya. Kolom nominal
+-- dikembalikan NULL agar bentuknya sama dengan tabel transactions.
+-- security_barrier mencegah filter dari client dievaluasi sebelum WHERE ini.
+drop view if exists public.transactions_operator cascade;
+create view public.transactions_operator
+with (security_barrier = true) as
+select
+  t.id,
+  t."invoiceCode",
+  t."customerId",
+  case
+    when jsonb_typeof(t.items) = 'array' then (
+      select coalesce(jsonb_agg(e.item - 'price' - 'subtotal' order by e.ord), '[]'::jsonb)
+      from jsonb_array_elements(t.items) with ordinality as e(item, ord)
+    )
+    else '[]'::jsonb
+  end as items,
+  null::numeric as subtotal,
+  null::numeric as discount,
+  null::numeric as tax,
+  null::numeric as total,
+  t."paymentStatus",
+  t."orderStatus",
+  t."createdAt",
+  t."updatedAt",
+  t."estimatedCompletionDate",
+  null::numeric as "amountPaid",
+  null::numeric as "change",
+  null::text as "paymentMethod",
+  t."createdByUserId",
+  t."updatedByUserId",
+  t."storeId",
+  t.notes,
+  t."whatsappSentAt",
+  c.name as "customerName"
+from public.transactions t
+left join public.customers c on c.id = t."customerId"
+where (select public.get_my_role()) = 'Operator'
+  and t."storeId" = (select public.get_my_store_id())
+  and (t."orderStatus" is distinct from 'Selesai' or t."updatedAt" >= now() - interval '7 days');
+
+revoke all on public.transactions_operator from public, anon, authenticated;
+grant select on public.transactions_operator to authenticated;
+
+-- 4. RPC ubah progres untuk Operator ---------------------------------------------------
+create or replace function public.operator_update_transaction(
+  p_transaction_id uuid,
+  p_patch jsonb
+)
+returns setof public.transactions_operator
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_key text;
+begin
+  if public.get_my_role() is distinct from 'Operator' then
+    raise exception 'Fungsi ini khusus Operator' using errcode = '42501';
+  end if;
+
+  if p_patch is null or jsonb_typeof(p_patch) <> 'object' then
+    raise exception 'Data perubahan tidak valid' using errcode = '22023';
+  end if;
+
+  for v_key in select jsonb_object_keys(p_patch) loop
+    if v_key not in ('orderStatus', 'notes', 'estimatedCompletionDate') then
+      raise exception 'Operator tidak dapat mengubah %', v_key using errcode = '42501';
+    end if;
+  end loop;
+
+  -- Hanya transaksi yang memang terlihat oleh Operator ini (cabang & rentang waktu).
+  if not exists (select 1 from public.transactions_operator o where o.id = p_transaction_id) then
+    raise exception 'Transaksi tidak ditemukan' using errcode = 'P0002';
+  end if;
+
+  -- Trigger guard_operator_transactions tetap berjalan (mis. Operator tidak boleh
+  -- menandai Selesai).
+  update public.transactions t
+  set
+    "orderStatus" = case when p_patch ? 'orderStatus'
+                      then p_patch ->> 'orderStatus' else t."orderStatus" end,
+    notes = case when p_patch ? 'notes'
+              then p_patch ->> 'notes' else t.notes end,
+    "estimatedCompletionDate" = case when p_patch ? 'estimatedCompletionDate'
+                                  then (p_patch ->> 'estimatedCompletionDate')::timestamptz
+                                  else t."estimatedCompletionDate" end,
+    "updatedByUserId" = auth.uid()
+  where t.id = p_transaction_id;
+
+  return query select * from public.transactions_operator o where o.id = p_transaction_id;
+end;
+$$;
+
+revoke execute on function public.operator_update_transaction(uuid, jsonb) from public, anon;
+grant execute on function public.operator_update_transaction(uuid, jsonb) to authenticated;
+
+-- update_transaction_progress mengembalikan baris lengkap (termasuk nominal):
+-- tolak Operator. Selebihnya sama dengan versi sebelumnya.
+create or replace function public.update_transaction_progress(
+  transaction_id_input uuid,
+  p_amount_paid numeric default null::numeric,
+  p_change numeric default null::numeric,
+  p_payment_method text default null::text,
+  p_payment_status text default null::text,
+  p_order_status text default null::text,
+  p_supervisor_approval_id uuid default null::uuid
+)
+returns setof public.transactions
+language plpgsql
+security definer
+set search_path = public
+as $function$
+DECLARE
+  caller uuid := auth.uid();
+  caller_role text;
+  caller_store uuid;
+  tx_store uuid;
+  current_payment_status text;
+  current_order_status text;
+  final_payment_status text;
+  final_order_status text;
+BEGIN
+  SELECT p.role, p.store_id INTO caller_role, caller_store FROM public.profiles p WHERE p.id = caller;
+  IF caller_role IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  IF caller_role = 'Operator' THEN
+    RAISE EXCEPTION 'Operator mengubah progres lewat operator_update_transaction'
+      USING ERRCODE = '42501';
+  END IF;
+
+  SELECT t."storeId", t."paymentStatus", t."orderStatus"
+    INTO tx_store, current_payment_status, current_order_status
+    FROM public.transactions t WHERE t.id = transaction_id_input;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'transaction not found';
+  END IF;
+
+  IF caller_role <> 'Super Admin' AND tx_store IS DISTINCT FROM caller_store THEN
+    RAISE EXCEPTION 'permission denied';
+  END IF;
+
+  final_payment_status := COALESCE(p_payment_status, current_payment_status);
+  final_order_status := COALESCE(p_order_status, current_order_status);
+
+  IF final_order_status = 'Selesai' AND final_payment_status <> 'Lunas' THEN
+    RAISE EXCEPTION 'Inkonsistensi: Pesanan tidak boleh berstatus Selesai jika pembayaran belum Lunas.';
+  END IF;
+  IF current_order_status = 'Selesai' AND final_payment_status <> 'Lunas' THEN
+    RAISE EXCEPTION 'Inkonsistensi: Status pembayaran tidak boleh diubah menjadi belum lunas jika pesanan sudah selesai.';
+  END IF;
+
+  UPDATE public.transactions
+  SET
+    "amountPaid" = COALESCE(p_amount_paid, "amountPaid"),
+    "change" = COALESCE(p_change, "change"),
+    "paymentMethod" = COALESCE(p_payment_method, "paymentMethod"),
+    "paymentStatus" = COALESCE(p_payment_status, "paymentStatus"),
+    "orderStatus" = COALESCE(p_order_status, "orderStatus"),
+    "supervisorApprovalId" = COALESCE(p_supervisor_approval_id, "supervisorApprovalId")
+  WHERE id = transaction_id_input;
+
+  INSERT INTO public.audit_logs("user", action, "storeId")
+  VALUES ((SELECT p.name FROM public.profiles p WHERE p.id = caller), concat('Update progress ', transaction_id_input), tx_store);
+
+  RETURN QUERY SELECT * FROM public.transactions WHERE id = transaction_id_input;
+END;
+$function$;
+
+-- 6. View pelanggan: baca saja ----------------------------------------------------------
+revoke all on public.customers_with_stats from public, anon, authenticated;
+grant select on public.customers_with_stats to authenticated;
+
+-- ============================================
+-- SECTION 20: GAJI HARIAN OTOMATIS KE PENGELUARAN (Added Nov 2026)
+-- employees.base_salary = gaji per hari. Absen masuk -> 1 pengeluaran "Gaji".
+-- Sumber: supabase/migrations/20261205000000_gaji_harian_otomatis.sql
+-- ============================================
+
+
+ALTER TABLE public.expenses
+  ADD COLUMN IF NOT EXISTS "attendanceId" uuid;
+
+COMMENT ON COLUMN public.expenses."attendanceId" IS
+  'Absensi sumber pengeluaran gaji harian otomatis (NULL = pengeluaran biasa).';
+
+CREATE UNIQUE INDEX IF NOT EXISTS expenses_attendance_id_idx
+  ON public.expenses ("attendanceId")
+  WHERE "attendanceId" IS NOT NULL;
+
+COMMENT ON COLUMN public.employees.base_salary IS
+  'Gaji per hari (Rp). Otomatis dicatat sebagai pengeluaran "Gaji" setiap hari karyawan absen masuk.';
+
+CREATE OR REPLACE FUNCTION public.sync_daily_wage_expense()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_employee record;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    -- Hapus hanya bila absensi dihapus sendiri; saat karyawan dihapus (cascade)
+    -- barisnya sudah tidak ada dan riwayat gaji dibiarkan.
+    IF EXISTS (SELECT 1 FROM public.employees e WHERE e.id = OLD.employee_id) THEN
+      DELETE FROM public.expenses WHERE "attendanceId" = OLD.id;
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  IF NEW.clock_in IS NULL THEN
+    DELETE FROM public.expenses WHERE "attendanceId" = NEW.id;
+    RETURN NEW;
+  END IF;
+
+  SELECT e.name, e.store_id, e.base_salary
+  INTO v_employee
+  FROM public.employees e
+  WHERE e.id = NEW.employee_id;
+
+  IF NOT FOUND OR COALESCE(v_employee.base_salary, 0) <= 0 THEN
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO public.expenses (date, description, category, amount, "storeId", "attendanceId")
+  VALUES (
+    NEW.date,
+    'Gaji harian - ' || v_employee.name,
+    'Gaji',
+    v_employee.base_salary,
+    v_employee.store_id,
+    NEW.id
+  )
+  ON CONFLICT ("attendanceId") WHERE "attendanceId" IS NOT NULL DO NOTHING;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.sync_daily_wage_expense() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS attendance_daily_wage_expense ON public.attendance;
+CREATE TRIGGER attendance_daily_wage_expense
+  AFTER INSERT OR DELETE OR UPDATE OF clock_in ON public.attendance
+  FOR EACH ROW EXECUTE FUNCTION public.sync_daily_wage_expense();
+
+-- ============================================
+-- SECTION 21: INVENTARIS - POTONG STOK OTOMATIS & RIWAYAT STOK (Added Nov 2026)
+-- ============================================
+-- Setiap nota memotong stok bahan sesuai aturan inventory_recipes (trigger di
+-- transactions); semua perubahan stok tercatat di inventory_movements.
+-- Sumber: supabase/migrations/20261204000000_inventaris_potong_stok_otomatis.sql
+
+-- 1. Stok desimal + penanda stok rendah (bisa difilter di server) ---------------
+ALTER TABLE public.inventory_items
+  ALTER COLUMN stock TYPE numeric(12,3) USING stock::numeric,
+  ALTER COLUMN "lowStockThreshold" TYPE numeric(12,3) USING "lowStockThreshold"::numeric;
+
+ALTER TABLE public.inventory_items
+  ADD COLUMN IF NOT EXISTS is_low_stock boolean
+  GENERATED ALWAYS AS ("lowStockThreshold" > 0 AND stock <= "lowStockThreshold") STORED;
+
+CREATE INDEX IF NOT EXISTS idx_inventory_items_store_low
+  ON public.inventory_items ("storeId") WHERE is_low_stock;
+
+-- 2. Tabel lama (tidak pernah terpasang di produksi, aman dibuat ulang) ----------
+DROP TABLE IF EXISTS public.inventory_usage_log CASCADE;
+DROP TABLE IF EXISTS public.stock_opname CASCADE;
+DROP TABLE IF EXISTS public.inventory_recipes CASCADE;
+
+-- 3. Aturan potong stok --------------------------------------------------------
+CREATE TABLE public.inventory_recipes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  inventory_item_id uuid NOT NULL REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+  -- NULL = berlaku untuk semua layanan
+  service_id uuid REFERENCES public.services(id) ON DELETE CASCADE,
+  -- per_unit: amount × jumlah (kg/pcs/m) baris nota yang cocok
+  -- per_transaksi: amount sekali per nota yang memuat layanan yang cocok
+  basis text NOT NULL DEFAULT 'per_unit' CHECK (basis IN ('per_unit', 'per_transaksi')),
+  amount numeric(12,3) NOT NULL CHECK (amount > 0),
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT inventory_recipes_unique UNIQUE NULLS NOT DISTINCT (inventory_item_id, service_id, basis)
+);
+
+CREATE INDEX idx_inventory_recipes_store_active
+  ON public.inventory_recipes (store_id) WHERE is_active;
+CREATE INDEX idx_inventory_recipes_service ON public.inventory_recipes (service_id);
+
+-- Cabang aturan selalu mengikuti cabang item (tidak bisa diakali dari klien)
+CREATE OR REPLACE FUNCTION public.inventory_recipes_sync_store()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  SELECT "storeId" INTO NEW.store_id FROM public.inventory_items WHERE id = NEW.inventory_item_id;
+  IF NEW.store_id IS NULL THEN
+    RAISE EXCEPTION 'Item inventaris tidak ditemukan atau belum punya cabang';
+  END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_inventory_recipes_sync_store
+  BEFORE INSERT OR UPDATE ON public.inventory_recipes
+  FOR EACH ROW EXECUTE FUNCTION public.inventory_recipes_sync_store();
+
+-- 4. Buku besar mutasi stok ----------------------------------------------------
+CREATE TABLE public.inventory_movements (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid REFERENCES public.stores(id) ON DELETE CASCADE,
+  inventory_item_id uuid NOT NULL REFERENCES public.inventory_items(id) ON DELETE CASCADE,
+  transaction_id uuid REFERENCES public.transactions(id) ON DELETE SET NULL,
+  recipe_id uuid REFERENCES public.inventory_recipes(id) ON DELETE SET NULL,
+  kind text NOT NULL CHECK (kind IN (
+    'awal', 'restok', 'penyesuaian', 'opname', 'transaksi', 'koreksi_transaksi'
+  )),
+  quantity numeric(12,3) NOT NULL,          -- + masuk, − keluar
+  stock_before numeric(12,3) NOT NULL,
+  stock_after numeric(12,3) NOT NULL,
+  note text,
+  created_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_inventory_movements_item_time
+  ON public.inventory_movements (inventory_item_id, created_at DESC);
+CREATE INDEX idx_inventory_movements_store_time
+  ON public.inventory_movements (store_id, created_at DESC);
+CREATE INDEX idx_inventory_movements_transaction
+  ON public.inventory_movements (transaction_id) WHERE transaction_id IS NOT NULL;
+CREATE INDEX idx_inventory_movements_recipe ON public.inventory_movements (recipe_id);
+CREATE INDEX idx_inventory_movements_created_by ON public.inventory_movements (created_by);
+
+-- Setiap perubahan stok tercatat. Konteks (jenis, nota, catatan) dikirim lewat
+-- setting lokal-transaksi app.inv_* oleh fungsi di bawah; tanpa konteks = penyesuaian manual.
+CREATE OR REPLACE FUNCTION public.log_inventory_movement()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_before numeric := CASE WHEN TG_OP = 'INSERT' THEN 0 ELSE OLD.stock END;
+  v_kind text := nullif(current_setting('app.inv_kind', true), '');
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.stock IS NOT DISTINCT FROM OLD.stock THEN
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'INSERT' AND coalesce(NEW.stock, 0) = 0 THEN
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO public.inventory_movements (
+    store_id, inventory_item_id, transaction_id, recipe_id, kind,
+    quantity, stock_before, stock_after, note, created_by
+  ) VALUES (
+    NEW."storeId",
+    NEW.id,
+    nullif(current_setting('app.inv_transaction', true), '')::uuid,
+    nullif(current_setting('app.inv_recipe', true), '')::uuid,
+    coalesce(v_kind, CASE WHEN TG_OP = 'INSERT' THEN 'awal' ELSE 'penyesuaian' END),
+    NEW.stock - v_before,
+    v_before,
+    NEW.stock,
+    nullif(current_setting('app.inv_note', true), ''),
+    auth.uid()
+  );
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER zz_log_inventory_movement
+  AFTER INSERT OR UPDATE OF stock ON public.inventory_items
+  FOR EACH ROW EXECUTE FUNCTION public.log_inventory_movement();
+
+-- Inti perubahan stok: atomik (UPDATE stock = stock + delta) dan selalu tercatat.
+CREATE OR REPLACE FUNCTION public.apply_inventory_delta(
+  p_item_id uuid,
+  p_delta numeric,
+  p_kind text,
+  p_transaction_id uuid DEFAULT NULL,
+  p_recipe_id uuid DEFAULT NULL,
+  p_note text DEFAULT NULL
+)
+RETURNS numeric
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_stock numeric;
+BEGIN
+  IF p_delta IS NULL OR p_delta = 0 THEN
+    SELECT stock INTO v_stock FROM public.inventory_items WHERE id = p_item_id;
+    RETURN v_stock;
+  END IF;
+
+  PERFORM set_config('app.inv_kind', p_kind, true);
+  PERFORM set_config('app.inv_transaction', coalesce(p_transaction_id::text, ''), true);
+  PERFORM set_config('app.inv_recipe', coalesce(p_recipe_id::text, ''), true);
+  PERFORM set_config('app.inv_note', coalesce(p_note, ''), true);
+
+  UPDATE public.inventory_items
+     SET stock = stock + p_delta
+   WHERE id = p_item_id
+  RETURNING stock INTO v_stock;
+
+  PERFORM set_config('app.inv_kind', '', true);
+  PERFORM set_config('app.inv_transaction', '', true);
+  PERFORM set_config('app.inv_recipe', '', true);
+  PERFORM set_config('app.inv_note', '', true);
+
+  RETURN v_stock;
+END;
+$$;
+
+-- 5. Potong stok otomatis dari nota --------------------------------------------
+CREATE OR REPLACE FUNCTION public.deduct_inventory_for_transaction(
+  p_transaction_id uuid,
+  p_store_id uuid,
+  p_items jsonb,
+  p_invoice text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  r record;
+BEGIN
+  IF p_store_id IS NULL OR p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
+    RETURN;
+  END IF;
+
+  FOR r IN
+    WITH lines AS (
+      SELECT nullif(li->>'serviceId', '') AS service_id,
+             CASE WHEN (li->>'quantity') ~ '^-?[0-9]+(\.[0-9]+)?$'
+                  THEN (li->>'quantity')::numeric ELSE 0 END AS qty
+        FROM jsonb_array_elements(p_items) li
+    )
+    SELECT rc.id AS recipe_id,
+           rc.inventory_item_id,
+           CASE rc.basis
+             WHEN 'per_unit' THEN rc.amount * coalesce(sum(l.qty), 0)
+             ELSE CASE WHEN count(l.*) > 0 THEN rc.amount ELSE 0 END
+           END AS usage
+      FROM public.inventory_recipes rc
+      JOIN public.inventory_items ii ON ii.id = rc.inventory_item_id AND ii."storeId" = p_store_id
+      LEFT JOIN lines l ON rc.service_id IS NULL OR l.service_id = rc.service_id::text
+     WHERE rc.store_id = p_store_id AND rc.is_active
+     GROUP BY rc.id, rc.inventory_item_id, rc.basis, rc.amount
+  LOOP
+    IF r.usage > 0 THEN
+      PERFORM public.apply_inventory_delta(
+        r.inventory_item_id, -r.usage, 'transaksi', p_transaction_id, r.recipe_id,
+        'Pemakaian nota ' || coalesce(p_invoice, '')
+      );
+    END IF;
+  END LOOP;
+END;
+$$;
+
+-- Kembalikan seluruh potongan sebuah nota (dipakai saat item nota diubah / nota dihapus)
+CREATE OR REPLACE FUNCTION public.revert_inventory_for_transaction(
+  p_transaction_id uuid,
+  p_note text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN
+    SELECT inventory_item_id, sum(quantity) AS net
+      FROM public.inventory_movements
+     WHERE transaction_id = p_transaction_id
+       AND kind IN ('transaksi', 'koreksi_transaksi')
+     GROUP BY inventory_item_id
+    HAVING sum(quantity) <> 0
+  LOOP
+    PERFORM public.apply_inventory_delta(
+      r.inventory_item_id, -r.net, 'koreksi_transaksi', p_transaction_id, NULL, p_note
+    );
+  END LOOP;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.handle_transaction_inventory()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Kegagalan potong stok tidak boleh menggagalkan nota pelanggan.
+  BEGIN
+    IF TG_OP = 'INSERT' THEN
+      PERFORM public.deduct_inventory_for_transaction(NEW.id, NEW."storeId", NEW.items, NEW."invoiceCode");
+    ELSIF TG_OP = 'UPDATE' THEN
+      IF NEW.items IS DISTINCT FROM OLD.items OR NEW."storeId" IS DISTINCT FROM OLD."storeId" THEN
+        PERFORM public.revert_inventory_for_transaction(OLD.id, 'Item nota ' || coalesce(OLD."invoiceCode", '') || ' diubah');
+        PERFORM public.deduct_inventory_for_transaction(NEW.id, NEW."storeId", NEW.items, NEW."invoiceCode");
+      END IF;
+    ELSIF TG_OP = 'DELETE' THEN
+      PERFORM public.revert_inventory_for_transaction(OLD.id, 'Nota ' || coalesce(OLD."invoiceCode", '') || ' dihapus');
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Potong stok otomatis gagal (%): %', TG_OP, SQLERRM;
+  END;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER zz_transaction_inventory_insert
+  AFTER INSERT ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.handle_transaction_inventory();
+
+CREATE TRIGGER zz_transaction_inventory_update
+  AFTER UPDATE OF items, "storeId" ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.handle_transaction_inventory();
+
+-- BEFORE DELETE: harus jalan sebelum FK transaction_id di-NULL-kan.
+CREATE TRIGGER zz_transaction_inventory_delete
+  BEFORE DELETE ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.handle_transaction_inventory();
+
+-- 6. Stock opname --------------------------------------------------------------
+CREATE TABLE public.stock_opname (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid REFERENCES public.stores(id) ON DELETE CASCADE,
+  inventory_item_id uuid REFERENCES public.inventory_items(id) ON DELETE SET NULL,
+  virtual_stock numeric(12,3) NOT NULL,
+  physical_stock numeric(12,3) NOT NULL CHECK (physical_stock >= 0),
+  -- positif = barang hilang/terpakai tanpa tercatat
+  discrepancy numeric(12,3) GENERATED ALWAYS AS (virtual_stock - physical_stock) STORED,
+  notes text,
+  recorded_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  recorded_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_stock_opname_store_time ON public.stock_opname (store_id, recorded_at DESC);
+CREATE INDEX idx_stock_opname_item ON public.stock_opname (inventory_item_id);
+CREATE INDEX idx_stock_opname_recorded_by ON public.stock_opname (recorded_by);
+
+-- 7. RPC untuk staf cabang -----------------------------------------------------
+CREATE OR REPLACE FUNCTION public.can_manage_inventory_item(p_item_id uuid)
+RETURNS uuid  -- mengembalikan storeId item bila boleh, NULL bila tidak
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT ii."storeId"
+    FROM public.inventory_items ii
+   WHERE ii.id = p_item_id
+     AND (
+       public.get_my_role() = 'Super Admin'
+       OR (public.get_my_role() IS NOT NULL AND ii."storeId" = public.get_my_store_id())
+     );
+$$;
+
+-- p_mode: 'tambah' (restok), 'kurang' (pemakaian/rusak), 'set' (atur jadi angka tertentu)
+CREATE OR REPLACE FUNCTION public.adjust_inventory_stock(
+  p_item_id uuid,
+  p_mode text,
+  p_value numeric,
+  p_note text DEFAULT NULL
+)
+RETURNS numeric
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_current numeric;
+  v_delta numeric;
+BEGIN
+  IF public.can_manage_inventory_item(p_item_id) IS NULL THEN
+    RAISE EXCEPTION 'Anda tidak punya akses ke item inventaris ini' USING ERRCODE = '42501';
+  END IF;
+  IF p_value IS NULL OR p_value < 0 THEN
+    RAISE EXCEPTION 'Jumlah harus 0 atau lebih';
+  END IF;
+
+  SELECT stock INTO v_current FROM public.inventory_items WHERE id = p_item_id FOR UPDATE;
+
+  v_delta := CASE p_mode
+    WHEN 'tambah' THEN p_value
+    WHEN 'kurang' THEN -p_value
+    WHEN 'set' THEN p_value - v_current
+    ELSE NULL
+  END;
+  IF v_delta IS NULL THEN
+    RAISE EXCEPTION 'Mode penyesuaian tidak dikenal: %', p_mode;
+  END IF;
+
+  RETURN public.apply_inventory_delta(
+    p_item_id, v_delta,
+    CASE WHEN p_mode = 'tambah' THEN 'restok' ELSE 'penyesuaian' END,
+    NULL, NULL, nullif(trim(p_note), '')
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.record_stock_opname(
+  p_item_id uuid,
+  p_physical_stock numeric,
+  p_notes text DEFAULT NULL
+)
+RETURNS public.stock_opname
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_store uuid;
+  v_current numeric;
+  v_row public.stock_opname;
+BEGIN
+  v_store := public.can_manage_inventory_item(p_item_id);
+  IF v_store IS NULL THEN
+    RAISE EXCEPTION 'Anda tidak punya akses ke item inventaris ini' USING ERRCODE = '42501';
+  END IF;
+  IF p_physical_stock IS NULL OR p_physical_stock < 0 THEN
+    RAISE EXCEPTION 'Stok fisik harus 0 atau lebih';
+  END IF;
+
+  SELECT stock INTO v_current FROM public.inventory_items WHERE id = p_item_id FOR UPDATE;
+
+  INSERT INTO public.stock_opname (store_id, inventory_item_id, virtual_stock, physical_stock, notes, recorded_by)
+  VALUES (v_store, p_item_id, v_current, p_physical_stock, nullif(trim(p_notes), ''), auth.uid())
+  RETURNING * INTO v_row;
+
+  PERFORM public.apply_inventory_delta(
+    p_item_id, p_physical_stock - v_current, 'opname', NULL, NULL,
+    coalesce('Stock opname: ' || nullif(trim(p_notes), ''), 'Stock opname')
+  );
+
+  RETURN v_row;
+END;
+$$;
+
+-- Fungsi internal tidak boleh dipanggil langsung lewat API
+REVOKE ALL ON FUNCTION public.apply_inventory_delta(uuid, numeric, text, uuid, uuid, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.deduct_inventory_for_transaction(uuid, uuid, jsonb, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.revert_inventory_for_transaction(uuid, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.handle_transaction_inventory() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.log_inventory_movement() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.inventory_recipes_sync_store() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.can_manage_inventory_item(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.adjust_inventory_stock(uuid, text, numeric, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.record_stock_opname(uuid, numeric, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.adjust_inventory_stock(uuid, text, numeric, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.record_stock_opname(uuid, numeric, text) TO authenticated;
+
+-- 8. RLS -----------------------------------------------------------------------
+ALTER TABLE public.inventory_recipes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory_movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stock_opname ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Baca aturan stok cabang" ON public.inventory_recipes
+  FOR SELECT TO authenticated
+  USING ((SELECT public.get_my_role()) = 'Super Admin' OR store_id = (SELECT public.get_my_store_id()));
+CREATE POLICY "Admin kelola aturan stok" ON public.inventory_recipes
+  FOR ALL TO authenticated
+  USING (
+    (SELECT public.get_my_role()) = 'Super Admin'
+    OR ((SELECT public.get_my_role()) = 'Admin' AND store_id = (SELECT public.get_my_store_id()))
+  )
+  WITH CHECK (
+    (SELECT public.get_my_role()) = 'Super Admin'
+    OR ((SELECT public.get_my_role()) = 'Admin' AND store_id = (SELECT public.get_my_store_id()))
+  );
+
+-- Buku besar & opname hanya ditulis lewat fungsi SECURITY DEFINER (tanpa policy tulis).
+CREATE POLICY "Baca mutasi stok cabang" ON public.inventory_movements
+  FOR SELECT TO authenticated
+  USING ((SELECT public.get_my_role()) = 'Super Admin' OR store_id = (SELECT public.get_my_store_id()));
+CREATE POLICY "Baca opname cabang" ON public.stock_opname
+  FOR SELECT TO authenticated
+  USING ((SELECT public.get_my_role()) = 'Super Admin' OR store_id = (SELECT public.get_my_store_id()));
+
+-- ============================================
+-- SECTION 22: LAPORAN KEUANGAN - RIWAYAT PEMBAYARAN & RPC LAPORAN (Added Nov 2026)
+-- ============================================
+-- 1. Tabel transaction_payments: setiap kenaikan/penurunan uang yang diterima
+--    sebuah nota dicatat sebagai satu baris dengan TANGGAL BAYAR-nya.
+--    Diisi otomatis oleh trigger di transactions (semua jalur: kasir, pelunasan,
+--    RPC, sinkron offline, restore backup), jadi aplikasi tidak perlu diubah.
+--    Uang diterima per nota = total bila Lunas, selain itu min(amountPaid, total)
+--    (sama dengan Dashboard; kembalian tidak dihitung).
+--    Data lama di-backfill dengan tanggal bayar = tanggal nota dibuat (riwayat
+--    pelunasan sebelum tabel ini ada memang tidak tersimpan).
+-- 2. report_expense_lines(): pengeluaran + pembelian & perawatan aset dari tabel
+--    assets yang belum tercatat di expenses (deskripsi & tanggal sama persis).
+-- 3. get_financial_report(): seluruh agregasi halaman Laporan dihitung di
+--    database sehingga browser hanya menerima angka akhirnya.
+--    SECURITY INVOKER → RLS tetap berlaku; hanya Admin & Super Admin.
+-- Aman dijalankan ulang.
+-- ============================================================================
+
+-- ---------- 1. Riwayat pembayaran ----------
+CREATE TABLE IF NOT EXISTS public.transaction_payments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "transactionId" uuid NOT NULL REFERENCES public.transactions(id) ON DELETE CASCADE,
+  "storeId" uuid REFERENCES public.stores(id) ON DELETE SET NULL,
+  amount numeric NOT NULL,
+  "paymentMethod" text,
+  "paidAt" timestamptz NOT NULL DEFAULT now(),
+  "recordedByUserId" uuid,
+  source text NOT NULL DEFAULT 'pembayaran'
+    CHECK (source IN ('pembayaran', 'koreksi', 'backfill'))
+);
+
+COMMENT ON TABLE public.transaction_payments IS
+  'Riwayat uang diterima per nota (otomatis dari trigger transactions). amount negatif = koreksi.';
+
+CREATE INDEX IF NOT EXISTS idx_transaction_payments_store_paid
+  ON public.transaction_payments ("storeId", "paidAt");
+CREATE INDEX IF NOT EXISTS idx_transaction_payments_paid
+  ON public.transaction_payments ("paidAt");
+CREATE INDEX IF NOT EXISTS idx_transaction_payments_tx
+  ON public.transaction_payments ("transactionId");
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at
+  ON public.transactions ("createdAt");
+
+ALTER TABLE public.transaction_payments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow SELECT for Admins" ON public.transaction_payments;
+CREATE POLICY "Allow SELECT for Admins" ON public.transaction_payments
+  FOR SELECT TO authenticated
+  USING (
+    (SELECT public.get_my_role()) = 'Super Admin'
+    OR ((SELECT public.get_my_role()) = 'Admin'
+        AND "storeId" = (SELECT public.get_my_store_id()))
+  );
+-- Tidak ada policy INSERT/UPDATE/DELETE: hanya trigger yang menulis.
+
+CREATE OR REPLACE FUNCTION public.transaction_collected_amount(
+  p_status text, p_total numeric, p_amount_paid numeric
+) RETURNS numeric
+LANGUAGE sql IMMUTABLE
+SET search_path = ''
+AS $$
+  SELECT CASE
+    WHEN p_status = 'Lunas' THEN GREATEST(COALESCE(p_total, 0), 0)
+    ELSE GREATEST(0, LEAST(COALESCE(p_amount_paid, 0), COALESCE(p_total, 0)))
+  END;
+$$;
+
+-- Backfill sekali untuk nota yang belum punya riwayat
+INSERT INTO public.transaction_payments
+  ("transactionId", "storeId", amount, "paymentMethod", "paidAt", source)
+SELECT t.id, t."storeId",
+       public.transaction_collected_amount(t."paymentStatus", t.total, t."amountPaid"),
+       t."paymentMethod", t."createdAt", 'backfill'
+FROM public.transactions t
+WHERE public.transaction_collected_amount(t."paymentStatus", t.total, t."amountPaid") > 0
+  AND NOT EXISTS (
+    SELECT 1 FROM public.transaction_payments p WHERE p."transactionId" = t.id
+  );
+
+CREATE OR REPLACE FUNCTION public.record_transaction_payment()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_new numeric;
+  v_old numeric := 0;
+  v_delta numeric;
+BEGIN
+  v_new := public.transaction_collected_amount(NEW."paymentStatus", NEW.total, NEW."amountPaid");
+  IF TG_OP = 'UPDATE' THEN
+    v_old := public.transaction_collected_amount(OLD."paymentStatus", OLD.total, OLD."amountPaid");
+  END IF;
+  v_delta := v_new - v_old;
+
+  IF abs(v_delta) < 0.5 THEN
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO public.transaction_payments
+    ("transactionId", "storeId", amount, "paymentMethod", "paidAt", "recordedByUserId", source)
+  VALUES (
+    NEW.id,
+    NEW."storeId",
+    v_delta,
+    NEW."paymentMethod",
+    -- Nota baru (termasuk sinkron offline): dibayar saat nota dibuat.
+    CASE WHEN TG_OP = 'INSERT' THEN COALESCE(NEW."createdAt", now()) ELSE now() END,
+    auth.uid(),
+    CASE WHEN v_delta < 0 THEN 'koreksi' ELSE 'pembayaran' END
+  );
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.record_transaction_payment() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS transactions_record_payment ON public.transactions;
+CREATE TRIGGER transactions_record_payment
+  AFTER INSERT OR UPDATE OF "amountPaid", total, "paymentStatus" ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.record_transaction_payment();
+
+-- ---------- 2. Baris pengeluaran (termasuk aset) ----------
+CREATE OR REPLACE FUNCTION public.report_safe_numeric(p jsonb)
+RETURNS numeric
+LANGUAGE sql IMMUTABLE
+SET search_path = ''
+AS $$
+  SELECT CASE
+    WHEN p IS NULL THEN 0
+    WHEN jsonb_typeof(p) = 'number' THEN (p #>> '{}')::numeric
+    WHEN jsonb_typeof(p) = 'string' AND (p #>> '{}') ~ '^\s*-?[0-9]+(\.[0-9]+)?\s*$'
+      THEN trim(p #>> '{}')::numeric
+    ELSE 0
+  END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.report_safe_date(p text, p_tz text)
+RETURNS date
+LANGUAGE sql STABLE
+SET search_path = ''
+AS $$
+  SELECT CASE
+    WHEN p ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN p::date
+    WHEN p ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}' THEN (p::timestamptz AT TIME ZONE p_tz)::date
+    ELSE NULL
+  END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.report_expense_lines(
+  p_store_id uuid, p_start date, p_end date, p_tz text DEFAULT 'Asia/Jakarta'
+) RETURNS TABLE (
+  id text, date date, description text, category text, amount numeric, "storeId" uuid
+)
+LANGUAGE sql STABLE
+SET search_path = ''
+AS $$
+  WITH ex AS (
+    SELECT e.id::text AS id, e.date, e.description, e.category,
+           COALESCE(e.amount, 0) AS amount, e."storeId"
+    FROM public.expenses e
+    WHERE e.date BETWEEN p_start AND p_end
+      AND (p_store_id IS NULL OR e."storeId" = p_store_id)
+  ),
+  asset_rows AS (
+    SELECT 'asset-purchase-' || a.id::text AS id,
+           a."purchaseDate" AS date,
+           'Pembelian Aset: ' || a.name AS description,
+           NULL::text AS alt_description,
+           'Pembelian Aset'::text AS category,
+           COALESCE(a."purchaseCost", 0) AS amount,
+           a."storeId"
+    FROM public.assets a
+    WHERE a."purchaseDate" BETWEEN p_start AND p_end
+      AND COALESCE(a."purchaseCost", 0) > 0
+      AND (p_store_id IS NULL OR a."storeId" = p_store_id)
+    UNION ALL
+    SELECT 'asset-maint-' || a.id::text || '-' || l.ord::text,
+           public.report_safe_date(l.log ->> 'date', p_tz),
+           'Perawatan Aset: ' || a.name || ' (' || COALESCE(l.log ->> 'description', '') || ')',
+           'Quick Maintenance: ' || a.name || ' (' || COALESCE(l.log ->> 'description', '') || ')',
+           'Pemeliharaan Aset',
+           public.report_safe_numeric(l.log -> 'cost'),
+           a."storeId"
+    FROM public.assets a
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(a."maintenanceHistory") = 'array' THEN a."maintenanceHistory"
+           ELSE '[]'::jsonb END
+    ) WITH ORDINALITY AS l(log, ord)
+    WHERE (p_store_id IS NULL OR a."storeId" = p_store_id)
+  )
+  SELECT ex.id, ex.date, ex.description, ex.category, ex.amount, ex."storeId" FROM ex
+  UNION ALL
+  SELECT r.id, r.date, r.description, r.category, r.amount, r."storeId"
+  FROM asset_rows r
+  WHERE r.date BETWEEN p_start AND p_end
+    AND r.amount > 0
+    -- Sudah dicatat manual di expenses (format lama / Quick Maintenance) → jangan dobel.
+    AND NOT EXISTS (
+      SELECT 1 FROM ex
+      WHERE ex.date = r.date
+        AND (ex.description = r.description OR ex.description = r.alt_description)
+    );
+$$;
+
+-- ---------- 3. Ringkasan & laporan lengkap ----------
+CREATE OR REPLACE FUNCTION public.financial_report_summary(
+  p_store_id uuid, p_start date, p_end date, p_tz text DEFAULT 'Asia/Jakarta'
+) RETURNS jsonb
+LANGUAGE sql STABLE
+SET search_path = ''
+AS $$
+  WITH b AS (
+    SELECT (p_start::timestamp AT TIME ZONE p_tz) AS s,
+           ((p_end + 1)::timestamp AT TIME ZONE p_tz) AS e
+  ),
+  tx AS (
+    SELECT t.total, t.discount,
+           public.transaction_collected_amount(t."paymentStatus", t.total, t."amountPaid") AS collected
+    FROM public.transactions t, b
+    WHERE t."createdAt" >= b.s AND t."createdAt" < b.e
+      AND (p_store_id IS NULL OR t."storeId" = p_store_id)
+  ),
+  pay AS (
+    SELECT COALESCE(sum(p.amount), 0) AS amt
+    FROM public.transaction_payments p, b
+    WHERE p."paidAt" >= b.s AND p."paidAt" < b.e
+      AND (p_store_id IS NULL OR p."storeId" = p_store_id)
+  ),
+  ex AS (
+    SELECT COALESCE(sum(l.amount), 0) AS amt, count(*) AS n
+    FROM public.report_expense_lines(p_store_id, p_start, p_end, p_tz) l
+  )
+  SELECT jsonb_build_object(
+    'gross', (SELECT COALESCE(sum(total), 0) FROM tx),
+    'discount', (SELECT COALESCE(sum(discount), 0) FROM tx),
+    'count', (SELECT count(*) FROM tx),
+    'receivable', (SELECT COALESCE(sum(GREATEST(total - collected, 0)), 0) FROM tx),
+    'unpaidCount', (SELECT count(*) FROM tx WHERE total - collected > 0.5),
+    'collected', (SELECT amt FROM pay),
+    'expenses', (SELECT amt FROM ex),
+    'expenseCount', (SELECT n FROM ex)
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_financial_report(
+  p_store_id uuid,
+  p_start date,
+  p_end date,
+  p_prev_start date DEFAULT NULL,
+  p_prev_end date DEFAULT NULL,
+  p_tz text DEFAULT 'Asia/Jakarta'
+) RETURNS jsonb
+LANGUAGE plpgsql STABLE
+SET search_path = ''
+AS $$
+DECLARE
+  v_result jsonb;
+BEGIN
+  IF COALESCE(public.get_my_role(), '') NOT IN ('Super Admin', 'Admin') THEN
+    RAISE EXCEPTION 'Hanya Admin yang dapat melihat laporan keuangan' USING ERRCODE = '42501';
+  END IF;
+  IF p_start IS NULL OR p_end IS NULL OR p_start > p_end THEN
+    RAISE EXCEPTION 'Rentang tanggal tidak valid' USING ERRCODE = '22023';
+  END IF;
+
+  WITH b AS (
+    SELECT (p_start::timestamp AT TIME ZONE p_tz) AS s,
+           ((p_end + 1)::timestamp AT TIME ZONE p_tz) AS e
+  ),
+  tx AS (
+    SELECT t.*,
+           public.transaction_collected_amount(t."paymentStatus", t.total, t."amountPaid") AS collected,
+           (t."createdAt" AT TIME ZONE p_tz)::date AS day
+    FROM public.transactions t, b
+    WHERE t."createdAt" >= b.s AND t."createdAt" < b.e
+      AND (p_store_id IS NULL OR t."storeId" = p_store_id)
+  ),
+  pay AS (
+    SELECT p.*, (p."paidAt" AT TIME ZONE p_tz)::date AS day
+    FROM public.transaction_payments p, b
+    WHERE p."paidAt" >= b.s AND p."paidAt" < b.e
+      AND (p_store_id IS NULL OR p."storeId" = p_store_id)
+  ),
+  ex AS (
+    SELECT * FROM public.report_expense_lines(p_store_id, p_start, p_end, p_tz)
+  ),
+  items AS (
+    SELECT i ->> 'serviceId' AS sid,
+           i ->> 'serviceName' AS sname,
+           i ->> 'unit' AS unit,
+           public.report_safe_numeric(i -> 'subtotal') AS subtotal,
+           public.report_safe_numeric(i -> 'quantity') AS qty
+    FROM tx
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(tx.items) = 'array' THEN tx.items ELSE '[]'::jsonb END
+    ) AS i
+  ),
+  svc AS (
+    SELECT it.sid,
+           COALESCE(max(s.name), max(it.sname), 'Layanan Dihapus') AS name,
+           COALESCE(max(s.category), '-') AS category,
+           COALESCE(max(s.unit), max(it.unit), 'unit') AS unit,
+           COALESCE(max(s.category),
+             CASE WHEN max(it.unit) = 'kg' THEN 'Kiloan'
+                  WHEN max(it.unit) = 'm2' THEN 'Karpet'
+                  ELSE 'Lainnya' END) AS group_category,
+           sum(it.qty) AS quantity,
+           sum(it.subtotal) AS revenue
+    FROM items it
+    LEFT JOIN public.services s ON s.id::text = it.sid
+    GROUP BY it.sid
+  ),
+  tx_d AS (SELECT day, sum(total) AS gross, count(*) AS n FROM tx GROUP BY day),
+  pay_d AS (SELECT day, sum(amount) AS revenue FROM pay GROUP BY day),
+  ex_d AS (SELECT date AS day, sum(amount) AS expenses FROM ex GROUP BY date),
+  daily AS (
+    SELECT COALESCE(t.day, p.day, e.day) AS day,
+           COALESCE(p.revenue, 0) AS revenue,
+           COALESCE(e.expenses, 0) AS expenses,
+           COALESCE(t.gross, 0) AS gross,
+           COALESCE(t.n, 0) AS n
+    FROM tx_d t
+    FULL JOIN pay_d p ON p.day = t.day
+    FULL JOIN ex_d e ON e.day = COALESCE(t.day, p.day)
+  )
+  SELECT jsonb_build_object(
+    'summary', public.financial_report_summary(p_store_id, p_start, p_end, p_tz),
+    'previous', CASE WHEN p_prev_start IS NOT NULL AND p_prev_end IS NOT NULL
+                       AND p_prev_start <= p_prev_end
+                     THEN public.financial_report_summary(p_store_id, p_prev_start, p_prev_end, p_tz)
+                END,
+    'daily', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'date', d.day, 'revenue', d.revenue, 'expenses', d.expenses,
+               'gross', d.gross, 'count', d.n
+             ) ORDER BY d.day)
+      FROM daily d WHERE d.day IS NOT NULL), '[]'::jsonb),
+    'services', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'serviceId', sid, 'name', name, 'category', category, 'unit', unit,
+               'quantity', round(quantity, 2), 'revenue', revenue
+             ) ORDER BY revenue DESC, name)
+      FROM svc), '[]'::jsonb),
+    'categories', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('category', group_category, 'revenue', revenue)
+                       ORDER BY revenue DESC)
+      FROM (SELECT group_category, sum(revenue) AS revenue FROM svc
+            GROUP BY group_category HAVING sum(revenue) > 0) c), '[]'::jsonb),
+    'paymentMethods', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('method', method, 'count', n, 'amount', amount)
+                       ORDER BY amount DESC)
+      FROM (SELECT COALESCE(pay."paymentMethod", 'Tidak Tercatat') AS method,
+                   count(DISTINCT pay."transactionId") AS n,
+                   sum(pay.amount) AS amount
+            FROM pay GROUP BY 1 HAVING abs(sum(pay.amount)) >= 0.5) m), '[]'::jsonb),
+    'cashiers', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'userId', uid, 'name', name, 'transactionCount', n, 'totalRevenue', amount
+             ) ORDER BY amount DESC)
+      FROM (SELECT COALESCE(tx."createdByUserId"::text, '__none__') AS uid,
+                   COALESCE(max(pr.name),
+                     CASE WHEN tx."createdByUserId" IS NULL THEN 'Tanpa Kasir'
+                          ELSE 'Pengguna Tidak Dikenal' END) AS name,
+                   count(*) AS n, sum(tx.total) AS amount
+            FROM tx LEFT JOIN public.profiles pr ON pr.id = tx."createdByUserId"
+            GROUP BY tx."createdByUserId") c), '[]'::jsonb),
+    'customers', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'customerId', cid, 'name', name, 'count', n, 'total', amount
+             ) ORDER BY amount DESC)
+      FROM (SELECT COALESCE(tx."customerId"::text, '__umum__') AS cid,
+                   COALESCE(max(cu.name),
+                     CASE WHEN tx."customerId" IS NULL THEN 'Umum'
+                          ELSE 'Pelanggan Terhapus' END) AS name,
+                   count(*) AS n, sum(tx.total) AS amount
+            FROM tx LEFT JOIN public.customers cu ON cu.id = tx."customerId"
+            GROUP BY tx."customerId"
+            ORDER BY sum(tx.total) DESC
+            LIMIT 5) c), '[]'::jsonb),
+    'stores', CASE WHEN p_store_id IS NULL THEN COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'storeId', sid, 'name', name, 'count', n, 'gross', gross,
+               'collected', collected, 'expenses', expenses,
+               'net', collected - expenses
+             ) ORDER BY collected DESC)
+      FROM (
+        SELECT k.sid,
+               COALESCE(st.name, 'Tanpa Cabang') AS name,
+               COALESCE((SELECT count(*) FROM tx WHERE tx."storeId" IS NOT DISTINCT FROM k.sid), 0) AS n,
+               COALESCE((SELECT sum(total) FROM tx WHERE tx."storeId" IS NOT DISTINCT FROM k.sid), 0) AS gross,
+               COALESCE((SELECT sum(amount) FROM pay WHERE pay."storeId" IS NOT DISTINCT FROM k.sid), 0) AS collected,
+               COALESCE((SELECT sum(amount) FROM ex WHERE ex."storeId" IS NOT DISTINCT FROM k.sid), 0) AS expenses
+        FROM (SELECT "storeId" AS sid FROM tx UNION SELECT "storeId" FROM pay
+              UNION SELECT "storeId" FROM ex) k
+        LEFT JOIN public.stores st ON st.id = k.sid
+      ) s), '[]'::jsonb) END,
+    'receivables', COALESCE((
+      SELECT jsonb_agg(r ORDER BY r ->> 'createdAt')
+      FROM (
+        SELECT jsonb_build_object(
+                 'id', tx.id, 'invoiceCode', tx."invoiceCode",
+                 'customerName', COALESCE(cu.name, CASE WHEN tx."customerId" IS NULL THEN 'Umum' ELSE 'Pelanggan Terhapus' END),
+                 'total', tx.total, 'paid', tx.collected,
+                 'outstanding', tx.total - tx.collected,
+                 'createdAt', tx."createdAt",
+                 'ageDays', ((now() AT TIME ZONE p_tz)::date - tx.day),
+                 'orderStatus', tx."orderStatus"
+               ) AS r
+        FROM tx LEFT JOIN public.customers cu ON cu.id = tx."customerId"
+        WHERE tx.total - tx.collected > 0.5
+        ORDER BY tx."createdAt"
+        LIMIT 200
+      ) x), '[]'::jsonb),
+    'expenses', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'id', ex.id, 'date', ex.date, 'description', ex.description,
+               'category', ex.category, 'amount', ex.amount, 'storeId', ex."storeId"
+             ) ORDER BY ex.date DESC, ex.description)
+      FROM ex), '[]'::jsonb)
+  )
+  INTO v_result;
+
+  RETURN v_result;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.get_financial_report(uuid, date, date, date, date, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_financial_report(uuid, date, date, date, date, text) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.financial_report_summary(uuid, date, date, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.financial_report_summary(uuid, date, date, text) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.report_expense_lines(uuid, date, date, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.report_expense_lines(uuid, date, date, text) TO authenticated;
 
 -- ============================================
 -- END OF SETUP

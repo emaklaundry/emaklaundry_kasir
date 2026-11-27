@@ -1,27 +1,67 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { InventoryRecipe, StockOpname, InventoryUsageLog } from '../types';
+import {
+  InventoryMovement,
+  InventoryMovementKind,
+  InventoryRecipe,
+  InventoryRecipeBasis,
+  StockAdjustMode,
+  StockOpname,
+} from '../types';
 import { supabase } from '../utils/supabaseClient';
 
+/*
+ * Potong stok otomatis berjalan di database (trigger zz_transaction_inventory_* pada
+ * tabel transactions), sehingga berlaku untuk semua peran & semua jalur pembuatan nota
+ * tanpa perlu hak UPDATE inventaris di sisi klien. Modul ini hanya mengelola aturannya,
+ * penyesuaian stok manual, stock opname, dan riwayat mutasi.
+ * Lihat supabase/migrations/20261204000000_inventaris_potong_stok_otomatis.sql
+ */
+
+/** Invalidasi semua cache yang ikut berubah ketika stok berubah. */
+function invalidateStock(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['inventory'] });
+  queryClient.invalidateQueries({ queryKey: ['inventory_summary'] });
+  queryClient.invalidateQueries({ queryKey: ['inventory_movements'] });
+}
+
 // ============================================
-// RECIPE OPERATIONS
+// ATURAN POTONG STOK
 // ============================================
 
+type RecipeRow = {
+  id: string;
+  inventory_item_id: string;
+  service_id: string | null;
+  basis: string;
+  amount: number | string;
+  is_active: boolean;
+  store_id: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export function mapRecipe(r: RecipeRow): InventoryRecipe {
+  return {
+    id: String(r.id),
+    inventoryItemId: r.inventory_item_id,
+    serviceId: r.service_id ?? null,
+    basis: (r.basis === 'per_transaksi' ? 'per_transaksi' : 'per_unit') as InventoryRecipeBasis,
+    amount: Number(r.amount) || 0,
+    isActive: r.is_active !== false,
+    storeId: r.store_id,
+    createdAt: r.created_at ? new Date(r.created_at) : undefined,
+    updatedAt: r.updated_at ? new Date(r.updated_at) : undefined,
+  };
+}
+
 export async function fetchRecipes(storeId?: string): Promise<InventoryRecipe[]> {
-  let query = supabase.from('inventory_recipes').select('*');
+  let query = supabase.from('inventory_recipes').select('*').order('created_at');
   if (storeId && storeId !== 'all') {
     query = query.eq('store_id', storeId);
   }
   const { data, error } = await query;
   if (error) throw error;
-
-  return (data || []).map((r) => ({
-    id: String(r.id),
-    inventoryItemId: r.inventory_item_id || '',
-    usagePerKg: r.usage_per_kg,
-    storeId: r.store_id || '',
-    createdAt: r.created_at ? new Date(r.created_at) : undefined,
-    updatedAt: r.updated_at ? new Date(r.updated_at) : undefined,
-  }));
+  return (data || []).map((r) => mapRecipe(r as RecipeRow));
 }
 
 export function useRecipes(storeId?: string) {
@@ -32,29 +72,42 @@ export function useRecipes(storeId?: string) {
   });
 }
 
+export type RecipeInput = Pick<
+  InventoryRecipe,
+  'inventoryItemId' | 'serviceId' | 'basis' | 'amount' | 'isActive'
+> & { id?: string };
+
 export function useRecipeMutations() {
   const queryClient = useQueryClient();
+  const onSuccess = () => queryClient.invalidateQueries({ queryKey: ['inventory_recipes'] });
 
-  const upsertRecipe = useMutation({
-    mutationFn: async (
-      recipe: Omit<InventoryRecipe, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
-    ) => {
+  const saveRecipe = useMutation({
+    mutationFn: async (recipe: RecipeInput) => {
+      // store_id diisi trigger dari cabang item, jadi tidak dikirim dari klien.
       const payload = {
         inventory_item_id: recipe.inventoryItemId,
-        usage_per_kg: recipe.usagePerKg,
-        store_id: recipe.storeId,
-        updated_at: new Date().toISOString(),
+        service_id: recipe.serviceId,
+        basis: recipe.basis,
+        amount: recipe.amount,
+        is_active: recipe.isActive,
       };
-
-      const { data, error } = await supabase
-        .from('inventory_recipes')
-        .upsert(payload, { onConflict: 'inventory_item_id,store_id' })
-        .select();
-
-      if (error) throw error;
-      return data?.[0];
+      const request = recipe.id
+        ? supabase.from('inventory_recipes').update(payload).eq('id', recipe.id)
+        : supabase
+            .from('inventory_recipes')
+            .insert(payload as typeof payload & { store_id: string });
+      const { data, error } = await request.select().single();
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('Aturan untuk item, layanan, dan dasar hitung yang sama sudah ada.', {
+            cause: error,
+          });
+        }
+        throw error;
+      }
+      return mapRecipe(data as RecipeRow);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventory_recipes'] }),
+    onSuccess,
   });
 
   const deleteRecipe = useMutation({
@@ -62,90 +115,80 @@ export function useRecipeMutations() {
       const { error } = await supabase.from('inventory_recipes').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventory_recipes'] }),
+    onSuccess,
   });
 
   return {
-    upsertRecipe: upsertRecipe.mutateAsync,
+    saveRecipe: saveRecipe.mutateAsync,
     deleteRecipe: deleteRecipe.mutateAsync,
-    isLoading: upsertRecipe.isPending || deleteRecipe.isPending,
+    isLoading: saveRecipe.isPending || deleteRecipe.isPending,
   };
 }
 
-// ============================================
-// AUTO-DEDUCT INVENTORY (Called after transaction)
-// ============================================
+/** Garis nota minimal yang dibutuhkan untuk memperkirakan pemakaian bahan. */
+export interface UsageLine {
+  serviceId: string;
+  quantity: number;
+}
 
 /**
- * Automatically deduct 1 sachet sabun liquid from inventory when a transaction is created
- * Simple logic: 1 transaksi = 1 sachet sabun liquid
- * @param transactionId - The transaction ID for audit trail
- * @param storeId - Store ID
+ * Perkiraan pemakaian per item untuk sebuah nota — logika yang sama dengan fungsi
+ * database deduct_inventory_for_transaction (dipakai untuk pratinjau di UI & tes).
  */
-export async function autoDeductInventory(
-  transactionId: string,
-  storeId: string,
-): Promise<{ success: boolean; deduction?: { itemName: string; quantity: number } }> {
-  try {
-    // Find "sabun liquid" inventory item (case insensitive)
-    const { data: sabunItems, error: fetchError } = await supabase
-      .from('inventory_items')
-      .select('id, name, stock')
-      .eq('storeId', storeId)
-      .or('name.ilike.%sabun%,name.ilike.%liquid%,name.ilike.%deterjen%,name.ilike.%sachet%')
-      .limit(1);
-
-    if (fetchError) {
-      console.error('Error fetching sabun inventory:', fetchError);
-      return { success: false };
+export function estimateInventoryUsage(
+  recipes: InventoryRecipe[],
+  lines: UsageLine[],
+): Map<string, number> {
+  const usage = new Map<string, number>();
+  for (const recipe of recipes) {
+    if (!recipe.isActive) continue;
+    const matching = lines.filter((l) => !recipe.serviceId || l.serviceId === recipe.serviceId);
+    if (matching.length === 0) continue;
+    const amount =
+      recipe.basis === 'per_unit'
+        ? recipe.amount * matching.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0)
+        : recipe.amount;
+    if (amount > 0) {
+      usage.set(recipe.inventoryItemId, (usage.get(recipe.inventoryItemId) ?? 0) + amount);
     }
-
-    if (!sabunItems || sabunItems.length === 0) {
-      // No sabun/liquid/deterjen item found in inventory for store
-      return { success: true }; // No item to deduct, but not an error
-    }
-
-    const sabunItem = sabunItems[0];
-    const currentStock = sabunItem.stock ?? 0;
-    const newStock = currentStock - 1; // Deduct 1 sachet per transaction
-
-    // Update stock
-    const { error: updateError } = await supabase
-      .from('inventory_items')
-      .update({ stock: newStock })
-      .eq('id', sabunItem.id);
-
-    if (updateError) {
-      console.error('Error updating sabun stock:', updateError);
-      return { success: false };
-    }
-
-    // Log usage for audit trail (optional - table may not exist yet)
-    try {
-      await supabase.from('inventory_usage_log').insert({
-        inventory_item_id: sabunItem.id,
-        transaction_id: transactionId,
-        quantity_used: 1,
-        total_kg: 0,
-        usage_per_kg: 0,
-        store_id: storeId,
-      });
-    } catch {
-      // Usage log insert skipped (table may not exist)
-    }
-
-    return {
-      success: true,
-      deduction: { itemName: sabunItem.name, quantity: 1 },
-    };
-  } catch (error) {
-    console.error('Auto-deduct error:', error);
-    return { success: false };
   }
+  return usage;
 }
 
 // ============================================
-// STOCK OPNAME OPERATIONS
+// PENYESUAIAN STOK MANUAL
+// ============================================
+
+export interface StockAdjustInput {
+  itemId: string;
+  mode: StockAdjustMode;
+  value: number;
+  note?: string;
+}
+
+/** Ubah stok lewat RPC agar tercatat di buku besar & bisa dipakai Kasir/Operator. */
+export async function adjustInventoryStock(input: StockAdjustInput): Promise<number> {
+  const { data, error } = await supabase.rpc('adjust_inventory_stock', {
+    p_item_id: input.itemId,
+    p_mode: input.mode,
+    p_value: input.value,
+    p_note: input.note ?? undefined,
+  });
+  if (error) throw error;
+  return Number(data);
+}
+
+export function useStockAdjust() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: adjustInventoryStock,
+    onSuccess: () => invalidateStock(queryClient),
+  });
+  return { adjustStock: mutation.mutateAsync, isLoading: mutation.isPending };
+}
+
+// ============================================
+// STOCK OPNAME
 // ============================================
 
 export async function fetchStockOpname(
@@ -156,17 +199,12 @@ export async function fetchStockOpname(
   let query = supabase
     .from('stock_opname')
     .select('*, inventory_items(name)')
-    .order('recorded_at', { ascending: false });
+    .order('recorded_at', { ascending: false })
+    .limit(200);
 
-  if (storeId && storeId !== 'all') {
-    query = query.eq('store_id', storeId);
-  }
-  if (dateFrom) {
-    query = query.gte('recorded_at', dateFrom);
-  }
-  if (dateTo) {
-    query = query.lte('recorded_at', dateTo);
-  }
+  if (storeId && storeId !== 'all') query = query.eq('store_id', storeId);
+  if (dateFrom) query = query.gte('recorded_at', dateFrom);
+  if (dateTo) query = query.lte('recorded_at', dateTo);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -174,12 +212,12 @@ export async function fetchStockOpname(
   return (data || []).map((o) => ({
     id: String(o.id),
     inventoryItemId: o.inventory_item_id || '',
-    inventoryItemName: o.inventory_items?.name,
-    virtualStock: o.virtual_stock,
-    physicalStock: o.physical_stock,
-    discrepancy: o.discrepancy || 0,
+    inventoryItemName: (o.inventory_items as { name?: string } | null)?.name,
+    virtualStock: Number(o.virtual_stock),
+    physicalStock: Number(o.physical_stock),
+    discrepancy: Number(o.discrepancy) || 0,
     notes: o.notes || undefined,
-    recordedBy: o.recorded_by || '',
+    recordedBy: o.recorded_by || undefined,
     recordedAt: new Date(o.recorded_at || ''),
     storeId: o.store_id || '',
   }));
@@ -197,32 +235,23 @@ export function useStockOpnameMutations() {
   const queryClient = useQueryClient();
 
   const recordOpname = useMutation({
-    mutationFn: async (opname: Omit<StockOpname, 'id' | 'discrepancy' | 'recordedAt'>) => {
-      const { data, error } = await supabase
-        .from('stock_opname')
-        .insert({
-          inventory_item_id: opname.inventoryItemId,
-          virtual_stock: opname.virtualStock,
-          physical_stock: opname.physicalStock,
-          notes: opname.notes,
-          recorded_by: opname.recordedBy,
-          store_id: opname.storeId,
-        })
-        .select();
-
+    mutationFn: async (opname: {
+      inventoryItemId: string;
+      physicalStock: number;
+      notes?: string;
+    }) => {
+      // Atomik di database: catat opname + set stok = stok fisik + tulis buku besar.
+      const { data, error } = await supabase.rpc('record_stock_opname', {
+        p_item_id: opname.inventoryItemId,
+        p_physical_stock: opname.physicalStock,
+        p_notes: opname.notes ?? undefined,
+      });
       if (error) throw error;
-
-      // Reset stock to match physical after opname
-      await supabase
-        .from('inventory_items')
-        .update({ stock: opname.physicalStock })
-        .eq('id', opname.inventoryItemId);
-
-      return data?.[0];
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock_opname'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      invalidateStock(queryClient);
     },
   });
 
@@ -233,49 +262,63 @@ export function useStockOpnameMutations() {
 }
 
 // ============================================
-// USAGE LOG (for reports)
+// RIWAYAT MUTASI STOK
 // ============================================
 
-export async function fetchUsageLog(
-  storeId?: string,
-  dateFrom?: string,
-  dateTo?: string,
-): Promise<InventoryUsageLog[]> {
-  let query = supabase
-    .from('inventory_usage_log')
-    .select('*, inventory_items(name)')
-    .order('created_at', { ascending: false });
+export interface MovementFilter {
+  storeId?: string;
+  itemId?: string;
+  kind?: InventoryMovementKind;
+  limit?: number;
+}
 
-  if (storeId && storeId !== 'all') {
-    query = query.eq('store_id', storeId);
-  }
-  if (dateFrom) {
-    query = query.gte('created_at', dateFrom);
-  }
-  if (dateTo) {
-    query = query.lte('created_at', dateTo);
-  }
+export async function fetchInventoryMovements(
+  filter: MovementFilter = {},
+): Promise<InventoryMovement[]> {
+  const { storeId, itemId, kind, limit = 100 } = filter;
+  let query = supabase
+    .from('inventory_movements')
+    .select('*, inventory_items(name), transactions("invoiceCode"), profiles(name)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (storeId && storeId !== 'all') query = query.eq('store_id', storeId);
+  if (itemId) query = query.eq('inventory_item_id', itemId);
+  if (kind) query = query.eq('kind', kind);
 
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data || []).map((log) => ({
-    id: String(log.id),
-    inventoryItemId: log.inventory_item_id || '',
-    inventoryItemName: log.inventory_items?.name,
-    transactionId: log.transaction_id || undefined,
-    quantityUsed: log.quantity_used,
-    totalKg: log.total_kg,
-    usagePerKg: log.usage_per_kg,
-    createdAt: new Date(log.created_at || ''),
-    storeId: log.store_id || '',
+  return ((data || []) as unknown as Record<string, unknown>[]).map((m) => ({
+    id: String(m.id),
+    inventoryItemId: String(m.inventory_item_id),
+    inventoryItemName: (m.inventory_items as { name?: string } | null)?.name,
+    transactionId: (m.transaction_id as string | null) || undefined,
+    invoiceCode: (m.transactions as { invoiceCode?: string } | null)?.invoiceCode || undefined,
+    kind: m.kind as InventoryMovementKind,
+    quantity: Number(m.quantity),
+    stockBefore: Number(m.stock_before),
+    stockAfter: Number(m.stock_after),
+    note: (m.note as string | null) || undefined,
+    createdByName: (m.profiles as { name?: string } | null)?.name,
+    createdAt: new Date(String(m.created_at)),
+    storeId: (m.store_id as string | null) || '',
   }));
 }
 
-export function useUsageLog(storeId?: string, dateFrom?: string, dateTo?: string) {
+export function useInventoryMovements(filter: MovementFilter, enabled = true) {
   return useQuery({
-    queryKey: ['inventory_usage_log', storeId, dateFrom, dateTo],
-    queryFn: () => fetchUsageLog(storeId, dateFrom, dateTo),
-    staleTime: 60 * 1000,
+    queryKey: ['inventory_movements', filter],
+    queryFn: () => fetchInventoryMovements(filter),
+    enabled,
+    staleTime: 30 * 1000,
   });
 }
+
+export const MOVEMENT_KIND_LABELS: Record<InventoryMovementKind, string> = {
+  awal: 'Stok awal',
+  restok: 'Restok',
+  penyesuaian: 'Penyesuaian',
+  opname: 'Stock opname',
+  transaksi: 'Potong otomatis',
+  koreksi_transaksi: 'Koreksi nota',
+};

@@ -1,51 +1,64 @@
 import React, { useState } from 'react';
 import { formatRupiah, parseRupiah } from '../utils/formatting';
+import { getLocalDateString, parseLocalDate } from '../utils/dateHelpers';
+import useToasts from '../contexts/useToasts';
 import Modal from './Modal';
 import { MaintenanceLog } from '@/types';
 
 interface MaintenanceFormModalProps {
   assetName: string;
+  /** Jika diisi, form berjalan dalam mode edit. */
+  initialLog?: MaintenanceLog | null;
   onClose: () => void;
-  onSave: (log: Omit<MaintenanceLog, 'id'>) => void;
+  onSave: (log: Omit<MaintenanceLog, 'id'>) => void | Promise<void>;
 }
 
 const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
   assetName,
+  initialLog,
   onClose,
   onSave,
 }) => {
-  const [formData, setFormData] = useState<Omit<MaintenanceLog, 'id'>>({
-    date: new Date(),
-    description: '',
-    cost: 0,
-  });
+  const { addToast } = useToasts();
+  // Tanggal disimpan sebagai string YYYY-MM-DD lokal agar tidak bergeser karena UTC.
+  const [date, setDate] = useState(() =>
+    getLocalDateString(initialLog?.date ? new Date(initialLog.date) : undefined),
+  );
+  const [description, setDescription] = useState(initialLog?.description ?? '');
+  const [cost, setCost] = useState(Number(initialLog?.cost) || 0);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    if (name === 'cost') {
-      setFormData((prev) => ({ ...prev, cost: parseRupiah(value) }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: type === 'date' ? new Date(value) : value }));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    if (isSaving) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      addToast('Tanggal perawatan harus diisi.', 'error');
+      return;
+    }
+    if (!description.trim()) {
+      addToast('Deskripsi perawatan harus diisi.', 'error');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onSave({ date: parseLocalDate(date), description: description.trim(), cost });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <Modal
       isOpen={true}
       onClose={onClose}
-      title={`Tambah Log untuk ${assetName}`}
+      title={initialLog ? `Edit Log ${assetName}` : `Tambah Log untuk ${assetName}`}
       footer={
         <>
-          <button onClick={onClose} className="btn btn-secondary">
+          <button onClick={onClose} className="btn btn-secondary" disabled={isSaving}>
             Batal
           </button>
-          <button onClick={handleSubmit} className="btn btn-primary">
-            Simpan
+          <button onClick={handleSubmit} className="btn btn-primary" disabled={isSaving}>
+            {isSaving ? 'Menyimpan...' : 'Simpan'}
           </button>
         </>
       }
@@ -59,8 +72,9 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             type="date"
             name="date"
             id="date"
-            value={formData.date.toISOString().split('T')[0]}
-            onChange={handleChange}
+            value={date}
+            max={getLocalDateString()}
+            onChange={(e) => setDate(e.target.value)}
             className="form-input"
             required
           />
@@ -73,9 +87,10 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
             type="text"
             name="description"
             id="description"
-            value={formData.description}
-            onChange={handleChange}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             className="form-input"
+            placeholder="Contoh: Ganti bearing mesin cuci"
             required
           />
         </div>
@@ -85,12 +100,12 @@ const MaintenanceFormModal: React.FC<MaintenanceFormModalProps> = ({
           </label>
           <input
             type="text"
+            inputMode="numeric"
             name="cost"
             id="cost"
-            value={formatRupiah(formData.cost)}
-            onChange={handleChange}
+            value={formatRupiah(cost)}
+            onChange={(e) => setCost(parseRupiah(e.target.value))}
             className="form-input"
-            required
           />
         </div>
       </form>

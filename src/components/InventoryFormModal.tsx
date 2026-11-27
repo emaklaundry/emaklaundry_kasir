@@ -21,13 +21,13 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
     const isNumber = ['stock', 'lowStockThreshold'].includes(name);
     setFormData((prev) => ({
       ...prev,
-      [name]: isNumber ? Math.max(0, parseFloat(value) || 0) : value,
+      [name]: isNumber ? Math.max(0, Math.round((parseFloat(value) || 0) * 1000) / 1000) : value,
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    onSave({ ...formData, name: formData.name.trim(), unit: formData.unit.trim() });
   };
 
   return (
@@ -64,18 +64,28 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="stock" className="form-label">
-              Stok
+              {item ? 'Stok saat ini' : 'Stok awal'}
             </label>
             <input
               type="number"
               min="0"
+              step="any"
+              inputMode="decimal"
               name="stock"
               id="stock"
               value={formData.stock}
               onChange={handleChange}
               className="form-input"
+              // Saat edit, stok diubah lewat "Sesuaikan Stok" agar tercatat di riwayat.
+              readOnly={!!item}
+              aria-describedby={item ? 'stock-hint' : undefined}
               required
             />
+            {item && (
+              <p id="stock-hint" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Ubah lewat tombol Sesuaikan Stok di tabel.
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="unit" className="form-label">
@@ -96,9 +106,14 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({ item, onClose, 
           <label htmlFor="lowStockThreshold" className="form-label">
             Ambang Batas Stok Rendah
           </label>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+            Isi 0 untuk mematikan peringatan stok rendah.
+          </p>
           <input
             type="number"
             min="0"
+            step="any"
+            inputMode="decimal"
             name="lowStockThreshold"
             id="lowStockThreshold"
             value={formData.lowStockThreshold}

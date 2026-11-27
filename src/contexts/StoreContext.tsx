@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Store } from '../types';
 import { supabase } from '../utils/supabaseClient';
+import { useSessionUserId } from '../hooks/useSessionUserId';
 
 const fetchStores = async (): Promise<Store[]> => {
   const { data, error } = await supabase.from('stores').select('*');
@@ -14,9 +15,11 @@ const fetchStores = async (): Promise<Store[]> => {
 
 export function useStores() {
   const queryClient = useQueryClient();
+  const userId = useSessionUserId();
   const { data: stores = [], ...query } = useQuery({
-    queryKey: ['stores'],
+    queryKey: ['stores', userId],
     queryFn: fetchStores,
+    enabled: !!userId,
     // Data stores jarang berubah, cache 10 menit
     staleTime: 10 * 60 * 1000,
     // Jangan auto-refetch saat window focus (mencegah gangguan saat input)
@@ -41,7 +44,11 @@ export function useStores() {
         .eq('id', id)
         .select();
       if (error) throw error;
-      return updated?.[0] || null;
+      // RLS menolak tanpa error (0 baris berubah) bila user tidak berhak mengubah cabang.
+      if (!updated?.length) {
+        throw new Error('Data cabang tidak tersimpan: hanya Super Admin yang dapat mengubahnya.');
+      }
+      return updated[0];
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] }),
   });

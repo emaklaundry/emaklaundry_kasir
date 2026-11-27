@@ -9,6 +9,7 @@ const fetchServices = async (): Promise<Service[]> => {
     ...s,
     storeId: s.storeId ?? undefined,
     washType: s.wash_type, // Map snake_case to camelCase
+    minQuantity: Number(s.minQuantity) || 0,
   })) as Service[];
 };
 

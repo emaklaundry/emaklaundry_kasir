@@ -1,20 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Settings } from '../types';
 import { supabase } from '../utils/supabaseClient';
+import { useSessionUserId } from '../hooks/useSessionUserId';
 
 const fetchSettings = async (): Promise<Settings | null> => {
   // Use a safer fetch that returns the first row if multiple exist and doesn't fail
   // if the table accidentally contains more than one settings row.
-  const { data, error } = await supabase.from('settings').select('*').limit(1);
+  const { data, error } = await supabase.from('settings').select('*').order('id').limit(1);
   if (error) throw error;
   return data && data.length > 0 ? (data[0] as Settings) : null;
 };
 
 export function useSettings() {
   const queryClient = useQueryClient();
+  // Dipanggil di AppRoutes sebelum login: tunggu sesi agar null dari RLS (anonim) tidak
+  // ter-cache — kalau tidak, mode maintenance & pengaturan toko terlewat setelah login.
+  const userId = useSessionUserId();
   const { data: settings = null, ...query } = useQuery({
-    queryKey: ['settings'],
+    queryKey: ['settings', userId],
     queryFn: fetchSettings,
+    enabled: !!userId,
   });
 
   const updateSettings = useMutation({
@@ -29,6 +34,7 @@ export function useSettings() {
       const { data: existingRows, error: fetchErr } = await supabase
         .from('settings')
         .select('*')
+        .order('id')
         .limit(1);
       if (fetchErr) throw fetchErr;
       const existing =

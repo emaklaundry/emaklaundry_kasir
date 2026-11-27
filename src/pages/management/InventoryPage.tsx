@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import {
   EditIcon,
   Trash2Icon,
@@ -11,8 +10,10 @@ import {
   ArrowDownIcon,
   DownloadIcon,
   UploadIcon,
-  SettingsIcon,
   CheckCircleIcon,
+  HistoryIcon,
+  PlusIcon,
+  BoltIcon,
 } from '../../components/icons';
 import {
   exportInventoryToExcel,
@@ -24,20 +25,31 @@ import EmptyState from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import {
   fetchInventory,
+  fetchInventorySummary,
   useInventoryMutations,
   InventorySortKey,
 } from '../../contexts/InventoryContext';
+import { adjustInventoryStock, useRecipes } from '../../contexts/InventoryRecipeContext';
 import useAppContext from '../../contexts/useAppContext';
 import InventoryFormModal from '../../components/InventoryFormModal';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 import useToasts from '../../contexts/useToasts';
 import { useServerSort } from '../../hooks/useServerSort';
 import { useDebounce } from '../../hooks/useDebounce';
-
 import Pagination from '../../components/Pagination';
-import { InventoryItem, UserRole } from '@/types';
+import { InventoryItem, StockAdjustMode, UserRole } from '@/types';
 import RecipeConfigModal from '../../components/RecipeConfigModal';
 import StockOpnameModal from '../../components/StockOpnameModal';
+import StockAdjustModal from '../../components/StockAdjustModal';
+import StockHistoryModal from '../../components/StockHistoryModal';
+import { formatQty, getStockLevel, STOCK_LEVEL_META } from '../../utils/inventoryFormat';
+
+type StockFilter = 'all' | 'low_stock' | 'out_of_stock';
+
+const parseFilter = (value: string | null): StockFilter =>
+  value === 'low_stock' || value === 'out_of_stock' ? value : 'all';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const InventoryPage: React.FC = () => {
   const { currentUser, selectedStoreId, stores } = useAppContext();
@@ -45,6 +57,10 @@ const InventoryPage: React.FC = () => {
   const pageSize = 20;
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = parseFilter(searchParams.get('filter'));
 
   // Urutan dikerjakan server agar berlaku untuk semua halaman; ganti urutan → kembali ke halaman 1
   const { sortConfig, requestSort } = useServerSort<InventorySortKey>(
@@ -54,7 +70,17 @@ const InventoryPage: React.FC = () => {
   const sortBy = sortConfig.key;
   const sortAscending = sortConfig.direction === 'ascending';
 
-  const { data: result = { data: [], count: 0 } } = useQuery({
+  // Pencarian/filter/cabang baru → kembali ke halaman 1 (hindari halaman kosong).
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearchTerm, filter, selectedStoreId]);
+
+  const isAllStores = selectedStoreId === 'all';
+  const showStoreColumn = currentUser?.role === UserRole.SuperAdmin && isAllStores;
+  const canAddNewItem = !(currentUser?.role === UserRole.SuperAdmin && isAllStores);
+  const activeStoreId = !isAllStores ? selectedStoreId : undefined;
+
+  const { data: result = { data: [], count: 0 }, isFetching } = useQuery({
     queryKey: [
       'inventory',
       {
@@ -64,6 +90,7 @@ const InventoryPage: React.FC = () => {
         storeId: selectedStoreId,
         sortBy,
         sortAscending,
+        filter,
       },
     ],
     queryFn: () =>
@@ -74,12 +101,26 @@ const InventoryPage: React.FC = () => {
         storeId: selectedStoreId,
         sortBy,
         sortAscending,
+        lowStockOnly: filter === 'low_stock',
+        outOfStockOnly: filter === 'out_of_stock',
       }),
     placeholderData: (previousData) => previousData,
   });
   const inventory = result.data;
   const totalCount = result.count;
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  const { data: summary } = useQuery({
+    queryKey: ['inventory_summary', selectedStoreId],
+    queryFn: () => fetchInventorySummary(selectedStoreId),
+  });
+
+  const { data: recipes = [] } = useRecipes(activeStoreId);
+  const autoItemIds = useMemo(
+    () => new Set(recipes.filter((r) => r.isActive).map((r) => r.inventoryItemId)),
+    [recipes],
+  );
+  const activeRuleCount = recipes.filter((r) => r.isActive).length;
 
   const { addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventoryMutations();
   const { addAuditLog } = useAuditLogs();
@@ -96,26 +137,26 @@ const InventoryPage: React.FC = () => {
   const deleteInventoryMutation = useMutation({
     mutationFn: async (id: string) => deleteInventoryItem(id),
   });
+
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [isOpnameModalOpen, setIsOpnameModalOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [filter, setFilter] = useState<'all' | 'low_stock'>(() =>
-    searchParams.get('filter') === 'low_stock' ? 'low_stock' : 'all',
-  );
+  const [adjustTarget, setAdjustTarget] = useState<{
+    item: InventoryItem;
+    mode: StockAdjustMode;
+  } | null>(null);
+  const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     if (location.state?.openModal) {
-      handleOpenFormModal();
-      navigate(location.pathname, { replace: true, state: {} });
+      setCurrentItem(null);
+      setIsFormModalOpen(true);
+      navigate(location.pathname + location.search, { replace: true, state: {} });
     }
-    const filterParam = searchParams.get('filter');
-    setFilter(filterParam === 'low_stock' ? 'low_stock' : 'all');
-  }, [location.state, location.pathname, navigate, searchParams]);
+  }, [location.state, location.pathname, location.search, navigate]);
 
   const handleOpenFormModal = (item: InventoryItem | null = null) => {
     setCurrentItem(item);
@@ -126,6 +167,11 @@ const InventoryPage: React.FC = () => {
     setIsFormModalOpen(false);
     setCurrentItem(null);
   };
+
+  const errorMessage = (error: unknown) =>
+    error && typeof error === 'object' && 'message' in error
+      ? String((error as { message: unknown }).message)
+      : 'Unknown error';
 
   const handleSaveItem = async (item: Omit<InventoryItem, 'id' | 'storeId'>) => {
     const storeId =
@@ -138,9 +184,12 @@ const InventoryPage: React.FC = () => {
     const toastId = addToast('Menyimpan item inventaris...', 'info');
     try {
       if (currentItem && currentItem.id) {
+        // Stok tidak ikut diubah di sini — pakai Sesuaikan Stok agar tercatat di riwayat.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { stock: _stock, ...rest } = item;
         await updateInventoryMutation.mutateAsync({
           id: currentItem.id,
-          data: { ...item, storeId },
+          data: { ...rest, storeId },
         });
         addAuditLog(`Memperbarui item inventaris: "${item.name}".`, storeId);
         updateToast(toastId, 'Data inventaris berhasil diperbarui!', 'success');
@@ -151,64 +200,25 @@ const InventoryPage: React.FC = () => {
       }
       handleCloseFormModal();
     } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'message' in error) {
-        updateToast(toastId, `Gagal menyimpan: ${(error as { message: string }).message}`, 'error');
-      } else {
-        updateToast(toastId, 'Gagal menyimpan: Unknown error', 'error');
-      }
+      updateToast(toastId, `Gagal menyimpan: ${errorMessage(error)}`, 'error');
     }
-  };
-
-  const handleDelete = (item: InventoryItem) => {
-    setItemToDelete(item);
   };
 
   const confirmDelete = async () => {
-    if (itemToDelete) {
-      const toastId = addToast('Menghapus item inventaris...', 'info');
-      try {
-        await deleteInventoryMutation.mutateAsync(itemToDelete.id);
-        addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId!);
-        updateToast(toastId, 'Item inventaris berhasil dihapus!', 'success');
-      } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'message' in error) {
-          updateToast(
-            toastId,
-            `Gagal menghapus: ${(error as { message: string }).message}`,
-            'error',
-          );
-        } else {
-          updateToast(toastId, 'Gagal menghapus: Unknown error', 'error');
-        }
-      } finally {
-        setItemToDelete(null);
-      }
+    if (!itemToDelete) return;
+    const toastId = addToast('Menghapus item inventaris...', 'info');
+    try {
+      await deleteInventoryMutation.mutateAsync(itemToDelete.id);
+      addAuditLog(`Menghapus item inventaris: "${itemToDelete.name}".`, itemToDelete.storeId!);
+      updateToast(toastId, 'Item inventaris berhasil dihapus!', 'success');
+    } catch (error: unknown) {
+      updateToast(toastId, `Gagal menghapus: ${errorMessage(error)}`, 'error');
+    } finally {
+      setItemToDelete(null);
     }
   };
 
-  const inventoryWithStore = useMemo(
-    () =>
-      inventory.map((item) => ({
-        ...item,
-        storeName: stores.find((s) => s.id === item.storeId)?.name || 'N/A',
-      })),
-    [inventory, stores],
-  );
-
-  const filteredInventory = useMemo(
-    () =>
-      inventoryWithStore.filter((item) => {
-        if (filter === 'low_stock') {
-          // FIXED: Exclude items with threshold=0 (monitoring disabled)
-          return item.lowStockThreshold > 0 && item.stock <= item.lowStockThreshold;
-        }
-        return true;
-      }),
-    [inventoryWithStore, filter],
-  );
-
-  // Data sudah diurutkan oleh server (lihat useServerSort di atas)
-  const sortedInventory = filteredInventory;
+  const storeNameById = useMemo(() => new Map(stores.map((s) => [s.id, s.name])), [stores]);
 
   const getSortIcon = (key: InventorySortKey) => {
     if (sortConfig.key !== key) return null;
@@ -217,54 +227,38 @@ const InventoryPage: React.FC = () => {
     return <ArrowDownIcon className="w-4 h-4 inline ml-1" />;
   };
 
-  const canAddNewItem = !(currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all');
-
-  const handleFilterChange = (newFilter: 'all' | 'low_stock') => {
-    setFilter(newFilter);
-    if (newFilter === 'low_stock') {
-      searchParams.set('filter', 'low_stock');
-    } else {
-      searchParams.delete('filter');
-    }
-    setSearchParams(searchParams);
+  const handleFilterChange = (newFilter: StockFilter) => {
+    const next = new URLSearchParams(searchParams);
+    if (newFilter === 'all') next.delete('filter');
+    else next.set('filter', newFilter);
+    setSearchParams(next);
   };
 
-  // Excel Export
+  /** Semua item (tanpa paginasi) sesuai cabang & pencarian aktif. */
+  const fetchAllInventory = async (opts: { search?: string; storeId?: string } = {}) => {
+    let query = supabase.from('inventory_items').select('*').order('name');
+    const storeId = opts.storeId ?? selectedStoreId;
+    if (storeId && storeId !== 'all') query = query.eq('storeId', storeId);
+    if (opts.search) query = query.ilike('name', `%${opts.search}%`);
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []).map((item) => ({
+      ...item,
+      stock: Number(item.stock) || 0,
+      lowStockThreshold: Number(item.lowStockThreshold) || 0,
+      storeId: item.storeId ?? undefined,
+    })) as unknown as InventoryItem[];
+  };
+
   const handleExportToExcel = async () => {
-    const toastId = addToast('Mengekspor inventaris...', 'info');
+    const toastId = addToast('Mengambil semua data inventaris...', 'info');
     try {
-      // Fetch SEMUA item inventaris dengan filter yang sama, tanpa pagination
-      updateToast(toastId, 'Mengambil semua data inventaris...', 'info');
-
-      let query = supabase.from('inventory_items').select('*', { count: 'exact' });
-
-      // Terapkan filter store yang sama
-      if (selectedStoreId && selectedStoreId !== 'all') {
-        query = query.eq('storeId', selectedStoreId);
-      }
-
-      // Terapkan search term jika ada
-      if (debouncedSearchTerm) {
-        query = query.ilike('name', `%${debouncedSearchTerm}%`);
-      }
-
-      const { data: allInventory, error } = await query;
-
-      if (error) throw error;
-      if (!allInventory || allInventory.length === 0) {
+      const allInventory = await fetchAllInventory({ search: debouncedSearchTerm });
+      if (allInventory.length === 0) {
         updateToast(toastId, 'Tidak ada item inventaris untuk diekspor.', 'warning');
         return;
       }
-
-      updateToast(toastId, `Mengekspor ${allInventory.length} item...`, 'info');
-
-      // Convert null to undefined untuk kompatibilitas
-      const inventoryToExport = allInventory.map((item) => ({
-        ...item,
-        storeId: item.storeId ?? undefined,
-      })) as unknown as InventoryItem[];
-
-      await exportInventoryToExcel(inventoryToExport);
+      await exportInventoryToExcel(allInventory);
       updateToast(
         toastId,
         `Berhasil mengekspor ${allInventory.length} item inventaris ke Excel.`,
@@ -272,19 +266,32 @@ const InventoryPage: React.FC = () => {
       );
     } catch (error) {
       console.error('Export error:', error);
-      addToast('Gagal export data ke Excel', 'error');
+      updateToast(toastId, 'Gagal export data ke Excel', 'error');
     }
   };
 
-  // Excel Import
   const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const storeId = isAllStores ? currentUser?.storeId : selectedStoreId;
+    if (!storeId) {
+      addToast('Pilih cabang spesifik sebelum import.', 'warning');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setIsImporting(true);
     const toastId = addToast('Memproses import data...', 'info');
 
     try {
-      const importedItems = await importInventoryFromExcel(file);
+      const [importedItems, existing] = await Promise.all([
+        importInventoryFromExcel(file),
+        fetchAllInventory({ storeId }),
+      ]);
+      // Cek duplikat terhadap SELURUH item cabang, bukan hanya halaman yang tampil.
+      const byId = new Map(existing.map((i) => [i.id, i]));
+      const byName = new Map(existing.map((i) => [i.name.trim().toLowerCase(), i]));
 
       let successCount = 0;
       let errorCount = 0;
@@ -292,100 +299,73 @@ const InventoryPage: React.FC = () => {
 
       for (const item of importedItems) {
         try {
-          if (item.id) {
-            // Validate UUID format before UPDATE
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            if (!uuidRegex.test(item.id)) {
-              console.warn('Invalid UUID skipped:', item.id);
-              skipCount++;
-              continue;
-            }
-
-            // Update existing item
-            const updatePayload: Partial<InventoryItem> = {
-              name: item.name!,
-              stock: item.stock!,
-              unit: item.unit!,
-              lowStockThreshold: item.lowStockThreshold!,
-            };
-
-            if (selectedStoreId !== 'all') {
-              updatePayload.storeId = selectedStoreId;
-            }
-
-            await updateInventoryMutation.mutateAsync({
-              id: item.id,
-              data: updatePayload,
-            });
-            successCount++;
-          } else {
-            // Check for duplicate before adding new item
-            const existingItem = inventory?.find(
-              (i) => i.name.toLowerCase() === item.name!.toLowerCase(),
-            );
-            if (existingItem) {
-              console.warn('Duplicate item skipped:', item.name);
-              skipCount++;
-              continue;
-            }
-
-            // Ensure storeId is set for INSERT (RLS policy requirement)
-            const storeId = selectedStoreId === 'all' ? currentUser?.storeId : selectedStoreId;
-
-            if (!storeId) {
-              console.error('storeId is required for new items');
-              errorCount++;
-              continue;
-            }
-
-            // Add new item
-            await addInventoryMutation.mutateAsync({
-              name: item.name!,
-              stock: item.stock!,
-              unit: item.unit!,
-              lowStockThreshold: item.lowStockThreshold!,
-              storeId: storeId!,
-            });
-            successCount++;
+          const nameKey = (item.name ?? '').trim().toLowerCase();
+          if (!nameKey) {
+            skipCount++;
+            continue;
           }
+          const target =
+            (item.id && UUID_RE.test(item.id) ? byId.get(item.id) : undefined) ??
+            byName.get(nameKey);
+
+          if (item.id && !target) {
+            // ID dari cabang lain / tidak dikenal
+            skipCount++;
+            continue;
+          }
+
+          if (target) {
+            await updateInventoryMutation.mutateAsync({
+              id: target.id,
+              data: {
+                name: item.name!.trim(),
+                unit: item.unit!,
+                lowStockThreshold: item.lowStockThreshold!,
+              },
+            });
+            if (item.stock !== undefined && Number(item.stock) !== target.stock) {
+              await adjustInventoryStock({
+                itemId: target.id,
+                mode: 'set',
+                value: Math.max(0, Number(item.stock) || 0),
+                note: 'Import Excel',
+              });
+            }
+          } else {
+            const created = await addInventoryMutation.mutateAsync({
+              name: item.name!.trim(),
+              stock: Math.max(0, Number(item.stock) || 0),
+              unit: item.unit!,
+              lowStockThreshold: item.lowStockThreshold!,
+              storeId,
+            });
+            if (created) byName.set(nameKey, created as unknown as InventoryItem);
+          }
+          successCount++;
         } catch (error) {
           console.error('Error importing item:', item, error);
           errorCount++;
         }
       }
 
-      if (skipCount > 0) {
-        updateToast(
-          toastId,
-          `Import selesai: ${successCount} berhasil, ${errorCount} gagal, ${skipCount} dilewati (duplikat/invalid)`,
-          'warning',
-        );
-      } else if (errorCount > 0) {
-        updateToast(
-          toastId,
-          `Import selesai: ${successCount} berhasil, ${errorCount} gagal`,
-          'warning',
-        );
-      } else {
-        updateToast(toastId, `Berhasil import ${successCount} item inventaris`, 'success');
-      }
-
-      addAuditLog(
-        `Import ${successCount} item inventaris dari Excel`,
-        selectedStoreId === 'all' ? undefined : selectedStoreId,
+      const parts = [`${successCount} berhasil`];
+      if (errorCount) parts.push(`${errorCount} gagal`);
+      if (skipCount) parts.push(`${skipCount} dilewati`);
+      updateToast(
+        toastId,
+        `Import selesai: ${parts.join(', ')}`,
+        errorCount || skipCount ? 'warning' : 'success',
       );
+      addAuditLog(`Import ${successCount} item inventaris dari Excel`, storeId);
     } catch (error) {
       console.error('Import error:', error);
       updateToast(toastId, 'Gagal import data dari Excel', 'error');
     } finally {
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // Download Template
   const handleDownloadTemplate = async () => {
     try {
       await downloadInventoryTemplate();
@@ -396,24 +376,159 @@ const InventoryPage: React.FC = () => {
     }
   };
 
+  const summaryCards: {
+    key: StockFilter | 'rules';
+    label: string;
+    value: number | undefined;
+    tone: string;
+  }[] = [
+    {
+      key: 'all',
+      label: 'Total Item',
+      value: summary?.total,
+      tone: 'text-slate-900 dark:text-white',
+    },
+    {
+      key: 'low_stock',
+      label: 'Perlu Restok',
+      value: summary?.lowStock,
+      tone: 'text-yellow-600 dark:text-yellow-400',
+    },
+    {
+      key: 'out_of_stock',
+      label: 'Stok Habis',
+      value: summary?.outOfStock,
+      tone: 'text-red-600 dark:text-red-400',
+    },
+  ];
+
+  const hasQuery = !!debouncedSearchTerm || filter !== 'all';
+  const emptyState = (
+    <EmptyState
+      icon={<PackageIcon className="mx-auto w-12 h-12 text-slate-400" />}
+      title={hasQuery ? 'Item Tidak Ditemukan' : 'Belum Ada Item Inventaris'}
+      description={
+        hasQuery
+          ? 'Coba kata kunci atau filter lain.'
+          : 'Mulai dengan menambahkan item pertama Anda.'
+      }
+    />
+  );
+
+  const renderActions = (item: InventoryItem) => (
+    <>
+      <button
+        aria-label={`Sesuaikan stok ${item.name}`}
+        title="Sesuaikan stok (restok / kurangi)"
+        onClick={() => setAdjustTarget({ item, mode: 'tambah' })}
+        className="btn btn-ghost btn-icon text-green-600 dark:text-green-400"
+      >
+        <PlusIcon className="w-5 h-5" />
+      </button>
+      <button
+        aria-label={`Riwayat stok ${item.name}`}
+        title="Riwayat stok"
+        onClick={() => setHistoryItem(item)}
+        className="btn btn-ghost btn-icon"
+      >
+        <HistoryIcon className="w-5 h-5" />
+      </button>
+      <button
+        aria-label={`Edit ${item.name}`}
+        title="Edit item"
+        onClick={() => handleOpenFormModal(item)}
+        className="btn btn-ghost btn-icon"
+      >
+        <EditIcon className="w-5 h-5" />
+      </button>
+      <button
+        aria-label={`Hapus ${item.name}`}
+        title="Hapus item"
+        onClick={() => setItemToDelete(item)}
+        className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
+      >
+        <Trash2Icon className="w-5 h-5" />
+      </button>
+    </>
+  );
+
+  const autoBadge = (item: InventoryItem) =>
+    autoItemIds.has(item.id) && (
+      <span
+        className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-300 align-middle"
+        title="Stok dipotong otomatis setiap nota"
+      >
+        <BoltIcon className="w-3 h-3" /> Otomatis
+      </span>
+    );
+
+  const columnCount = showStoreColumn ? 8 : 7;
+
   return (
     <div className="space-y-6">
+      {/* Ringkasan */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {summaryCards.map((card) => (
+          <button
+            key={card.key}
+            type="button"
+            onClick={() => handleFilterChange(card.key as StockFilter)}
+            aria-pressed={filter === card.key}
+            className={`card p-3 text-left transition ring-offset-2 ${
+              filter === card.key ? 'ring-2 ring-blue-500' : 'hover:shadow-md'
+            }`}
+          >
+            <p className="text-xs text-slate-500 dark:text-slate-400">{card.label}</p>
+            <p className={`text-2xl font-bold ${card.tone}`}>{card.value ?? '–'}</p>
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => setIsRecipeModalOpen(true)}
+          disabled={!canAddNewItem}
+          className="card p-3 text-left hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+          title={canAddNewItem ? 'Atur potong stok otomatis' : 'Pilih cabang spesifik'}
+        >
+          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+            <BoltIcon className="w-3.5 h-3.5" /> Potong Otomatis
+          </p>
+          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            {canAddNewItem ? activeRuleCount : '–'}
+            <span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">
+              aturan aktif
+            </span>
+          </p>
+        </button>
+      </div>
+
+      {canAddNewItem && activeRuleCount === 0 && (summary?.total ?? 0) > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3 text-sm text-blue-800 dark:text-blue-200">
+          <BoltIcon className="w-5 h-5 flex-shrink-0" />
+          <p className="flex-1">
+            Belum ada aturan potong stok otomatis. Atur takaran sabun, pewangi, atau plastik per
+            kg/nota agar stok berkurang sendiri setiap transaksi.
+          </p>
+          <button className="btn btn-primary btn-sm" onClick={() => setIsRecipeModalOpen(true)}>
+            Atur Sekarang
+          </button>
+        </div>
+      )}
+
       <div className="flex justify-end">
         <div className="flex gap-2 flex-wrap justify-end">
-          {/* Recipe Config & Stock Opname Buttons */}
           <button
             onClick={() => setIsRecipeModalOpen(true)}
             disabled={!canAddNewItem}
             className="btn btn-secondary btn-sm"
-            title="Konfigurasi Resep Bahan"
+            title="Atur potong stok otomatis per transaksi"
           >
-            <SettingsIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Resep</span>
+            <BoltIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Potong Otomatis</span>
           </button>
 
           <button
             onClick={() => setIsOpnameModalOpen(true)}
-            disabled={inventory.length === 0}
+            disabled={!canAddNewItem || (summary?.total ?? 0) === 0}
             className="btn btn-secondary btn-sm"
             title="Stock Opname"
           >
@@ -421,7 +536,6 @@ const InventoryPage: React.FC = () => {
             <span className="hidden sm:inline text-sm">Opname</span>
           </button>
 
-          {/* Excel Import/Export Buttons */}
           <button
             onClick={handleDownloadTemplate}
             className="btn btn-secondary btn-sm"
@@ -442,18 +556,20 @@ const InventoryPage: React.FC = () => {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={!canAddNewItem}
+            disabled={!canAddNewItem || isImporting}
             className="btn btn-secondary btn-sm"
             title="Import dari Excel"
           >
             <UploadIcon className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Import</span>
+            <span className="hidden sm:inline text-sm">
+              {isImporting ? 'Mengimpor…' : 'Import'}
+            </span>
           </button>
 
           <button
             onClick={handleExportToExcel}
-            disabled={inventory.length === 0}
-            className="btn btn-primary btn-sm"
+            disabled={(summary?.total ?? totalCount) === 0}
+            className="btn btn-secondary btn-sm"
             title="Export ke Excel"
           >
             <DownloadIcon className="w-4 h-4" />
@@ -474,7 +590,7 @@ const InventoryPage: React.FC = () => {
         <div className="relative flex-1">
           <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
           <input
-            type="text"
+            type="search"
             id="inventory-search"
             name="inventory-search"
             placeholder="Cari item..."
@@ -487,27 +603,32 @@ const InventoryPage: React.FC = () => {
         <select
           id="inventory-filter"
           name="inventory-filter"
+          aria-label="Filter stok"
           value={filter}
-          onChange={(e) => handleFilterChange(e.target.value as typeof filter)}
+          onChange={(e) => handleFilterChange(e.target.value as StockFilter)}
           className="w-full sm:w-48 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
         >
           <option value="all">Semua Item</option>
-          <option value="low_stock">Stok Rendah</option>
+          <option value="low_stock">Perlu Restok</option>
+          <option value="out_of_stock">Stok Habis</option>
         </select>
       </div>
 
       {!canAddNewItem && (
         <p className="text-sm text-yellow-600 dark:text-yellow-400">
-          Pilih cabang spesifik di header untuk menambah item baru.
+          Pilih cabang spesifik di header untuk menambah item, mengatur potong otomatis, atau stock
+          opname.
         </p>
       )}
 
-      <div className="card overflow-x-auto hidden md:block">
+      <div
+        className={`card overflow-x-auto hidden md:block transition-opacity ${isFetching ? 'opacity-70' : ''}`}
+      >
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-6 py-3">No</th>
-              <th className="px-6 py-3">
+              <th className="px-4 py-2.5">No</th>
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -515,8 +636,8 @@ const InventoryPage: React.FC = () => {
                   Nama Item {getSortIcon('name')}
                 </button>
               </th>
-              {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-6 py-3">
+              {showStoreColumn && (
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('storeName')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -525,105 +646,62 @@ const InventoryPage: React.FC = () => {
                   </button>
                 </th>
               )}
-              <th className="px-6 py-3">
+              <th className="px-4 py-2.5 text-right">
                 <button
                   onClick={() => requestSort('stock')}
-                  className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
+                  className="inline-flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
                 >
                   Stok {getSortIcon('stock')}
                 </button>
               </th>
-              <th className="px-6 py-3">Ambang Batas</th>
-              <th className="px-6 py-3">Satuan</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3">Aksi</th>
+              <th className="px-4 py-2.5 text-right">Ambang Batas</th>
+              <th className="px-4 py-2.5">Satuan</th>
+              <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {sortedInventory.length > 0 ? (
-              sortedInventory.map((item, index) => {
-                let stockStatus = '';
-                let statusClass = '';
-                if (item.stock === 0) {
-                  stockStatus = 'Stok Habis';
-                  statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-                } else if (item.stock > 0 && item.stock <= item.lowStockThreshold) {
-                  stockStatus = 'Stok Rendah';
-                  statusClass =
-                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-                } else {
-                  stockStatus = 'Aman';
-                  statusClass =
-                    'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-                }
+            {inventory.length > 0 ? (
+              inventory.map((item, index) => {
+                const level = STOCK_LEVEL_META[getStockLevel(item)];
                 return (
                   <tr
                     key={item.id}
                     className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
-                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                    <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">
                       {(page - 1) * pageSize + index + 1}
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                    <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                       {item.name}
+                      {autoBadge(item)}
                     </td>
-                    {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                      <td className="px-6 py-4">{item.storeName}</td>
+                    {showStoreColumn && (
+                      <td className="px-4 py-2.5">
+                        {(item.storeId && storeNameById.get(item.storeId)) || 'N/A'}
+                      </td>
                     )}
-                    <td
-                      className={`px-6 py-4 ${item.stock === 0 ? 'text-red-500 font-bold' : item.stock <= item.lowStockThreshold ? 'text-yellow-600 font-bold' : 'text-slate-900 dark:text-white'}`}
-                    >
-                      {item.stock}
+                    <td className={`px-4 py-2.5 text-right tabular-nums ${level.text}`}>
+                      {formatQty(item.stock)}
                     </td>
-                    <td className="px-6 py-4">{item.lowStockThreshold}</td>
-                    <td className="px-6 py-4">{item.unit}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-sm font-medium rounded-full ${statusClass}`}>
-                        {stockStatus}
+                    <td className="px-4 py-2.5 text-right tabular-nums">
+                      {item.lowStockThreshold > 0 ? formatQty(item.lowStockThreshold) : '–'}
+                    </td>
+                    <td className="px-4 py-2.5">{item.unit}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`px-2 py-1 text-sm font-medium rounded-full ${level.badge}`}>
+                        {level.label}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          aria-label={`Edit ${item.name}`}
-                          onClick={() => handleOpenFormModal(item)}
-                          className="btn btn-ghost btn-icon"
-                        >
-                          <EditIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          aria-label={`Hapus ${item.name}`}
-                          onClick={() => handleDelete(item)}
-                          className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
-                        >
-                          <Trash2Icon className="w-5 h-5" />
-                        </button>
-                      </div>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-1">{renderActions(item)}</div>
                     </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td
-                  colSpan={
-                    currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' ? 7 : 6
-                  }
-                >
-                  <EmptyState
-                    icon={<PackageIcon className="mx-auto w-12 h-12 text-slate-400" />}
-                    title={
-                      debouncedSearchTerm || filter !== 'all'
-                        ? 'Item Tidak Ditemukan'
-                        : 'Belum Ada Item Inventaris'
-                    }
-                    description={
-                      debouncedSearchTerm || filter !== 'all'
-                        ? 'Coba kata kunci atau filter lain.'
-                        : 'Mulai dengan menambahkan item pertama Anda.'
-                    }
-                  />
-                </td>
+                <td colSpan={columnCount}>{emptyState}</td>
               </tr>
             )}
           </tbody>
@@ -631,88 +709,53 @@ const InventoryPage: React.FC = () => {
       </div>
 
       <div className="md:hidden space-y-4">
-        {sortedInventory.length > 0 ? (
-          sortedInventory.map((item) => {
-            let stockStatus = '';
-            let statusClass = '';
-            if (item.stock === 0) {
-              stockStatus = 'Stok Habis';
-              statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-            } else if (item.stock > 0 && item.stock <= item.lowStockThreshold) {
-              stockStatus = 'Stok Rendah';
-              statusClass =
-                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-            } else {
-              stockStatus = 'Aman';
-              statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-            }
-            return (
-              <div
-                key={item.id}
-                className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold text-lg text-slate-800 dark:text-slate-200">
-                      {item.name}
-                    </p>
-                    {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                        {item.storeName}
+        {inventory.length > 0
+          ? inventory.map((item) => {
+              const level = STOCK_LEVEL_META[getStockLevel(item)];
+              return (
+                <div
+                  key={item.id}
+                  className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg shadow-sm"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-lg text-slate-800 dark:text-slate-200 break-words">
+                        {item.name}
+                        {autoBadge(item)}
                       </p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-1 flex-shrink-0">
-                    <button
-                      aria-label={`Edit ${item.name}`}
-                      onClick={() => handleOpenFormModal(item)}
-                      className="btn btn-ghost btn-icon"
+                      {showStoreColumn && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                          {(item.storeId && storeNameById.get(item.storeId)) || 'N/A'}
+                        </p>
+                      )}
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${level.badge}`}
                     >
-                      <EditIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      aria-label={`Hapus ${item.name}`}
-                      onClick={() => handleDelete(item)}
-                      className="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
-                    >
-                      <Trash2Icon className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-4 text-sm border-t dark:border-slate-600 pt-2">
-                  <div>
-                    <p className="text-slate-500 dark:text-slate-400">Stok Saat Ini</p>
-                    <p
-                      className={`font-semibold text-lg ${item.stock === 0 ? 'text-red-500' : item.stock <= item.lowStockThreshold ? 'text-yellow-600' : 'text-slate-800 dark:text-slate-200'}`}
-                    >
-                      {item.stock} {item.unit}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500 dark:text-slate-400">Status Stok</p>
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusClass}`}>
-                      {stockStatus}
+                      {level.label}
                     </span>
                   </div>
+                  <div className="mt-3 grid grid-cols-2 gap-4 text-sm border-t dark:border-slate-600 pt-2">
+                    <div>
+                      <p className="text-slate-500 dark:text-slate-400">Stok Saat Ini</p>
+                      <p className={`font-semibold text-lg ${level.text}`}>
+                        {formatQty(item.stock)} {item.unit}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500 dark:text-slate-400">Ambang Batas</p>
+                      <p className="font-semibold text-lg text-slate-800 dark:text-slate-200">
+                        {item.lowStockThreshold > 0 ? formatQty(item.lowStockThreshold) : '–'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-end gap-1 border-t dark:border-slate-600 pt-2">
+                    {renderActions(item)}
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          <EmptyState
-            icon={<PackageIcon className="mx-auto w-12 h-12 text-slate-400" />}
-            title={
-              debouncedSearchTerm || filter !== 'all'
-                ? 'Item Tidak Ditemukan'
-                : 'Belum Ada Item Inventaris'
-            }
-            description={
-              debouncedSearchTerm || filter !== 'all'
-                ? 'Coba kata kunci atau filter lain.'
-                : 'Mulai dengan menambahkan item pertama Anda.'
-            }
-          />
-        )}
+              );
+            })
+          : emptyState}
       </div>
 
       <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
@@ -731,25 +774,35 @@ const InventoryPage: React.FC = () => {
           onClose={() => setItemToDelete(null)}
           onConfirm={confirmDelete}
           title="Hapus Item Inventaris"
-          message={`Apakah Anda yakin ingin menghapus item "${itemToDelete.name}"?`}
+          message={`Apakah Anda yakin ingin menghapus item "${itemToDelete.name}"?${
+            autoItemIds.has(itemToDelete.id) ? ' Aturan potong otomatisnya juga ikut terhapus.' : ''
+          } Riwayat stoknya akan hilang.`}
         />
       )}
 
-      {isRecipeModalOpen && selectedStoreId && selectedStoreId !== 'all' && (
+      {adjustTarget && (
+        <StockAdjustModal
+          item={adjustTarget.item}
+          initialMode={adjustTarget.mode}
+          onClose={() => setAdjustTarget(null)}
+        />
+      )}
+
+      {historyItem && <StockHistoryModal item={historyItem} onClose={() => setHistoryItem(null)} />}
+
+      {isRecipeModalOpen && activeStoreId && (
         <RecipeConfigModal
           isOpen={isRecipeModalOpen}
           onClose={() => setIsRecipeModalOpen(false)}
-          inventoryItems={inventory}
-          storeId={selectedStoreId}
+          storeId={activeStoreId}
         />
       )}
 
-      {isOpnameModalOpen && selectedStoreId && selectedStoreId !== 'all' && (
+      {isOpnameModalOpen && activeStoreId && (
         <StockOpnameModal
           isOpen={isOpnameModalOpen}
           onClose={() => setIsOpnameModalOpen(false)}
-          inventoryItems={inventory}
-          storeId={selectedStoreId}
+          storeId={activeStoreId}
         />
       )}
     </div>

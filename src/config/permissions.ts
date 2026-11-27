@@ -19,10 +19,14 @@ import type { EmployeeRole } from '../types/hrm';
 export type Permission =
   /** Membuat nota/transaksi baru. */
   | 'transaction.create'
-  /** Menerima & mencatat pembayaran. */
+  /** Menerima & mencatat pembayaran, sekaligus melihat nominal nota (harga, total, bayar). */
   | 'transaction.payment'
-  /** Mengubah progres pesanan (Diproses → Siap Diambil → Selesai). */
+  /** Mengirim struk/notifikasi WhatsApp ke pelanggan (butuh nomor HP & nominal nota). */
+  | 'transaction.notify'
+  /** Mengubah progres pesanan (Diproses → Siap Diambil). */
   | 'transaction.updateStatus'
+  /** Menandai pesanan Selesai (serah terima ke pelanggan, harus sudah Lunas). */
+  | 'transaction.complete'
   /** Update stok cepat dari Aksi Cepat. */
   | 'inventory.quickUpdate'
   /** Lapor kerusakan mesin/aset. */
@@ -52,6 +56,8 @@ const CASHIER: Permission[] = [
   ...OPERATOR,
   'transaction.create',
   'transaction.payment',
+  'transaction.complete',
+  'transaction.notify',
   'customer.edit',
   'expense.create',
 ];
@@ -102,7 +108,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, { summary: string; can: string[
   [UserRole.Operator]: {
     summary: 'Petugas cuci/setrika. Fokus mengerjakan pesanan, tanpa akses uang.',
     can: [
-      'Lihat daftar & detail pesanan cabangnya',
+      'Lihat pesanan aktif cabangnya (+ yang selesai 7 hari terakhir), tanpa harga & nominal',
       'Ubah progres pesanan (Diproses → Siap Diambil)',
       'Update stok & lapor kerusakan mesin',
     ],
@@ -112,6 +118,8 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, { summary: string; can: string[
     can: [
       'Semua hak Operator',
       'Buat transaksi baru & terima pembayaran',
+      'Kirim struk & kabar pesanan via WhatsApp',
+      'Tandai pesanan Selesai saat diserahkan ke pelanggan',
       'Tambah & ubah data pelanggan (nama, nomor HP, alamat, catatan)',
       'Catat pengeluaran kecil harian',
     ],

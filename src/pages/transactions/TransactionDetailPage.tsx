@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTransactions } from '../../contexts/TransactionContext';
-import { supabase } from '../../utils/supabaseClient';
+import { useTransactions, fetchTransactionRow } from '../../contexts/TransactionContext';
+import { mapDBtoTransaction } from '../../utils/mappers';
 import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import {
   ChevronLeftIcon,
@@ -24,7 +24,7 @@ import SupervisorPinModal from '../../components/SupervisorPinModal';
 import WhatsAppModal from '../../components/WhatsAppModal'; // Import WhatsAppModal
 import { getStatusBadge, getPaymentStatusBadge } from '@/utils/uiHelpers';
 import { formatRupiah } from '@/utils/formatting';
-import { OrderStatus, PaymentStatus, Transaction, Customer, TransactionItem } from '@/types';
+import { OrderStatus, PaymentStatus, Transaction, Customer } from '@/types';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({
@@ -43,6 +43,11 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode; className?: 
 const TransactionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [isHeaderWAOpen, setIsHeaderWAOpen] = useState(false);
+  const { currentUser } = useAppContext();
+  // Operator: tanpa nominal, tanpa kontak pelanggan, tanpa struk & WhatsApp.
+  const canViewMoney = can(currentUser?.role, 'transaction.payment');
+  const canNotify = can(currentUser?.role, 'transaction.notify');
+  const canReadCustomers = can(currentUser?.role, 'customer.edit');
 
   // Mengambil fungsi updateTransaction dari context
   const { updateTransaction } = useTransactions({ enabled: false });
@@ -56,31 +61,10 @@ const TransactionDetailPage: React.FC = () => {
     queryKey: ['transaction', id],
     queryFn: async () => {
       if (!id) throw new Error('Transaction ID is missing');
-      const { data, error } = await supabase.from('transactions').select('*').eq('id', id).single();
-      if (error) throw error;
-      // Map Supabase result to app Transaction type
-      return {
-        ...data,
-        customerId: data.customerId ?? '',
-        createdByUserId: data.createdByUserId ?? '',
-        storeId: data.storeId ?? '',
-        notes: data.notes ?? undefined,
-        idempotencyKey: data.idempotencyKey ?? undefined,
-        items: Array.isArray(data.items)
-          ? (data.items as unknown as TransactionItem[]).map((item) => ({
-              ...item,
-              itemDetails: item.itemDetails ?? [],
-            }))
-          : [],
-        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-        estimatedCompletionDate: data.estimatedCompletionDate ?? '',
-        invoiceCode: data.invoice_code ?? undefined,
-        paymentStatus: data.paymentStatus as import('../../types').PaymentStatus,
-        orderStatus: data.orderStatus as import('../../types').OrderStatus,
-        paymentMethod: data.paymentMethod
-          ? (data.paymentMethod as import('../../types').PaymentMethod)
-          : undefined,
-      };
+      // Operator membaca dari view tanpa nominal (lihat transactionSource).
+      const row = await fetchTransactionRow(id, currentUser?.role);
+      if (!row) throw new Error('Transaksi tidak ditemukan');
+      return mapDBtoTransaction(row);
     },
     enabled: !!id,
   });
@@ -88,6 +72,7 @@ const TransactionDetailPage: React.FC = () => {
   const customersQuery = useQuery({
     queryKey: ALL_CUSTOMERS_QUERY_KEY,
     queryFn: fetchAllCustomers,
+    enabled: canReadCustomers,
   });
 
   const customers = useMemo(() => {
@@ -96,7 +81,18 @@ const TransactionDetailPage: React.FC = () => {
       : (customersQuery.data?.data ?? []);
   }, [customersQuery.data]);
 
-  const customer = transaction ? customers.find((c) => c.id === transaction.customerId) : null;
+  const customer: Customer | null | undefined = transaction
+    ? (customers.find((c) => c.id === transaction.customerId) ??
+      // Operator tidak membaca tabel customers: cukup nama dari data transaksinya.
+      (transaction.customerName
+        ? {
+            id: transaction.customerId,
+            name: transaction.customerName,
+            storeId: transaction.storeId,
+            createdAt: transaction.createdAt,
+          }
+        : null))
+    : null;
 
   // FIXED: Add loading state guard to prevent premature error display
   if (isTransactionLoading || customersQuery.isLoading) {
@@ -156,42 +152,50 @@ const TransactionDetailPage: React.FC = () => {
         Kembali ke Daftar Transaksi
       </Link>
 
-      <div className="card p-6">
+      <div className="card p-4">
         <div className="flex justify-end mb-6">
           <div className="flex gap-2">
             {/* Tombol Kirim WA Manual */}
-            <button
-              type="button"
-              onClick={() => setIsHeaderWAOpen(true)}
-              className="btn btn-secondary"
-              title={
-                transaction.whatsappSentAt
-                  ? 'Struk sudah pernah dikirim via WhatsApp. Klik untuk kirim ulang.'
-                  : 'Kirim struk via WhatsApp'
-              }
-            >
-              <SendIcon className="h-5 w-5" />
-              {transaction.whatsappSentAt ? 'Kirim Ulang WA' : 'Kirim WA'}
-            </button>
-            <Link to={`/transactions/${transaction.id}/receipt`} className="btn btn-secondary">
-              <PrinterIcon className="h-5 w-5" />
-              Cetak Struk
-            </Link>
+            {canNotify && (
+              <button
+                type="button"
+                onClick={() => setIsHeaderWAOpen(true)}
+                className="btn btn-secondary"
+                title={
+                  transaction.whatsappSentAt
+                    ? 'Struk sudah pernah dikirim via WhatsApp. Klik untuk kirim ulang.'
+                    : 'Kirim struk via WhatsApp'
+                }
+              >
+                <SendIcon className="h-5 w-5" />
+                {transaction.whatsappSentAt ? 'Kirim Ulang WA' : 'Kirim WA'}
+              </button>
+            )}
+            {canViewMoney && (
+              <Link to={`/transactions/${transaction.id}/receipt`} className="btn btn-secondary">
+                <PrinterIcon className="h-5 w-5" />
+                Cetak Struk
+              </Link>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Pelanggan
             </h2>
             <DetailItem label="Nama" value={customer.name} />
-            <DetailItem label="Telepon" value={customer.phone || '-'} />
-            <DetailItem label="Alamat" value={customer.address || '-'} />
+            {canReadCustomers && (
+              <>
+                <DetailItem label="Telepon" value={customer.phone || '-'} />
+                <DetailItem label="Alamat" value={customer.address || '-'} />
+              </>
+            )}
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <ShoppingCartIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Transaksi
             </h2>
@@ -219,25 +223,27 @@ const TransactionDetailPage: React.FC = () => {
                 </span>
               }
             />
-            <DetailItem label="Metode Bayar" value={transaction.paymentMethod || '-'} />
-            <DetailItem
-              label="Struk WhatsApp"
-              value={
-                transaction.whatsappSentAt ? (
-                  <span className="badge badge-success">
-                    ✓ Terkirim{' '}
-                    {new Date(transaction.whatsappSentAt).toLocaleString('id-ID', {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })}
-                  </span>
-                ) : (
-                  <span className="badge badge-neutral">
-                    Belum dikirim
-                  </span>
-                )
-              }
-            />
+            {canViewMoney && (
+              <DetailItem label="Metode Bayar" value={transaction.paymentMethod || '-'} />
+            )}
+            {canNotify && (
+              <DetailItem
+                label="Struk WhatsApp"
+                value={
+                  transaction.whatsappSentAt ? (
+                    <span className="badge badge-success">
+                      ✓ Terkirim{' '}
+                      {new Date(transaction.whatsappSentAt).toLocaleString('id-ID', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </span>
+                  ) : (
+                    <span className="badge badge-neutral">Belum dikirim</span>
+                  )
+                }
+              />
+            )}
           </div>
         </div>
         {transaction.notes && (
@@ -257,23 +263,29 @@ const TransactionDetailPage: React.FC = () => {
         />
       </div>
 
-      <div className="card p-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
+      <div className="card p-4">
+        <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          Rincian Item
+        </h2>
         {/* Tampilan Tabel Desktop */}
         <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
-                <th className="px-4 py-3">Layanan</th>
-                <th className="px-4 py-3 text-center">Jumlah</th>
-                <th className="px-4 py-3 text-right">Harga Satuan</th>
-                <th className="px-4 py-3 text-right">Subtotal</th>
+                <th className="px-4 py-2.5">Layanan</th>
+                <th className="px-4 py-2.5 text-center">Jumlah</th>
+                {canViewMoney && (
+                  <>
+                    <th className="px-4 py-2.5 text-right">Harga Satuan</th>
+                    <th className="px-4 py-2.5 text-right">Subtotal</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
               {transaction.items.map((item, index) => (
                 <tr key={index} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                  <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                     {item.serviceName}
                     {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
                       <div className="pl-4 mt-1 space-y-0.5">
@@ -298,13 +310,17 @@ const TransactionDetailPage: React.FC = () => {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-2.5 text-center">
                     {item.quantity} {item.unit}
                   </td>
-                  <td className="px-4 py-3 text-right">Rp {formatRupiah(item.price)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-200">
-                    Rp {formatRupiah(item.subtotal)}
-                  </td>
+                  {canViewMoney && (
+                    <>
+                      <td className="px-4 py-2.5 text-right">Rp {formatRupiah(item.price)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-slate-700 dark:text-slate-200">
+                        Rp {formatRupiah(item.subtotal)}
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -319,12 +335,15 @@ const TransactionDetailPage: React.FC = () => {
                 <span className="font-semibold text-slate-800 dark:text-slate-100">
                   {item.serviceName}
                 </span>
-                <span className="font-semibold text-right text-slate-700 dark:text-slate-200">
-                  Rp {formatRupiah(item.subtotal)}
-                </span>
+                {canViewMoney && (
+                  <span className="font-semibold text-right text-slate-700 dark:text-slate-200">
+                    Rp {formatRupiah(item.subtotal)}
+                  </span>
+                )}
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {item.quantity} {item.unit} @ Rp {formatRupiah(item.price)}
+                {item.quantity} {item.unit}
+                {canViewMoney && <> @ Rp {formatRupiah(item.price)}</>}
               </p>
               {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
                 <div className="pl-2 mt-2 space-y-0.5 border-l-2 border-slate-300 dark:border-slate-600">
@@ -352,33 +371,38 @@ const TransactionDetailPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="w-full md:w-1/2 lg:w-1/3 ml-auto mt-6 space-y-2">
-          {/* Transaksi lama (sebelum diskon/pajak dihapus) bisa punya total ≠ subtotal. */}
-          {transaction.total !== transaction.subtotal && (
-            <>
-              <DetailItem label="Subtotal" value={`Rp ${formatRupiah(transaction.subtotal)}`} />
-              <DetailItem
-                label="Penyesuaian"
-                value={`${transaction.total < transaction.subtotal ? '- ' : '+ '}Rp ${formatRupiah(Math.abs(transaction.total - transaction.subtotal))}`}
-              />
-            </>
-          )}
-          <DetailItem
-            label="Total"
-            value={`Rp ${formatRupiah(transaction.total)}`}
-            className="text-xl font-bold border-t dark:border-slate-700 pt-3 !text-slate-900 dark:!text-white"
-          />
-          <DetailItem label="Sudah Dibayar" value={`Rp ${formatRupiah(transaction.amountPaid)}`} />
-          <DetailItem
-            label="Sisa Tagihan"
-            value={`Rp ${remainingBalance > 0 ? formatRupiah(remainingBalance) : 0}`}
-            className="text-lg font-bold !text-slate-900 dark:!text-white"
-          />
-        </div>
+        {canViewMoney && (
+          <div className="w-full md:w-1/2 lg:w-1/3 ml-auto mt-6 space-y-2">
+            {/* Transaksi lama (sebelum diskon/pajak dihapus) bisa punya total ≠ subtotal. */}
+            {transaction.total !== transaction.subtotal && (
+              <>
+                <DetailItem label="Subtotal" value={`Rp ${formatRupiah(transaction.subtotal)}`} />
+                <DetailItem
+                  label="Penyesuaian"
+                  value={`${transaction.total < transaction.subtotal ? '- ' : '+ '}Rp ${formatRupiah(Math.abs(transaction.total - transaction.subtotal))}`}
+                />
+              </>
+            )}
+            <DetailItem
+              label="Total"
+              value={`Rp ${formatRupiah(transaction.total)}`}
+              className="text-xl font-bold border-t dark:border-slate-700 pt-3 !text-slate-900 dark:!text-white"
+            />
+            <DetailItem
+              label="Sudah Dibayar"
+              value={`Rp ${formatRupiah(transaction.amountPaid)}`}
+            />
+            <DetailItem
+              label="Sisa Tagihan"
+              value={`Rp ${remainingBalance > 0 ? formatRupiah(remainingBalance) : 0}`}
+              className="text-lg font-bold !text-slate-900 dark:!text-white"
+            />
+          </div>
+        )}
       </div>
 
       {/* WhatsApp Modal untuk tombol manual di header */}
-      {isHeaderWAOpen && (
+      {canNotify && isHeaderWAOpen && (
         <WhatsAppModal
           isOpen={isHeaderWAOpen}
           onClose={() => setIsHeaderWAOpen(false)}
@@ -418,6 +442,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   const isKasir = currentUser?.role === 'Kasir';
   const canTakePayment = can(currentUser?.role, 'transaction.payment');
+  const canComplete = can(currentUser?.role, 'transaction.complete');
+  const canNotify = can(currentUser?.role, 'transaction.notify');
 
   if (!can(currentUser?.role, 'transaction.updateStatus')) return null;
 
@@ -473,7 +499,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       );
       await queryClient.invalidateQueries({ queryKey: ['transaction', transaction.id] });
       updateToast(toastId, 'Pembayaran berhasil disimpan', 'success');
-      if (shouldShowWhatsAppModal) {
+      if (shouldShowWhatsAppModal && canNotify) {
         setIsWhatsAppOpen(true);
       }
     } catch (err: unknown) {
@@ -495,8 +521,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         transaction.storeId,
       );
       updateToast(toastId, 'Status pesanan diperbarui: Siap Ambil', 'success');
-      // Otomatis tawarkan kirim WA saat Ready
-      setIsWhatsAppOpen(true);
+      // Otomatis tawarkan kirim WA saat Ready (Kasir ke atas)
+      if (canNotify) setIsWhatsAppOpen(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Gagal memperbarui status pesanan';
       updateToast(toastId, message, 'error');
@@ -602,22 +628,25 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         Tandai Siap Ambil
       </button>
 
-      <button
-        disabled={
-          loading ||
-          transaction.orderStatus === OrderStatus.Completed ||
-          transaction.paymentStatus !== PaymentStatus.Paid
-        }
-        onClick={handleMarkCompleted}
-        className="btn btn-primary"
-        title={
-          transaction.paymentStatus !== PaymentStatus.Paid
-            ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
-            : 'Selesaikan Pesanan'
-        }
-      >
-        Tandai Selesai
-      </button>
+      {/* Serah terima ke pelanggan: Kasir ke atas (Operator tidak). */}
+      {canComplete && (
+        <button
+          disabled={
+            loading ||
+            transaction.orderStatus === OrderStatus.Completed ||
+            transaction.paymentStatus !== PaymentStatus.Paid
+          }
+          onClick={handleMarkCompleted}
+          className="btn btn-primary"
+          title={
+            transaction.paymentStatus !== PaymentStatus.Paid
+              ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
+              : 'Selesaikan Pesanan'
+          }
+        >
+          Tandai Selesai
+        </button>
+      )}
 
       <PaymentModal
         isOpen={isPaymentOpen}

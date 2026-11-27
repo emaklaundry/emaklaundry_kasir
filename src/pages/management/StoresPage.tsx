@@ -177,7 +177,7 @@ const StoresPage: React.FC = () => {
   };
 
   return (
-    <div className="card relative p-6">
+    <div className="card relative p-4">
       {isSavingStore && (
         <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
           <div className="flex items-center gap-3">
@@ -214,11 +214,11 @@ const StoresPage: React.FC = () => {
 
       {/* Desktop Table View */}
       <div className="overflow-x-auto hidden md:block">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+        <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+          <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
             <tr>
-              <th className="px-4 py-3">No</th>
-              <th className="px-4 py-3">
+              <th className="px-4 py-2.5">No</th>
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -226,7 +226,7 @@ const StoresPage: React.FC = () => {
                   Nama Cabang {getSortIcon('name')}
                 </button>
               </th>
-              <th className="px-4 py-3">
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('address')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -234,7 +234,7 @@ const StoresPage: React.FC = () => {
                   Alamat {getSortIcon('address')}
                 </button>
               </th>
-              <th className="px-4 py-3">
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('isActive')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -242,24 +242,24 @@ const StoresPage: React.FC = () => {
                   Status {getSortIcon('isActive')}
                 </button>
               </th>
-              <th className="px-4 py-3">Aksi</th>
+              <th className="px-4 py-2.5">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {sortedStores.length > 0 ? (
               sortedStores.map((store, index) => (
                 <tr key={store.id} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{index + 1}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                  <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{index + 1}</td>
+                  <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                     {store.name}
                   </td>
-                  <td className="px-4 py-3">{store.address}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5">{store.address}</td>
+                  <td className="px-4 py-2.5">
                     <span className={`badge ${store.isActive ? 'badge-success' : 'badge-neutral'}`}>
                       {store.isActive ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 flex items-center space-x-2">
+                  <td className="px-4 py-2.5 flex items-center space-x-2">
                     <button
                       aria-label={`Edit ${store.name}`}
                       onClick={() => handleOpenFormModal(store)}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AuditLogQuery, useAuditLogList } from '../contexts/AuditLogContext';
 import useAppContext from '../contexts/useAppContext';
 import {
@@ -145,7 +145,7 @@ const AuditLogPage: React.FC = () => {
   const [category, setCategory] = useState<AuditLogQuery['category']>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [page, setPage] = useState(1);
+  const [pageState, setPageState] = useState({ filterKey: '', page: 1 });
   const [sortKey, setSortKey] = useState<AuditLogQuery['sortKey']>('timestamp');
   const [sortDirection, setSortDirection] = useState<AuditLogQuery['sortDirection']>('descending');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -156,10 +156,10 @@ const AuditLogPage: React.FC = () => {
   const storeId = isSuperAdmin ? selectedStoreId || 'all' : currentUser?.storeId;
   const noStoreAccess = !isSuperAdmin && !currentUser?.storeId;
 
-  // kembali ke halaman 1 bila filter berubah
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, category, startDate, endDate, storeId]);
+  // Nomor halaman otomatis kembali ke 1 bila filter/urutan berubah.
+  const filterKey = [debouncedSearch, category, startDate, endDate, storeId, sortKey, sortDirection].join('|');
+  const page = pageState.filterKey === filterKey ? pageState.page : 1;
+  const setPage = (next: number) => setPageState({ filterKey, page: next });
 
   const { data, isLoading, isFetching, error, refetch } = useAuditLogList({
     page,
@@ -186,7 +186,6 @@ const AuditLogPage: React.FC = () => {
       setSortKey(key);
       setSortDirection(key === 'timestamp' ? 'descending' : 'ascending');
     }
-    setPage(1);
   };
 
   const getSortIcon = (key: AuditLogQuery['sortKey']) => {
@@ -231,7 +230,7 @@ const AuditLogPage: React.FC = () => {
   return (
     // data-audit-ignore: membuka/menyaring log tidak ikut dicatat sebagai klik,
     // agar halaman ini tidak memenuhi dirinya sendiri. Kunjungan halaman tetap tercatat.
-    <div className="card p-6" data-audit-ignore>
+    <div className="card p-4" data-audit-ignore>
       <div className="flex flex-col md:flex-row items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700 flex-wrap">
         <div className="relative w-full md:w-64">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -320,10 +319,10 @@ const AuditLogPage: React.FC = () => {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-          <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+        <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+          <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
             <tr>
-              <th className="px-4 py-3">
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('timestamp')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -331,7 +330,7 @@ const AuditLogPage: React.FC = () => {
                   Waktu {getSortIcon('timestamp')}
                 </button>
               </th>
-              <th className="px-4 py-3">
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('user')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -339,9 +338,9 @@ const AuditLogPage: React.FC = () => {
                   Pengguna {getSortIcon('user')}
                 </button>
               </th>
-              {showStoreColumn && <th className="px-4 py-3">Cabang</th>}
-              <th className="px-4 py-3">Kategori</th>
-              <th className="px-4 py-3">Aksi</th>
+              {showStoreColumn && <th className="px-4 py-2.5">Cabang</th>}
+              <th className="px-4 py-2.5">Kategori</th>
+              <th className="px-4 py-2.5">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -353,26 +352,26 @@ const AuditLogPage: React.FC = () => {
                 return (
                   <React.Fragment key={log.id}>
                     <tr className="border-b dark:border-slate-700 align-top">
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-4 py-2.5 whitespace-nowrap">
                         {log.timestamp.toLocaleString('id-ID', {
                           dateStyle: 'medium',
                           timeStyle: 'medium',
                         })}
                       </td>
-                      <td className="px-4 py-3">{log.user}</td>
+                      <td className="px-4 py-2.5">{log.user}</td>
                       {showStoreColumn && (
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2.5">
                           {log.storeId ? storeNames.get(log.storeId) || 'Unknown Store' : '-'}
                         </td>
                       )}
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5">
                         <span
                           className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${style.className}`}
                         >
                           {style.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5">
                         {expandable ? (
                           <button
                             onClick={() => toggleExpanded(log.id)}

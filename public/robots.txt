@@ -1,24 +1,11 @@
-# Block all search engines and crawlers
-# Website ini PRIVATE - tidak untuk di-index
+# Website ini PRIVATE - tidak untuk di-index.
+#
+# Sengaja TIDAK memakai "Disallow: /". Kalau crawler dilarang masuk, Google
+# tidak bisa membaca tag noindex (header X-Robots-Tag di vercel.json dan
+# <meta name="robots"> di index.html), sehingga URL tetap bisa muncul di
+# hasil pencarian (tanpa deskripsi) bila ada situs lain yang menautkannya.
+# Dengan crawler diizinkan masuk, Google membaca noindex lalu menghapus /
+# tidak pernah menampilkan halaman ini.
 
 User-agent: *
-Disallow: /
-
-# Block specific bots
-User-agent: Googlebot
-Disallow: /
-
-User-agent: Bingbot
-Disallow: /
-
-User-agent: Slurp
-Disallow: /
-
-User-agent: DuckDuckBot
-Disallow: /
-
-User-agent: Baiduspider
-Disallow: /
-
-User-agent: YandexBot
-Disallow: /
+Allow: /

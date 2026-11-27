@@ -14,6 +14,8 @@ interface Props {
   onChooseDevice: () => void;
   connectedName: string | null;
   busy?: boolean;
+  /** Ganti pembungkus (mis. tanpa border saat sudah di dalam kartu). */
+  className?: string;
 }
 
 const METHODS: { value: PrintMethod; label: string; hint: string }[] = [
@@ -48,6 +50,7 @@ const PrinterSettingsPanel: React.FC<Props> = ({
   onChooseDevice,
   connectedName,
   busy,
+  className = 'mt-6 space-y-4 rounded-lg border border-slate-200 p-4 text-sm dark:border-slate-700',
 }) => {
   const update = (patch: Partial<PrinterSettings>) =>
     onChange(sanitizeSettings({ ...settings, ...patch }));
@@ -56,7 +59,7 @@ const PrinterSettingsPanel: React.FC<Props> = ({
   const isDirect = settings.method !== 'browser';
 
   return (
-    <div className="mt-6 space-y-4 rounded-lg border border-slate-200 p-4 text-sm dark:border-slate-700 print-hide">
+    <div className={`${className} print-hide`}>
       <div>
         <label htmlFor="printer-method" className="form-label">
           Metode cetak

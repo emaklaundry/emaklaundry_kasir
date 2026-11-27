@@ -417,7 +417,7 @@ const ExpensesPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="card p-6">
+      <div className="card p-4">
         <h3 className="text-slate-500 dark:text-slate-400 font-medium mb-2">Total Pengeluaran</h3>
         <p className="text-3xl font-bold text-slate-900 dark:text-white">
           Rp {formatRupiah(totalExpense)}
@@ -458,13 +458,13 @@ const ExpensesPage: React.FC = () => {
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="hidden sm:table-cell px-3 sm:px-6 py-3">No</th>
-              <th className="px-3 sm:px-6 py-3">Tanggal</th>
-              <th className="px-3 sm:px-6 py-3">Keterangan</th>
-              <th className="px-3 sm:px-6 py-3">Kategori</th>
-              <th className="px-3 sm:px-6 py-3 text-right">Jumlah</th>
-              <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-center">Sumber</th>
-              <th className="px-3 sm:px-6 py-3 text-center">Aksi</th>
+              <th className="hidden sm:table-cell px-3 sm:px-4 py-2.5">No</th>
+              <th className="px-3 sm:px-4 py-2.5">Tanggal</th>
+              <th className="px-3 sm:px-4 py-2.5">Keterangan</th>
+              <th className="px-3 sm:px-4 py-2.5">Kategori</th>
+              <th className="px-3 sm:px-4 py-2.5 text-right">Jumlah</th>
+              <th className="hidden md:table-cell px-3 sm:px-4 py-2.5 text-center">Sumber</th>
+              <th className="px-3 sm:px-4 py-2.5 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -474,29 +474,29 @@ const ExpensesPage: React.FC = () => {
                   key={`${item.source}-${item.id}`}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 text-slate-500 dark:text-slate-400">
+                  <td className="hidden sm:table-cell px-3 sm:px-4 py-2.5 sm:py-4 text-slate-500 dark:text-slate-400">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4 whitespace-nowrap">
                     {new Date(item.date).toLocaleDateString('id-ID')}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-slate-900 dark:text-white">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4 font-medium text-slate-900 dark:text-white">
                     {item.description}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4">
                     <span
                       className={`badge ${item.category.includes('Aset') ? 'badge-info' : 'badge-neutral'}`}
                     >
                       {item.category}
                     </span>
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right whitespace-nowrap tabular-nums text-slate-900 dark:text-white">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4 text-right whitespace-nowrap tabular-nums text-slate-900 dark:text-white">
                     Rp {formatRupiah(item.amount)}
                   </td>
-                  <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 text-center">
+                  <td className="hidden md:table-cell px-3 sm:px-4 py-2.5 sm:py-4 text-center">
                     {item.source === 'asset' ? 'Aset' : 'Pengeluaran'}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4 text-center">
                     {item.source === 'expense' ? (
                       <button
                         onClick={() =>

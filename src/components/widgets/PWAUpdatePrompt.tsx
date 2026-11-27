@@ -5,14 +5,26 @@ import useInstallPrompt from '../../hooks/useInstallPrompt';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const INSTALL_DISMISSED_KEY = 'pwa-install-dismissed-at';
-const INSTALL_SNOOZE_MS = 14 * 24 * 60 * 60 * 1000;
+const INSTALLED_KEY = 'pwa-installed';
+const INSTALL_SNOOZE_MS = 30 * 24 * 60 * 60 * 1000;
+// Don't interrupt the user right after the page opens: wait until they have used it a while.
+export const INSTALL_PROMPT_DELAY_MS = 2 * 60 * 1000;
 
 const isInstallSnoozed = () => {
   try {
+    if (localStorage.getItem(INSTALLED_KEY)) return true;
     const dismissedAt = Number(localStorage.getItem(INSTALL_DISMISSED_KEY));
     return Number.isFinite(dismissedAt) && Date.now() - dismissedAt < INSTALL_SNOOZE_MS;
   } catch {
     return false;
+  }
+};
+
+const rememberInStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Storage unavailable (private mode): the state only lasts for this session.
   }
 };
 
@@ -65,8 +77,10 @@ const PromptCard: React.FC<{
  * PWA prompts:
  * - "Update Tersedia": a new service worker is waiting; it only activates when the user
  *   taps "Perbarui Sekarang", so unsaved form input is never lost to an auto-reload.
- * - "Install Aplikasi": shown when the browser allows installing the app (snoozed 14 days
- *   after "Nanti"). The update prompt always takes priority.
+ * - "Install Aplikasi": shown when the browser allows installing the app, only after the
+ *   page has been open for INSTALL_PROMPT_DELAY_MS. Snoozed 30 days after "Nanti" or after
+ *   closing the browser's install dialog, and never shown again once installed.
+ *   The update prompt always takes priority.
  */
 const PWAUpdatePrompt: React.FC = () => {
   const {
@@ -93,6 +107,20 @@ const PWAUpdatePrompt: React.FC = () => {
   const { canInstall, install } = useInstallPrompt();
   const [isInstallDismissed, setIsInstallDismissed] = React.useState(isInstallSnoozed);
   const [isInstalling, setIsInstalling] = React.useState(false);
+  const [isDelayElapsed, setIsDelayElapsed] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsDelayElapsed(true), INSTALL_PROMPT_DELAY_MS);
+    const markInstalled = () => {
+      rememberInStorage(INSTALLED_KEY, '1');
+      setIsInstallDismissed(true);
+    };
+    window.addEventListener('appinstalled', markInstalled);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('appinstalled', markInstalled);
+    };
+  }, []);
 
   if (needRefresh) {
     return (
@@ -109,14 +137,10 @@ const PWAUpdatePrompt: React.FC = () => {
     );
   }
 
-  if (!canInstall || isInstallDismissed) return null;
+  if (!canInstall || isInstallDismissed || !isDelayElapsed) return null;
 
   const dismissInstall = () => {
-    try {
-      localStorage.setItem(INSTALL_DISMISSED_KEY, String(Date.now()));
-    } catch {
-      // Storage unavailable (private mode): hide for this session only.
-    }
+    rememberInStorage(INSTALL_DISMISSED_KEY, String(Date.now()));
     setIsInstallDismissed(true);
   };
 
@@ -124,7 +148,14 @@ const PWAUpdatePrompt: React.FC = () => {
     if (isInstalling) return;
     setIsInstalling(true);
     try {
-      await install();
+      const result = await install();
+      if (result === 'installed') {
+        rememberInStorage(INSTALLED_KEY, '1');
+        setIsInstallDismissed(true);
+      } else if (result === 'dismissed') {
+        // Closing the browser's install dialog counts as "Nanti".
+        dismissInstall();
+      }
     } finally {
       setIsInstalling(false);
     }

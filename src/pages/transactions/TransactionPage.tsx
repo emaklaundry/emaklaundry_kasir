@@ -68,6 +68,11 @@ const TransactionPage: React.FC = () => {
   const { currentUser } = useAppContext();
   const canCreateTransaction = can(currentUser?.role, 'transaction.create');
   const canTakePayment = can(currentUser?.role, 'transaction.payment');
+  const canComplete = can(currentUser?.role, 'transaction.complete');
+  // Kirim WhatsApp & cetak struk butuh nomor HP / nominal: Kasir ke atas.
+  const canNotify = can(currentUser?.role, 'transaction.notify');
+  // Operator tidak membaca tabel customers; nama pelanggan ikut di data transaksinya.
+  const canReadCustomers = can(currentUser?.role, 'customer.edit');
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -103,6 +108,7 @@ const TransactionPage: React.FC = () => {
   const customersQuery = useQuery({
     queryKey: ALL_CUSTOMERS_QUERY_KEY,
     queryFn: fetchAllCustomers,
+    enabled: canReadCustomers,
   });
 
   const customers = useMemo(() => {
@@ -152,7 +158,7 @@ const TransactionPage: React.FC = () => {
       const customer = customers.find((c: Customer) => c.id === t.customerId);
       return {
         ...t,
-        customerName: customer ? customer.name : 'N/A',
+        customerName: customer ? customer.name : (t.customerName ?? 'N/A'),
         customerPhone: customer ? customer.phone || 'N/A' : 'N/A',
       };
     });
@@ -179,6 +185,11 @@ const TransactionPage: React.FC = () => {
     const targetTransaction = transactions.find((t: Transaction) => t.id === id);
     if (!targetTransaction) return;
 
+    if (newStatus === OrderStatus.Completed && !canComplete) {
+      addToast('Hanya Kasir atau Admin yang dapat menyelesaikan pesanan.', 'error');
+      return;
+    }
+
     // --- TAMBAHAN GUARD CLAUSE ---
     if (
       newStatus === OrderStatus.Completed &&
@@ -192,7 +203,9 @@ const TransactionPage: React.FC = () => {
 
     const updatedTransaction = { ...targetTransaction, orderStatus: newStatus };
     const shouldShowWhatsAppModal =
-      newStatus === OrderStatus.Ready && targetTransaction.orderStatus !== OrderStatus.Ready;
+      canNotify &&
+      newStatus === OrderStatus.Ready &&
+      targetTransaction.orderStatus !== OrderStatus.Ready;
 
     const toastId = addToast('Memperbarui status...', 'info');
     try {
@@ -477,6 +490,13 @@ const TransactionPage: React.FC = () => {
 
     const transactionsToUpdate = transactions.filter((t: Transaction) => selectedIds.has(t.id));
 
+    if (bulkActionStatus === OrderStatus.Completed && !canComplete) {
+      addToast('Hanya Kasir atau Admin yang dapat menyelesaikan pesanan.', 'error');
+      setIsBulkConfirmOpen(false);
+      setBulkActionStatus(null);
+      return;
+    }
+
     // FIXED: Extended guard clause - prevent marking unpaid transactions as Ready or Completed
     const unpaidTransactions = transactionsToUpdate.filter(
       (t: Transaction) =>
@@ -525,7 +545,7 @@ const TransactionPage: React.FC = () => {
 
   return (
     <>
-      <div className="card relative p-3 sm:p-6">
+      <div className="card relative p-3 sm:p-4">
         {(isSavingPayment || isBulkProcessing) && (
           <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/60 flex items-center justify-center rounded-lg z-20">
             <div className="flex items-center gap-3">
@@ -553,10 +573,7 @@ const TransactionPage: React.FC = () => {
             </div>
           </div>
         )}
-        <div
-          id="transaction-actions"
-          className="flex justify-end mb-6"
-        >
+        <div id="transaction-actions" className="flex justify-end mb-6">
           <div className="flex items-center gap-2 flex-wrap justify-end">
             {isAdminRole(currentUser?.role) && (
               <>
@@ -627,25 +644,27 @@ const TransactionPage: React.FC = () => {
               autoComplete="off"
             />
           </div>
-          <div>
-            <label htmlFor="customerFilter" className="sr-only">
-              Filter Pelanggan
-            </label>
-            <select
-              id="customerFilter"
-              name="customerFilter"
-              value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
-              className="form-input"
-            >
-              <option value="all">Semua Pelanggan</option>
-              {customers.map((c: Customer) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {canReadCustomers && (
+            <div>
+              <label htmlFor="customerFilter" className="sr-only">
+                Filter Pelanggan
+              </label>
+              <select
+                id="customerFilter"
+                name="customerFilter"
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value)}
+                className="form-input"
+              >
+                <option value="all">Semua Pelanggan</option>
+                {customers.map((c: Customer) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="paymentFilter" className="sr-only">
               Filter Status Bayar
@@ -719,7 +738,11 @@ const TransactionPage: React.FC = () => {
                   Ubah Status Menjadi...
                 </option>
                 {Object.values(OrderStatus).map((status) => (
-                  <option key={status} value={status}>
+                  <option
+                    key={status}
+                    value={status}
+                    disabled={status === OrderStatus.Completed && !canComplete}
+                  >
                     {status}
                   </option>
                 ))}
@@ -730,13 +753,10 @@ const TransactionPage: React.FC = () => {
         )}
 
         {/* Transactions Table */}
-        <div
-          id="transaction-table"
-          className="card hidden md:block overflow-hidden"
-        >
+        <div id="transaction-table" className="card hidden md:block overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm sm:text-base text-left text-slate-500 dark:text-slate-400">
-              <thead className="text-xs sm:text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
+            <table className="w-full text-sm sm:text-sm text-left text-slate-500 dark:text-slate-400">
+              <thead className="text-xs sm:text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
                 <tr>
                   <th className="px-1 sm:px-2 py-2 sm:py-3 w-8 sm:w-10 text-center">
                     <input
@@ -775,14 +795,16 @@ const TransactionPage: React.FC = () => {
                       Tanggal {getSortIcon('createdAt')}
                     </button>
                   </th>
-                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">
-                    <button
-                      onClick={() => requestSort('total')}
-                      className="flex items-center justify-end w-full gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
-                    >
-                      Total {getSortIcon('total')}
-                    </button>
-                  </th>
+                  {canTakePayment && (
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                      <button
+                        onClick={() => requestSort('total')}
+                        className="flex items-center justify-end w-full gap-1 hover:text-slate-900 dark:hover:text-slate-200 text-xs sm:text-sm"
+                      >
+                        Total {getSortIcon('total')}
+                      </button>
+                    </th>
+                  )}
                   <th className="px-2 sm:px-4 py-2 sm:py-3">
                     <button
                       onClick={() => requestSort('paymentStatus')}
@@ -836,9 +858,11 @@ const TransactionPage: React.FC = () => {
                             })
                           : '-'}
                       </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">
-                        Rp {t.total.toLocaleString('id-ID')}
-                      </td>
+                      {canTakePayment && (
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm">
+                          Rp {t.total.toLocaleString('id-ID')}
+                        </td>
+                      )}
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -869,10 +893,11 @@ const TransactionPage: React.FC = () => {
                             // Tombol/toggle ke 'Selesai' hanya aktif jika sudah lunas DAN/ATAU sudah 'Siap Diambil'
                             const disableCompleted =
                               status === OrderStatus.Completed &&
-                              !(
-                                t.paymentStatus === PaymentStatus.Paid ||
-                                t.orderStatus === OrderStatus.Ready
-                              );
+                              (!canComplete ||
+                                !(
+                                  t.paymentStatus === PaymentStatus.Paid ||
+                                  t.orderStatus === OrderStatus.Ready
+                                ));
                             return (
                               <option
                                 key={status}
@@ -887,7 +912,7 @@ const TransactionPage: React.FC = () => {
                         </select>
                       </td>
 
-                      <td className="px-4 py-3 text-center flex items-center justify-center space-x-1">
+                      <td className="px-4 py-2.5 text-center flex items-center justify-center space-x-1">
                         {canTakePayment && t.paymentStatus !== PaymentStatus.Paid && (
                           <button
                             aria-label="Proses pembayaran"
@@ -905,41 +930,45 @@ const TransactionPage: React.FC = () => {
                         >
                           <EyeIcon className="w-5 h-5" />
                         </Link>
-                        <Link
-                          to={`/transactions/${t.id}/receipt`}
-                          title="Cetak Struk"
-                          className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 inline-block"
-                        >
-                          <PrinterIcon className="w-5 h-5" />
-                        </Link>
-                        <button
-                          onClick={() => {
-                            const foundCustomer = customers.find(
-                              (c: Customer) => c.id === t.customerId,
-                            );
-                            if (foundCustomer) {
-                              handleOpenWhatsAppModal(t);
-                            } else {
-                              addToast('Data pelanggan tidak ditemukan.', 'error');
-                            }
-                          }}
-                          title={waButtonTitle(t)}
-                          aria-label={waButtonTitle(t)}
-                          className={`relative p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${
-                            t.whatsappSentAt
-                              ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
-                              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                          }`}
-                        >
-                          <SendIcon className="w-5 h-5" />
-                          {t.whatsappSentAt && <WaSentDot />}
-                        </button>
+                        {canTakePayment && (
+                          <Link
+                            to={`/transactions/${t.id}/receipt`}
+                            title="Cetak Struk"
+                            className="p-2.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 inline-block"
+                          >
+                            <PrinterIcon className="w-5 h-5" />
+                          </Link>
+                        )}
+                        {canNotify && (
+                          <button
+                            onClick={() => {
+                              const foundCustomer = customers.find(
+                                (c: Customer) => c.id === t.customerId,
+                              );
+                              if (foundCustomer) {
+                                handleOpenWhatsAppModal(t);
+                              } else {
+                                addToast('Data pelanggan tidak ditemukan.', 'error');
+                              }
+                            }}
+                            title={waButtonTitle(t)}
+                            aria-label={waButtonTitle(t)}
+                            className={`relative p-2.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${
+                              t.whatsappSentAt
+                                ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
+                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                            }`}
+                          >
+                            <SendIcon className="w-5 h-5" />
+                            {t.whatsappSentAt && <WaSentDot />}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={canTakePayment ? 8 : 7}>
                       <EmptyState
                         icon={<ShoppingCartIcon className="mx-auto w-12 h-12 text-slate-400" />}
                         title="Tidak Ada Transaksi"
@@ -1006,12 +1035,14 @@ const TransactionPage: React.FC = () => {
                     {formatTransactionId(t)}
                   </p>
                   <div className="space-y-2 mb-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 dark:text-slate-400 text-base">Total:</span>
-                      <span className="font-bold text-lg text-slate-900 dark:text-white">
-                        Rp {t.total.toLocaleString('id-ID')}
-                      </span>
-                    </div>
+                    {canTakePayment && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500 dark:text-slate-400 text-base">Total:</span>
+                        <span className="font-bold text-lg text-slate-900 dark:text-white">
+                          Rp {t.total.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <span className="text-slate-500 dark:text-slate-400 text-base">
                         Status Pesanan:
@@ -1047,35 +1078,39 @@ const TransactionPage: React.FC = () => {
                     >
                       <EyeIcon className="w-6 h-6" />
                     </Link>
-                    <Link
-                      to={`/transactions/${t.id}/receipt`}
-                      title="Cetak Struk"
-                      className="hover:text-slate-900 dark:hover:text-white"
-                    >
-                      <PrinterIcon className="w-6 h-6" />
-                    </Link>
-                    <button
-                      onClick={() => {
-                        const foundCustomer = customers.find(
-                          (c: Customer) => c.id === t.customerId,
-                        );
-                        if (foundCustomer) {
-                          handleOpenWhatsAppModal(t);
-                        } else {
-                          addToast('Data pelanggan tidak ditemukan.', 'error');
-                        }
-                      }}
-                      title={waButtonTitle(t)}
-                      aria-label={waButtonTitle(t)}
-                      className={`relative ${
-                        t.whatsappSentAt
-                          ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
-                          : 'hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <SendIcon className="w-6 h-6" />
-                      {t.whatsappSentAt && <WaSentDot />}
-                    </button>
+                    {canTakePayment && (
+                      <Link
+                        to={`/transactions/${t.id}/receipt`}
+                        title="Cetak Struk"
+                        className="hover:text-slate-900 dark:hover:text-white"
+                      >
+                        <PrinterIcon className="w-6 h-6" />
+                      </Link>
+                    )}
+                    {canNotify && (
+                      <button
+                        onClick={() => {
+                          const foundCustomer = customers.find(
+                            (c: Customer) => c.id === t.customerId,
+                          );
+                          if (foundCustomer) {
+                            handleOpenWhatsAppModal(t);
+                          } else {
+                            addToast('Data pelanggan tidak ditemukan.', 'error');
+                          }
+                        }}
+                        title={waButtonTitle(t)}
+                        aria-label={waButtonTitle(t)}
+                        className={`relative ${
+                          t.whatsappSentAt
+                            ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
+                            : 'hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <SendIcon className="w-6 h-6" />
+                        {t.whatsappSentAt && <WaSentDot />}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

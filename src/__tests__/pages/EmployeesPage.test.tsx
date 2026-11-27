@@ -101,7 +101,7 @@ describe('EmployeesPage', () => {
     render(<EmployeesPage />, { wrapper: MemoryRouter });
     const row = within(table()).getByText('Siti Aminah').closest('tr')!;
     expect(within(row).getByText('Sen–Sab, 08:00–17:00')).toBeInTheDocument();
-    expect(within(row).getByText(/Rp 2\.000\.000 \+2% komisi/)).toBeInTheDocument();
+    expect(within(row).getByText(/Rp 2\.000\.000\/hari \+2% komisi/)).toBeInTheDocument();
     expect(within(row).getByText('Bisa login')).toBeInTheDocument();
   });
 
