@@ -1,7 +1,7 @@
 {
   "name": "laundry-management-system",
   "private": true,
-  "version": "2.7.1",
+  "version": "2.7.2",
   "type": "module",
   "description": "Sistem manajemen laundry berbasis web untuk kasir dan admin dengan fitur multi-cabang",
   "author": "mhmdnvn18@gmail.com",

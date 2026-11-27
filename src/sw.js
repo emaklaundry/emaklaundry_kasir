@@ -13,7 +13,7 @@ self.addEventListener('message', (event) => {
 });
 
 // Injected or fallback version to force runtime cache invalidation on updates
-const APP_VERSION = typeof __SW_VERSION__ !== 'undefined' ? __SW_VERSION__ : '2.7.1';
+const APP_VERSION = typeof __SW_VERSION__ !== 'undefined' ? __SW_VERSION__ : '2.7.2';
 const CACHE_NAME = `laundry-management-v${APP_VERSION}-runtime`;
 const RUNTIME_CACHE_PREFIX = 'laundry-management-';
 
