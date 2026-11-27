@@ -44,7 +44,11 @@ export function useStores() {
         .eq('id', id)
         .select();
       if (error) throw error;
-      return updated?.[0] || null;
+      // RLS menolak tanpa error (0 baris berubah) bila user tidak berhak mengubah cabang.
+      if (!updated?.length) {
+        throw new Error('Data cabang tidak tersimpan: hanya Super Admin yang dapat mengubahnya.');
+      }
+      return updated[0];
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stores'] }),
   });

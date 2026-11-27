@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
 
   const { addExpense } = useExpenses();
   const { scheduledMaintenances, updateScheduledMaintenance } = useScheduledMaintenances();
-  const { assets, updateAsset } = useAssets();
+  const { assets, appendMaintenanceLog } = useAssets();
   const { addAuditLog } = useAuditLogs();
   const { addToast } = useToasts();
 
@@ -290,12 +290,12 @@ const Dashboard: React.FC = () => {
       const asset = assets.find((a: Asset) => a.id === schedule.assetId);
       if (!asset) return;
       const newLog = {
-        id: `LOG_${crypto.randomUUID()}`,
         date: new Date(),
         description: `[Jadwal] - ${schedule.description}`,
         cost: schedule.estimatedCost || 0,
       };
-      await updateAsset(asset.id, { maintenanceHistory: [...asset.maintenanceHistory, newLog] });
+      // Ditambahkan dari data terbaru di DB agar tidak menimpa log lain.
+      await appendMaintenanceLog(asset.id, newLog);
       await updateScheduledMaintenance(schedule.id, {
         lastCompletedDate: new Date(),
         nextDueDate: calculateNextDueDate(
@@ -310,7 +310,7 @@ const Dashboard: React.FC = () => {
       );
       addToast(`Perawatan "${schedule.description}" ditandai selesai.`, 'success');
     },
-    [assets, updateAsset, updateScheduledMaintenance, addAuditLog, addToast],
+    [assets, appendMaintenanceLog, updateScheduledMaintenance, addAuditLog, addToast],
   );
 
   const customerForWhatsApp = useMemo(() => {
@@ -367,9 +367,7 @@ const Dashboard: React.FC = () => {
           maintenance={maintenanceStats}
         />
 
-        <div
-          className={`card p-4 ${isStaff ? 'hidden sm:block' : 'block'}`}
-        >
+        <div className={`card p-4 ${isStaff ? 'hidden sm:block' : 'block'}`}>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
             Aksi Cepat
           </h2>
@@ -434,10 +432,7 @@ const Dashboard: React.FC = () => {
           )}
         </div>
 
-        <div
-          id="dashboard-recent"
-          className="card p-3 sm:p-4"
-        >
+        <div id="dashboard-recent" className="card p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
               Progres Pesanan Aktif
@@ -503,20 +498,20 @@ const Dashboard: React.FC = () => {
                             )}
                             {t.orderStatus !== OrderStatus.Completed &&
                               (canComplete || t.orderStatus !== OrderStatus.Ready) && (
-                              <button
-                                onClick={() => handleNextStatus(t.id)}
-                                disabled={isSelesaikanDisabled}
-                                className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${nextActionColor}`}
-                                title={
-                                  isSelesaikanDisabled
-                                    ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
-                                    : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
-                                }
-                              >
-                                {nextActionText}
-                                <ChevronRightIcon className="w-4 h-4" />
-                              </button>
-                            )}
+                                <button
+                                  onClick={() => handleNextStatus(t.id)}
+                                  disabled={isSelesaikanDisabled}
+                                  className={`inline-flex items-center justify-center gap-1 text-sm font-medium text-white rounded-lg px-3 py-1.5 disabled:cursor-not-allowed ${nextActionColor}`}
+                                  title={
+                                    isSelesaikanDisabled
+                                      ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                      : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                                  }
+                                >
+                                  {nextActionText}
+                                  <ChevronRightIcon className="w-4 h-4" />
+                                </button>
+                              )}
                           </div>
                         </td>
                       </tr>
@@ -601,20 +596,20 @@ const Dashboard: React.FC = () => {
                         )}
                         {t.orderStatus !== OrderStatus.Completed &&
                           (canComplete || t.orderStatus !== OrderStatus.Ready) && (
-                          <button
-                            onClick={() => handleNextStatus(t.id)}
-                            disabled={isSelesaikanDisabled}
-                            className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
-                            title={
-                              isSelesaikanDisabled
-                                ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
-                                : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
-                            }
-                          >
-                            {mobileNextActionText}
-                            <ChevronRightIcon className="w-4 h-4" />
-                          </button>
-                        )}
+                            <button
+                              onClick={() => handleNextStatus(t.id)}
+                              disabled={isSelesaikanDisabled}
+                              className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium text-white rounded-md py-2 ${mobileNextActionColor}`}
+                              title={
+                                isSelesaikanDisabled
+                                  ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan.'
+                                  : `Ubah ke status ${t.orderStatus === OrderStatus.Processing ? OrderStatus.Ready : OrderStatus.Completed}`
+                              }
+                            >
+                              {mobileNextActionText}
+                              <ChevronRightIcon className="w-4 h-4" />
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>

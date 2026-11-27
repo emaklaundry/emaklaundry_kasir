@@ -18,6 +18,7 @@ import { useServices } from '../../contexts/ServiceContext';
 import ItemNotesModal from '../../components/ItemNotesModal';
 import useAppContext from '../../contexts/useAppContext';
 import { formatRupiah, parseRupiah } from '../../utils/formatting';
+import { resolveMinQuantity, formatMinQuantity } from '../../utils/serviceMinimum';
 import CustomerSelector from '../../components/features/CustomerSelector';
 import ServiceSelector from '../../components/features/ServiceSelector';
 import TransactionItemsTable from '../../components/features/TransactionItemsTable';
@@ -113,17 +114,21 @@ const NewTransactionPage: React.FC = () => {
         }
         return updatedItems;
       } else {
+        // Layanan dengan minimum (mis. "min. 3 kg") langsung diisi sebesar minimumnya.
+        const startQuantity = isMeter ? 1 : Math.max(1, resolveMinQuantity(service));
         const newItem: ExtendedTransactionItem = {
           serviceId: service.id,
           serviceName: service.name,
           price: service.price,
           unit: service.unit,
-          quantity: 1,
-          subtotal: service.price * 1,
+          quantity: startQuantity,
+          subtotal: service.price * startQuantity,
           length: isMeter ? 1 : undefined,
           width: isMeter ? 1 : undefined,
           // Tambahkan itemDetails kosong jika Satuan
-          ...(!isKiloan && !isMeter ? { itemDetails: [{ note: '' }] } : {}),
+          ...(!isKiloan && !isMeter
+            ? { itemDetails: Array.from({ length: startQuantity }, () => ({ note: '' })) }
+            : {}),
         };
         return [...currentItems, newItem];
       }
@@ -381,6 +386,21 @@ const NewTransactionPage: React.FC = () => {
     }
     if (items.length === 0) {
       addToast('Minimal satu layanan harus ditambahkan.', 'warning');
+      return;
+    }
+    const minimumOf = (item: ExtendedTransactionItem) =>
+      resolveMinQuantity(
+        services.find((s) => s.id === item.serviceId),
+        item.serviceName,
+      );
+    const belowMinimum = items.find((item) => item.quantity < minimumOf(item));
+    if (belowMinimum) {
+      addToast(
+        `"${belowMinimum.serviceName}" minimal ${formatMinQuantity(minimumOf(belowMinimum))} ${
+          belowMinimum.unit
+        }. Ubah jumlahnya dulu.`,
+        'warning',
+      );
       return;
     }
 

@@ -11,6 +11,10 @@ export interface InventoryFilter {
   sortBy?: InventorySortKey;
   /** Default: true. */
   sortAscending?: boolean;
+  /** Hanya item yang stoknya di bawah/sama dengan ambang batas (difilter di server). */
+  lowStockOnly?: boolean;
+  /** Hanya item yang stoknya habis (≤ 0). */
+  outOfStockOnly?: boolean;
 }
 
 export type InventorySortKey = 'name' | 'stock' | 'storeName';
@@ -25,6 +29,8 @@ export async function fetchInventory(
     storeId,
     sortBy = 'name',
     sortAscending = true,
+    lowStockOnly = false,
+    outOfStockOnly = false,
   } = filter;
   // Urut berdasarkan nama cabang butuh relasi stores di-embed.
   const sortByStore = sortBy === 'storeName';
@@ -35,6 +41,12 @@ export async function fetchInventory(
   }
   if (searchTerm) {
     query = query.ilike('name', `%${searchTerm}%`);
+  }
+  if (lowStockOnly) {
+    query = query.eq('is_low_stock', true);
+  }
+  if (outOfStockOnly) {
+    query = query.lte('stock', 0);
   }
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -50,21 +62,62 @@ export async function fetchInventory(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const items = rows.map(({ stores: _stores, ...i }) => ({
     ...i,
+    // kolom numeric bisa datang sebagai string dari PostgREST
+    stock: Number(i.stock) || 0,
+    lowStockThreshold: Number(i.lowStockThreshold) || 0,
     storeId: (i.storeId as string | null) ?? undefined,
   })) as unknown as InventoryItem[];
   return { data: items, count: count || 0 };
 }
 
+export interface InventorySummary {
+  total: number;
+  lowStock: number;
+  outOfStock: number;
+}
+
+/** Ringkasan seluruh item cabang (bukan hanya halaman yang tampil). */
+export async function fetchInventorySummary(storeId?: string): Promise<InventorySummary> {
+  const base = () => {
+    let q = supabase.from('inventory_items').select('id', { count: 'exact', head: true });
+    if (storeId && storeId !== 'all') q = q.eq('storeId', storeId);
+    return q;
+  };
+  const [total, low, out] = await Promise.all([
+    base(),
+    base().eq('is_low_stock', true),
+    base().lte('stock', 0),
+  ]);
+  const error = total.error || low.error || out.error;
+  if (error) throw error;
+  return { total: total.count || 0, lowStock: low.count || 0, outOfStock: out.count || 0 };
+}
+
+/** Kolom yang boleh dikirim saat menulis item (kolom turunan ditolak database). */
+function toWritable(item: Partial<InventoryItem>) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { is_low_stock: _low, id: _id, ...rest } = item;
+  return rest;
+}
+
 export function useInventoryMutations() {
   const queryClient = useQueryClient();
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    queryClient.invalidateQueries({ queryKey: ['inventory_summary'] });
+    queryClient.invalidateQueries({ queryKey: ['inventory_movements'] });
+  };
 
   const addInventoryItem = useMutation({
     mutationFn: async (item: Omit<InventoryItem, 'id'>) => {
-      const { data, error } = await supabase.from('inventory_items').insert([item]).select();
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .insert([toWritable(item) as Omit<InventoryItem, 'id'>])
+        .select();
       if (error) throw error;
       return data?.[0] || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+    onSuccess: invalidate,
   });
 
   const updateInventoryItem = useMutation({
@@ -72,13 +125,13 @@ export function useInventoryMutations() {
       const { id, data } = variables;
       const { data: updated, error } = await supabase
         .from('inventory_items')
-        .update(data)
+        .update(toWritable(data))
         .eq('id', id)
         .select();
       if (error) throw error;
       return updated?.[0] || null;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+    onSuccess: invalidate,
   });
 
   const deleteInventoryItem = useMutation({
@@ -87,7 +140,7 @@ export function useInventoryMutations() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+    onSuccess: invalidate,
   });
 
   return {

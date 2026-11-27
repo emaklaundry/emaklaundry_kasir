@@ -314,6 +314,8 @@ const BackupRestorePage: React.FC = () => {
           price: s.price,
           unit: s.unit,
           durationDays: s.durationDays,
+          // Backup lama belum punya kolom ini: biarkan default database.
+          ...(typeof s.minQuantity === 'number' ? { minQuantity: s.minQuantity } : {}),
           storeId: resolveStoreId(s.storeId),
         })),
       );

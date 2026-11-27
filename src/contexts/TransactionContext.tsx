@@ -4,7 +4,6 @@ import { supabase, updateTransactionProgress } from '../utils/supabaseClient';
 import { retrySupabaseOperation, verifyDataSaved } from '../utils/retryUtils';
 import { Transaction, UserRole } from '@/types';
 import AppContext from './AppContextContext';
-import { autoDeductInventory } from './InventoryRecipeContext';
 import { mapDBtoTransaction, RawDBTransaction } from '../utils/mappers';
 import { escapeLikePattern } from '../utils/sanitize';
 // import { sanitizeTransactionUpdate } from '../../utils/sanitizeTransaction';
@@ -173,7 +172,10 @@ const fetchTransactions = async (
 
     // Pencarian di server agar mencakup semua halaman, bukan hanya halaman aktif.
     // Karakter , ( ) " dibuang karena memecah sintaks filter or() PostgREST.
-    const term = searchTerm?.trim().replace(/[,()"\\]/g, ' ').trim();
+    const term = searchTerm
+      ?.trim()
+      .replace(/[,()"\\]/g, ' ')
+      .trim();
     if (term && isOperator) {
       // Operator tidak membaca tabel customers: cari nama langsung di view-nya.
       const pattern = `%${escapeLikePattern(term)}%`;
@@ -294,17 +296,13 @@ export function useTransactions(filter: TransactionFilter = {}) {
         );
       }
     },
-    onSuccess: async (savedTransaction, variables) => {
-      // Auto-deduct 1 sachet sabun liquid dari inventory
-      try {
-        await autoDeductInventory(savedTransaction.id, variables.storeId);
-      } catch (deductError) {
-        console.error('Auto-deduct inventory failed:', deductError);
-        // Don't throw - transaction is already saved
-      }
-      // Invalidate untuk force refresh dari server
+    onSuccess: () => {
+      // Stok bahan sudah dipotong otomatis oleh trigger database saat nota disimpan
+      // (aturan di Inventaris → Potong Otomatis). Cukup segarkan cache.
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory_summary'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory_movements'] });
     },
   });
 

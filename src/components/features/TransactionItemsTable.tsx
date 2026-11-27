@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2Icon, MessageSquareIcon, TagIcon } from '../icons';
 import { Service, ServiceCategory, ExtendedTransactionItem } from '@/types';
+import { resolveMinQuantity, formatMinQuantity } from '../../utils/serviceMinimum';
 
 interface TransactionItemsTableProps {
   items: ExtendedTransactionItem[];
@@ -42,6 +43,8 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
               const service = services.find((s) => s.id === item.serviceId);
               const isSatuan = service?.category === ServiceCategory.Satuan;
               const isKiloan = service?.category === ServiceCategory.Kiloan;
+              const minQuantity = resolveMinQuantity(service, item.serviceName);
+              const isBelowMinimum = minQuantity > 0 && item.quantity < minQuantity;
 
               return (
                 <tr key={index} className="border-b dark:border-slate-700">
@@ -91,23 +94,45 @@ const TransactionItemsTable: React.FC<TransactionItemsTableProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center">
-                        <input
-                          type="number"
-                          id={`item-quantity-${index}`}
-                          name={`item-quantity-${index}`}
-                          min="0"
-                          step={item.unit === 'kg' ? '0.01' : '1'}
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
-                          }
-                          className="w-24 bg-slate-50 border border-slate-300 text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                          autoComplete="off"
-                        />
-                        <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
-                          {item.unit}
-                        </span>
+                      <div>
+                        <div className="flex items-center">
+                          <input
+                            type="number"
+                            id={`item-quantity-${index}`}
+                            name={`item-quantity-${index}`}
+                            min={minQuantity > 0 ? minQuantity : 0}
+                            step={item.unit === 'kg' ? '0.01' : '1'}
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                            }
+                            aria-invalid={isBelowMinimum || undefined}
+                            aria-describedby={
+                              minQuantity > 0 ? `item-quantity-min-${index}` : undefined
+                            }
+                            className={`w-24 bg-slate-50 border text-slate-900 text-lg rounded-lg p-2.5 dark:bg-slate-700 dark:text-white ${
+                              isBelowMinimum
+                                ? 'border-red-500 dark:border-red-500'
+                                : 'border-slate-300 dark:border-slate-600'
+                            }`}
+                            autoComplete="off"
+                          />
+                          <span className="ml-2 text-base text-slate-500 dark:text-slate-400">
+                            {item.unit}
+                          </span>
+                        </div>
+                        {minQuantity > 0 && (
+                          <p
+                            id={`item-quantity-min-${index}`}
+                            className={`mt-1 text-xs ${
+                              isBelowMinimum
+                                ? 'font-semibold text-red-600 dark:text-red-400'
+                                : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                          >
+                            Minimal {formatMinQuantity(minQuantity)} {item.unit}
+                          </p>
+                        )}
                       </div>
                     )}
                   </td>

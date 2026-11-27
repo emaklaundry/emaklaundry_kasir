@@ -23,6 +23,7 @@ export interface Employee {
   workDays: WorkDay[];
   /** Menit toleransi sebelum absensi masuk dihitung terlambat. */
   lateToleranceMinutes: number;
+  /** Gaji per hari (Rp); otomatis jadi pengeluaran "Gaji" tiap hari absen masuk. */
   baseSalary: number;
   commissionRate: number; // percentage
   /** Insentif tetap per bulan (Rp). */

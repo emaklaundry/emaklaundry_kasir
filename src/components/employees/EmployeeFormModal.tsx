@@ -367,7 +367,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <label htmlFor="employee-salary" className={labelClass}>
-                Gaji pokok / bulan (Rp)
+                Gaji harian (Rp)
               </label>
               <input
                 id="employee-salary"
@@ -377,7 +377,11 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 value={form.baseSalary}
                 onChange={(e) => set('baseSalary', numberValue(e.target.value))}
                 className={inputClass}
+                aria-describedby="employee-salary-hint"
               />
+              <p id="employee-salary-hint" className="mt-1 text-xs text-slate-500">
+                Otomatis dicatat ke Pengeluaran (Gaji) setiap hari karyawan absen masuk.
+              </p>
             </div>
             <div>
               <label htmlFor="employee-commission" className={labelClass}>

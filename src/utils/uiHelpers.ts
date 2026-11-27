@@ -38,3 +38,21 @@ export const formatTransactionId = (transaction: { id: string; invoiceCode?: str
   // Fallback to simpler format if no invoice code
   return `#${transaction.id.substring(0, 8)}`;
 };
+
+/** Label Bahasa Indonesia untuk status aset (nilai DB tetap bahasa Inggris). */
+export const ASSET_STATUS_LABELS: Record<string, string> = {
+  Active: 'Aktif',
+  'Under Maintenance': 'Dalam Perbaikan',
+  Decommissioned: 'Diberhentikan',
+};
+
+export const getAssetStatusLabel = (status: string): string =>
+  ASSET_STATUS_LABELS[status] ?? status;
+
+/** Label Bahasa Indonesia untuk satuan frekuensi jadwal perawatan. */
+export const FREQUENCY_UNIT_LABELS: Record<string, string> = {
+  days: 'hari',
+  weeks: 'minggu',
+  months: 'bulan',
+  years: 'tahun',
+};

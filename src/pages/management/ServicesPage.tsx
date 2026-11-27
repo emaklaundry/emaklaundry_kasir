@@ -26,6 +26,7 @@ import { useAuditLogs } from '../../contexts/AuditLogContext';
 import { useSortableData } from '../../hooks/useSortableData';
 import useAppContext from '../../contexts/useAppContext';
 import { Service, UserRole } from '@/types';
+import { formatMinQuantity } from '../../utils/serviceMinimum';
 
 const ServicesPage: React.FC = () => {
   const { services, addService, updateService, deleteService } = useServices();
@@ -468,6 +469,11 @@ const ServicesPage: React.FC = () => {
                   </td>
                   <td className="px-3 sm:px-4 py-2.5 sm:py-4 whitespace-nowrap tabular-nums">
                     Rp {service.price.toLocaleString('id-ID')}/{service.unit}
+                    {(service.minQuantity ?? 0) > 0 && (
+                      <span className="block text-xs text-slate-500 dark:text-slate-400">
+                        Min. {formatMinQuantity(service.minQuantity!)} {service.unit}
+                      </span>
+                    )}
                   </td>
                   <td className="hidden md:table-cell px-3 sm:px-4 py-2.5 sm:py-4 whitespace-nowrap">
                     {service.durationDays} hari

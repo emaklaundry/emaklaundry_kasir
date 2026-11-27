@@ -12,6 +12,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
   const [formData, setFormData] = useState({
     name: store?.name || '',
     address: store?.address || '',
+    phone: store?.phone || '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,7 +22,7 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    onSave({ ...formData, phone: formData.phone.trim() || null });
   };
 
   return (
@@ -68,6 +69,25 @@ const StoreFormModal: React.FC<StoreFormModalProps> = ({ store, onClose, onSave 
             className="form-input"
             required
           />
+        </div>
+        <div>
+          <label htmlFor="phone" className="form-label">
+            No. HP / WhatsApp (opsional)
+          </label>
+          <input
+            type="tel"
+            inputMode="tel"
+            name="phone"
+            id="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            maxLength={30}
+            placeholder="Contoh: 081234567890"
+            className="form-input"
+          />
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Dicetak di bagian atas struk bersama nama & alamat cabang.
+          </p>
         </div>
       </form>
     </Modal>

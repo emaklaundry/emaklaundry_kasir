@@ -8,26 +8,18 @@ import {
   SettingsIcon,
 } from '../../components/icons';
 import PrinterSettingsPanel from '../../components/PrinterSettingsPanel';
-import useToasts from '../../contexts/useToasts';
 import EmptyState from '../../components/EmptyState';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useStores } from '../../contexts/StoreContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import { useAuditLogs } from '../../contexts/AuditLogContext';
+import { usePrinter } from '../../hooks/usePrinter';
 
 import { supabase } from '../../utils/supabaseClient';
 import { formatTransactionId } from '@/utils/uiHelpers';
-import {
-  PrinterSettings,
-  ReceiptLine,
-  buildTestReceipt,
-  describePrintError,
-  getConnectedPrinterName,
-  loadPrinterSettings,
-  printReceipt,
-  resetPrinterConnection,
-  savePrinterSettings,
-} from '@/utils/thermalPrinter';
+import { buildReceiptHeader } from '@/utils/receiptHeader';
+import { ReceiptLine } from '@/utils/thermalPrinter';
 
 import { Transaction, TransactionItem, TransactionItemDetail } from '@/types';
 
@@ -35,42 +27,13 @@ const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
   const { settings } = useSettings();
+  const { stores } = useStores();
   const { transactions } = useTransactions();
   const navigate = useNavigate();
   const { addAuditLog } = useAuditLogs();
-  const { addToast } = useToasts();
 
-  const [printerSettings, setPrinterSettings] =
-    React.useState<PrinterSettings>(loadPrinterSettings);
+  const { printerSettings, printing, runPrint, panelProps } = usePrinter();
   const [showPrinterSettings, setShowPrinterSettings] = React.useState(false);
-  const [printing, setPrinting] = React.useState(false);
-  const [connectedName, setConnectedName] = React.useState<string | null>(() =>
-    getConnectedPrinterName(printerSettings.method),
-  );
-
-  const changePrinterSettings = (next: PrinterSettings) => {
-    if (next.method !== printerSettings.method) {
-      setConnectedName(getConnectedPrinterName(next.method));
-    }
-    setPrinterSettings(next);
-    savePrinterSettings(next);
-  };
-
-  const runPrint = async (lines: ReceiptLine[], chooseDevice = false): Promise<boolean> => {
-    setPrinting(true);
-    try {
-      if (chooseDevice) resetPrinterConnection();
-      await printReceipt(lines, printerSettings, chooseDevice);
-      setConnectedName(getConnectedPrinterName(printerSettings.method));
-      return true;
-    } catch (err) {
-      setConnectedName(getConnectedPrinterName(printerSettings.method));
-      addToast(describePrintError(err), 'error');
-      return false;
-    } finally {
-      setPrinting(false);
-    }
-  };
 
   const { data: customersRaw = [] } = useQuery({
     queryKey: ALL_CUSTOMERS_QUERY_KEY,
@@ -112,6 +75,10 @@ const ReceiptPage: React.FC = () => {
     );
   }
 
+  const header = buildReceiptHeader(
+    settings,
+    stores.find((s) => s.id === tx.storeId),
+  );
   const remainingBalance = tx.total - tx.amountPaid;
   // Nota lama (sebelum diskon/pajak dihapus) bisa punya total ≠ subtotal.
   const legacyAdjustment = tx.total - tx.subtotal;
@@ -119,7 +86,8 @@ const ReceiptPage: React.FC = () => {
   const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
   const buildReceiptLines = (): ReceiptLine[] => {
     const lines: ReceiptLine[] = [
-      { type: 'text', text: 'Laundry POS', align: 'center', bold: true, size: 'large' },
+      { type: 'text', text: header.title, align: 'center', bold: true, size: 'large' },
+      ...header.details.map((text): ReceiptLine => ({ type: 'text', text, align: 'center' })),
       { type: 'text', text: 'Struk Transaksi', align: 'center' },
       { type: 'divider' },
       { type: 'pair', left: 'No. Invoice', right: formatTransactionId(tx) },
@@ -193,8 +161,13 @@ const ReceiptPage: React.FC = () => {
       className="max-w-md mx-auto rounded-lg border border-slate-200 bg-white p-8 dark:border-slate-700 dark:bg-slate-800 receipt-print"
     >
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Laundry POS</h2>
-        <p className="text-base text-slate-500 dark:text-slate-400">Struk Transaksi</p>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{header.title}</h2>
+        {header.details.map((line) => (
+          <p key={line} className="text-sm text-slate-600 dark:text-slate-300">
+            {line}
+          </p>
+        ))}
+        <p className="mt-1 text-base text-slate-500 dark:text-slate-400">Struk Transaksi</p>
       </div>
 
       <div className="border-b-2 border-dashed border-slate-300 dark:border-slate-600 pb-4 mb-4">
@@ -343,14 +316,7 @@ const ReceiptPage: React.FC = () => {
       </div>
 
       {showPrinterSettings && (
-        <PrinterSettingsPanel
-          settings={printerSettings}
-          onChange={changePrinterSettings}
-          onTestPrint={() => runPrint(buildTestReceipt(printerSettings))}
-          onChooseDevice={() => runPrint(buildTestReceipt(printerSettings), true)}
-          connectedName={connectedName}
-          busy={printing}
-        />
+        <PrinterSettingsPanel {...panelProps} />
       )}
     </div>
   );

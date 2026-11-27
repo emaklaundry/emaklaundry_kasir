@@ -48,7 +48,7 @@ export interface Store {
   name: string;
   address: string;
   /** Nomor HP/WhatsApp cabang, dicetak di header struk. */
-  phone?: string;
+  phone?: string | null;
   isActive: boolean;
   latitude?: number;
   longitude?: number;
@@ -72,6 +72,8 @@ export interface Service {
   price: number;
   unit: string;
   durationDays: number;
+  /** Jumlah minimum per transaksi (mis. 3 kg). 0 / kosong = tanpa minimum. */
+  minQuantity?: number;
   storeId: string;
 }
 
@@ -129,18 +131,31 @@ export interface Transaction {
 export interface InventoryItem {
   id: string;
   name: string;
+  /** Boleh desimal (mis. 12,5 liter). Bisa minus bila pemakaian melebihi stok tercatat. */
   stock: number;
-  virtualStock?: number; // auto-deducted stock for recipe tracking
   lowStockThreshold: number;
   unit: string;
   storeId: string;
-  recipe?: InventoryRecipe;
+  /** Kolom turunan di database: ambang > 0 dan stok ≤ ambang. */
+  is_low_stock?: boolean;
 }
 
+/** Dasar perhitungan aturan potong stok otomatis. */
+export type InventoryRecipeBasis = 'per_unit' | 'per_transaksi';
+
+/**
+ * Aturan potong stok otomatis. Dijalankan oleh trigger database setiap nota dibuat:
+ * - per_unit: amount × jumlah (kg/pcs/m) baris nota yang cocok
+ * - per_transaksi: amount sekali per nota yang memuat layanan yang cocok
+ */
 export interface InventoryRecipe {
   id: string;
   inventoryItemId: string;
-  usagePerKg: number; // ml/pcs per kg cucian
+  /** null = berlaku untuk semua layanan */
+  serviceId: string | null;
+  basis: InventoryRecipeBasis;
+  amount: number;
+  isActive: boolean;
   storeId: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -154,22 +169,38 @@ export interface StockOpname {
   physicalStock: number;
   discrepancy: number; // virtual - physical (positive = missing)
   notes?: string;
-  recordedBy: string;
+  recordedBy?: string;
   recordedAt: Date;
   storeId: string;
 }
 
-export interface InventoryUsageLog {
+export type InventoryMovementKind =
+  | 'awal'
+  | 'restok'
+  | 'penyesuaian'
+  | 'opname'
+  | 'transaksi'
+  | 'koreksi_transaksi';
+
+/** Satu baris buku besar stok. quantity positif = masuk, negatif = keluar. */
+export interface InventoryMovement {
   id: string;
   inventoryItemId: string;
   inventoryItemName?: string;
   transactionId?: string;
-  quantityUsed: number;
-  totalKg: number;
-  usagePerKg: number;
+  invoiceCode?: string;
+  kind: InventoryMovementKind;
+  quantity: number;
+  stockBefore: number;
+  stockAfter: number;
+  note?: string;
+  createdByName?: string;
   createdAt: Date;
   storeId: string;
 }
+
+/** Mode penyesuaian stok manual (RPC adjust_inventory_stock). */
+export type StockAdjustMode = 'tambah' | 'kurang' | 'set';
 
 export interface MaintenanceLog {
   id: string;
@@ -198,6 +229,8 @@ export interface Expense {
   storeId: string;
   recurringTemplateId?: string;
   recurringPeriod?: string;
+  /** Diisi bila pengeluaran ini gaji harian otomatis dari absensi. */
+  attendanceId?: string;
 }
 
 export interface User {

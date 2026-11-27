@@ -23,23 +23,23 @@ const buildQris = (pointOfInitiation: '11' | '12') => {
 // Objek stabil: halaman memakai `settings`/`stores` sebagai dependency effect.
 const mocks = vi.hoisted(() => ({
   settings: { id: 1, receiptMessage: 'Terima kasih', whatsappFooter: 'Footer' },
-  stores: [],
+  stores: [] as Array<Record<string, unknown>>,
+  ctx: { currentUser: { role: 'Admin', storeId: 's1' }, selectedStoreId: 'all' },
 }));
 const updateSettings = vi.fn().mockResolvedValue(null);
+const updateStore = vi.fn().mockResolvedValue({});
 vi.mock('@/contexts/SettingsContext', () => ({
   useSettings: () => ({ settings: mocks.settings, updateSettings }),
 }));
 vi.mock('@/contexts/StoreContext', () => ({
-  useStores: () => ({ stores: mocks.stores, updateStore: vi.fn() }),
+  useStores: () => ({ stores: mocks.stores, updateStore }),
 }));
 vi.mock('@/contexts/AuditLogContext', () => ({ useAuditLogs: () => ({ addAuditLog: vi.fn() }) }));
 const addToast = vi.fn().mockReturnValue('t1');
 vi.mock('@/contexts/useToasts', () => ({
   default: () => ({ addToast, updateToast: vi.fn() }),
 }));
-vi.mock('@/contexts/useAppContext', () => ({
-  default: () => ({ currentUser: { role: 'Admin', storeId: 's1' }, selectedStoreId: 'all' }),
-}));
+vi.mock('@/contexts/useAppContext', () => ({ default: () => mocks.ctx }));
 vi.mock('@/components/SupervisorPinSettings', () => ({ default: () => null }));
 vi.mock('@/components/ChangePasswordModal', () => ({ default: () => null }));
 
@@ -93,5 +93,61 @@ describe('SettingsPage — QRIS statis', () => {
         expect.objectContaining({ qrisStaticCode: null }),
       ),
     );
+  });
+});
+
+describe('SettingsPage — data cabang', () => {
+  const store = { id: 's1', name: 'Banjar', address: 'Jl. Lama', phone: null, isActive: true };
+  const original = { ...mocks.ctx };
+
+  beforeEach(() => {
+    updateSettings.mockClear();
+    updateStore.mockClear();
+    addToast.mockClear();
+    mocks.stores = [store];
+  });
+  afterEach(() => {
+    mocks.ctx = original;
+    mocks.stores = [];
+  });
+
+  it('Super Admin menyimpan alamat & No. HP cabang, dan pratinjau struk ikut berubah', async () => {
+    mocks.ctx = { currentUser: { role: 'Super Admin', storeId: 's1' }, selectedStoreId: 's1' };
+    render(<SettingsPage />);
+    fireEvent.change(screen.getByLabelText('Alamat Cabang'), {
+      target: { name: 'address', value: 'Jl. Baru 2' },
+    });
+    fireEvent.change(screen.getByLabelText('No. HP / WhatsApp Cabang'), {
+      target: { name: 'phone', value: '081234567890' },
+    });
+    expect(screen.getByText('Telp/WA 081234567890')).toBeInTheDocument();
+    save();
+    await waitFor(() =>
+      expect(updateStore).toHaveBeenCalledWith(
+        's1',
+        expect.objectContaining({ address: 'Jl. Baru 2', phone: '081234567890' }),
+      ),
+    );
+  });
+
+  it('menolak No. HP cabang yang berisi huruf', () => {
+    mocks.ctx = { currentUser: { role: 'Super Admin', storeId: 's1' }, selectedStoreId: 's1' };
+    render(<SettingsPage />);
+    fireEvent.change(screen.getByLabelText('No. HP / WhatsApp Cabang'), {
+      target: { name: 'phone', value: '0812abc' },
+    });
+    save();
+    expect(updateSettings).not.toHaveBeenCalled();
+    expect(addToast).toHaveBeenCalledWith(expect.stringMatching(/No\. HP cabang/), 'error');
+  });
+
+  it('Admin hanya melihat data cabang (tidak bisa diubah, tidak ikut disimpan)', async () => {
+    mocks.ctx = { currentUser: { role: 'Admin', storeId: 's1' }, selectedStoreId: 's1' };
+    render(<SettingsPage />);
+    expect(screen.getByLabelText('Alamat Cabang')).toHaveAttribute('readonly');
+    expect(screen.getByText(/Hanya Super Admin yang dapat mengubah data cabang/)).toBeInTheDocument();
+    save();
+    await waitFor(() => expect(updateSettings).toHaveBeenCalled());
+    expect(updateStore).not.toHaveBeenCalled();
   });
 });

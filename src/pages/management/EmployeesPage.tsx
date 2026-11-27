@@ -253,7 +253,7 @@ const EmployeesPage: React.FC = () => {
 
   const compensation = (e: Employee) =>
     [
-      `Rp ${formatRupiah(e.baseSalary)}`,
+      `Rp ${formatRupiah(e.baseSalary)}/hari`,
       e.commissionRate > 0 ? `+${e.commissionRate}% komisi` : '',
       e.monthlyIncentive > 0 ? `+Rp ${formatRupiah(e.monthlyIncentive)} insentif` : '',
     ]

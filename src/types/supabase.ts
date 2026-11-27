@@ -334,6 +334,7 @@ export type Database = {
       expenses: {
         Row: {
           amount: number;
+          attendanceId: string | null;
           category: string;
           date: string;
           description: string;
@@ -344,6 +345,7 @@ export type Database = {
         };
         Insert: {
           amount: number;
+          attendanceId?: string | null;
           category: string;
           date: string;
           description: string;
@@ -354,6 +356,7 @@ export type Database = {
         };
         Update: {
           amount?: number;
+          attendanceId?: string | null;
           category?: string;
           date?: string;
           description?: string;
@@ -420,11 +423,13 @@ export type Database = {
       inventory_items: {
         Row: {
           id: string;
+          is_low_stock: boolean | null;
           lowStockThreshold: number;
           name: string;
           stock: number;
           storeId: string | null;
           unit: string;
+          updatedAt: string | null;
         };
         Insert: {
           id?: string;
@@ -433,6 +438,7 @@ export type Database = {
           stock: number;
           storeId?: string | null;
           unit: string;
+          updatedAt?: string | null;
         };
         Update: {
           id?: string;
@@ -441,6 +447,7 @@ export type Database = {
           stock?: number;
           storeId?: string | null;
           unit?: string;
+          updatedAt?: string | null;
         };
         Relationships: [
           {
@@ -452,30 +459,120 @@ export type Database = {
           },
         ];
       };
-      inventory_recipes: {
+      inventory_movements: {
         Row: {
-          created_at: string | null;
+          created_at: string;
+          created_by: string | null;
           id: string;
-          inventory_item_id: string | null;
+          inventory_item_id: string;
+          kind: string;
+          note: string | null;
+          quantity: number;
+          recipe_id: string | null;
+          stock_after: number;
+          stock_before: number;
           store_id: string | null;
-          updated_at: string | null;
-          usage_per_kg: number;
+          transaction_id: string | null;
         };
         Insert: {
-          created_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
           id?: string;
-          inventory_item_id?: string | null;
+          inventory_item_id: string;
+          kind: string;
+          note?: string | null;
+          quantity: number;
+          recipe_id?: string | null;
+          stock_after: number;
+          stock_before: number;
           store_id?: string | null;
-          updated_at?: string | null;
-          usage_per_kg: number;
+          transaction_id?: string | null;
         };
         Update: {
-          created_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
           id?: string;
-          inventory_item_id?: string | null;
+          inventory_item_id?: string;
+          kind?: string;
+          note?: string | null;
+          quantity?: number;
+          recipe_id?: string | null;
+          stock_after?: number;
+          stock_before?: number;
           store_id?: string | null;
-          updated_at?: string | null;
-          usage_per_kg?: number;
+          transaction_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'inventory_movements_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'inventory_movements_inventory_item_id_fkey';
+            columns: ['inventory_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'inventory_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'inventory_movements_recipe_id_fkey';
+            columns: ['recipe_id'];
+            isOneToOne: false;
+            referencedRelation: 'inventory_recipes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'inventory_movements_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'inventory_movements_transaction_id_fkey';
+            columns: ['transaction_id'];
+            isOneToOne: false;
+            referencedRelation: 'transactions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      inventory_recipes: {
+        Row: {
+          amount: number;
+          basis: string;
+          created_at: string;
+          id: string;
+          inventory_item_id: string;
+          is_active: boolean;
+          service_id: string | null;
+          store_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          basis?: string;
+          created_at?: string;
+          id?: string;
+          inventory_item_id: string;
+          is_active?: boolean;
+          service_id?: string | null;
+          store_id?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          basis?: string;
+          created_at?: string;
+          id?: string;
+          inventory_item_id?: string;
+          is_active?: boolean;
+          service_id?: string | null;
+          store_id?: string;
+          updated_at?: string;
         };
         Relationships: [
           {
@@ -486,65 +583,17 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
+            foreignKeyName: 'inventory_recipes_service_id_fkey';
+            columns: ['service_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'inventory_recipes_store_id_fkey';
             columns: ['store_id'];
             isOneToOne: false;
             referencedRelation: 'stores';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      inventory_usage_log: {
-        Row: {
-          created_at: string | null;
-          id: string;
-          inventory_item_id: string | null;
-          quantity_used: number;
-          store_id: string | null;
-          total_kg: number;
-          transaction_id: string | null;
-          usage_per_kg: number;
-        };
-        Insert: {
-          created_at?: string | null;
-          id?: string;
-          inventory_item_id?: string | null;
-          quantity_used: number;
-          store_id?: string | null;
-          total_kg: number;
-          transaction_id?: string | null;
-          usage_per_kg: number;
-        };
-        Update: {
-          created_at?: string | null;
-          id?: string;
-          inventory_item_id?: string | null;
-          quantity_used?: number;
-          store_id?: string | null;
-          total_kg?: number;
-          transaction_id?: string | null;
-          usage_per_kg?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'inventory_usage_log_inventory_item_id_fkey';
-            columns: ['inventory_item_id'];
-            isOneToOne: false;
-            referencedRelation: 'inventory_items';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'inventory_usage_log_store_id_fkey';
-            columns: ['store_id'];
-            isOneToOne: false;
-            referencedRelation: 'stores';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'inventory_usage_log_transaction_id_fkey';
-            columns: ['transaction_id'];
-            isOneToOne: false;
-            referencedRelation: 'transactions';
             referencedColumns: ['id'];
           },
         ];
@@ -639,6 +688,7 @@ export type Database = {
         Row: {
           category: Database['public']['Enums']['service_category'];
           durationDays: number;
+          minQuantity: number;
           id: string;
           name: string;
           price: number;
@@ -649,6 +699,7 @@ export type Database = {
         Insert: {
           category: Database['public']['Enums']['service_category'];
           durationDays: number;
+          minQuantity?: number;
           id?: string;
           name: string;
           price: number;
@@ -659,6 +710,7 @@ export type Database = {
         Update: {
           category?: Database['public']['Enums']['service_category'];
           durationDays?: number;
+          minQuantity?: number;
           id?: string;
           name?: string;
           price?: number;
@@ -749,29 +801,27 @@ export type Database = {
           inventory_item_id: string | null;
           notes: string | null;
           physical_stock: number;
-          recorded_at: string | null;
+          recorded_at: string;
           recorded_by: string | null;
           store_id: string | null;
           virtual_stock: number;
         };
         Insert: {
-          discrepancy?: number | null;
           id?: string;
           inventory_item_id?: string | null;
           notes?: string | null;
           physical_stock: number;
-          recorded_at?: string | null;
+          recorded_at?: string;
           recorded_by?: string | null;
           store_id?: string | null;
           virtual_stock: number;
         };
         Update: {
-          discrepancy?: number | null;
           id?: string;
           inventory_item_id?: string | null;
           notes?: string | null;
           physical_stock?: number;
-          recorded_at?: string | null;
+          recorded_at?: string;
           recorded_by?: string | null;
           store_id?: string | null;
           virtual_stock?: number;
@@ -782,6 +832,13 @@ export type Database = {
             columns: ['inventory_item_id'];
             isOneToOne: false;
             referencedRelation: 'inventory_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'stock_opname_recorded_by_fkey';
+            columns: ['recorded_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
           {
@@ -916,6 +973,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      adjust_inventory_stock: {
+        Args: { p_item_id: string; p_mode: string; p_note?: string; p_value: number };
+        Returns: number;
+      };
+      record_stock_opname: {
+        Args: { p_item_id: string; p_notes?: string; p_physical_stock: number };
+        Returns: Database['public']['Tables']['stock_opname']['Row'];
+      };
       bulk_update_order_status:
         | {
             Args: {

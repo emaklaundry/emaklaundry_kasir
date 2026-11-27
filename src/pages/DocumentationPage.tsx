@@ -70,7 +70,9 @@ const DocumentationPage: React.FC = () => {
       icon: ShoppingCartIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">Panduan Transaksi</h2>
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
+            Panduan Transaksi
+          </h2>
 
           <div className="space-y-4">
             <section className="card p-4">
@@ -142,7 +144,9 @@ const DocumentationPage: React.FC = () => {
       icon: UserGroupIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">Manajemen Pelanggan</h2>
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
+            Manajemen Pelanggan
+          </h2>
           <p className="text-slate-600 dark:text-slate-300">
             Kelola data pelanggan untuk memudahkan pemesanan berulang dan loyalitas.
           </p>
@@ -175,7 +179,9 @@ const DocumentationPage: React.FC = () => {
       icon: ArchiveBoxIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">Stok & Inventaris</h2>
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
+            Stok & Inventaris
+          </h2>
           <p className="text-slate-600 dark:text-slate-300">
             Pantau penggunaan bahan baku seperti Deterjen, Pewangi, dan Plastik Packing.
           </p>
@@ -252,7 +258,9 @@ const DocumentationPage: React.FC = () => {
       icon: UserIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">Karyawan & Absensi</h2>
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
+            Karyawan & Absensi
+          </h2>
           <p className="text-slate-600 dark:text-slate-300">
             (Khusus Admin) Semua data karyawan diatur dari menu <strong>SDM &amp; Aset</strong>.
             Kasir tidak bisa membuka halaman ini.
@@ -261,9 +269,9 @@ const DocumentationPage: React.FC = () => {
             <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">
               <h3 className="font-bold text-slate-900 dark:text-white">Data karyawan</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Profil, cabang, jadwal shift &amp; hari kerja, toleransi terlambat, gaji pokok,
-                komisi, dan insentif. Karyawan yang berhenti cukup <strong>dinonaktifkan</strong>;
-                datanya tetap tersimpan.
+                Profil, cabang, jadwal shift &amp; hari kerja, toleransi terlambat, gaji harian
+                (otomatis masuk pengeluaran saat absen), komisi, dan insentif. Karyawan yang
+                berhenti cukup <strong>dinonaktifkan</strong>; datanya tetap tersimpan.
               </p>
             </div>
             <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">
@@ -292,7 +300,9 @@ const DocumentationPage: React.FC = () => {
       icon: ChartBarIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">Laporan & Analisis</h2>
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
+            Laporan & Analisis
+          </h2>
           <p className="text-slate-600 dark:text-slate-300">
             Dapatkan wawasan mendalam tentang performa bisnis Anda.
           </p>
@@ -322,7 +332,9 @@ const DocumentationPage: React.FC = () => {
       icon: PackageIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">Manajemen Layanan</h2>
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
+            Manajemen Layanan
+          </h2>
           <p className="text-slate-600 dark:text-slate-300">
             Atur jenis layanan laundry yang Anda tawarkan (Kiloan, Satuan, Karpet, dll).
           </p>
@@ -415,7 +427,9 @@ const DocumentationPage: React.FC = () => {
       icon: SettingsIcon,
       content: (
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">Pengaturan Sistem</h2>
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
+            Pengaturan Sistem
+          </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="p-4 bg-white dark:bg-slate-800 rounded shadow-sm border border-slate-200 dark:border-slate-700">
@@ -480,8 +494,9 @@ const DocumentationPage: React.FC = () => {
               GET https://[PROJECT-REF].supabase.co/functions/v1/check-order?invoice=[NO-INVOICE]
             </code>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              Wajib mengirim header <code>Authorization: Bearer [ANON-KEY]</code>. Dari browser, domain
-              pemanggil harus terdaftar di secret <code>ALLOWED_ORIGIN</code> (pisahkan dengan koma).
+              Wajib mengirim header <code>Authorization: Bearer [ANON-KEY]</code>. Dari browser,
+              domain pemanggil harus terdaftar di secret <code>ALLOWED_ORIGIN</code> (pisahkan
+              dengan koma).
             </p>
 
             <h3 className="font-semibold text-slate-800 dark:text-white mb-2">

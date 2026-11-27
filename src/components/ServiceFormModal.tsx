@@ -19,6 +19,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     price: service?.price || 0,
     unit: service?.unit || 'kg',
     durationDays: service?.durationDays || 0,
+    minQuantity: service?.minQuantity || 0,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -30,6 +31,12 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
       setFormData((prev) => ({
         ...prev,
         [name]: Math.max(minValue, isNaN(numericValue) ? minValue : numericValue),
+      }));
+    } else if (name === 'minQuantity') {
+      const numericValue = parseFloat(value.replace(',', '.'));
+      setFormData((prev) => ({
+        ...prev,
+        minQuantity: isNaN(numericValue) ? 0 : Math.max(0, numericValue),
       }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -151,20 +158,42 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
             />
           </div>
         </div>
-        <div>
-          <label htmlFor="durationDays" className="form-label">
-            Durasi (hari)
-          </label>
-          <input
-            type="number"
-            min="0"
-            name="durationDays"
-            id="durationDays"
-            value={formData.durationDays}
-            onChange={handleChange}
-            className="form-input"
-            required
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="durationDays" className="form-label">
+              Durasi (hari)
+            </label>
+            <input
+              type="number"
+              min="0"
+              name="durationDays"
+              id="durationDays"
+              value={formData.durationDays}
+              onChange={handleChange}
+              className="form-input"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="minQuantity" className="form-label">
+              Minimal ({formData.unit || 'satuan'})
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              name="minQuantity"
+              id="minQuantity"
+              value={formData.minQuantity ?? 0}
+              onChange={handleChange}
+              className="form-input"
+              aria-describedby="minQuantity-hint"
+            />
+            <p id="minQuantity-hint" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Isi 0 bila tanpa minimum.
+            </p>
+          </div>
         </div>
       </form>
     </Modal>

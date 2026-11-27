@@ -142,12 +142,14 @@ const CustomerDetailPage: React.FC = () => {
                 {new Date(mostRecentTransaction.createdAt).toLocaleDateString('id-ID')}
               </span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-base text-slate-600 dark:text-slate-400">Total:</span>
-              <span className="font-bold text-lg text-slate-900 dark:text-white">
-                Rp {mostRecentTransaction.total.toLocaleString('id-ID')}
-              </span>
-            </div>
+            {canViewTotalSpent && (
+              <div className="flex justify-between items-center">
+                <span className="text-base text-slate-600 dark:text-slate-400">Total:</span>
+                <span className="font-bold text-lg text-slate-900 dark:text-white">
+                  Rp {mostRecentTransaction.total.toLocaleString('id-ID')}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -162,7 +164,8 @@ const CustomerDetailPage: React.FC = () => {
               <tr>
                 <th className="px-4 py-2.5">ID Transaksi</th>
                 <th className="px-4 py-2.5">Tanggal</th>
-                <th className="px-4 py-2.5 text-right">Total</th>
+                {/* Total per nota disembunyikan agar Total Belanja tidak bisa dijumlah sendiri. */}
+                {canViewTotalSpent && <th className="px-4 py-2.5 text-right">Total</th>}
                 <th className="px-4 py-2.5">Status Pesanan</th>
                 <th className="px-4 py-2.5">Status Bayar</th>
               </tr>
@@ -177,7 +180,9 @@ const CustomerDetailPage: React.FC = () => {
                     <td className="px-4 py-2.5">
                       {new Date(t.createdAt).toLocaleDateString('id-ID')}
                     </td>
-                    <td className="px-4 py-2.5 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
+                    {canViewTotalSpent && (
+                      <td className="px-4 py-2.5 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
+                    )}
                     <td className="px-4 py-2.5">
                       <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                         {t.orderStatus}
@@ -192,7 +197,7 @@ const CustomerDetailPage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={canViewTotalSpent ? 5 : 4}>
                     <EmptyState
                       title="Belum ada transaksi"
                       description="Transaksi pelanggan ini akan tercatat di sini."

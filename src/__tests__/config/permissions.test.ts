@@ -8,6 +8,15 @@ describe('permissions', () => {
     expect(can(UserRole.Operator, 'transaction.create')).toBe(false);
     expect(can(UserRole.Operator, 'transaction.payment')).toBe(false);
     expect(can(UserRole.Operator, 'expense.create')).toBe(false);
+    // Struk WhatsApp memuat nominal & nomor HP pelanggan.
+    expect(can(UserRole.Operator, 'transaction.notify')).toBe(false);
+    expect(can(UserRole.Operator, 'customer.edit')).toBe(false);
+  });
+
+  it('Kasir ke atas yang mengirim struk/kabar WhatsApp', () => {
+    expect(can(UserRole.Cashier, 'transaction.notify')).toBe(true);
+    expect(can(UserRole.Admin, 'transaction.notify')).toBe(true);
+    expect(can(UserRole.SuperAdmin, 'transaction.notify')).toBe(true);
   });
 
   it('hanya Kasir ke atas yang menandai pesanan Selesai (serah terima)', () => {

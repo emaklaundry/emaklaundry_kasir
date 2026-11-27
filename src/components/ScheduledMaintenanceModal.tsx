@@ -4,6 +4,7 @@ import { useAssets } from '../contexts/AssetContext';
 import useToasts from '../contexts/useToasts';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import { calculateNextDueDate } from '../utils/formatting';
+import { FREQUENCY_UNIT_LABELS } from '../utils/uiHelpers';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ScheduledMaintenanceFormModal from './ScheduledMaintenanceFormModal';
@@ -27,13 +28,14 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
     updateScheduledMaintenance,
     deleteScheduledMaintenance,
   } = useScheduledMaintenances();
-  const { updateAsset } = useAssets();
+  const { appendMaintenanceLog } = useAssets();
   const { addAuditLog } = useAuditLogs();
   const { addToast } = useToasts();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<ScheduledMaintenance | null>(null);
   const [deletingSchedule, setDeletingSchedule] = useState<ScheduledMaintenance | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
 
   const assetSchedules = useMemo(() => {
     return scheduledMaintenances
@@ -70,6 +72,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
           `Memperbarui jadwal perawatan "${data.description}" untuk aset "${asset.name}".`,
           asset.storeId,
         );
+        addToast('Jadwal perawatan diperbarui.', 'success');
       } else {
         // Adding new
         const newScheduleData = {
@@ -82,6 +85,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
           `Menambahkan jadwal perawatan "${data.description}" untuk aset "${asset.name}".`,
           asset.storeId,
         );
+        addToast('Jadwal perawatan ditambahkan.', 'success');
       }
       handleCloseForm();
     } catch (error: unknown) {
@@ -105,6 +109,7 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
           `Menghapus jadwal perawatan "${deletingSchedule.description}" dari aset "${asset.name}".`,
           asset.storeId,
         );
+        addToast('Jadwal perawatan dihapus.', 'success');
       } catch (error: unknown) {
         if (error && typeof error === 'object' && 'message' in error) {
           addToast(`Gagal menghapus jadwal: ${(error as { message: string }).message}`, 'error');
@@ -118,13 +123,14 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
   };
 
   const handleMarkAsComplete = async (schedule: ScheduledMaintenance) => {
+    if (completingId) return; // cegah klik ganda
+    setCompletingId(schedule.id);
     const newLog = {
-      id: `LOG${Date.now()}`,
       date: new Date(),
       description: `[Jadwal] - ${schedule.description}`,
-      cost: 0,
+      // Sama dengan perilaku di Dashboard: catat estimasi biaya sebagai biaya.
+      cost: schedule.estimatedCost || 0,
     };
-    const updatedHistory = [...asset.maintenanceHistory, newLog];
     const updatedScheduleData = {
       lastCompletedDate: new Date(),
       nextDueDate: calculateNextDueDate(
@@ -134,20 +140,22 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
       ),
     };
     try {
-      await Promise.all([
-        updateAsset(asset.id, { maintenanceHistory: updatedHistory }),
-        updateScheduledMaintenance(schedule.id, updatedScheduleData),
-      ]);
+      // Log ditambahkan dari data terbaru di DB (bukan prop `asset` yang bisa basi).
+      await appendMaintenanceLog(asset.id, newLog);
+      await updateScheduledMaintenance(schedule.id, updatedScheduleData);
       addAuditLog(
         `Menandai jadwal perawatan "${schedule.description}" sebagai selesai untuk aset "${asset.name}".`,
         asset.storeId,
       );
+      addToast(`Perawatan "${schedule.description}" ditandai selesai.`, 'success');
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'message' in error) {
         addToast(`Gagal menandai selesai: ${(error as { message: string }).message}`, 'error');
       } else {
         addToast('Gagal menandai selesai: Unknown error', 'error');
       }
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -181,7 +189,8 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
                     {schedule.description}
                   </p>
                   <p className="text-base text-slate-600 dark:text-slate-300">
-                    Setiap {schedule.frequencyValue} {schedule.frequencyUnit}
+                    Setiap {schedule.frequencyValue}{' '}
+                    {FREQUENCY_UNIT_LABELS[schedule.frequencyUnit] ?? schedule.frequencyUnit}
                   </p>
                   <p className="text-base text-slate-600 dark:text-slate-300 mt-1">
                     Jatuh tempo:{' '}
@@ -198,9 +207,10 @@ const ScheduledMaintenanceModal: React.FC<ScheduledMaintenanceModalProps> = ({
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t dark:border-slate-600">
                     <button
                       onClick={() => handleMarkAsComplete(schedule)}
+                      disabled={completingId !== null}
                       className="btn btn-secondary btn-sm flex-1"
                     >
-                      Tandai Selesai
+                      {completingId === schedule.id ? 'Menyimpan...' : 'Tandai Selesai'}
                     </button>
                     <button
                       aria-label="Edit jadwal"

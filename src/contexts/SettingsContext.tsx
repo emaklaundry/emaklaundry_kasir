@@ -6,7 +6,7 @@ import { useSessionUserId } from '../hooks/useSessionUserId';
 const fetchSettings = async (): Promise<Settings | null> => {
   // Use a safer fetch that returns the first row if multiple exist and doesn't fail
   // if the table accidentally contains more than one settings row.
-  const { data, error } = await supabase.from('settings').select('*').limit(1);
+  const { data, error } = await supabase.from('settings').select('*').order('id').limit(1);
   if (error) throw error;
   return data && data.length > 0 ? (data[0] as Settings) : null;
 };
@@ -34,6 +34,7 @@ export function useSettings() {
       const { data: existingRows, error: fetchErr } = await supabase
         .from('settings')
         .select('*')
+        .order('id')
         .limit(1);
       if (fetchErr) throw fetchErr;
       const existing =

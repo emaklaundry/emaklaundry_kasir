@@ -134,7 +134,15 @@ const AppRoutes: React.FC = () => {
                 </PermissionRoute>
               }
             />
-            <Route path="/transactions/:id/receipt" element={<ReceiptPage />} />
+            {/* Struk memuat nominal: Kasir ke atas (Operator tanpa akses uang). */}
+            <Route
+              path="/transactions/:id/receipt"
+              element={
+                <PermissionRoute permission="transaction.payment">
+                  <ReceiptPage />
+                </PermissionRoute>
+              }
+            />
             <Route path="/transactions/:id/details" element={<TransactionDetailPage />} />
             {/* Pelanggan: Kasir & Admin (hapus/import/export dibatasi di halaman) */}
             <Route

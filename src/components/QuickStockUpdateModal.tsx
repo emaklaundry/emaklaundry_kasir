@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchInventory, useInventoryMutations } from '../contexts/InventoryContext';
+import { fetchInventory } from '../contexts/InventoryContext';
+import { useStockAdjust } from '../contexts/InventoryRecipeContext';
 import useToasts from '../contexts/useToasts';
 import { useAuditLogs } from '../contexts/AuditLogContext';
 import useAppContext from '../contexts/useAppContext';
@@ -22,7 +23,8 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     () => (Array.isArray(inventoryRaw) ? inventoryRaw : (inventoryRaw?.data ?? [])),
     [inventoryRaw],
   );
-  const { updateInventoryItem } = useInventoryMutations();
+  // Lewat RPC: Kasir/Operator tidak punya hak UPDATE langsung, dan perubahan tercatat di riwayat stok.
+  const { adjustStock } = useStockAdjust();
   const { addToast, updateToast } = useToasts();
   const [isSavingStock, setIsSavingStock] = useState(false);
   const [stockUpdates, setStockUpdates] = useState<{ [key: string]: number }>({});
@@ -46,8 +48,8 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
   }, [isOpen, inventory]);
 
   const handleStockChange = (itemId: string, newStock: number) => {
-    // FIXED: Strict validation - ensure non-negative integer
-    const validatedStock = Math.max(0, Math.floor(isNaN(newStock) ? 0 : newStock));
+    // Stok boleh desimal (mis. liter), tidak boleh negatif
+    const validatedStock = Math.max(0, isNaN(newStock) ? 0 : Math.round(newStock * 1000) / 1000);
     setStockUpdates((prev) => ({
       ...prev,
       [itemId]: validatedStock,
@@ -77,7 +79,12 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
       // Only update if stock changed from initial snapshot
       if (originalItem && originalStock !== undefined && originalStock !== newStock) {
         updates.push(
-          updateInventoryItem(itemId, { stock: newStock }).then(() => {
+          adjustStock({
+            itemId,
+            mode: 'set',
+            value: newStock,
+            note: 'Update stok cepat',
+          }).then(() => {
             addAuditLog(
               `Memperbarui stok cepat untuk '${originalItem.name}' dari ${originalStock} menjadi ${newStock}.`,
               storeId,
@@ -88,8 +95,12 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
     }
 
     try {
-      await Promise.all(updates);
-      updateToast(toastId, 'Semua stok berhasil diperbarui!', 'success');
+      if (updates.length === 0) {
+        updateToast(toastId, 'Tidak ada perubahan stok.', 'info');
+      } else {
+        await Promise.all(updates);
+        updateToast(toastId, `${updates.length} stok berhasil diperbarui!`, 'success');
+      }
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'message' in error) {
         updateToast(
@@ -124,7 +135,9 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
       <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2">
         {inventory.length > 0 ? (
           inventory.map((item) => {
-            const isLowStock = (stockUpdates[item.id] ?? item.stock) <= item.lowStockThreshold;
+            const isLowStock =
+              item.lowStockThreshold > 0 &&
+              (stockUpdates[item.id] ?? item.stock) <= item.lowStockThreshold;
             return (
               <div
                 key={item.id}
@@ -148,8 +161,11 @@ const QuickStockUpdateModal: React.FC<QuickStockUpdateModalProps> = ({ isOpen, o
                     type="number"
                     id={`stock-${item.id}`}
                     name={`stock-${item.id}`}
-                    value={stockUpdates[item.id] || 0}
-                    onChange={(e) => handleStockChange(item.id, parseInt(e.target.value, 10) || 0)}
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    value={stockUpdates[item.id] ?? 0}
+                    onChange={(e) => handleStockChange(item.id, parseFloat(e.target.value) || 0)}
                     className="w-28 bg-white border border-slate-300 text-slate-900 text-base rounded-lg p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right"
                     disabled={isSavingStock}
                     autoComplete="off"
