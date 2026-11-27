@@ -4,10 +4,10 @@ import { ArrowTrendingUpIcon } from '../components/icons';
 const BusinessGuidePage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="card p-6 sm:p-8">
+      <div className="card p-4 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
           <ArrowTrendingUpIcon className="w-8 h-8 text-brand-blue-600 dark:text-brand-blue-400" />
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
             Panduan Bisnis Laundry
           </h2>
         </div>

@@ -10,6 +10,8 @@ import {
 } from '../../components/icons';
 import { ALL_CUSTOMERS_QUERY_KEY, fetchAllCustomers } from '../../contexts/CustomerContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import useAppContext from '../../contexts/useAppContext';
+import { can } from '../../config/permissions';
 import { Customer } from '../../types';
 import EmptyState from '../../components/EmptyState';
 
@@ -18,6 +20,9 @@ import { getStatusBadge, getPaymentStatusBadge, formatTransactionId } from '@/ut
 
 const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { currentUser } = useAppContext();
+  // Total Belanja & rata-rata transaksi rahasia: hanya Admin & Super Admin.
+  const canViewTotalSpent = can(currentUser?.role, 'finance.view');
   const { data: customersData } = useQuery({
     queryKey: ALL_CUSTOMERS_QUERY_KEY,
     queryFn: fetchAllCustomers,
@@ -60,7 +65,7 @@ const CustomerDetailPage: React.FC = () => {
         Kembali ke Daftar Pelanggan
       </Link>
 
-      <div className="card p-6">
+      <div className="card p-4">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="flex-shrink-0 w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
             <UsersIcon className="w-10 h-10 text-slate-500 dark:text-slate-400" />
@@ -81,16 +86,18 @@ const CustomerDetailPage: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card p-4 flex items-center space-x-3">
-          <DollarSignIcon className="w-8 h-8 text-green-500" />
-          <div>
-            <p className="text-base text-slate-500 dark:text-slate-400">Total Belanja</p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-              Rp {totalSpent.toLocaleString('id-ID')}
-            </p>
+      <div className={`grid grid-cols-1 gap-6 ${canViewTotalSpent ? 'md:grid-cols-3' : ''}`}>
+        {canViewTotalSpent && (
+          <div className="card p-4 flex items-center space-x-3">
+            <DollarSignIcon className="w-8 h-8 text-green-500" />
+            <div>
+              <p className="text-base text-slate-500 dark:text-slate-400">Total Belanja</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                Rp {totalSpent.toLocaleString('id-ID')}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
         <div className="card p-4 flex items-center space-x-3">
           <ShoppingCartIcon className="w-8 h-8 text-blue-500" />
           <div>
@@ -100,20 +107,22 @@ const CustomerDetailPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="card p-4 flex items-center space-x-3">
-          <DollarSignIcon className="w-8 h-8 text-yellow-500" />
-          <div>
-            <p className="text-base text-slate-500 dark:text-slate-400">Rata-rata Transaksi</p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-              Rp {avgTransactionValue.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
-            </p>
+        {canViewTotalSpent && (
+          <div className="card p-4 flex items-center space-x-3">
+            <DollarSignIcon className="w-8 h-8 text-yellow-500" />
+            <div>
+              <p className="text-base text-slate-500 dark:text-slate-400">Rata-rata Transaksi</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                Rp {avgTransactionValue.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {mostRecentTransaction && (
-        <div className="card p-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+        <div className="card p-4">
+          <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
             <HistoryIcon className="w-6 h-6 mr-3 text-slate-500" />
             Transaksi Terakhir
           </h2>
@@ -143,38 +152,38 @@ const CustomerDetailPage: React.FC = () => {
         </div>
       )}
 
-      <div className="card p-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
+      <div className="card p-4">
+        <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4">
           Riwayat Transaksi
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
-                <th className="px-4 py-3">ID Transaksi</th>
-                <th className="px-4 py-3">Tanggal</th>
-                <th className="px-4 py-3 text-right">Total</th>
-                <th className="px-4 py-3">Status Pesanan</th>
-                <th className="px-4 py-3">Status Bayar</th>
+                <th className="px-4 py-2.5">ID Transaksi</th>
+                <th className="px-4 py-2.5">Tanggal</th>
+                <th className="px-4 py-2.5 text-right">Total</th>
+                <th className="px-4 py-2.5">Status Pesanan</th>
+                <th className="px-4 py-2.5">Status Bayar</th>
               </tr>
             </thead>
             <tbody>
               {customerTransactions.length > 0 ? (
                 sortedTransactions.map((t) => (
                   <tr key={t.id} className="border-b dark:border-slate-700">
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                    <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                       {formatTransactionId(t)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       {new Date(t.createdAt).toLocaleDateString('id-ID')}
                     </td>
-                    <td className="px-4 py-3 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5 text-right">Rp {t.total.toLocaleString('id-ID')}</td>
+                    <td className="px-4 py-2.5">
                       <span className={`badge ${getStatusBadge(t.orderStatus)}`}>
                         {t.orderStatus}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       <span className={`badge ${getPaymentStatusBadge(t.paymentStatus)}`}>
                         {t.paymentStatus}
                       </span>

@@ -177,7 +177,7 @@ const BusinessCalculatorPage = () => {
     <div className="space-y-6">
       <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 pb-6 dark:border-slate-700 md:flex-row md:items-center">
         <div>
-          <h2 className="flex items-center gap-2 text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+          <h2 className="flex items-center gap-2 text-lg sm:text-lg font-bold text-slate-900 dark:text-white">
             <CalculatorIcon className="h-7 w-7 text-blue-600 dark:text-blue-400" />
             Simulasi Bisnis Laundry
           </h2>

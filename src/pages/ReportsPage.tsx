@@ -54,7 +54,7 @@ const StatCard: React.FC<{
   value: string | number;
   tone?: keyof typeof STAT_TONE;
 }> = ({ icon: Icon, title, value, tone = 'neutral' }) => (
-  <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800 print-stat-card">
+  <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 print-stat-card">
     <Icon className={`h-10 w-10 flex-shrink-0 print-hide ${STAT_TONE[tone]}`} />
     <div className="min-w-0">
       <p className="text-base text-slate-500 dark:text-slate-400">{title}</p>
@@ -200,26 +200,26 @@ const YearlySummaryChart: React.FC<{
       </svg>
 
       {/* --- Tabel ini HANYA akan muncul saat dicetak --- */}
-      <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
-        <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+      <table className="print-only-table w-full text-sm text-left text-slate-500 dark:text-slate-400 mt-4">
+        <thead className="print-only-header text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
           <tr className="print-only-row">
-            <th className="print-only-cell px-4 py-3">Bulan</th>
-            <th className="print-only-cell px-4 py-3 text-right">Pendapatan</th>
-            <th className="print-only-cell px-4 py-3 text-right">Pengeluaran</th>
-            <th className="print-only-cell px-4 py-3 text-right">Laba</th>
+            <th className="print-only-cell px-4 py-2.5">Bulan</th>
+            <th className="print-only-cell px-4 py-2.5 text-right">Pendapatan</th>
+            <th className="print-only-cell px-4 py-2.5 text-right">Pengeluaran</th>
+            <th className="print-only-cell px-4 py-2.5 text-right">Laba</th>
           </tr>
         </thead>
         <tbody>
           {data.map((d) => (
             <tr key={d.month} className="print-only-row border-b dark:border-slate-700">
-              <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">
+              <td className="print-only-cell px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                 {d.month}
               </td>
-              <td className="print-only-cell px-4 py-3 text-right">Rp {formatRupiah(d.revenue)}</td>
-              <td className="print-only-cell px-4 py-3 text-right">
+              <td className="print-only-cell px-4 py-2.5 text-right">Rp {formatRupiah(d.revenue)}</td>
+              <td className="print-only-cell px-4 py-2.5 text-right">
                 Rp {formatRupiah(d.expenses)}
               </td>
-              <td className="print-only-cell px-4 py-3 text-right font-semibold">
+              <td className="print-only-cell px-4 py-2.5 text-right font-semibold">
                 Rp {formatRupiah(d.profit)}
               </td>
             </tr>
@@ -953,13 +953,13 @@ const ReportsPage: React.FC = () => {
             />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="card p-6 report-section">
-              <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
+            <div className="card p-4 report-section">
+              <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 Layanan Terlaris
               </h2>
               <div className="overflow-x-auto">
-                <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                  <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                  <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                     <tr>
                       <th className="px-4 py-2">Nama Layanan</th>
                       <th className="px-4 py-2 text-right">Pendapatan</th>
@@ -981,13 +981,13 @@ const ReportsPage: React.FC = () => {
                 </table>
               </div>
             </div>
-            <div className="card p-6 report-section">
-              <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
+            <div className="card p-4 report-section">
+              <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 Pelanggan Teratas
               </h2>
               <div className="overflow-x-auto">
-                <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                  <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                  <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                     <tr>
                       <th className="px-4 py-2">Nama Pelanggan</th>
                       <th className="px-4 py-2 text-right">Total Belanja</th>
@@ -1009,8 +1009,8 @@ const ReportsPage: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="card p-6 report-section">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-4 report-section">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <BarChartIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Pendapatan per Kategori Layanan
             </h2>
@@ -1043,20 +1043,20 @@ const ReportsPage: React.FC = () => {
                 </p>
               )}
             </div>
-            <table className="print-only-table w-full text-base text-left text-slate-500 dark:text-slate-400 mt-4">
-              <thead className="print-only-header text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+            <table className="print-only-table w-full text-sm text-left text-slate-500 dark:text-slate-400 mt-4">
+              <thead className="print-only-header text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                 <tr className="print-only-row">
-                  <th className="print-only-cell px-4 py-3">Kategori</th>
-                  <th className="print-only-cell px-4 py-3 text-right">Pendapatan</th>
+                  <th className="print-only-cell px-4 py-2.5">Kategori</th>
+                  <th className="print-only-cell px-4 py-2.5 text-right">Pendapatan</th>
                 </tr>
               </thead>
               <tbody>
                 {revenueByCategory.map((c) => (
                   <tr key={c.category} className="print-only-row border-b dark:border-slate-700">
-                    <td className="print-only-cell px-4 py-3 font-medium text-slate-900 dark:text-white">
+                    <td className="print-only-cell px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                       {c.category}
                     </td>
-                    <td className="print-only-cell px-4 py-3 text-right">
+                    <td className="print-only-cell px-4 py-2.5 text-right">
                       Rp {c.revenue.toLocaleString('id-ID')}
                     </td>
                   </tr>
@@ -1064,14 +1064,14 @@ const ReportsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <div className="card p-6 report-section">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-4 report-section">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <PackageIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Rincian Pendapatan per Layanan
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+              <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                   <tr>
                     <th className="px-4 py-2">Nama Layanan</th>
                     <th className="px-4 py-2">Kategori</th>
@@ -1109,14 +1109,14 @@ const ReportsPage: React.FC = () => {
               </table>
             </div>
           </div>
-          <div className="card p-6 report-section">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-4 report-section">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Performa Kasir
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+              <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                   <tr>
                     <th className="px-4 py-2">Nama Kasir</th>
                     <th className="px-4 py-2 text-center">Total Transaksi</th>
@@ -1150,14 +1150,14 @@ const ReportsPage: React.FC = () => {
               </table>
             </div>
           </div>
-          <div className="card p-6 report-section">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+          <div className="card p-4 report-section">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
               <DollarSignIcon className="w-6 h-6 mr-3 text-slate-500 print-hide" />
               Rincian Pengeluaran (Termasuk Aset & Pemeliharaan)
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-                <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+              <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                   <tr>
                     <th className="px-4 py-2">Tanggal</th>
                     <th className="px-4 py-2">Deskripsi</th>
@@ -1230,8 +1230,8 @@ const ReportsPage: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="card p-6 report-section">
-          <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">
+        <div className="card p-4 report-section">
+          <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4">
             Ringkasan Bulanan {new Date().getFullYear()}
           </h2>
           <YearlySummaryChart data={monthlySummary} />

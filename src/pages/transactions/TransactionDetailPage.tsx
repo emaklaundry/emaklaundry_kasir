@@ -156,7 +156,7 @@ const TransactionDetailPage: React.FC = () => {
         Kembali ke Daftar Transaksi
       </Link>
 
-      <div className="card p-6">
+      <div className="card p-4">
         <div className="flex justify-end mb-6">
           <div className="flex gap-2">
             {/* Tombol Kirim WA Manual */}
@@ -182,7 +182,7 @@ const TransactionDetailPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <UsersIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Pelanggan
             </h2>
@@ -191,7 +191,7 @@ const TransactionDetailPage: React.FC = () => {
             <DetailItem label="Alamat" value={customer.address || '-'} />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
+            <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white border-b dark:border-slate-700 pb-2 mb-3 flex items-center">
               <ShoppingCartIcon className="w-6 h-6 mr-3 text-slate-500" />
               Info Transaksi
             </h2>
@@ -257,23 +257,23 @@ const TransactionDetailPage: React.FC = () => {
         />
       </div>
 
-      <div className="card p-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
+      <div className="card p-4">
+        <h2 className="text-lg sm:text-lg font-semibold text-slate-900 dark:text-white mb-4">Rincian Item</h2>
         {/* Tampilan Tabel Desktop */}
         <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
-                <th className="px-4 py-3">Layanan</th>
-                <th className="px-4 py-3 text-center">Jumlah</th>
-                <th className="px-4 py-3 text-right">Harga Satuan</th>
-                <th className="px-4 py-3 text-right">Subtotal</th>
+                <th className="px-4 py-2.5">Layanan</th>
+                <th className="px-4 py-2.5 text-center">Jumlah</th>
+                <th className="px-4 py-2.5 text-right">Harga Satuan</th>
+                <th className="px-4 py-2.5 text-right">Subtotal</th>
               </tr>
             </thead>
             <tbody>
               {transaction.items.map((item, index) => (
                 <tr key={index} className="border-b dark:border-slate-700">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                  <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                     {item.serviceName}
                     {item.itemDetails?.slice(0, item.quantity).some((d) => d.note) && (
                       <div className="pl-4 mt-1 space-y-0.5">
@@ -298,11 +298,11 @@ const TransactionDetailPage: React.FC = () => {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-2.5 text-center">
                     {item.quantity} {item.unit}
                   </td>
-                  <td className="px-4 py-3 text-right">Rp {formatRupiah(item.price)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-200">
+                  <td className="px-4 py-2.5 text-right">Rp {formatRupiah(item.price)}</td>
+                  <td className="px-4 py-2.5 text-right font-semibold text-slate-700 dark:text-slate-200">
                     Rp {formatRupiah(item.subtotal)}
                   </td>
                 </tr>
@@ -418,6 +418,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   const isKasir = currentUser?.role === 'Kasir';
   const canTakePayment = can(currentUser?.role, 'transaction.payment');
+  const canComplete = can(currentUser?.role, 'transaction.complete');
 
   if (!can(currentUser?.role, 'transaction.updateStatus')) return null;
 
@@ -602,22 +603,25 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         Tandai Siap Ambil
       </button>
 
-      <button
-        disabled={
-          loading ||
-          transaction.orderStatus === OrderStatus.Completed ||
-          transaction.paymentStatus !== PaymentStatus.Paid
-        }
-        onClick={handleMarkCompleted}
-        className="btn btn-primary"
-        title={
-          transaction.paymentStatus !== PaymentStatus.Paid
-            ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
-            : 'Selesaikan Pesanan'
-        }
-      >
-        Tandai Selesai
-      </button>
+      {/* Serah terima ke pelanggan: Kasir ke atas (Operator tidak). */}
+      {canComplete && (
+        <button
+          disabled={
+            loading ||
+            transaction.orderStatus === OrderStatus.Completed ||
+            transaction.paymentStatus !== PaymentStatus.Paid
+          }
+          onClick={handleMarkCompleted}
+          className="btn btn-primary"
+          title={
+            transaction.paymentStatus !== PaymentStatus.Paid
+              ? 'Pelunasan diperlukan sebelum menyelesaikan pesanan'
+              : 'Selesaikan Pesanan'
+          }
+        >
+          Tandai Selesai
+        </button>
+      )}
 
       <PaymentModal
         isOpen={isPaymentOpen}

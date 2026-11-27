@@ -25,8 +25,6 @@ alter table public.audit_logs
 comment on column public.audit_logs.category is
   'data = perubahan data (trigger), aktivitas = aksi bisnis dari aplikasi, navigasi = buka halaman, klik = tombol/tautan, sesi = login/logout/online/offline';
 
-create index if not exists audit_logs_timestamp_idx on public.audit_logs ("timestamp" desc);
-create index if not exists audit_logs_store_timestamp_idx on public.audit_logs ("storeId", "timestamp" desc);
 create index if not exists audit_logs_category_timestamp_idx on public.audit_logs (category, "timestamp" desc);
 create index if not exists audit_logs_record_idx on public.audit_logs (table_name, record_id);
 

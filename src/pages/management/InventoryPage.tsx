@@ -506,8 +506,8 @@ const InventoryPage: React.FC = () => {
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="px-6 py-3">No</th>
-              <th className="px-6 py-3">
+              <th className="px-4 py-2.5">No</th>
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -516,7 +516,7 @@ const InventoryPage: React.FC = () => {
                 </button>
               </th>
               {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('storeName')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -525,7 +525,7 @@ const InventoryPage: React.FC = () => {
                   </button>
                 </th>
               )}
-              <th className="px-6 py-3">
+              <th className="px-4 py-2.5">
                 <button
                   onClick={() => requestSort('stock')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -533,10 +533,10 @@ const InventoryPage: React.FC = () => {
                   Stok {getSortIcon('stock')}
                 </button>
               </th>
-              <th className="px-6 py-3">Ambang Batas</th>
-              <th className="px-6 py-3">Satuan</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3">Aksi</th>
+              <th className="px-4 py-2.5">Ambang Batas</th>
+              <th className="px-4 py-2.5">Satuan</th>
+              <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -561,28 +561,28 @@ const InventoryPage: React.FC = () => {
                     key={item.id}
                     className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
-                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                    <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">
                       {(page - 1) * pageSize + index + 1}
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                    <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                       {item.name}
                     </td>
                     {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                      <td className="px-6 py-4">{item.storeName}</td>
+                      <td className="px-4 py-2.5">{item.storeName}</td>
                     )}
                     <td
                       className={`px-6 py-4 ${item.stock === 0 ? 'text-red-500 font-bold' : item.stock <= item.lowStockThreshold ? 'text-yellow-600 font-bold' : 'text-slate-900 dark:text-white'}`}
                     >
                       {item.stock}
                     </td>
-                    <td className="px-6 py-4">{item.lowStockThreshold}</td>
-                    <td className="px-6 py-4">{item.unit}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">{item.lowStockThreshold}</td>
+                    <td className="px-4 py-2.5">{item.unit}</td>
+                    <td className="px-4 py-2.5">
                       <span className={`px-2 py-1 text-sm font-medium rounded-full ${statusClass}`}>
                         {stockStatus}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center space-x-2">
                         <button
                           aria-label={`Edit ${item.name}`}

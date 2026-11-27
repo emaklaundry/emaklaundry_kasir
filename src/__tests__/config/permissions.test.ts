@@ -10,6 +10,13 @@ describe('permissions', () => {
     expect(can(UserRole.Operator, 'expense.create')).toBe(false);
   });
 
+  it('hanya Kasir ke atas yang menandai pesanan Selesai (serah terima)', () => {
+    expect(can(UserRole.Operator, 'transaction.complete')).toBe(false);
+    expect(can(UserRole.Cashier, 'transaction.complete')).toBe(true);
+    expect(can(UserRole.Admin, 'transaction.complete')).toBe(true);
+    expect(can(UserRole.SuperAdmin, 'transaction.complete')).toBe(true);
+  });
+
   it('Kasir bertransaksi, tapi tidak melihat keuangan & pengeluaran bulanan', () => {
     expect(can(UserRole.Cashier, 'transaction.create')).toBe(true);
     expect(can(UserRole.Cashier, 'transaction.payment')).toBe(true);

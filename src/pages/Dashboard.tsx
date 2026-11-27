@@ -61,9 +61,11 @@ const Dashboard: React.FC = () => {
     pageSize: 1000,
     storeId: selectedStoreId,
   });
+  // Operator tidak membaca tabel customers; nama pelanggan ikut di data transaksinya.
   const customersQuery = useQuery({
     queryKey: ALL_CUSTOMERS_QUERY_KEY,
     queryFn: fetchAllCustomers,
+    enabled: can(currentUser?.role, 'customer.edit'),
   });
 
   const customers = useMemo(() => {
@@ -105,6 +107,8 @@ const Dashboard: React.FC = () => {
   const isStaff = !isAdminRole(currentUser?.role);
   const canViewFinance = can(currentUser?.role, 'finance.view');
   const canTakePayment = can(currentUser?.role, 'transaction.payment');
+  const canNotify = can(currentUser?.role, 'transaction.notify');
+  const canComplete = can(currentUser?.role, 'transaction.complete');
   const canRecordExpense = can(currentUser?.role, 'expense.create');
 
   const lowStockStats = useMemo(() => {
@@ -187,7 +191,7 @@ const Dashboard: React.FC = () => {
           const customer = customerMap[t.customerId];
           return {
             ...t,
-            customerName: customer ? customer.name : 'N/A',
+            customerName: customer ? customer.name : (t.customerName ?? 'N/A'),
           };
         })
         .sort(
@@ -254,6 +258,7 @@ const Dashboard: React.FC = () => {
       if (transaction.orderStatus === OrderStatus.Processing) {
         nextStatus = OrderStatus.Ready;
       } else if (transaction.orderStatus === OrderStatus.Ready) {
+        if (!canComplete) return; // Serah terima ke pelanggan: Kasir ke atas.
         // --- TAMBAHAN GUARD CLAUSE ---
         if (transaction.paymentStatus !== PaymentStatus.Paid) {
           addToast('Pesanan tidak dapat diselesaikan karena belum lunas.', 'error');
@@ -271,12 +276,13 @@ const Dashboard: React.FC = () => {
         transaction.storeId,
       );
 
-      if (nextStatus === OrderStatus.Ready) {
+      // Kabar "siap diambil" via WhatsApp dikirim Kasir ke atas (butuh nomor HP & nominal).
+      if (nextStatus === OrderStatus.Ready && canNotify) {
         setTransactionForWhatsApp({ ...transaction, orderStatus: nextStatus });
         setIsWhatsAppModalOpen(true);
       }
     },
-    [transactions, updateTransaction, addAuditLog, addToast],
+    [transactions, updateTransaction, addAuditLog, addToast, canComplete, canNotify],
   );
 
   const handleMarkMaintenanceAsComplete = useCallback(
@@ -495,7 +501,8 @@ const Dashboard: React.FC = () => {
                                 <span>Bayar</span>
                               </button>
                             )}
-                            {t.orderStatus !== OrderStatus.Completed && (
+                            {t.orderStatus !== OrderStatus.Completed &&
+                              (canComplete || t.orderStatus !== OrderStatus.Ready) && (
                               <button
                                 onClick={() => handleNextStatus(t.id)}
                                 disabled={isSelesaikanDisabled}
@@ -592,7 +599,8 @@ const Dashboard: React.FC = () => {
                             <span>Bayar</span>
                           </button>
                         )}
-                        {t.orderStatus !== OrderStatus.Completed && (
+                        {t.orderStatus !== OrderStatus.Completed &&
+                          (canComplete || t.orderStatus !== OrderStatus.Ready) && (
                           <button
                             onClick={() => handleNextStatus(t.id)}
                             disabled={isSelesaikanDisabled}

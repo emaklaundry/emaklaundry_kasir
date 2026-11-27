@@ -23,6 +23,10 @@
 -- 11. PIN SUPERVISOR (otorisasi Kasir oleh Admin)
 -- 12. KARYAWAN: PROFIL, JADWAL & KOMPENSASI
 -- 13. QRIS STATIS TOKO
+-- 14. PERAN OPERATOR & HAK AKSES PER PERAN
+-- 15. ABSENSI OTOMATIS DARI LOGIN
+-- 16. LOGIN EMAIL KHUSUS SUPER ADMIN
+-- 17. LOG AUDIT LENGKAP (trigger perubahan data, append-only)
 --
 -- File ini adalah sumber utama skema database. Setiap perubahan skema baru
 -- ditulis di sini, lalu dijalankan ke database live sebagai SQL terpisah.
@@ -61,6 +65,8 @@ CREATE TABLE public.stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   address text,
+  -- Nomor HP/WhatsApp cabang, dicetak di header struk.
+  phone text CONSTRAINT stores_phone_length CHECK (phone IS NULL OR char_length(phone) <= 30),
   "isActive" boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT NOW()
 );
@@ -570,6 +576,15 @@ BEGIN
     IF NEW.total IS DISTINCT FROM OLD.total THEN
       RAISE EXCEPTION 'You are not allowed to change total';
     END IF;
+    IF NEW.subtotal IS DISTINCT FROM OLD.subtotal THEN
+      RAISE EXCEPTION 'You are not allowed to change subtotal';
+    END IF;
+    IF NEW.discount IS DISTINCT FROM OLD.discount THEN
+      RAISE EXCEPTION 'You are not allowed to change discount';
+    END IF;
+    IF NEW.tax IS DISTINCT FROM OLD.tax THEN
+      RAISE EXCEPTION 'You are not allowed to change tax';
+    END IF;
     IF NEW.items IS DISTINCT FROM OLD.items THEN
       RAISE EXCEPTION 'You are not allowed to change items';
     END IF;
@@ -592,13 +607,25 @@ CREATE TRIGGER prevent_immutable_transaction_update
   BEFORE UPDATE ON public.transactions
   FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_transaction_update();
 
+-- Operator ikut boleh UPDATE (mis. menandai struk WA terkirim); kolom yang boleh
+-- diubah tiap peran dijaga trigger (prevent_immutable_transaction_update,
+-- guard_operator_transactions, enforce_supervisor_approval).
 DROP POLICY IF EXISTS "Allow UPDATE for Admins" ON public.transactions;
-CREATE POLICY "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions
+DROP POLICY IF EXISTS "Allow UPDATE for Admins and Kasirs (progress only)" ON public.transactions;
+DROP POLICY IF EXISTS "Allow UPDATE for store staff" ON public.transactions;
+CREATE POLICY "Allow UPDATE for store staff" ON public.transactions
   FOR UPDATE
   USING (
     public.get_my_role() = 'Super Admin'
     OR (
-      public.get_my_role() IN ('Admin','Kasir')
+      public.get_my_role() IN ('Admin','Kasir','Operator')
+      AND "storeId" = public.get_my_store_id()
+    )
+  )
+  WITH CHECK (
+    public.get_my_role() = 'Super Admin'
+    OR (
+      public.get_my_role() IN ('Admin','Kasir','Operator')
       AND "storeId" = public.get_my_store_id()
     )
   );
@@ -615,16 +642,14 @@ CREATE POLICY "Allow INSERT for all logged-in users" ON public.audit_logs
     WITH CHECK (auth.uid() IS NOT NULL);
 
 -- --- Tabel: settings ---
+-- Satu baris pengaturan berlaku untuk semua cabang: semua pengguna login boleh membaca.
 DROP POLICY IF EXISTS "Allow read for store users" ON public.settings;
-CREATE POLICY "Allow read access for own store" ON public.settings
-  FOR SELECT USING (
-    "storeId" = public.get_my_store_id()
-    OR public.get_my_role() = 'Super Admin'
-    -- Tambahkan OR true jika halaman tracking publik perlu akses ini tanpa login
-  );
+CREATE POLICY "Allow read for signed-in users" ON public.settings
+  FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Allow ALL for Admins" ON public.settings
-  FOR ALL USING (public.get_my_role() IN ('Super Admin', 'Admin'))
-  WITH CHECK (public.get_my_role() IN ('Super Admin', 'Admin'));
+  FOR ALL TO authenticated
+  USING ((SELECT public.get_my_role()) IN ('Super Admin', 'Admin'))
+  WITH CHECK ((SELECT public.get_my_role()) IN ('Super Admin', 'Admin'));
 
 
 -- ============================================
@@ -1027,51 +1052,12 @@ ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Policy untuk transactions (sudah ada, tapi dipastikan)
+-- Policy transactions cukup yang di SECTION 2. Policy lama di bawah dihapus karena
+-- mengizinkan semua peran di cabang (termasuk Operator) membuat & mengubah nota;
+-- policy permissive digabung OR sehingga policy ketat Admin/Kasir tidak berlaku.
 DROP POLICY IF EXISTS "Users can view their store transactions" ON public.transactions;
-CREATE POLICY "Users can view their store transactions"
-  ON public.transactions FOR SELECT
-  USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles 
-      WHERE role = 'Super Admin'
-    )
-    OR
-    "storeId" = (
-      SELECT store_id FROM public.profiles 
-      WHERE id = auth.uid()
-    )
-  );
-
 DROP POLICY IF EXISTS "Users can insert their store transactions" ON public.transactions;
-CREATE POLICY "Users can insert their store transactions"
-  ON public.transactions FOR INSERT
-  WITH CHECK (
-    "storeId" = (
-      SELECT store_id FROM public.profiles 
-      WHERE id = auth.uid()
-    )
-    OR
-    auth.uid() IN (
-      SELECT id FROM public.profiles 
-      WHERE role = 'Super Admin'
-    )
-  );
-
 DROP POLICY IF EXISTS "Users can update their store transactions" ON public.transactions;
-CREATE POLICY "Users can update their store transactions"
-  ON public.transactions FOR UPDATE
-  USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles 
-      WHERE role = 'Super Admin'
-    )
-    OR
-    "storeId" = (
-      SELECT store_id FROM public.profiles 
-      WHERE id = auth.uid()
-    )
-  );
 
 -- 4. FUNCTION UNTUK CLEANUP OLD DATA
 -- Function untuk archive/delete data lama (jalankan periodic via cron)
@@ -2023,6 +2009,9 @@ BEGIN
       AND p.proname IN (
         'cleanup_old_audit_logs', 'backfill_invoice_codes', 'generate_invoice_code',
         'bulk_update_order_status', 'complete_scheduled_maintenance',
+        -- Tidak dipakai aplikasi; parameter "caller" bisa diisi bebas sehingga
+        -- cek cabang bisa dilewati.
+        'update_transaction_status_safe',
         'handle_new_user', 'handle_new_user_trigger',
         'prevent_immutable_transaction_update', 'set_invoice_code',
         'update_updated_at_column'
@@ -2037,7 +2026,7 @@ BEGIN
     SELECT p.oid::regprocedure AS sig
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname IN ('update_transaction_progress', 'update_transaction_status_safe')
+      AND p.proname IN ('update_transaction_progress')
   LOOP
     EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon', r.sig);
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', r.sig);
@@ -2464,7 +2453,9 @@ CREATE POLICY "Admins can manage profiles in their store" ON public.profiles
     AND role IN ('Admin', 'Kasir', 'Operator')
   );
 
--- 2. Operator: tidak boleh membuat nota dan tidak boleh menyentuh data pembayaran.
+-- 2. Operator: tidak boleh membuat nota, tidak boleh menyentuh data pembayaran,
+--    hanya boleh mengubah kolom progres, dan tidak boleh menandai Selesai
+--    (serah terima ke pelanggan dilakukan Kasir).
 --    Berlaku juga untuk RPC SECURITY DEFINER (update_transaction_progress,
 --    bulk_update_order_status) karena dicek di trigger, bukan di RLS.
 CREATE OR REPLACE FUNCTION public.guard_operator_transactions()
@@ -2473,6 +2464,13 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+DECLARE
+  -- Kolom yang boleh diubah Operator. supervisorApprovalId diatur ulang oleh
+  -- enforce_supervisor_approval, updatedAt oleh trigger updated_at.
+  v_allowed text[] := ARRAY[
+    'orderStatus', 'notes', 'estimatedCompletionDate', 'whatsappSentAt',
+    'updatedAt', 'updatedByUserId', 'supervisorApprovalId'
+  ];
 BEGIN
   IF public.get_my_role() IS DISTINCT FROM 'Operator' THEN
     RETURN NEW;
@@ -2494,6 +2492,16 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  IF (to_jsonb(NEW) - v_allowed) IS DISTINCT FROM (to_jsonb(OLD) - v_allowed) THEN
+    RAISE EXCEPTION 'Operator hanya dapat mengubah progres pesanan'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW."orderStatus" = 'Selesai' AND OLD."orderStatus" IS DISTINCT FROM 'Selesai' THEN
+    RAISE EXCEPTION 'Operator tidak dapat menyelesaikan pesanan. Serah terima dilakukan Kasir.'
+      USING ERRCODE = '42501';
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -2505,6 +2513,39 @@ DROP TRIGGER IF EXISTS guard_operator_transactions ON public.transactions;
 CREATE TRIGGER guard_operator_transactions
   BEFORE INSERT OR UPDATE ON public.transactions
   FOR EACH ROW EXECUTE FUNCTION public.guard_operator_transactions();
+
+-- 3. Selesai harus Lunas, untuk semua jalur (UPDATE langsung, RPC, peran apa pun).
+--    Sebelumnya hanya dicek di RPC update_transaction_progress & tombol aplikasi.
+CREATE OR REPLACE FUNCTION public.enforce_order_payment_consistency()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF NEW."orderStatus" = 'Selesai' AND NEW."paymentStatus" IS DISTINCT FROM 'Lunas' THEN
+    RAISE EXCEPTION 'Pesanan tidak boleh berstatus Selesai jika pembayaran belum Lunas.'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF TG_OP = 'UPDATE'
+     AND OLD."orderStatus" = 'Selesai'
+     AND NEW."paymentStatus" IS DISTINCT FROM 'Lunas' THEN
+    RAISE EXCEPTION 'Status pembayaran tidak boleh diubah menjadi belum lunas jika pesanan sudah selesai.'
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.enforce_order_payment_consistency()
+  FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS enforce_order_payment_consistency ON public.transactions;
+CREATE TRIGGER enforce_order_payment_consistency
+  BEFORE INSERT OR UPDATE OF "orderStatus", "paymentStatus" ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_order_payment_consistency();
 
 COMMENT ON COLUMN public.profiles.role IS
   'Peran akun: Operator, Kasir, Admin, atau Super Admin. Lihat src/config/permissions.ts.';
@@ -2617,6 +2658,220 @@ AS $$
   WHERE id = auth.uid()
     AND (role = 'Super Admin' OR employee_id IS NOT NULL)
 $$;
+
+-- ============================================
+-- SECTION 17: LOG AUDIT LENGKAP (Added Nov 2026)
+-- ============================================
+-- Setiap INSERT/UPDATE/DELETE di semua tabel bisnis dicatat otomatis oleh trigger
+-- (kategori 'data', beserta kolom yang berubah dan nilai sebelum/sesudah), apa pun
+-- asalnya: halaman aplikasi, RPC, maupun edge function. Aplikasi menambah log
+-- interaksi (navigasi, klik, isian form tanpa nilai teks, sesi, error) ke tabel
+-- yang sama. Nama pengguna diisi server dari auth.uid() agar tidak bisa dipalsukan,
+-- dan audit_logs dijadikan append-only (tidak bisa diubah/dihapus dari aplikasi).
+-- Kolom rahasia (pin_hash, password, token, secret) disamarkan; perubahan yang
+-- hanya menyentuh updatedAt/updated_at/last_seen_at tidak dicatat.
+-- Migrasi live: supabase/migrations/20261129000000_audit_log_lengkap.sql
+
+alter table public.audit_logs
+  add column if not exists actor_id uuid default auth.uid(),
+  add column if not exists category text not null default 'aktivitas',
+  add column if not exists table_name text,
+  add column if not exists record_id text,
+  add column if not exists operation text,
+  add column if not exists changed_fields text[],
+  add column if not exists old_data jsonb,
+  add column if not exists new_data jsonb,
+  add column if not exists page text,
+  add column if not exists metadata jsonb;
+
+comment on column public.audit_logs.category is
+  'data = perubahan data (trigger), aktivitas = aksi bisnis dari aplikasi, navigasi = buka halaman, klik = tombol/tautan, sesi = login/logout/online/offline';
+
+create index if not exists audit_logs_category_timestamp_idx on public.audit_logs (category, "timestamp" desc);
+create index if not exists audit_logs_record_idx on public.audit_logs (table_name, record_id);
+
+-- 2. Nama pengguna & actor diisi server untuk insert dari aplikasi ------------
+create or replace function public.audit_logs_stamp_actor()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_name text;
+begin
+  if v_uid is not null then
+    new.actor_id := v_uid;
+    select p.name into v_name from public.profiles p where p.id = v_uid;
+    if v_name is not null then
+      new."user" := v_name;
+    end if;
+  end if;
+  new."timestamp" := coalesce(new."timestamp", now());
+  if new."timestamp" > now() + interval '5 minutes' then
+    new."timestamp" := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists audit_logs_stamp_actor on public.audit_logs;
+create trigger audit_logs_stamp_actor
+  before insert on public.audit_logs
+  for each row execute function public.audit_logs_stamp_actor();
+
+-- 3. Trigger perubahan data generik ------------------------------------------
+create or replace function public.audit_row_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_user text;
+  v_new jsonb;
+  v_old jsonb;
+  v_row jsonb;
+  v_changed text[];
+  v_old_diff jsonb;
+  v_new_diff jsonb;
+  v_store uuid;
+  v_label text;
+  v_entity text;
+  v_verb text;
+  v_record_id text;
+  -- kolom yang berubah otomatis/terus-menerus dan tidak perlu dicatat sendiri
+  v_ignored constant text[] := array['updatedAt', 'updated_at', 'last_seen_at'];
+  -- kolom rahasia: nilainya tidak pernah disimpan di log
+  v_secret constant text[] := array['pin_hash', 'password', 'password_hash', 'token', 'secret'];
+  k text;
+begin
+  if tg_op in ('INSERT', 'UPDATE') then v_new := to_jsonb(new); end if;
+  if tg_op in ('UPDATE', 'DELETE') then v_old := to_jsonb(old); end if;
+  v_row := coalesce(v_new, v_old);
+
+  -- sembunyikan kolom rahasia
+  foreach k in array v_secret loop
+    if v_new ? k then v_new := jsonb_set(v_new, array[k], '"[disembunyikan]"'); end if;
+    if v_old ? k then v_old := jsonb_set(v_old, array[k], '"[disembunyikan]"'); end if;
+  end loop;
+
+  if tg_op = 'UPDATE' then
+    select array_agg(n.key order by n.key),
+           jsonb_object_agg(n.key, v_old -> n.key),
+           jsonb_object_agg(n.key, n.value)
+      into v_changed, v_old_diff, v_new_diff
+      from jsonb_each(v_new) n
+     where (v_old -> n.key) is distinct from n.value
+       and not (n.key = any (v_ignored));
+    if v_changed is null then
+      return null; -- tidak ada perubahan berarti (mis. hanya heartbeat last_seen_at)
+    end if;
+    v_old := v_old_diff;
+    v_new := v_new_diff;
+  end if;
+
+  -- cabang terkait
+  begin
+    v_store := coalesce(
+      nullif(v_row ->> 'storeId', '')::uuid,
+      nullif(v_row ->> 'store_id', '')::uuid,
+      case when tg_table_name = 'stores' then (v_row ->> 'id')::uuid end
+    );
+  exception when others then v_store := null;
+  end;
+  if v_store is null and v_row ? 'employee_id' then
+    select e.store_id into v_store from public.employees e where e.id = (v_row ->> 'employee_id')::uuid;
+  end if;
+  if v_store is null and v_row ? 'user_id' then
+    select p.store_id into v_store from public.profiles p where p.id = (v_row ->> 'user_id')::uuid;
+  end if;
+  if v_store is null and v_row ? 'assetId' then
+    select a."storeId" into v_store from public.assets a where a.id = (v_row ->> 'assetId')::uuid;
+  end if;
+
+  v_record_id := coalesce(v_row ->> 'id', v_row ->> 'employee_id', v_row ->> 'user_id');
+  v_label := coalesce(
+    v_row ->> 'invoiceCode', v_row ->> 'name', v_row ->> 'description',
+    v_row ->> 'login_email', v_row ->> 'action', v_row ->> 'date', v_record_id
+  );
+
+  v_entity := case tg_table_name
+    when 'transactions' then 'transaksi'
+    when 'customers' then 'pelanggan'
+    when 'services' then 'layanan'
+    when 'inventory_items' then 'item inventaris'
+    when 'assets' then 'aset'
+    when 'scheduled_maintenances' then 'jadwal perawatan'
+    when 'expenses' then 'pengeluaran'
+    when 'monthly_expense_templates' then 'template pengeluaran bulanan'
+    when 'settings' then 'pengaturan'
+    when 'stores' then 'cabang'
+    when 'profiles' then 'profil pengguna'
+    when 'employees' then 'karyawan'
+    when 'employee_auth_accounts' then 'akun login karyawan'
+    when 'employee_login_attempts' then 'percobaan login karyawan'
+    when 'attendance' then 'absensi'
+    when 'advances' then 'kasbon'
+    when 'payroll' then 'penggajian'
+    when 'supervisor_pins' then 'PIN supervisor'
+    when 'supervisor_pin_attempts' then 'percobaan PIN supervisor'
+    when 'supervisor_approvals' then 'izin supervisor'
+    else tg_table_name
+  end;
+  v_verb := case tg_op when 'INSERT' then 'Menambah' when 'UPDATE' then 'Mengubah' else 'Menghapus' end;
+
+  if v_uid is not null then
+    select p.name into v_user from public.profiles p where p.id = v_uid;
+  end if;
+
+  insert into public.audit_logs (
+    "timestamp", "user", action, "storeId", actor_id, category,
+    table_name, record_id, operation, changed_fields, old_data, new_data
+  ) values (
+    now(),
+    coalesce(v_user, case when v_uid is null then 'Sistem' else 'Unknown' end),
+    v_verb || ' ' || v_entity
+      || case when v_label is not null and v_label <> coalesce(v_record_id, '') then ' "' || left(v_label, 80) || '"' else '' end
+      || case when tg_op = 'UPDATE' then ': ' || array_to_string(v_changed, ', ') else '' end,
+    v_store, v_uid, 'data',
+    tg_table_name, v_record_id, tg_op, v_changed, v_old, v_new
+  );
+
+  return null;
+end;
+$$;
+
+revoke execute on function public.audit_row_change() from public, anon, authenticated;
+revoke execute on function public.audit_logs_stamp_actor() from public, anon, authenticated;
+
+-- pasang di semua tabel bisnis
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'transactions', 'customers', 'services', 'inventory_items', 'assets',
+    'scheduled_maintenances', 'expenses', 'monthly_expense_templates', 'settings',
+    'stores', 'profiles', 'employees', 'employee_auth_accounts', 'employee_login_attempts',
+    'attendance', 'advances', 'payroll', 'supervisor_pins', 'supervisor_pin_attempts',
+    'supervisor_approvals'
+  ] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('drop trigger if exists zz_audit_row_change on public.%I', t);
+      execute format(
+        'create trigger zz_audit_row_change after insert or update or delete on public.%I
+           for each row execute function public.audit_row_change()', t);
+    end if;
+  end loop;
+end;
+$$;
+
+-- 4. Append-only -------------------------------------------------------------
+revoke update, delete, truncate on public.audit_logs from anon, authenticated;
+revoke insert, select on public.audit_logs from anon;
 
 -- ============================================
 -- END OF SETUP

@@ -467,14 +467,14 @@ const AssetsPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="card p-6">
+      <div className="card p-4">
         {/* Desktop Table View */}
         <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
-                <th className="px-6 py-3">No</th>
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">No</th>
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('name')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -485,7 +485,7 @@ const AssetsPage: React.FC = () => {
                 {currentUser &&
                   currentUser.role === UserRole.SuperAdmin &&
                   selectedStoreId === 'all' && (
-                    <th className="px-6 py-3">
+                    <th className="px-4 py-2.5">
                       <button
                         onClick={() => requestSort('storeName')}
                         className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -494,7 +494,7 @@ const AssetsPage: React.FC = () => {
                       </button>
                     </th>
                   )}
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('purchaseDate')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -502,7 +502,7 @@ const AssetsPage: React.FC = () => {
                     Tanggal Beli {getSortIcon('purchaseDate')}
                   </button>
                 </th>
-                <th className="px-6 py-3 text-right">
+                <th className="px-4 py-2.5 text-right">
                   <button
                     onClick={() => requestSort('purchaseCost')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 ml-auto"
@@ -510,7 +510,7 @@ const AssetsPage: React.FC = () => {
                     Biaya Beli {getSortIcon('purchaseCost')}
                   </button>
                 </th>
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('status')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -518,36 +518,36 @@ const AssetsPage: React.FC = () => {
                     Status {getSortIcon('status')}
                   </button>
                 </th>
-                <th className="px-6 py-3">Aksi</th>
+                <th className="px-4 py-2.5">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {sortedAssets.length > 0 ? (
                 sortedAssets.map((asset, index) => (
                   <tr key={asset.id} className="border-b dark:border-slate-700">
-                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{index + 1}</td>
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                    <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{index + 1}</td>
+                    <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                       {asset.name}
                     </td>
                     {currentUser &&
                       currentUser.role === UserRole.SuperAdmin &&
-                      selectedStoreId === 'all' && <td className="px-6 py-4">{asset.storeName}</td>}
-                    <td className="px-6 py-4">
+                      selectedStoreId === 'all' && <td className="px-4 py-2.5">{asset.storeName}</td>}
+                    <td className="px-4 py-2.5">
                       {asset.purchaseDate
                         ? new Date(asset.purchaseDate).toLocaleDateString('id-ID')
                         : '-'}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       {asset.purchaseCost
                         ? `Rp ${asset.purchaseCost.toLocaleString('id-ID')}`
                         : '-'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <span className={`badge ${getStatusBadge(asset.status)}`}>
                         {asset.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center space-x-2">
                         <button
                           aria-label={`Edit ${asset.name}`}

@@ -405,8 +405,8 @@ const ServicesPage: React.FC = () => {
         <table className="w-full text-left text-sm text-slate-500 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-400 uppercase">
             <tr>
-              <th className="hidden sm:table-cell px-3 sm:px-6 py-3">No</th>
-              <th className="px-3 sm:px-6 py-3">
+              <th className="hidden sm:table-cell px-3 sm:px-4 py-2.5">No</th>
+              <th className="px-3 sm:px-4 py-2.5">
                 <button
                   onClick={() => requestSort('name')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -414,7 +414,7 @@ const ServicesPage: React.FC = () => {
                   Nama Layanan {getSortIcon('name')}
                 </button>
               </th>
-              <th className="px-3 sm:px-6 py-3">
+              <th className="px-3 sm:px-4 py-2.5">
                 <button
                   onClick={() => requestSort('category')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -422,7 +422,7 @@ const ServicesPage: React.FC = () => {
                   Kategori {getSortIcon('category')}
                 </button>
               </th>
-              <th className="hidden md:table-cell px-3 sm:px-6 py-3">
+              <th className="hidden md:table-cell px-3 sm:px-4 py-2.5">
                 <button
                   onClick={() => requestSort('washType')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -430,7 +430,7 @@ const ServicesPage: React.FC = () => {
                   Jenis Cucian {getSortIcon('washType')}
                 </button>
               </th>
-              <th className="px-3 sm:px-6 py-3">
+              <th className="px-3 sm:px-4 py-2.5">
                 <button
                   onClick={() => requestSort('price')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -438,7 +438,7 @@ const ServicesPage: React.FC = () => {
                   Harga {getSortIcon('price')}
                 </button>
               </th>
-              <th className="hidden md:table-cell px-3 sm:px-6 py-3">
+              <th className="hidden md:table-cell px-3 sm:px-4 py-2.5">
                 <button
                   onClick={() => requestSort('durationDays')}
                   className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -446,7 +446,7 @@ const ServicesPage: React.FC = () => {
                   Durasi {getSortIcon('durationDays')}
                 </button>
               </th>
-              <th className="px-3 sm:px-6 py-3">Aksi</th>
+              <th className="px-3 sm:px-4 py-2.5">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -456,23 +456,23 @@ const ServicesPage: React.FC = () => {
                   key={service.id}
                   className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
-                  <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 text-slate-500 dark:text-slate-400">
+                  <td className="hidden sm:table-cell px-3 sm:px-4 py-2.5 sm:py-4 text-slate-500 dark:text-slate-400">
                     {index + 1}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-slate-900 dark:text-white">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4 font-medium text-slate-900 dark:text-white">
                     {service.name}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">{service.category}</td>
-                  <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4">{service.category}</td>
+                  <td className="hidden md:table-cell px-3 sm:px-4 py-2.5 sm:py-4">
                     {service.washType}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap tabular-nums">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4 whitespace-nowrap tabular-nums">
                     Rp {service.price.toLocaleString('id-ID')}/{service.unit}
                   </td>
-                  <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="hidden md:table-cell px-3 sm:px-4 py-2.5 sm:py-4 whitespace-nowrap">
                     {service.durationDays} hari
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                  <td className="px-3 sm:px-4 py-2.5 sm:py-4">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenFormModal(service)}

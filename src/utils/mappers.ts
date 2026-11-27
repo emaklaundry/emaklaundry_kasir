@@ -41,6 +41,8 @@ export interface RawDBTransaction {
   notes?: string;
   idempotencyKey?: string;
   whatsappSentAt?: string | null;
+  /** Hanya ada di view transactions_operator (Operator tidak membaca tabel customers). */
+  customerName?: string | null;
 }
 
 /**
@@ -89,5 +91,6 @@ export function mapDBtoTransaction(raw: RawDBTransaction): Transaction {
     notes: raw.notes ?? undefined,
     idempotencyKey: raw.idempotencyKey ?? undefined,
     whatsappSentAt: raw.whatsappSentAt ?? null,
+    ...(raw.customerName ? { customerName: raw.customerName } : {}),
   };
 }

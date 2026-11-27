@@ -142,7 +142,7 @@ const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="card p-6 max-w-2xl mx-auto relative">
+    <div className="card p-4 max-w-2xl mx-auto relative">
       {isSaving && (
         <div className="absolute inset-0 z-50 bg-white/60 dark:bg-black/50 rounded-lg flex items-center justify-center">
           <div className="flex items-center gap-3">

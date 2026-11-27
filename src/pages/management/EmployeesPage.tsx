@@ -425,38 +425,38 @@ const EmployeesPage: React.FC = () => {
               <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
                 <thead className="bg-slate-50 text-xs uppercase text-slate-700 dark:bg-slate-700 dark:text-slate-300">
                   <tr>
-                    <th className="px-4 py-3">Karyawan</th>
-                    <th className="px-4 py-3">Posisi</th>
-                    {showStoreColumn && <th className="px-4 py-3">Cabang</th>}
-                    <th className="hidden px-4 py-3 lg:table-cell">Jadwal</th>
-                    <th className="px-4 py-3">Kompensasi</th>
-                    <th className="px-4 py-3">Login</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Aksi</th>
+                    <th className="px-4 py-2.5">Karyawan</th>
+                    <th className="px-4 py-2.5">Posisi</th>
+                    {showStoreColumn && <th className="px-4 py-2.5">Cabang</th>}
+                    <th className="hidden px-4 py-2.5 lg:table-cell">Jadwal</th>
+                    <th className="px-4 py-2.5">Kompensasi</th>
+                    <th className="px-4 py-2.5">Login</th>
+                    <th className="px-4 py-2.5">Status</th>
+                    <th className="px-4 py-2.5 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleEmployees.map((e) => (
                     <tr key={e.id} className="border-t border-slate-200 dark:border-slate-700">
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5">
                         <span className="block font-medium text-slate-900 dark:text-white">
                           {e.name}
                         </span>
                         <span className="text-xs text-slate-500">{e.phone || '-'}</span>
                       </td>
-                      <td className="px-4 py-3">{EMPLOYEE_ROLE_LABELS[e.role] ?? e.role}</td>
-                      {showStoreColumn && <td className="px-4 py-3">{storeName(e.storeId)}</td>}
-                      <td className="hidden px-4 py-3 lg:table-cell">
+                      <td className="px-4 py-2.5">{EMPLOYEE_ROLE_LABELS[e.role] ?? e.role}</td>
+                      {showStoreColumn && <td className="px-4 py-2.5">{storeName(e.storeId)}</td>}
+                      <td className="hidden px-4 py-2.5 lg:table-cell">
                         {formatSchedule(e.workDays, e.shiftStart, e.shiftEnd)}
                       </td>
-                      <td className="px-4 py-3 tabular-nums">{compensation(e)}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5 tabular-nums">{compensation(e)}</td>
+                      <td className="px-4 py-2.5">
                         <LoginBadge enabled={e.loginEnabled} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5">
                         <StatusBadge active={e.isActive} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5">
                         <div className="flex justify-end gap-1.5">{actionButtons(e)}</div>
                       </td>
                     </tr>

@@ -269,14 +269,14 @@ const UsersPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="card p-6">
+      <div className="card p-4">
         {/* Desktop Table View */}
         <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-base text-left text-slate-500 dark:text-slate-400">
-            <thead className="text-sm text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+          <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
               <tr>
-                <th className="px-6 py-3">No</th>
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">No</th>
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('name')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -284,7 +284,7 @@ const UsersPage: React.FC = () => {
                     Nama {getSortIcon('name')}
                   </button>
                 </th>
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('role')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -293,7 +293,7 @@ const UsersPage: React.FC = () => {
                   </button>
                 </th>
                 {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                  <th className="px-6 py-3">
+                  <th className="px-4 py-2.5">
                     <button
                       onClick={() => requestSort('storeName')}
                       className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -302,7 +302,7 @@ const UsersPage: React.FC = () => {
                     </button>
                   </th>
                 )}
-                <th className="px-6 py-3">
+                <th className="px-4 py-2.5">
                   <button
                     onClick={() => requestSort('isActive')}
                     className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200"
@@ -310,7 +310,7 @@ const UsersPage: React.FC = () => {
                     Status {getSortIcon('isActive')}
                   </button>
                 </th>
-                <th className="px-6 py-3">Aksi</th>
+                <th className="px-4 py-2.5">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -319,24 +319,24 @@ const UsersPage: React.FC = () => {
                   const isSuperAdmin = user.role === UserRole.SuperAdmin;
                   return (
                     <tr key={user.id} className="border-b dark:border-slate-700">
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{index + 1}</td>
-                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                      <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{index + 1}</td>
+                      <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">
                         {user.name}
                       </td>
-                      <td className="px-6 py-4">{user.role}</td>
+                      <td className="px-4 py-2.5">{user.role}</td>
                       {currentUser?.role === UserRole.SuperAdmin && selectedStoreId === 'all' && (
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-2.5">
                           {user.role !== UserRole.SuperAdmin ? user.storeName : '-'}
                         </td>
                       )}
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2.5">
                         <span
                           className={`badge ${user.isActive ? 'badge-success' : 'badge-neutral'}`}
                         >
                           {user.isActive ? 'Aktif' : 'Tidak Aktif'}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2.5">
                         <div className="flex items-center space-x-2">
                           <button
                             aria-label={`Edit ${user.name}`}

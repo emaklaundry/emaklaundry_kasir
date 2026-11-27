@@ -47,6 +47,8 @@ export interface Store {
   id: string;
   name: string;
   address: string;
+  /** Nomor HP/WhatsApp cabang, dicetak di header struk. */
+  phone?: string;
   isActive: boolean;
   latitude?: number;
   longitude?: number;
@@ -117,6 +119,11 @@ export interface Transaction {
   supervisorApprovalId?: string | null;
   /** Kapan struk/notifikasi terakhir dikirim via WhatsApp (ISO). Kosong = belum pernah. */
   whatsappSentAt?: string | null;
+  /**
+   * Nama pelanggan dari view transactions_operator. Hanya terisi untuk Operator,
+   * yang tidak punya akses baca ke tabel customers.
+   */
+  customerName?: string;
 }
 
 export interface InventoryItem {

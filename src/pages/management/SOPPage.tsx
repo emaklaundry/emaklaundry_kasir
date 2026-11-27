@@ -298,7 +298,7 @@ const SOPPage = () => {
             <div className="space-y-8 print:space-y-6">
               {Object.entries(groupedSops).map(([category, items]) => (
                 <section key={category} className="break-inside-avoid">
-                  <h2 className="mb-4 border-b-2 border-slate-200 pb-2 text-xl font-bold uppercase tracking-wide text-slate-800 dark:border-slate-700 dark:text-slate-100 print:border-black">
+                  <h2 className="mb-4 border-b-2 border-slate-200 pb-2 text-lg font-bold uppercase tracking-wide text-slate-800 dark:border-slate-700 dark:text-slate-100 print:border-black">
                     {category}
                   </h2>
                   <div className="space-y-6">

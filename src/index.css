@@ -254,6 +254,32 @@
     background-color: rgb(var(--surface-raised-dark));
     border-color: rgb(var(--surface-border-dark));
   }
+
+  /* Desktop (pakai mouse): target sentuh 44px tidak perlu, ukuran dibuat lebih ringkas. */
+  @media (min-width: 768px) {
+    .btn {
+      @apply px-4 text-sm;
+      min-height: 38px;
+    }
+    .btn-lg {
+      @apply px-5 text-base;
+      min-height: 44px;
+    }
+    .btn-sm {
+      @apply px-3 text-sm;
+      min-height: 32px;
+    }
+    .btn-icon {
+      @apply px-0;
+      width: 38px;
+    }
+    .btn-icon.btn-sm {
+      width: 32px;
+    }
+    .form-input {
+      @apply px-3 py-2 text-sm;
+    }
+  }
 }
 
 /* --- MOBILE OPTIMIZATIONS --- */

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Settings } from '../types';
 import { supabase } from '../utils/supabaseClient';
+import { useSessionUserId } from '../hooks/useSessionUserId';
 
 const fetchSettings = async (): Promise<Settings | null> => {
   // Use a safer fetch that returns the first row if multiple exist and doesn't fail
@@ -12,9 +13,13 @@ const fetchSettings = async (): Promise<Settings | null> => {
 
 export function useSettings() {
   const queryClient = useQueryClient();
+  // Dipanggil di AppRoutes sebelum login: tunggu sesi agar null dari RLS (anonim) tidak
+  // ter-cache — kalau tidak, mode maintenance & pengaturan toko terlewat setelah login.
+  const userId = useSessionUserId();
   const { data: settings = null, ...query } = useQuery({
-    queryKey: ['settings'],
+    queryKey: ['settings', userId],
     queryFn: fetchSettings,
+    enabled: !!userId,
   });
 
   const updateSettings = useMutation({
