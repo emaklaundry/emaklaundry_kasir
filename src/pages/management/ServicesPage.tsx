@@ -460,12 +460,12 @@ const ServicesPage: React.FC = () => {
                   </td>
                   <td className="px-3 sm:px-4 py-2.5 sm:py-4 font-medium text-slate-900 dark:text-white">
                     {service.name}
-                    {service.showOnWeb && (
+                    {service.showOnWeb === false && (
                       <span
-                        className="ml-2 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                        title="Harga layanan ini tampil di website"
+                        className="ml-2 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                        title="Layanan ini tidak ditampilkan di website"
                       >
-                        Di web
+                        Tidak di web
                       </span>
                     )}
                   </td>

@@ -171,7 +171,8 @@ CREATE TABLE public.services (
   "durationDays" integer NOT NULL,
   "minQuantity" numeric(10,2) NOT NULL DEFAULT 0 CONSTRAINT services_min_quantity_nonnegative CHECK ("minQuantity" >= 0),
   -- Tampilkan layanan ini beserta harganya di landing page (get_public_price_list).
-  "showOnWeb" boolean NOT NULL DEFAULT false,
+  -- Bawaan tampil; hapus centang untuk harga khusus (mis. harga mitra).
+  "showOnWeb" boolean NOT NULL DEFAULT true,
   "storeId" uuid REFERENCES stores(id) ON DELETE SET NULL
 );
 
@@ -690,9 +691,9 @@ $$;
 -- Note: This RPC intentionally omits price/unit to avoid exposing sensitive pricing data to public clients.
 
 -- === RPC: get_public_price_list ===
--- Daftar harga untuk landing page: HANYA layanan yang dicentang "showOnWeb"
--- di halaman Layanan aplikasi kasir (bawaan tidak dicentang, jadi harga
--- khusus seperti harga mitra tidak pernah ikut tampil).
+-- Daftar harga untuk landing page: layanan dengan "showOnWeb" = true
+-- (bawaan tampil). Hapus centang "Tampilkan di website" di halaman Layanan
+-- aplikasi kasir untuk menyembunyikan harga khusus seperti harga mitra.
 DROP FUNCTION IF EXISTS public.get_public_price_list(uuid);
 CREATE OR REPLACE FUNCTION public.get_public_price_list(
   store_id_input uuid
@@ -898,29 +899,46 @@ RETURNS TABLE (
   "amountPaid" numeric
 )
 LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
+  -- Publik (anon): kode dicocokkan persis (bukan ILIKE, agar "%" tidak
+  -- membocorkan semua nota) dan nama pelanggan disamarkan ("Sit*** A.").
   SELECT
     t.id::text,
-    t."invoiceCode" AS "invoiceCode",
-    COALESCE(c.name, 'Guest/Dihapus') AS "customerName",
+    t."invoiceCode",
+    CASE
+      WHEN c.id IS NULL THEN 'Guest/Dihapus'
+      WHEN coalesce(btrim(c.name), '') = '' THEN 'Pelanggan'
+      ELSE (
+        SELECT string_agg(
+          CASE
+            WHEN w.n = 1 THEN
+              CASE WHEN length(w.word) <= 3 THEN w.word ELSE left(w.word, 3) || '***' END
+            ELSE upper(left(w.word, 1)) || '.'
+          END,
+          ' ' ORDER BY w.n
+        )
+        FROM regexp_split_to_table(btrim(c.name), '\s+') WITH ORDINALITY AS w(word, n)
+      )
+    END AS "customerName",
     t."createdAt",
     t."estimatedCompletionDate",
     t."orderStatus",
     t."paymentStatus",
     t.total,
     t."amountPaid"
-  FROM
-    public.transactions AS t
-  LEFT JOIN
-    public.customers AS c ON t."customerId" = c.id
+  FROM public.transactions AS t
+  LEFT JOIN public.customers AS c ON t."customerId" = c.id
   WHERE
-    t."invoiceCode" ILIKE input_identifier
-    OR (
-      input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-      AND t.id = input_identifier::uuid
-    );
+    t."invoiceCode" IN (input_identifier, upper(input_identifier))
+    -- CASE menjamin cast ke uuid hanya dijalankan bila formatnya valid.
+    OR t.id = CASE
+      WHEN input_identifier ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      THEN input_identifier::uuid
+    END
+  LIMIT 1;
 $$;
 
 
@@ -4139,9 +4157,9 @@ BEGIN
   svc AS (
     SELECT it.sid,
            COALESCE(max(s.name), max(it.sname), 'Layanan Dihapus') AS name,
-           COALESCE(max(s.category), '-') AS category,
+           COALESCE(max(s.category::text), '-') AS category,
            COALESCE(max(s.unit), max(it.unit), 'unit') AS unit,
-           COALESCE(max(s.category),
+           COALESCE(max(s.category::text),
              CASE WHEN max(it.unit) = 'kg' THEN 'Kiloan'
                   WHEN max(it.unit) = 'm2' THEN 'Karpet'
                   ELSE 'Lainnya' END) AS group_category,
