@@ -74,7 +74,7 @@ export interface Service {
   durationDays: number;
   /** Jumlah minimum per transaksi (mis. 3 kg). 0 / kosong = tanpa minimum. */
   minQuantity?: number;
-  /** Tampilkan layanan ini beserta harganya di landing page. */
+  /** Tampilkan layanan ini beserta harganya di landing page. Bawaan: true. */
   showOnWeb?: boolean;
   storeId: string;
 }

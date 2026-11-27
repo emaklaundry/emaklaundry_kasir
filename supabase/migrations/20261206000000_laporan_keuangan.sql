@@ -303,9 +303,9 @@ BEGIN
   svc AS (
     SELECT it.sid,
            COALESCE(max(s.name), max(it.sname), 'Layanan Dihapus') AS name,
-           COALESCE(max(s.category), '-') AS category,
+           COALESCE(max(s.category::text), '-') AS category,
            COALESCE(max(s.unit), max(it.unit), 'unit') AS unit,
-           COALESCE(max(s.category),
+           COALESCE(max(s.category::text),
              CASE WHEN max(it.unit) = 'kg' THEN 'Kiloan'
                   WHEN max(it.unit) = 'm2' THEN 'Karpet'
                   ELSE 'Lainnya' END) AS group_category,

@@ -20,7 +20,7 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
     unit: service?.unit || 'kg',
     durationDays: service?.durationDays || 0,
     minQuantity: service?.minQuantity || 0,
-    showOnWeb: service?.showOnWeb ?? false,
+    showOnWeb: service?.showOnWeb ?? true,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -211,8 +211,8 @@ const ServiceFormModal: React.FC<ServiceFormModalProps> = ({ service, onClose, o
               Tampilkan di website
             </label>
             <p id="showOnWeb-hint" className="text-xs text-slate-500 dark:text-slate-400">
-              Nama, harga, dan durasi layanan ini akan terlihat oleh siapa saja di
-              emaklaundry.my.id. Jangan centang harga khusus (mis. harga mitra).
+              Nama, harga, dan durasi layanan ini terlihat oleh siapa saja di
+              emaklaundry.my.id. Hapus centang untuk harga khusus (mis. harga mitra).
             </p>
           </div>
         </div>

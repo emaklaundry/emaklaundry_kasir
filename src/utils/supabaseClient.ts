@@ -26,8 +26,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 /**
  * Helper RPC call to fetch a minimal, safe projection of a transaction for public/customer-facing views.
- * This calls the database function `get_laundry_status(transaction_id_input uuid)` which must be created
- * in the Supabase SQL editor and defined as SECURITY DEFINER (see supabase/setup/0.complete_setup.sql).
+ * Calls `get_laundry_status(input_identifier text)` (SECURITY DEFINER, public). It matches the invoice
+ * code exactly (or the transaction uuid) and returns a masked customer name.
  */
 export async function getLaundryStatus(identifier: string) {
   const { data, error } = await supabase.rpc('get_laundry_status', {

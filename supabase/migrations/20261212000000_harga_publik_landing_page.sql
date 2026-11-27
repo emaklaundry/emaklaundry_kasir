@@ -2,8 +2,8 @@
 -- Harga layanan untuk landing page (emaklaundry.my.id)
 -- ============================================================================
 -- 1. services."showOnWeb": centang per layanan di halaman Layanan aplikasi kasir.
---    Bawaan false, jadi harga khusus (mis. harga mitra) tidak pernah tampil
---    di website sebelum sengaja dicentang.
+--    Bawaan true: semua layanan (termasuk yang sudah ada) tampil di website.
+--    Hapus centangnya untuk harga khusus yang tidak boleh publik (mis. harga mitra).
 -- 2. get_public_price_list(store_id): daftar layanan yang dicentang beserta
 --    harganya. Hanya kolom yang memang untuk publik; tanpa id/storeId.
 --    get_public_services (tanpa harga) dibiarkan apa adanya untuk kompatibilitas.
@@ -11,7 +11,12 @@
 -- ============================================================================
 
 ALTER TABLE public.services
-  ADD COLUMN IF NOT EXISTS "showOnWeb" boolean NOT NULL DEFAULT false;
+  ADD COLUMN IF NOT EXISTS "showOnWeb" boolean NOT NULL DEFAULT true;
+
+-- Bila kolom sudah ada dari versi awal migrasi ini (bawaan false), samakan bawaannya.
+-- Tidak mengubah centang layanan yang sudah ada.
+ALTER TABLE public.services
+  ALTER COLUMN "showOnWeb" SET DEFAULT true;
 
 COMMENT ON COLUMN public.services."showOnWeb" IS
   'Tampilkan layanan ini beserta harganya di landing page (get_public_price_list).';
